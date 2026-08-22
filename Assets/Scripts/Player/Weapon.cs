@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+using UnityEngine.EventSystems;
+
 public class Weapon : MonoBehaviour
 {
     [SerializeField] private Transform firePoint;
@@ -158,6 +160,12 @@ public class Weapon : MonoBehaviour
 
     private void OnFire(InputAction.CallbackContext context)
     {
+        // 1. Si el juego está en pausa, no hace nada
+        if (Time.timeScale == 0f) return;
+
+        // 2. Si el mouse está sobre cualquier botón/UI, no dispara
+        if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null) return;
+
         if (isReloading) return;
         if (Time.time < nextFireTime) return;
         if (currentAmmo <= 0) return;
