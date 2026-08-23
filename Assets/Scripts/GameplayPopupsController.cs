@@ -1,67 +1,97 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 
 public class GameplayPopupsController : MonoBehaviour
 {
     [Header("Paneles Emergentes")]
     [SerializeField] private GameObject popupHistoria;
     [SerializeField] private GameObject popupMenuHome;
+    [SerializeField] private IntroScreenAnimator introAnimator;
 
-    [Header("Configuraci�n Escenas")]
+    [Header("Configuración Escenas")]
     [SerializeField] private string nombreEscenaMenu = "PantallasUI";
 
-    [Header("Objetos / Componentes a desactivar al pausar")]
+    [Header("Objetos a desactivar al pausar (HUD, etc.)")]
     [SerializeField] private GameObject[] objetosParaDesactivar;
-    [SerializeField] private Behaviour[] componentesParaDesactivar;
+
+    [Header("Control del jugador a desactivar al pausar")]
+    [SerializeField] private PlayerMovement playerMovement;
+    [SerializeField] private PlayerLook playerLook;
+    [SerializeField] private Weapon weapon;
+
+    private bool juegoIniciado;
+    private bool estaPausado;
 
     private void Awake()
     {
-        Debug.Log(
-            "AWAKE GameplayPopupsController | " +
-            "Objeto: " + gameObject.name +
-            " | ID: " + System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(this)
-        );
-
         if (EventSystem.current == null)
             new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
 
-        Cursor.visible = true;
-        Cursor.lockState = CursorLockMode.None;
-
-        if (popupHistoria != null)
-            popupHistoria.SetActive(true);
+        if (introAnimator != null)
+            introAnimator.PlayIn();
 
         if (popupMenuHome != null)
             popupMenuHome.SetActive(false);
 
+        juegoIniciado = false;
         SetEstadoPausa(true);
     }
 
     private void Update()
     {
-        if (!Cursor.visible || Cursor.lockState != CursorLockMode.None)
+        if (!juegoIniciado) return;
+
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
-            Cursor.visible = true;
-            Cursor.lockState = CursorLockMode.None;
+            TogglePausa();
         }
+
+        EnforceCursorState();
+    }
+    
+    private void EnforceCursorState()
+    {
+        CursorLockMode expectedLock = estaPausado ? CursorLockMode.None : CursorLockMode.Locked;
+        bool expectedVisible = estaPausado;
+
+        if (Cursor.lockState != expectedLock)
+            Cursor.lockState = expectedLock;
+
+        if (Cursor.visible != expectedVisible)
+            Cursor.visible = expectedVisible;
+    }
+
+    private void TogglePausa()
+    {
+        if (estaPausado)
+            VolverALaPartida();
+        else
+            AbrirConfirmarSalir();
     }
 
     // --- POPUP HISTORIA ---
     public void CerrarHistoria()
     {
-        if (popupHistoria != null)
-            popupHistoria.SetActive(false);
-
-        SetEstadoPausa(false);
+        if (introAnimator != null)
+        {
+            introAnimator.PlayOut(() =>
+            {
+                juegoIniciado = true;
+                SetEstadoPausa(false);
+            });
+        }
+        else
+        {
+            juegoIniciado = true;
+            SetEstadoPausa(false);
+        }
     }
 
-    // --- BOTON HOME ---
+    // --- MENÚ PAUSA ---
     public void AbrirConfirmarSalir()
     {
-        if (popupHistoria != null)
-            popupHistoria.SetActive(false);
-
         if (popupMenuHome != null)
             popupMenuHome.SetActive(true);
 
@@ -92,22 +122,22 @@ public class GameplayPopupsController : MonoBehaviour
 
     private void SetEstadoPausa(bool pausar)
     {
+        estaPausado = pausar;
+
         Time.timeScale = pausar ? 0f : 1f;
         AudioListener.pause = pausar;
 
-        Cursor.visible = true;
-        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = pausar;
+        Cursor.lockState = pausar ? CursorLockMode.None : CursorLockMode.Locked;
+
+        if (playerMovement != null) playerMovement.enabled = !pausar;
+        if (playerLook != null) playerLook.enabled = !pausar;
+        if (weapon != null) weapon.enabled = !pausar;
 
         if (objetosParaDesactivar != null)
         {
             foreach (var go in objetosParaDesactivar)
                 if (go != null) go.SetActive(!pausar);
-        }
-
-        if (componentesParaDesactivar != null)
-        {
-            foreach (var comp in componentesParaDesactivar)
-                if (comp != null) comp.enabled = !pausar;
         }
     }
 }

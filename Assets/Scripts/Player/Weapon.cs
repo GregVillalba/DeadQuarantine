@@ -15,6 +15,7 @@ public class Weapon : MonoBehaviour
     [SerializeField] private float range = 100f;
     [SerializeField] private int damage = 25;
     [SerializeField] private int maxAmmo = 6;
+    [SerializeField] private string weaponName = "Revolver";
 
     [Header("Aim (ADS)")]
     [SerializeField] private Vector3 aimPosition = new Vector3(0f, -0.05f, 0.2f);
@@ -41,6 +42,7 @@ public class Weapon : MonoBehaviour
     public int CurrentAmmo => currentAmmo;
     public int MaxAmmo => maxAmmo;
     public float CurrentSpreadNormalized => currentSpread / spreadMoving;
+    public string WeaponName => weaponName;
 
     private PlayerControls controls;
     private int currentAmmo;
