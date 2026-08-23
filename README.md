@@ -56,6 +56,4 @@
 - ✅ Bob de arma (movimiento oscilante al caminar)
 - ✅ Animación suave de recarga (visual, no física)
 
----
 
-## 🏗️ Estructura de Carpetas
