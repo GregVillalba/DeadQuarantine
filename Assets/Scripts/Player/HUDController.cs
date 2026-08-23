@@ -8,9 +8,20 @@ public class HUDController : MonoBehaviour
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private Weapon weapon;
 
-    [SerializeField] private TextMeshProUGUI healthText;
-    [SerializeField] private TextMeshProUGUI ammoText;
+    [Header("Vida")]
+    [SerializeField] private Image healthFill;
+    [SerializeField] private TextMeshProUGUI healthPercentText;
+    [SerializeField] private Color healthColorFull = Color.white;
+    [SerializeField] private Color healthColorHalf = new Color(1f, 0.65f, 0.3f);
+    [SerializeField] private Color healthColorLow = Color.red;
+
+    [Header("Estamina")]
     [SerializeField] private Image staminaFill;
+
+    [Header("Munición")]
+    [SerializeField] private TextMeshProUGUI ammoText;
+    [SerializeField] private TextMeshProUGUI ammoMaxText;
+    [SerializeField] private TextMeshProUGUI weaponNameText;
 
     [Header("Crosshair")]
     [SerializeField] private GameObject crosshairRoot;
@@ -23,25 +34,34 @@ public class HUDController : MonoBehaviour
 
     private void Update()
     {
-        UpdateHealthText();
-        UpdateAmmoText();
+        UpdateHealthBar();
         UpdateStaminaBar();
+        UpdateAmmoText();
         UpdateCrosshair();
     }
 
-    private void UpdateHealthText()
+    private void UpdateHealthBar()
     {
-        healthText.text = "Vida: " + playerHealth.CurrentHealth;
-    }
+        float percentage = (float)playerHealth.CurrentHealth / playerHealth.MaxHealth;
 
-    private void UpdateAmmoText()
-    {
-        ammoText.text = weapon.CurrentAmmo + " / " + weapon.MaxAmmo;
+        healthFill.fillAmount = percentage;
+        healthPercentText.text = Mathf.RoundToInt(percentage * 100f) + "%";
+
+        healthFill.color = percentage > 0.5f
+            ? Color.Lerp(healthColorHalf, healthColorFull, (percentage - 0.5f) / 0.5f)
+            : Color.Lerp(healthColorLow, healthColorHalf, percentage / 0.5f);
     }
 
     private void UpdateStaminaBar()
     {
         staminaFill.fillAmount = playerMovement.CurrentStamina / playerMovement.MaxStamina;
+    }
+
+    private void UpdateAmmoText()
+    {
+        ammoText.text = weapon.CurrentAmmo.ToString();
+        ammoMaxText.text = "/ " + weapon.MaxAmmo;
+        weaponNameText.text = weapon.WeaponName.ToUpper();
     }
 
     private void UpdateCrosshair()

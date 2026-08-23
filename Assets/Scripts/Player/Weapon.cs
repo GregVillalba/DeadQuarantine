@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+using UnityEngine.EventSystems;
+
 public class Weapon : MonoBehaviour
 {
     [SerializeField] private Transform firePoint;
@@ -13,6 +15,7 @@ public class Weapon : MonoBehaviour
     [SerializeField] private float range = 100f;
     [SerializeField] private int damage = 25;
     [SerializeField] private int maxAmmo = 6;
+    [SerializeField] private string weaponName = "Revolver";
 
     [Header("Aim (ADS)")]
     [SerializeField] private Vector3 aimPosition = new Vector3(0f, -0.05f, 0.2f);
@@ -39,6 +42,7 @@ public class Weapon : MonoBehaviour
     public int CurrentAmmo => currentAmmo;
     public int MaxAmmo => maxAmmo;
     public float CurrentSpreadNormalized => currentSpread / spreadMoving;
+    public string WeaponName => weaponName;
 
     private PlayerControls controls;
     private int currentAmmo;
@@ -158,6 +162,12 @@ public class Weapon : MonoBehaviour
 
     private void OnFire(InputAction.CallbackContext context)
     {
+        // 1. Si el juego está en pausa, no hace nada
+        if (Time.timeScale == 0f) return;
+
+        // 2. Si el mouse está sobre cualquier botón/UI, no dispara
+        if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null) return;
+
         if (isReloading) return;
         if (Time.time < nextFireTime) return;
         if (currentAmmo <= 0) return;
