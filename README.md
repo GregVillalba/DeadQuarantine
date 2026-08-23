@@ -1,6 +1,6 @@
 # Dead Quarantine — FPS Cooperativo
 
-**Dead Quarantine** es un FPS cooperativo desarrollado en **Unity 6** como trabajo universitario. Un juego de acción donde los jugadores deben sobrevivir en un ambiente hostil, utilizando armas, estrategia y cooperación para completar objetivos.
+**Dead Quarantine** es un FPS cooperativo desarrollado en **Unity 6** como trabajo universitario. Un juego de acción donde los jugadores deben sobrevivir en un ambiente hostil, utilizando armas, estrategia y trabajo en equipo.
 
 ---
 
@@ -66,17 +66,27 @@ Cuando ejecutes la escena `PantallasUI`, obtendrás:
 - ✅ Interfaz completa del juego
 
 ### 📁 Archivos Clave del Menú
+
+```
 Assets/
 ├── Scenes/
-│   ├── PantallasUI.unity        ← MENÚ PRINCIPAL
-│   └── MainScene.unity        ← Gameplay
+│   ├── PantallasUI.unity
+│   │   └── MENÚ PRINCIPAL
+│   └── MainScene.unity
+│       └── Gameplay
 ├── Scripts/
-│   └── GameplayPopupsController.cs  ← Controla el menú e historia dentro del juego
-│   └── ButtonHoverMenuPrincipal.cs  ← funcion :hover en botones
-│   └── MenuPrincipalAcciones.cs     ← funciones de los botones en los menús prinicpales
+│   ├── GameplayPopupsController.cs
+│   │   └── Controla el menú e historia dentro del juego
+│   ├── ButtonHoverMenuPrincipal.cs
+│   │   └── Función :hover en botones
+│   └── MenuPrincipalAcciones.cs
+│       └── Funciones de los botones en los menús principales
 └── Figma/
     └── Screens/
-        └── main-menu.prefab     ← Diseño del menú
+        └── main-menu.prefab
+            └── Diseño del menú
+```
+
 ---
 
 ## 🎮 Características Implementadas
@@ -121,5 +131,3 @@ Assets/
 ### Mecánica de Arma
 - ✅ Bob de arma (movimiento oscilante al caminar)
 - ✅ Animación suave de recarga (visual, no física)
-
-
