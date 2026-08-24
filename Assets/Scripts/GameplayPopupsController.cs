@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.UI;
 
 public class GameplayPopupsController : MonoBehaviour
 {
@@ -27,7 +28,7 @@ public class GameplayPopupsController : MonoBehaviour
     private void Awake()
     {
         if (EventSystem.current == null)
-            new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+            new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule)); // ← antes: StandaloneInputModule
 
         if (introAnimator != null)
             introAnimator.PlayIn();
