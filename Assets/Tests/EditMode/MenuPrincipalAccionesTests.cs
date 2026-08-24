@@ -105,8 +105,6 @@ public class MenuPrincipalAccionesTests
     [Test]
     public void MostrarComoJugar_TambienActivaElegirModoPanel()
     {
-        // Cubre el comportamiento actual del código (ambos paneles quedan activos a la vez).
-        // Si esto no es intencional, confirmar con diseño y ajustar este test junto con el script.
         elegirModoPanel.SetActive(false);
  
         controller.MostrarComoJugar();

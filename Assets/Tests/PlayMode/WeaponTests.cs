@@ -256,8 +256,6 @@ public class WeaponTests
     [UnityTest]
     public IEnumerator UpdateSpread_Agachado_ConvergeHaciaSpreadCrouchingNormalizado()
     {
-        // Se deshabilita el propio Update() de PlayerMovement para que su
-        // HandleCrouch() no revierta el IsCrouching inyectado por reflexión.
         playerMovement.enabled = false;
         SetAutoPropertyBackingField(playerMovement, "IsCrouching", true);
  
@@ -307,8 +305,6 @@ public class WeaponTests
                 "La rotación no debería alterar la magnitud del vector dirección.");
  
             float angulo = Vector3.Angle(Vector3.forward, resultado);
-            // Tolerancia amplia: se combinan dos rotaciones de Euler (X e Y),
-            // así que el ángulo resultante puede superar levemente spreadDegrees.
             Assert.LessOrEqual(angulo, spreadDegrees * 1.5f + 0.5f,
                 "El ángulo de dispersión debería mantenerse razonablemente acotado.");
         }
