@@ -33,7 +33,7 @@ public class MenuPrincipalAcciones : MonoBehaviour
             comoJugarPanel.SetActive(true);
 
         if (elegirModoPanel != null)
-            elegirModoPanel.SetActive(true);
+            elegirModoPanel.SetActive(false);
     }
 
     // Útil para el botón "Volver" en el panel ComoJugar
