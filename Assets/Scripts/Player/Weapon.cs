@@ -208,6 +208,16 @@ public class Weapon : MonoBehaviour
         {
             Debug.Log("Impacto en: " + hit.collider.name);
             Debug.DrawLine(firePoint.position, hit.point, Color.red, 1f);
+
+            ZombieHealth zombieHealth = hit.collider.GetComponent<ZombieHealth>();
+            if (zombieHealth != null)
+            {
+                zombieHealth.TakeDamage(damage);
+            }
+            else if (DecalManager.Instance != null)
+            {
+                DecalManager.Instance.SpawnBulletHole(hit.point, hit.normal);
+            }
         }
         else
         {
