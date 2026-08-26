@@ -4,18 +4,27 @@ using UnityEngine.EventSystems;
 
 public class Weapon : MonoBehaviour
 {
+    [Header("Referencias")]
     [SerializeField] private Transform firePoint;
     [SerializeField] private Camera playerCamera;
     [SerializeField] private Camera weaponCamera;
     [SerializeField] private CharacterController characterController;
     [SerializeField] private PlayerMovement playerMovement;
-    [SerializeField] private float fireRate = 0.4f;
+    [SerializeField] private Animator weaponAnimator;
+
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip shootSound;
+    [SerializeField] private AudioClip reloadSound;
+    [SerializeField] private AudioClip reloadEmptySound;
+
+    [Header("Pistola")]
+    [SerializeField] private float fireRate = 0.25f;
     [SerializeField] private float reloadTime = 1.5f;
     [SerializeField] private float range = 100f;
     [SerializeField] private int damage = 25;
-    [SerializeField] private int maxAmmo = 6;
-    [SerializeField] private string weaponName = "Revolver";
-    [SerializeField] private Animator weaponAnimator;
+    [SerializeField] private int maxAmmo = 12;
+    [SerializeField] private string weaponName = "Pistola";
 
     [Header("Aim (ADS)")]
     [SerializeField] private float aimFOV = 50f;
@@ -35,6 +44,7 @@ public class Weapon : MonoBehaviour
     public string WeaponName => weaponName;
 
     private PlayerControls controls;
+
     private int currentAmmo;
     private float nextFireTime;
     private bool isReloading;
@@ -75,33 +85,17 @@ public class Weapon : MonoBehaviour
 
     private void HandleAim()
     {
-        // El Animator se encarga de mover los brazos/arma.
-        // Acá solamente obtenemos el estado de apuntado.
         IsAiming = controls.Player.Aim.IsPressed();
 
-        // El FOV sí se controla desde código porque
-        // no depende de la animación del arma.
-        float targetFOV = IsAiming ? aimFOV : defaultWorldFOV;
+        float targetFOV = IsAiming
+            ? aimFOV
+            : defaultWorldFOV;
 
         playerCamera.fieldOfView = Mathf.Lerp(
             playerCamera.fieldOfView,
             targetFOV,
             aimTransitionSpeed * Time.deltaTime
         );
-    }
-
-    private bool IsMovingOnGround()
-    {
-        if (!characterController.isGrounded)
-            return false;
-
-        Vector3 horizontalVelocity = new Vector3(
-            characterController.velocity.x,
-            0f,
-            characterController.velocity.z
-        );
-
-        return horizontalVelocity.magnitude > 0.1f;
     }
 
     private void UpdateSpread()
@@ -132,62 +126,18 @@ public class Weapon : MonoBehaviour
         );
     }
 
-    private void OnFire(InputAction.CallbackContext context)
+    private bool IsMovingOnGround()
     {
-        // Si el juego está en pausa, no hace nada.
-        if (Time.timeScale == 0f)
-            return;
+        if (!characterController.isGrounded)
+            return false;
 
-        // Si el mouse está sobre UI, no dispara.
-        if (EventSystem.current != null &&
-            EventSystem.current.currentSelectedGameObject != null)
-            return;
+        Vector3 horizontalVelocity = new Vector3(
+            characterController.velocity.x,
+            0f,
+            characterController.velocity.z
+        );
 
-        // No dispara mientras recarga.
-        if (isReloading)
-            return;
-
-        // Respeta la cadencia del arma.
-        if (Time.time < nextFireTime)
-            return;
-
-        // No dispara si no hay munición.
-        if (currentAmmo <= 0)
-            return;
-
-        nextFireTime = Time.time + fireRate;
-        currentAmmo--;
-
-        // Le decimos al Animator que hubo un disparo.
-        if (weaponAnimator != null)
-        {
-            weaponAnimator.SetTrigger("Fire");
-        }
-
-        // Realiza el disparo real mediante Raycast.
-        Shoot();
-    }
-
-    private void OnReload(InputAction.CallbackContext context)
-    {
-        // No recargar si ya está recargando.
-        if (isReloading)
-            return;
-
-        // No recargar si el cargador ya está lleno.
-        if (currentAmmo == maxAmmo)
-            return;
-
-        if (weaponAnimator != null)
-        {
-            // Permite diferenciar Reload y Reload_Empty
-            // desde el Animator.
-            weaponAnimator.SetBool("IsEmpty", currentAmmo == 0);
-
-            weaponAnimator.SetTrigger("Reload");
-        }
-
-        StartCoroutine(ReloadRoutine());
+        return horizontalVelocity.magnitude > 0.1f;
     }
 
     private void UpdateAnimatorParams()
@@ -195,27 +145,94 @@ public class Weapon : MonoBehaviour
         if (weaponAnimator == null)
             return;
 
-        // Velocidad del jugador.
         float speed = characterController.velocity.magnitude;
 
         weaponAnimator.SetFloat("Speed", speed);
-
-        // Estado de apuntado.
         weaponAnimator.SetBool("IsAiming", IsAiming);
+    }
+
+    private void OnFire(InputAction.CallbackContext context)
+    {
+        if (Time.timeScale == 0f)
+            return;
+
+        if (EventSystem.current != null &&
+            EventSystem.current.currentSelectedGameObject != null)
+            return;
+
+        if (isReloading)
+            return;
+
+        if (Time.time < nextFireTime)
+            return;
+
+        if (currentAmmo <= 0)
+            return;
+
+        nextFireTime = Time.time + fireRate;
+
+        currentAmmo--;
+
+        // Sonido de disparo.
+        PlaySound(shootSound);
+
+        // Animación de disparo.
+        if (weaponAnimator != null)
+        {
+            weaponAnimator.SetTrigger("Fire");
+        }
+
+        // Disparo real.
+        Shoot();
+    }
+
+    private void OnReload(InputAction.CallbackContext context)
+    {
+        if (isReloading)
+            return;
+
+        if (currentAmmo == maxAmmo)
+            return;
+
+        bool wasEmpty = currentAmmo == 0;
+
+        // Sonido correspondiente a la animación.
+        if (wasEmpty)
+        {
+            PlaySound(reloadEmptySound);
+        }
+        else
+        {
+            PlaySound(reloadSound);
+        }
+
+        // Animación correspondiente.
+        if (weaponAnimator != null)
+        {
+            weaponAnimator.SetBool("IsEmpty", wasEmpty);
+            weaponAnimator.SetTrigger("Reload");
+        }
+
+        StartCoroutine(ReloadRoutine());
+    }
+
+    private void PlaySound(AudioClip clip)
+    {
+        if (audioSource != null && clip != null)
+        {
+            audioSource.PlayOneShot(clip);
+        }
     }
 
     private System.Collections.IEnumerator ReloadRoutine()
     {
         isReloading = true;
 
-        Debug.Log("Recargando...");
-
         yield return new WaitForSeconds(reloadTime);
 
         currentAmmo = maxAmmo;
-        isReloading = false;
 
-        Debug.Log("Recarga completa. Munición: " + currentAmmo);
+        isReloading = false;
     }
 
     private void Shoot()
@@ -230,7 +247,10 @@ public class Weapon : MonoBehaviour
             spreadDirection
         );
 
-        if (Physics.Raycast(ray, out RaycastHit hit, range))
+        if (Physics.Raycast(
+            ray,
+            out RaycastHit hit,
+            range))
         {
             Debug.Log("Impacto en: " + hit.collider.name);
 
@@ -242,11 +262,15 @@ public class Weapon : MonoBehaviour
             );
 
             ZombieHealth zombieHealth =
-                hit.collider.GetComponent<ZombieHealth>();
+                hit.collider.GetComponentInParent<ZombieHealth>();
 
             if (zombieHealth != null)
             {
                 zombieHealth.TakeDamage(damage);
+
+                Debug.Log(
+                    "Daño realizado: " + damage
+                );
             }
             else if (DecalManager.Instance != null)
             {
@@ -286,7 +310,11 @@ public class Weapon : MonoBehaviour
         );
 
         Quaternion spreadRotation =
-            Quaternion.Euler(randomY, randomX, 0f);
+            Quaternion.Euler(
+                randomY,
+                randomX,
+                0f
+            );
 
         return spreadRotation * baseDirection;
     }
