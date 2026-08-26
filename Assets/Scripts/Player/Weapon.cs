@@ -26,7 +26,7 @@ public class Weapon : MonoBehaviour
     [SerializeField] private int maxAmmo = 12;
     [SerializeField] private string weaponName = "Pistola";
 
-    [Header("Aim (ADS)")]
+    [Header("Aim")]
     [SerializeField] private float aimFOV = 50f;
     [SerializeField] private float aimTransitionSpeed = 10f;
 
@@ -38,6 +38,7 @@ public class Weapon : MonoBehaviour
     [SerializeField] private float spreadChangeSpeed = 5f;
 
     public bool IsAiming { get; private set; }
+
     public int CurrentAmmo => currentAmmo;
     public int MaxAmmo => maxAmmo;
     public float CurrentSpreadNormalized => currentSpread / spreadMoving;
@@ -55,6 +56,7 @@ public class Weapon : MonoBehaviour
     private void Awake()
     {
         controls = new PlayerControls();
+
         currentAmmo = maxAmmo;
 
         defaultWorldFOV = playerCamera.fieldOfView;
@@ -66,6 +68,9 @@ public class Weapon : MonoBehaviour
 
         controls.Player.Fire.performed += OnFire;
         controls.Player.Reload.performed += OnReload;
+
+        controls.Player.Aim.started += OnAimStarted;
+        controls.Player.Aim.canceled += OnAimCanceled;
     }
 
     private void OnDisable()
@@ -73,20 +78,37 @@ public class Weapon : MonoBehaviour
         controls.Player.Fire.performed -= OnFire;
         controls.Player.Reload.performed -= OnReload;
 
+        controls.Player.Aim.started -= OnAimStarted;
+        controls.Player.Aim.canceled -= OnAimCanceled;
+
         controls.Player.Disable();
+
+        IsAiming = false;
     }
 
     private void Update()
     {
-        HandleAim();
+        UpdateAimFOV();
         UpdateSpread();
         UpdateAnimatorParams();
     }
 
-    private void HandleAim()
+    private void OnAimStarted(InputAction.CallbackContext context)
     {
-        IsAiming = controls.Player.Aim.IsPressed();
+        // No permite apuntar mientras recarga.
+        if (isReloading)
+            return;
 
+        IsAiming = true;
+    }
+
+    private void OnAimCanceled(InputAction.CallbackContext context)
+    {
+        IsAiming = false;
+    }
+
+    private void UpdateAimFOV()
+    {
         float targetFOV = IsAiming
             ? aimFOV
             : defaultWorldFOV;
@@ -194,9 +216,12 @@ public class Weapon : MonoBehaviour
         if (currentAmmo == maxAmmo)
             return;
 
+        // Si estaba apuntando, deja de apuntar.
+        IsAiming = false;
+
         bool wasEmpty = currentAmmo == 0;
 
-        // Sonido correspondiente a la animación.
+        // Sonido de recarga.
         if (wasEmpty)
         {
             PlaySound(reloadEmptySound);
@@ -206,10 +231,14 @@ public class Weapon : MonoBehaviour
             PlaySound(reloadSound);
         }
 
-        // Animación correspondiente.
+        // Animación de recarga.
         if (weaponAnimator != null)
         {
-            weaponAnimator.SetBool("IsEmpty", wasEmpty);
+            weaponAnimator.SetBool(
+                "IsEmpty",
+                wasEmpty
+            );
+
             weaponAnimator.SetTrigger("Reload");
         }
 
@@ -237,10 +266,11 @@ public class Weapon : MonoBehaviour
 
     private void Shoot()
     {
-        Vector3 spreadDirection = ApplySpreadToDirection(
-            playerCamera.transform.forward,
-            currentSpread
-        );
+        Vector3 spreadDirection =
+            ApplySpreadToDirection(
+                playerCamera.transform.forward,
+                currentSpread
+            );
 
         Ray ray = new Ray(
             playerCamera.transform.position,
@@ -252,7 +282,9 @@ public class Weapon : MonoBehaviour
             out RaycastHit hit,
             range))
         {
-            Debug.Log("Impacto en: " + hit.collider.name);
+            Debug.Log(
+                "Impacto en: " + hit.collider.name
+            );
 
             Debug.DrawLine(
                 firePoint.position,
