@@ -10,6 +10,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float jumpForce = 6f;
     [SerializeField] private float gravity = -15f;
     [SerializeField] private float groundedVelocity = -2f;
+    [SerializeField] private Animator thirdPersonAnimator;
 
     [Header("Estamina")]
     [SerializeField] private float maxStamina = 5f;
@@ -32,6 +33,7 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 moveInput;
     private float velocityY;
     private bool isExhausted;
+    
 
     private float standingHeight;
     private Vector3 standingCenter;
@@ -53,6 +55,13 @@ public class PlayerMovement : MonoBehaviour
 
         float heightDifference = standingHeight - crouchHeight;
         crouchCameraPosition = standingCameraPosition - new Vector3(0f, heightDifference, 0f);
+    }
+    private void Start()
+    {
+        if (thirdPersonAnimator != null)
+        {
+            thirdPersonAnimator.SetFloat("old_pistol", 0f);
+        }
     }
 
     private void OnEnable()

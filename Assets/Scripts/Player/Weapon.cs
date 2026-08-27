@@ -49,6 +49,7 @@ public class Weapon : MonoBehaviour
     private int currentAmmo;
     private float nextFireTime;
     private bool isReloading;
+    public bool IsReloading => isReloading;
 
     private float defaultWorldFOV;
     private float currentSpread;
