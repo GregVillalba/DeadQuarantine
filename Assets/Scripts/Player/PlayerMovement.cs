@@ -11,6 +11,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float gravity = -15f;
     [SerializeField] private float groundedVelocity = -2f;
     [SerializeField] private Animator thirdPersonAnimator;
+    [SerializeField] private Weapon weapon;
 
     [Header("Estamina")]
     [SerializeField] private float maxStamina = 5f;
@@ -33,6 +34,7 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 moveInput;
     private float velocityY;
     private bool isExhausted;
+    
     
 
     private float standingHeight;
@@ -140,7 +142,9 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleStamina()
     {
-        bool wantsToSprint = controls.Player.Sprint.IsPressed() && moveInput.magnitude > 0.1f && !isExhausted && !IsCrouching;
+        bool isAiming = weapon != null && weapon.IsAiming;
+
+        bool wantsToSprint = controls.Player.Sprint.IsPressed() && moveInput.magnitude > 0.1f && !isExhausted && !IsCrouching && !isAiming;
 
         if (wantsToSprint && CurrentStamina > 0f)
         {

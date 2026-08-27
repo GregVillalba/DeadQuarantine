@@ -5,8 +5,10 @@ public class ThirdPersonSync : MonoBehaviour
     [SerializeField] private Animator thirdPersonAnimator;
     [SerializeField] private CharacterController characterController;
     [SerializeField] private Weapon weapon;
+    [SerializeField] private PlayerMovement playerMovement;
 
     private int currentAmmoLastFrame;
+    private bool wasReloading;
 
     private void Start()
     {
@@ -31,11 +33,14 @@ public class ThirdPersonSync : MonoBehaviour
         thirdPersonAnimator.SetBool("TP_IsAiming", weapon.IsAiming);
         thirdPersonAnimator.SetBool("TP_IsEmpty", weapon.CurrentAmmo == 0);
 
+        if (playerMovement != null)
+        {
+            thirdPersonAnimator.SetBool("TP_IsCrouching", playerMovement.IsCrouching);
+        }
+
         DetectFire();
         DetectReload();
     }
-
-    private bool wasReloading;
 
     private void DetectFire()
     {

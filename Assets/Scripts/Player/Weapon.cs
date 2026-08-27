@@ -11,10 +11,13 @@ public class Weapon : MonoBehaviour
     [SerializeField] private CharacterController characterController;
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private Animator weaponAnimator;
+    [SerializeField] private Muzzle muzzle;
+    [SerializeField] private GameObject bulletTrailPrefab;
 
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip shootSound;
+    [SerializeField] private AudioClip emptySound;
     [SerializeField] private AudioClip reloadSound;
     [SerializeField] private AudioClip reloadEmptySound;
 
@@ -36,6 +39,11 @@ public class Weapon : MonoBehaviour
     [SerializeField] private float spreadCrouching = 0.2f;
     [SerializeField] private float spreadAiming = 0f;
     [SerializeField] private float spreadChangeSpeed = 5f;
+
+    [Header("Estabilización de mira al apuntar")]
+    [SerializeField] private Transform armsRoot; // FPS_Arms
+    [SerializeField] private Vector3 aimStablePosition = new Vector3(0f, -0.05f, 0.2f);
+    [SerializeField] private float aimStabilizeSpeed = 15f;
 
     public bool IsAiming { get; private set; }
 
@@ -92,6 +100,21 @@ public class Weapon : MonoBehaviour
         UpdateAimFOV();
         UpdateSpread();
         UpdateAnimatorParams();
+        StabilizeAimPosition();
+    }
+
+    private void StabilizeAimPosition()
+    {
+        if (armsRoot == null) return;
+
+        if (IsAiming)
+        {
+            armsRoot.localPosition = Vector3.Lerp(
+                armsRoot.localPosition,
+                aimStablePosition,
+                aimStabilizeSpeed * Time.deltaTime
+            );
+        }
     }
 
     private void OnAimStarted(InputAction.CallbackContext context)
@@ -149,6 +172,26 @@ public class Weapon : MonoBehaviour
         );
     }
 
+    private void SpawnBulletTrail(Vector3 targetPoint)
+    {
+        if (bulletTrailPrefab == null || firePoint == null)
+            return;
+
+        GameObject trailObject = Instantiate(
+            bulletTrailPrefab,
+            firePoint.position,
+            Quaternion.identity
+        );
+
+        BulletTrail trail = trailObject.GetComponent<BulletTrail>();
+
+        if (trail != null)
+        {
+            trail.Init(targetPoint);
+        }
+    }
+
+
     private bool IsMovingOnGround()
     {
         if (!characterController.isGrounded)
@@ -190,7 +233,16 @@ public class Weapon : MonoBehaviour
             return;
 
         if (currentAmmo <= 0)
+        {
+            PlaySound(emptySound);
+
+            if (weaponAnimator != null)
+            {
+                weaponAnimator.SetTrigger("FireEmpty");
+            }
+
             return;
+        }
 
         nextFireTime = Time.time + fireRate;
 
@@ -204,9 +256,12 @@ public class Weapon : MonoBehaviour
         {
             weaponAnimator.SetTrigger("Fire");
         }
+        
+        muzzle?.PlayEffect();
 
         // Disparo real.
         Shoot();
+        
     }
 
     private void OnReload(InputAction.CallbackContext context)
@@ -294,6 +349,8 @@ public class Weapon : MonoBehaviour
                 1f
             );
 
+            SpawnBulletTrail(hit.point);
+
             ZombieHealth zombieHealth =
                 hit.collider.GetComponentInParent<ZombieHealth>();
 
@@ -315,6 +372,10 @@ public class Weapon : MonoBehaviour
         }
         else
         {
+            Vector3 missPoint = firePoint.position + spreadDirection * range;
+
+            SpawnBulletTrail(missPoint);
+
             Debug.DrawRay(
                 firePoint.position,
                 spreadDirection * range,
