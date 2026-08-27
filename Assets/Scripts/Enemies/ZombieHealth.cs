@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.SceneManagement;
+using TMPro;
 
 public class ZombieHealth : MonoBehaviour
 {
@@ -13,6 +15,9 @@ public class ZombieHealth : MonoBehaviour
     private NavMeshAgent agent;
     private ZombieAI zombieAI;
     private ZombieAudio zombieAudio;
+    public TextMeshProUGUI cantidadZombies;
+    public int cantidadZombiesVivos = 6;
+
 
     private void Awake()
     {
@@ -50,6 +55,20 @@ public class ZombieHealth : MonoBehaviour
         if (zombieAudio != null) zombieAudio.PlayDeathSound();
 
         Destroy(gameObject, destroyDelay);
+
+        UpdateZombieCount();
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+        
     }
+
+    public void UpdateZombieCount()
+    {
+        if (cantidadZombies != null)
+        {
+            cantidadZombiesVivos--;
+            cantidadZombies.text = cantidadZombiesVivos.ToString() + "/6";
+        }
+    }
+    
 
 }
