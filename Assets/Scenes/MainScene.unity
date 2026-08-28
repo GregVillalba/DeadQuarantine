@@ -1437,8 +1437,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: RONDAS
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: f33ecff73673b6e478f1858d992edddc, type: 2}
-  m_sharedMaterial: {fileID: -1727568887277591251, guid: f33ecff73673b6e478f1858d992edddc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -9513,8 +9513,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 1/5
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: f33ecff73673b6e478f1858d992edddc, type: 2}
-  m_sharedMaterial: {fileID: -1727568887277591251, guid: f33ecff73673b6e478f1858d992edddc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -19244,8 +19244,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 'ZOMBIES RESTANTES '
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: f33ecff73673b6e478f1858d992edddc, type: 2}
-  m_sharedMaterial: {fileID: -1727568887277591251, guid: f33ecff73673b6e478f1858d992edddc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -53733,7 +53733,7 @@ MonoBehaviour:
   emptySound: {fileID: 8300000, guid: 0c187ee2790c74c4e9985aa1ee1a12d5, type: 3}
   reloadSound: {fileID: 8300000, guid: 125edb9e36f963249bc792cca38492b1, type: 3}
   reloadEmptySound: {fileID: 8300000, guid: c565065df3907944b8b58f0d27066ba8, type: 3}
-  fireRate: 0.2
+  fireRate: 0.1
   reloadTime: 1.5
   range: 100
   damage: 25
@@ -53741,14 +53741,12 @@ MonoBehaviour:
   weaponName: Pistola
   aimFOV: 50
   aimTransitionSpeed: 10
+  aimingBlendSpeed: 8
   spreadIdle: 0.5
   spreadMoving: 3
   spreadCrouching: 0.2
   spreadAiming: 0
   spreadChangeSpeed: 5
-  armsRoot: {fileID: 0}
-  aimStablePosition: {x: 0, y: -0.05, z: 0.2}
-  aimStabilizeSpeed: 15
 --- !u!82 &1862021276
 AudioSource:
   m_ObjectHideFlags: 0
