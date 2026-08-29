@@ -33,6 +33,9 @@ public class Weapon : MonoBehaviour
     [SerializeField] private float aimFOV = 50f;
     [SerializeField] private float aimTransitionSpeed = 10f;
 
+    [Header("Animator - Blend Aiming")]
+    [SerializeField] private float aimingBlendSpeed = 8f;
+
     [Header("Dispersión")]
     [SerializeField] private float spreadIdle = 0.5f;
     [SerializeField] private float spreadMoving = 3f;
@@ -40,27 +43,23 @@ public class Weapon : MonoBehaviour
     [SerializeField] private float spreadAiming = 0f;
     [SerializeField] private float spreadChangeSpeed = 5f;
 
-    [Header("Estabilización de mira al apuntar")]
-    [SerializeField] private Transform armsRoot; // FPS_Arms
-    [SerializeField] private Vector3 aimStablePosition = new Vector3(0f, -0.05f, 0.2f);
-    [SerializeField] private float aimStabilizeSpeed = 15f;
-
     public bool IsAiming { get; private set; }
 
     public int CurrentAmmo => currentAmmo;
     public int MaxAmmo => maxAmmo;
     public float CurrentSpreadNormalized => currentSpread / spreadMoving;
     public string WeaponName => weaponName;
+    public bool IsReloading => isReloading;
 
     private PlayerControls controls;
 
     private int currentAmmo;
     private float nextFireTime;
     private bool isReloading;
-    public bool IsReloading => isReloading;
 
     private float defaultWorldFOV;
     private float currentSpread;
+    private float aimingBlend;
 
     private void Awake()
     {
@@ -82,6 +81,17 @@ public class Weapon : MonoBehaviour
         controls.Player.Aim.canceled += OnAimCanceled;
     }
 
+    public void AnimationAmmunitionFill()
+    {
+        currentAmmo = maxAmmo;
+    }
+
+    public void AnimationReloadFinished()
+    {
+        currentAmmo = maxAmmo;
+        isReloading = false;
+    }
+
     private void OnDisable()
     {
         controls.Player.Fire.performed -= OnFire;
@@ -100,21 +110,6 @@ public class Weapon : MonoBehaviour
         UpdateAimFOV();
         UpdateSpread();
         UpdateAnimatorParams();
-        StabilizeAimPosition();
-    }
-
-    private void StabilizeAimPosition()
-    {
-        if (armsRoot == null) return;
-
-        if (IsAiming)
-        {
-            armsRoot.localPosition = Vector3.Lerp(
-                armsRoot.localPosition,
-                aimStablePosition,
-                aimStabilizeSpeed * Time.deltaTime
-            );
-        }
     }
 
     private void OnAimStarted(InputAction.CallbackContext context)
@@ -172,26 +167,6 @@ public class Weapon : MonoBehaviour
         );
     }
 
-    private void SpawnBulletTrail(Vector3 targetPoint)
-    {
-        if (bulletTrailPrefab == null || firePoint == null)
-            return;
-
-        GameObject trailObject = Instantiate(
-            bulletTrailPrefab,
-            firePoint.position,
-            Quaternion.identity
-        );
-
-        BulletTrail trail = trailObject.GetComponent<BulletTrail>();
-
-        if (trail != null)
-        {
-            trail.Init(targetPoint);
-        }
-    }
-
-
     private bool IsMovingOnGround()
     {
         if (!characterController.isGrounded)
@@ -213,8 +188,36 @@ public class Weapon : MonoBehaviour
 
         float speed = characterController.velocity.magnitude;
 
-        weaponAnimator.SetFloat("Speed", speed);
-        weaponAnimator.SetBool("IsAiming", IsAiming);
+        // Speed suavizado para evitar el cambio brusco Idle -> Walk.
+        weaponAnimator.SetFloat(
+            "Speed",
+            speed,
+            0.15f,
+            Time.deltaTime
+        );
+
+        weaponAnimator.SetBool(
+            "IsAiming",
+            IsAiming
+        );
+
+        UpdateAimingBlend();
+    }
+
+    private void UpdateAimingBlend()
+    {
+        float target = IsAiming ? 1f : 0f;
+
+        aimingBlend = Mathf.MoveTowards(
+            aimingBlend,
+            target,
+            aimingBlendSpeed * Time.deltaTime
+        );
+
+        weaponAnimator.SetFloat(
+            "Aiming",
+            aimingBlend
+        );
     }
 
     private void OnFire(InputAction.CallbackContext context)
@@ -226,12 +229,15 @@ public class Weapon : MonoBehaviour
             EventSystem.current.currentSelectedGameObject != null)
             return;
 
+        // No dispara mientras recarga.
         if (isReloading)
             return;
 
+        // Respeta la cadencia.
         if (Time.time < nextFireTime)
             return;
 
+        // Disparo sin munición.
         if (currentAmmo <= 0)
         {
             PlaySound(emptySound);
@@ -256,12 +262,12 @@ public class Weapon : MonoBehaviour
         {
             weaponAnimator.SetTrigger("Fire");
         }
-        
+
+        // Muzzle flash.
         muzzle?.PlayEffect();
 
         // Disparo real.
         Shoot();
-        
     }
 
     private void OnReload(InputAction.CallbackContext context)
@@ -272,35 +278,23 @@ public class Weapon : MonoBehaviour
         if (currentAmmo == maxAmmo)
             return;
 
-        // Si estaba apuntando, deja de apuntar.
         IsAiming = false;
+
+        isReloading = true;
 
         bool wasEmpty = currentAmmo == 0;
 
-        // Sonido de recarga.
         if (wasEmpty)
-        {
             PlaySound(reloadEmptySound);
-        }
         else
-        {
             PlaySound(reloadSound);
-        }
 
-        // Animación de recarga.
         if (weaponAnimator != null)
         {
-            weaponAnimator.SetBool(
-                "IsEmpty",
-                wasEmpty
-            );
-
+            weaponAnimator.SetBool("IsEmpty", wasEmpty);
             weaponAnimator.SetTrigger("Reload");
         }
-
-        StartCoroutine(ReloadRoutine());
     }
-
     private void PlaySound(AudioClip clip)
     {
         if (audioSource != null && clip != null)
@@ -313,11 +307,8 @@ public class Weapon : MonoBehaviour
     {
         isReloading = true;
 
-        yield return new WaitForSeconds(reloadTime);
-
-        currentAmmo = maxAmmo;
-
-        isReloading = false;
+        // La animación controla cuándo termina realmente la recarga.
+        yield break;
     }
 
     private void Shoot()
@@ -349,6 +340,7 @@ public class Weapon : MonoBehaviour
                 1f
             );
 
+            // Bullet Trail hasta el impacto.
             SpawnBulletTrail(hit.point);
 
             ZombieHealth zombieHealth =
@@ -372,7 +364,10 @@ public class Weapon : MonoBehaviour
         }
         else
         {
-            Vector3 missPoint = firePoint.position + spreadDirection * range;
+            // Si no impacta, el trail viaja hasta el alcance máximo.
+            Vector3 missPoint =
+                firePoint.position +
+                spreadDirection * range;
 
             SpawnBulletTrail(missPoint);
 
@@ -382,6 +377,26 @@ public class Weapon : MonoBehaviour
                 Color.yellow,
                 1f
             );
+        }
+    }
+
+    private void SpawnBulletTrail(Vector3 targetPoint)
+    {
+        if (bulletTrailPrefab == null || firePoint == null)
+            return;
+
+        GameObject trailObject = Instantiate(
+            bulletTrailPrefab,
+            firePoint.position,
+            Quaternion.identity
+        );
+
+        BulletTrail trail =
+            trailObject.GetComponent<BulletTrail>();
+
+        if (trail != null)
+        {
+            trail.Init(targetPoint);
         }
     }
 

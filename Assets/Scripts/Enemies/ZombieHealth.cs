@@ -1,7 +1,5 @@
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.SceneManagement;
-using TMPro;
 
 public class ZombieHealth : MonoBehaviour
 {
@@ -11,17 +9,16 @@ public class ZombieHealth : MonoBehaviour
     public bool IsDead { get; private set; }
 
     private int currentHealth;
+
     private Animator animator;
     private NavMeshAgent agent;
     private ZombieAI zombieAI;
     private ZombieAudio zombieAudio;
-    public TextMeshProUGUI cantidadZombies;
-    public int cantidadZombiesVivos = 6;
-
 
     private void Awake()
     {
         currentHealth = maxHealth;
+
         animator = GetComponent<Animator>();
         agent = GetComponent<NavMeshAgent>();
         zombieAI = GetComponent<ZombieAI>();
@@ -30,7 +27,8 @@ public class ZombieHealth : MonoBehaviour
 
     public void TakeDamage(int amount)
     {
-        if (IsDead) return;
+        if (IsDead)
+            return;
 
         currentHealth -= amount;
 
@@ -40,35 +38,39 @@ public class ZombieHealth : MonoBehaviour
         }
         else
         {
-            if (animator != null) animator.SetTrigger("Hit");
-            if (zombieAudio != null) zombieAudio.PlayHitSound();
+            if (animator != null)
+                animator.SetTrigger("Hit");
+
+            if (zombieAudio != null)
+                zombieAudio.PlayHitSound();
         }
     }
 
     private void Die()
     {
+        if (IsDead)
+            return;
+
         IsDead = true;
 
-        if (zombieAI != null) zombieAI.enabled = false;
-        if (agent != null) agent.enabled = false;
-        if (animator != null) animator.SetTrigger("Death");
-        if (zombieAudio != null) zombieAudio.PlayDeathSound();
+        if (zombieAI != null)
+            zombieAI.enabled = false;
+
+        if (agent != null)
+            agent.enabled = false;
+
+        if (animator != null)
+            animator.SetTrigger("Death");
+
+        if (zombieAudio != null)
+            zombieAudio.PlayDeathSound();
+
+        // Avisar al sistema de rondas.
+        if (RoundManager.Instance != null)
+        {
+            RoundManager.Instance.ZombieDied();
+        }
 
         Destroy(gameObject, destroyDelay);
-
-        UpdateZombieCount();
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
-        
     }
-
-    public void UpdateZombieCount()
-    {
-        if (cantidadZombies != null)
-        {
-            cantidadZombiesVivos--;
-            cantidadZombies.text = cantidadZombiesVivos.ToString() + "/6";
-        }
-    }
-    
-
 }
