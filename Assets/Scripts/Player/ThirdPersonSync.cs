@@ -14,7 +14,7 @@ public class ThirdPersonSync : MonoBehaviour
     {
         if (thirdPersonAnimator != null)
         {
-            thirdPersonAnimator.SetFloat("old_pistol", 0f);
+            thirdPersonAnimator.SetInteger("old_pistol", 0);
         }
 
         if (weapon != null)

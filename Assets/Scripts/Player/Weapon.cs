@@ -81,6 +81,17 @@ public class Weapon : MonoBehaviour
         controls.Player.Aim.canceled += OnAimCanceled;
     }
 
+    public void AnimationAmmunitionFill()
+    {
+        currentAmmo = maxAmmo;
+    }
+
+    public void AnimationReloadFinished()
+    {
+        currentAmmo = maxAmmo;
+        isReloading = false;
+    }
+
     private void OnDisable()
     {
         controls.Player.Fire.performed -= OnFire;
@@ -267,37 +278,23 @@ public class Weapon : MonoBehaviour
         if (currentAmmo == maxAmmo)
             return;
 
-        // Si estaba apuntando, deja de apuntar.
         IsAiming = false;
 
         isReloading = true;
 
         bool wasEmpty = currentAmmo == 0;
 
-        // Sonido de recarga.
         if (wasEmpty)
-        {
             PlaySound(reloadEmptySound);
-        }
         else
-        {
             PlaySound(reloadSound);
-        }
 
-        // Animación de recarga.
         if (weaponAnimator != null)
         {
-            weaponAnimator.SetBool(
-                "IsEmpty",
-                wasEmpty
-            );
-
+            weaponAnimator.SetBool("IsEmpty", wasEmpty);
             weaponAnimator.SetTrigger("Reload");
         }
-
-        StartCoroutine(ReloadRoutine());
     }
-
     private void PlaySound(AudioClip clip)
     {
         if (audioSource != null && clip != null)
@@ -308,10 +305,10 @@ public class Weapon : MonoBehaviour
 
     private System.Collections.IEnumerator ReloadRoutine()
     {
-        yield return new WaitForSeconds(reloadTime);
+        isReloading = true;
 
-        currentAmmo = maxAmmo;
-        isReloading = false;
+        // La animación controla cuándo termina realmente la recarga.
+        yield break;
     }
 
     private void Shoot()

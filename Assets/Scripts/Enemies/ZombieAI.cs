@@ -54,17 +54,35 @@ public class ZombieAI : MonoBehaviour
 
     private void TryAttack()
     {
-        if (Time.time < nextAttackTime) return;
+        if (Time.time < nextAttackTime)
+            return;
 
         nextAttackTime = Time.time + attackCooldown;
 
-        if (animator != null) animator.SetTrigger("Attack");
-        if (zombieAudio != null) zombieAudio.PlayAttackSound();
+        if (animator != null)
+            animator.SetTrigger("Attack");
 
-        PlayerHealth playerHealth = target.GetComponent<PlayerHealth>();
+        if (zombieAudio != null)
+            zombieAudio.PlayAttackSound();
+
+        PlayerHealth playerHealth =
+            target.GetComponentInParent<PlayerHealth>();
+
         if (playerHealth != null)
         {
             playerHealth.TakeDamage(attackDamage);
+
+            Debug.Log(
+                "Zombie hizo " +
+                attackDamage +
+                " de daño al jugador."
+            );
+        }
+        else
+        {
+            Debug.LogWarning(
+                "Zombie no encontró PlayerHealth en el objetivo."
+            );
         }
     }
 
