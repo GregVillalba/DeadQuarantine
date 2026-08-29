@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.InputSystem; //esto se elimina, solo es para probar
 
 public class RoundManager : MonoBehaviour
 {
@@ -35,6 +36,8 @@ public class RoundManager : MonoBehaviour
     private bool roundInProgress;
     private bool countdownInProgress;
 
+    private int pendingNextRound;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -54,7 +57,7 @@ public class RoundManager : MonoBehaviour
         StartRound(1);
     }
 
-    private void StartRound(int round)
+    public void StartRound(int round)
     {
         currentRound = round;
 
@@ -134,9 +137,45 @@ public class RoundManager : MonoBehaviour
         }
     }
 
+    public void PlayerDied()
+    {
+        if (!roundInProgress)
+            return;
+
+        roundInProgress = false;
+
+        if (GameplayPopupsController.Instance != null)
+            GameplayPopupsController.Instance.MostrarPanelPerdedor();
+      
+        else
+            Debug.LogError("RoundManager: GameplayPopupsController.Instance es null, no se pudo mostrar el panel perdedor.");
+    }
+
     private void EndRound()
     {
         roundInProgress = false;
+
+        if (GameplayPopupsController.Instance != null)
+            GameplayPopupsController.Instance.MostrarPanelGanador();
+      
+        else
+            Debug.LogError("RoundManager: GameplayPopupsController.Instance es null, no se pudo mostrar el panel ganador.");
+
+        if (currentRound >= maxRounds)
+        {
+            Debug.Log("Ronda 5 completada.");
+
+        if (roundStartHUD != null)
+            roundStartHUD.Hide();
+
+        // No hay ronda siguiente, el panel se queda mostrado sin acción de "siguiente".
+        return;
+    }
+
+    // Guarda la próxima ronda pero NO la arranca todavía.
+    pendingNextRound = currentRound + 1;
+    
+    /*roundInProgress = false;
 
         // Si terminó la última ronda.
         if (currentRound >= maxRounds)
@@ -153,8 +192,21 @@ public class RoundManager : MonoBehaviour
 
         StartCoroutine(
             CountdownToNextRound(nextRound)
-        );
+        );*/
     }
+
+    public void ConfirmarSiguienteRonda()
+{
+    if (pendingNextRound <= 0)
+        return;
+
+    int nextRound = pendingNextRound;
+    pendingNextRound = 0;
+
+    StartCoroutine(
+        CountdownToNextRound(nextRound)
+    );
+}
 
     private IEnumerator CountdownToNextRound(int nextRound)
     {
@@ -209,4 +261,14 @@ public class RoundManager : MonoBehaviour
 
         StartRound(nextRound);
     }
+
+    // --- prueba ---
+ /*   private void Update()
+{
+    // SOLO PARA TESTING - sacar antes de entregar
+    if (Keyboard.current != null && Keyboard.current.pKey.wasPressedThisFrame)
+    {
+        ZombieDied();
+    }
+}*/
 }

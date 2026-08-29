@@ -16,5 +16,14 @@ public class PlayerHealth : MonoBehaviour
     {
         CurrentHealth -= amount;
         CurrentHealth = Mathf.Clamp(CurrentHealth, 0, maxHealth);
+        if(CurrentHealth <= 0)
+        {
+            Muerte();
+        }
+    }
+
+    public void Muerte()
+    {
+        RoundManager.Instance.PlayerDied();
     }
 }
