@@ -126,6 +126,8 @@ public class MultiplayerLobbyController : MonoBehaviour
 
     private bool estoyEnSala = false;
     private bool countdownIniciado = false;
+    private bool miReady = false;
+    private float tiempoCountdown = -1f;
 
     private const string READY_PROPERTY = "Ready";
     private const string COUNTDOWN_PROPERTY = "Countdown";
@@ -178,6 +180,7 @@ public class MultiplayerLobbyController : MonoBehaviour
             return;
 
         ActualizarEstadoSala();
+        ActualizarCountdownVisual();
     }
 
 
@@ -217,7 +220,11 @@ public class MultiplayerLobbyController : MonoBehaviour
             if (labelCodigoACopiar != null)
                 labelCodigoACopiar.text = codigo;
 
+            miReady = false;
+
             await CambiarReady(false);
+
+            ActualizarBotonReady(false);
 
             MostrarPanel(salaEsperaPanel);
 
@@ -296,7 +303,15 @@ public class MultiplayerLobbyController : MonoBehaviour
 
             estoyEnSala = true;
 
+            miReady = false;
+
             await CambiarReady(false);
+
+            ActualizarBotonReady(false);
+
+            // Mostrar el mismo código que acabamos de utilizar
+            if (labelCodigoACopiar != null)
+                labelCodigoACopiar.text = network.CurrentJoinCode;
 
             MostrarPanel(salaEsperaPanel);
 
@@ -328,30 +343,21 @@ public class MultiplayerLobbyController : MonoBehaviour
 
         if (network.CurrentSession == null)
         {
-            Debug.LogError(
-                "[Lobby] No existe una sesión."
-            );
-
+            Debug.LogError("[Lobby] No existe una sesión.");
             return;
         }
 
-        bool estadoActual =
-            ObtenerReadyJugador(
-                network.CurrentSession.CurrentPlayer
-            );
+        miReady = !miReady;
 
-        bool nuevoEstado = !estadoActual;
+        await CambiarReady(miReady);
 
-        await CambiarReady(nuevoEstado);
-
-        ActualizarBotonReady(nuevoEstado);
+        ActualizarBotonReady(miReady);
 
         Debug.Log(
             "[Lobby] Mi estado Ready: " +
-            (nuevoEstado ? "LISTO" : "NO LISTO")
+            (miReady ? "LISTO" : "NO LISTO")
         );
     }
-
 
     // ============================================================
     // CAMBIAR READY
@@ -425,6 +431,14 @@ public class MultiplayerLobbyController : MonoBehaviour
             jugador1Listo,
             jugador2Listo
         );
+
+        Debug.Log(
+        "[Lobby] P1=" + jugador1Listo +
+        " P2=" + jugador2Listo +
+        " Jugadores=" + jugadores.Count +
+        " Host=" + network.CurrentSession.IsHost +
+        " CountdownIniciado=" + countdownIniciado
+    );
 
         // El countdown solamente lo controla el Host.
         if (network.CurrentSession.IsHost)
@@ -595,66 +609,142 @@ public class MultiplayerLobbyController : MonoBehaviour
 
     private async Task IniciarCountdown()
     {
-        Debug.Log("[Lobby] Ambos jugadores están listos.");
+        Debug.Log("[Lobby] >>> COUNTDOWN INICIADO <<<");
+
+        if (network == null ||
+            network.CurrentSession == null ||
+            !network.CurrentSession.IsHost)
+        {
+            Debug.LogError(
+                "[Lobby] No se puede iniciar el countdown: no soy Host."
+            );
+
+            countdownIniciado = false;
+            return;
+        }
+
+        tiempoCountdown = 5f;
 
         if (countdownPanel != null)
             countdownPanel.SetActive(true);
 
-        for (int countdown = 5; countdown >= 0; countdown--)
+        if (countdownText != null)
         {
-            if (countdownText != null)
-                countdownText.text = countdown.ToString();
-
-            Debug.Log("[Lobby] Countdown: " + countdown);
-
-            await Task.Delay(1000);
+            countdownText.text =
+                "LA PARTIDA COMIENZA EN: 5";
         }
 
-        if (countdownPanel != null)
-            countdownPanel.SetActive(false);
+        Debug.Log("[Lobby] Countdown: 5");
 
-        // Solamente el Host inicia la partida.
-        if (network != null && network.IsHost)
+        await Task.Delay(1000);
+
+        tiempoCountdown = 4f;
+
+        if (countdownText != null)
+            countdownText.text =
+                "LA PARTIDA COMIENZA EN: 4";
+
+        Debug.Log("[Lobby] Countdown: 4");
+
+        await Task.Delay(1000);
+
+        tiempoCountdown = 3f;
+
+        if (countdownText != null)
+            countdownText.text =
+                "LA PARTIDA COMIENZA EN: 3";
+
+        Debug.Log("[Lobby] Countdown: 3");
+
+        await Task.Delay(1000);
+
+        tiempoCountdown = 2f;
+
+        if (countdownText != null)
+            countdownText.text =
+                "LA PARTIDA COMIENZA EN: 2";
+
+        Debug.Log("[Lobby] Countdown: 2");
+
+        await Task.Delay(1000);
+
+        tiempoCountdown = 1f;
+
+        if (countdownText != null)
+            countdownText.text =
+                "LA PARTIDA COMIENZA EN: 1";
+
+        Debug.Log("[Lobby] Countdown: 1");
+
+        await Task.Delay(1000);
+
+        tiempoCountdown = 0f;
+
+        if (countdownText != null)
+            countdownText.text =
+                "LA PARTIDA COMIENZA EN: 0";
+
+        Debug.Log("[Lobby] Countdown: 0");
+
+        await Task.Delay(500);
+
+        Debug.Log(
+            "[Lobby] >>> LLAMANDO StartMultiplayerGame() <<<"
+        );
+
+        if (network != null &&
+            network.CurrentSession != null &&
+            network.CurrentSession.IsHost)
         {
-            Debug.Log(
-                "[Lobby] Countdown terminado. Iniciando partida."
-            );
-
             await network.StartMultiplayerGame();
+        }
+        else
+        {
+            Debug.LogError(
+                "[Lobby] El Host perdió la sesión antes de iniciar."
+            );
         }
     }
 
-
-        // ============================================================
-        // MOSTRAR COUNTDOWN
-        // ============================================================
-
-        private void ActualizarCountdownVisual()
+    private async Task EscribirCountdown(int valor)
+    {
+        if (network == null ||
+            network.CurrentSession == null ||
+            !network.IsHost)
         {
-            if (network == null ||
-                network.CurrentSession == null)
-            {
-                return;
-            }
-
-            if (!network.CurrentSession.Properties.TryGetValue(
-                    COUNTDOWN_PROPERTY,
-                    out var propiedad))
-            {
-                return;
-            }
-
-            if (int.TryParse(
-                    propiedad.Value,
-                    out int valor))
-            {
-                if (countdownPanel != null)
-                    countdownPanel.SetActive(true);
-
-                if (countdownText != null)
-                    countdownText.text = valor.ToString();
-            }
+            return;
         }
+
+        var hostSession = network.CurrentSession.AsHost();
+
+        hostSession.SetProperty(
+            "countdown",
+            new SessionProperty(valor.ToString())
+        );
+
+        await hostSession.SavePropertiesAsync();
+    }
+
+
+    // ============================================================
+    // MOSTRAR COUNTDOWN
+    // ============================================================
+
+    private void ActualizarCountdownVisual()
+    {
+        if (tiempoCountdown < 0f)
+            return;
+
+        if (countdownPanel != null)
+            countdownPanel.SetActive(true);
+
+        if (countdownText != null)
+        {
+            countdownText.text =
+                "LA PARTIDA COMIENZA EN: " +
+                Mathf.CeilToInt(tiempoCountdown);
+        }
+    }
 
 
     // ============================================================

@@ -7,7 +7,9 @@ public class HUDController : MonoBehaviour
     [SerializeField] private PlayerHealth playerHealth;
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private Weapon weapon;
-    [SerializeField] private RoundManager roundManager;
+
+    // No hace falta asignarlo desde el Inspector.
+    private RoundManager roundManager;
 
     [Header("Vida")]
     [SerializeField] private Image healthFill;
@@ -37,6 +39,11 @@ public class HUDController : MonoBehaviour
     [SerializeField] private float crosshairMinGap = 6f;
     [SerializeField] private float crosshairMaxGap = 22f;
 
+    private void Start()
+    {
+        roundManager = RoundManager.Instance;
+    }
+
     private void Update()
     {
         UpdateHealthBar();
@@ -48,8 +55,11 @@ public class HUDController : MonoBehaviour
 
     private void UpdateHealthBar()
     {
+        if (playerHealth == null)
+            return;
+
         float percentage =
-            (float)playerHealth.CurrentHealth /
+            (float)playerHealth.CurrentHealth.Value /
             playerHealth.MaxHealth;
 
         healthFill.fillAmount = percentage;
@@ -73,6 +83,9 @@ public class HUDController : MonoBehaviour
 
     private void UpdateStaminaBar()
     {
+        if (playerMovement == null)
+            return;
+
         staminaFill.fillAmount =
             playerMovement.CurrentStamina /
             playerMovement.MaxStamina;
@@ -80,6 +93,9 @@ public class HUDController : MonoBehaviour
 
     private void UpdateAmmoText()
     {
+        if (weapon == null)
+            return;
+
         ammoText.text =
             weapon.CurrentAmmo.ToString();
 
@@ -92,8 +108,14 @@ public class HUDController : MonoBehaviour
 
     private void UpdateRounds()
     {
+        // Por si RoundManager todavía no estaba disponible al iniciar.
         if (roundManager == null)
-            return;
+        {
+            roundManager = RoundManager.Instance;
+
+            if (roundManager == null)
+                return;
+        }
 
         roundsText.text =
             "RONDAS   " +
@@ -102,13 +124,16 @@ public class HUDController : MonoBehaviour
             roundManager.MaxRounds;
 
         zombiesText.text =
-        roundManager.AliveZombies +
-        "/" +
-        roundManager.ZombiesThisRound;
+            roundManager.AliveZombies +
+            "/" +
+            roundManager.ZombiesThisRound;
     }
 
     private void UpdateCrosshair()
     {
+        if (weapon == null)
+            return;
+
         if (weapon.IsAiming)
         {
             crosshairRoot.SetActive(false);

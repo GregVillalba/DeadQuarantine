@@ -1,8 +1,8 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.InputSystem; //esto se elimina, solo es para probar
+using Unity.Netcode;
 
-public class RoundManager : MonoBehaviour
+public class RoundManager : NetworkBehaviour
 {
     public static RoundManager Instance { get; private set; }
 
@@ -19,24 +19,79 @@ public class RoundManager : MonoBehaviour
     [Header("HUD de inicio de ronda")]
     [SerializeField] private RoundStartHUD roundStartHUD;
 
-    public int CurrentRound => currentRound;
-    public int MaxRounds => maxRounds;
-    public int AliveZombies => aliveZombies;
-    public int ZombiesThisRound => zombiesThisRound;
+    // =========================================================
+    // VARIABLES SINCRONIZADAS POR RED
+    // =========================================================
 
-    // Estas dos propiedades son las que necesita HUDController.
-    public bool IsCountingDown => countdownInProgress;
-    public int CountdownRemaining => countdownRemaining;
+    public NetworkVariable<int> CurrentRoundNetwork =
+        new NetworkVariable<int>(
+            0,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
 
-    private int currentRound;
-    private int aliveZombies;
-    private int zombiesThisRound;
-    private int countdownRemaining;
+    public NetworkVariable<int> AliveZombiesNetwork =
+        new NetworkVariable<int>(
+            0,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+
+    public NetworkVariable<int> ZombiesThisRoundNetwork =
+        new NetworkVariable<int>(
+            0,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+
+    public NetworkVariable<int> CountdownNetwork =
+        new NetworkVariable<int>(
+            0,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+
+    public NetworkVariable<bool> GameLostNetwork =
+        new NetworkVariable<bool>(
+            false,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+
+    // =========================================================
+    // PROPIEDADES
+    // =========================================================
+
+    public int CurrentRound =>
+        CurrentRoundNetwork.Value;
+
+    public int MaxRounds =>
+        maxRounds;
+
+    public int AliveZombies =>
+        AliveZombiesNetwork.Value;
+
+    public int ZombiesThisRound =>
+        ZombiesThisRoundNetwork.Value;
+
+    public bool IsCountingDown =>
+        countdownInProgress;
+
+    public int CountdownRemaining =>
+        CountdownNetwork.Value;
+
+    // =========================================================
+    // VARIABLES LOCALES
+    // =========================================================
 
     private bool roundInProgress;
     private bool countdownInProgress;
 
     private int pendingNextRound;
+
+    // =========================================================
+    // AWAKE
+    // =========================================================
 
     private void Awake()
     {
@@ -49,42 +104,135 @@ public class RoundManager : MonoBehaviour
         Instance = this;
     }
 
-    private void Start()
+    // =========================================================
+    // NETWORK SPAWN
+    // =========================================================
+
+    public override void OnNetworkSpawn()
     {
+        // Escuchar cambios de las variables de red
+        CurrentRoundNetwork.OnValueChanged += OnRoundChanged;
+        CountdownNetwork.OnValueChanged += OnCountdownChanged;
+        GameLostNetwork.OnValueChanged += OnGameLostChanged;
+
+        // Si ya se perdió la partida cuando este cliente entró
+        if (GameLostNetwork.Value)
+        {
+            MostrarDerrota();
+        }
+
+        // Solamente el servidor controla las rondas
+        if (!IsServer)
+            return;
+
         if (roundStartHUD != null)
             roundStartHUD.Hide();
 
         StartRound(1);
     }
 
+    // =========================================================
+    // NETWORK DESPAWN
+    // =========================================================
+
+    public override void OnNetworkDespawn()
+    {
+        CurrentRoundNetwork.OnValueChanged -= OnRoundChanged;
+        CountdownNetwork.OnValueChanged -= OnCountdownChanged;
+        GameLostNetwork.OnValueChanged -= OnGameLostChanged;
+    }
+
+    // =========================================================
+    // CAMBIOS DE RED
+    // =========================================================
+
+    private void OnRoundChanged(int previousValue, int newValue)
+    {
+        // El HUD principal lee directamente CurrentRoundNetwork.
+    }
+
+    private void OnCountdownChanged(
+        int previousValue,
+        int newValue
+    )
+    {
+        if (roundStartHUD == null)
+            return;
+
+        if (newValue > 0)
+        {
+            roundStartHUD.Show(
+                CurrentRoundNetwork.Value,
+                newValue
+            );
+        }
+        else if (previousValue > 0)
+        {
+            roundStartHUD.Show(
+                CurrentRoundNetwork.Value,
+                0
+            );
+        }
+    }
+
+    private void OnGameLostChanged(
+        bool previousValue,
+        bool newValue
+    )
+    {
+        if (newValue)
+        {
+            MostrarDerrota();
+        }
+    }
+
+    // =========================================================
+    // INICIAR RONDA
+    // =========================================================
+
     public void StartRound(int round)
     {
-        currentRound = round;
+        if (!IsServer)
+            return;
 
-        zombiesThisRound =
+        CurrentRoundNetwork.Value = round;
+
+        ZombiesThisRoundNetwork.Value =
             startingZombies +
-            (currentRound - 1) * zombiesPerRound;
+            (round - 1) * zombiesPerRound;
 
-        aliveZombies = zombiesThisRound;
+        AliveZombiesNetwork.Value =
+            ZombiesThisRoundNetwork.Value;
 
         roundInProgress = true;
         countdownInProgress = false;
-        countdownRemaining = 0;
+
+        CountdownNetwork.Value = 0;
 
         if (roundStartHUD != null)
             roundStartHUD.Hide();
 
-        SpawnZombies(zombiesThisRound);
+        SpawnZombies(
+            ZombiesThisRoundNetwork.Value
+        );
 
         Debug.Log(
-            "Ronda " + currentRound +
+            "Ronda " +
+            CurrentRoundNetwork.Value +
             " iniciada. Zombies: " +
-            zombiesThisRound
+            ZombiesThisRoundNetwork.Value
         );
     }
 
+    // =========================================================
+    // SPAWN DE ZOMBIES
+    // =========================================================
+
     private void SpawnZombies(int amount)
     {
+        if (!IsServer)
+            return;
+
         if (zombiePrefab == null)
         {
             Debug.LogError(
@@ -94,7 +242,8 @@ public class RoundManager : MonoBehaviour
             return;
         }
 
-        if (spawnPoints == null || spawnPoints.Length == 0)
+        if (spawnPoints == null ||
+            spawnPoints.Length == 0)
         {
             Debug.LogError(
                 "RoundManager: no hay Spawn Points."
@@ -106,81 +255,126 @@ public class RoundManager : MonoBehaviour
         for (int i = 0; i < amount; i++)
         {
             Transform spawnPoint =
-                spawnPoints[i % spawnPoints.Length];
+                spawnPoints[
+                    i % spawnPoints.Length
+                ];
 
-            Instantiate(
-                zombiePrefab,
-                spawnPoint.position,
-                spawnPoint.rotation
-            );
+            GameObject zombieInstance =
+                Instantiate(
+                    zombiePrefab,
+                    spawnPoint.position,
+                    spawnPoint.rotation
+                );
+
+            NetworkObject netObj =
+                zombieInstance.GetComponent<NetworkObject>();
+
+            if (netObj != null)
+            {
+                netObj.Spawn();
+            }
+            else
+            {
+                Debug.LogError(
+                    "RoundManager: el zombiePrefab no tiene NetworkObject asignado."
+                );
+            }
         }
     }
 
+    // =========================================================
+    // ZOMBIE MUERE
+    // =========================================================
+
     public void ZombieDied()
     {
+        if (!IsServer)
+            return;
+
         if (!roundInProgress)
             return;
 
-        aliveZombies--;
+        AliveZombiesNetwork.Value--;
 
-        if (aliveZombies < 0)
-            aliveZombies = 0;
+        if (AliveZombiesNetwork.Value < 0)
+        {
+            AliveZombiesNetwork.Value = 0;
+        }
 
         Debug.Log(
             "Zombie muerto. Restantes: " +
-            aliveZombies
+            AliveZombiesNetwork.Value
         );
 
-        if (aliveZombies <= 0)
+        if (AliveZombiesNetwork.Value <= 0)
         {
             EndRound();
         }
     }
 
+    // =========================================================
+    // JUGADOR MUERE
+    // =========================================================
+
     public void PlayerDied()
     {
+        if (!IsServer)
+            return;
+
         if (!roundInProgress)
             return;
 
         roundInProgress = false;
 
-        if (GameplayPopupsController.Instance != null)
-            GameplayPopupsController.Instance.MostrarPanelPerdedor();
-      
-        else
-            Debug.LogError("RoundManager: GameplayPopupsController.Instance es null, no se pudo mostrar el panel perdedor.");
+        // Se sincroniza con todos los clientes
+        GameLostNetwork.Value = true;
     }
+
+    private void MostrarDerrota()
+    {
+        if (GameplayPopupsController.Instance != null)
+        {
+            GameplayPopupsController.Instance
+                .MostrarPanelPerdedor();
+        }
+        else
+        {
+            Debug.LogError(
+                "RoundManager: GameplayPopupsController.Instance es null."
+            );
+        }
+    }
+
+    // =========================================================
+    // FIN DE RONDA
+    // =========================================================
 
     private void EndRound()
     {
+        if (!IsServer)
+            return;
+
         roundInProgress = false;
 
         if (GameplayPopupsController.Instance != null)
-            GameplayPopupsController.Instance.MostrarPanelGanador();
-      
+        {
+            GameplayPopupsController.Instance
+                .MostrarPanelGanador();
+        }
         else
-            Debug.LogError("RoundManager: GameplayPopupsController.Instance es null, no se pudo mostrar el panel ganador.");
-
-        if (currentRound >= maxRounds)
         {
-            Debug.Log("Ronda 5 completada.");
+            Debug.LogError(
+                "RoundManager: GameplayPopupsController.Instance es null."
+            );
+        }
 
-        if (roundStartHUD != null)
-            roundStartHUD.Hide();
-
-        // No hay ronda siguiente, el panel se queda mostrado sin acción de "siguiente".
-        return;
-    }
-
-    // Guarda la próxima ronda pero NO la arranca todavía.
-    pendingNextRound = currentRound + 1;
-    
-    /*roundInProgress = false;
-
-        // Si terminó la última ronda.
-        if (currentRound >= maxRounds)
+        if (CurrentRoundNetwork.Value >= maxRounds)
         {
-            Debug.Log("Ronda 5 completada.");
+            Debug.Log(
+                "Ronda " +
+                CurrentRoundNetwork.Value +
+                " completada."
+            );
 
             if (roundStartHUD != null)
                 roundStartHUD.Hide();
@@ -188,72 +382,72 @@ public class RoundManager : MonoBehaviour
             return;
         }
 
-        int nextRound = currentRound + 1;
+        pendingNextRound =
+            CurrentRoundNetwork.Value + 1;
+    }
+
+    // =========================================================
+    // CONFIRMAR SIGUIENTE RONDA
+    // =========================================================
+
+    public void ConfirmarSiguienteRonda()
+    {
+        if (!IsServer)
+            return;
+
+        if (pendingNextRound <= 0)
+            return;
+
+        int nextRound =
+            pendingNextRound;
+
+        pendingNextRound = 0;
 
         StartCoroutine(
             CountdownToNextRound(nextRound)
-        );*/
+        );
     }
 
-    public void ConfirmarSiguienteRonda()
-{
-    if (pendingNextRound <= 0)
-        return;
+    // =========================================================
+    // COUNTDOWN
+    // =========================================================
 
-    int nextRound = pendingNextRound;
-    pendingNextRound = 0;
-
-    StartCoroutine(
-        CountdownToNextRound(nextRound)
-    );
-}
-
-    private IEnumerator CountdownToNextRound(int nextRound)
+    private IEnumerator CountdownToNextRound(
+        int nextRound
+    )
     {
+        if (!IsServer)
+            yield break;
+
         if (countdownInProgress)
             yield break;
 
         countdownInProgress = true;
 
-        if (roundStartHUD != null)
-            roundStartHUD.Show(nextRound, 5);
+        // Actualizamos la ronda antes del countdown
+        CurrentRoundNetwork.Value = nextRound;
 
-        countdownRemaining = 5;
-
-        yield return new WaitForSeconds(1f);
-
-        countdownRemaining = 4;
-
-        if (roundStartHUD != null)
-            roundStartHUD.Show(nextRound, 4);
+        CountdownNetwork.Value = 5;
 
         yield return new WaitForSeconds(1f);
 
-        countdownRemaining = 3;
-
-        if (roundStartHUD != null)
-            roundStartHUD.Show(nextRound, 3);
+        CountdownNetwork.Value = 4;
 
         yield return new WaitForSeconds(1f);
 
-        countdownRemaining = 2;
-
-        if (roundStartHUD != null)
-            roundStartHUD.Show(nextRound, 2);
+        CountdownNetwork.Value = 3;
 
         yield return new WaitForSeconds(1f);
 
-        countdownRemaining = 1;
-
-        if (roundStartHUD != null)
-            roundStartHUD.Show(nextRound, 1);
+        CountdownNetwork.Value = 2;
 
         yield return new WaitForSeconds(1f);
 
-        countdownRemaining = 0;
+        CountdownNetwork.Value = 1;
 
-        if (roundStartHUD != null)
-            roundStartHUD.Show(nextRound, 0);
+        yield return new WaitForSeconds(1f);
+
+        CountdownNetwork.Value = 0;
 
         yield return new WaitForSeconds(0.2f);
 
@@ -261,14 +455,4 @@ public class RoundManager : MonoBehaviour
 
         StartRound(nextRound);
     }
-
-    // --- prueba ---
- /*   private void Update()
-{
-    // SOLO PARA TESTING - sacar antes de entregar
-    if (Keyboard.current != null && Keyboard.current.pKey.wasPressedThisFrame)
-    {
-        ZombieDied();
-    }
-}*/
 }

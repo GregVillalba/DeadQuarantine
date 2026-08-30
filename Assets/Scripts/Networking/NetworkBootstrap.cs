@@ -30,6 +30,11 @@ public class NetworkBootstrap : MonoBehaviour
 
     public ISession CurrentSession => currentSession;
 
+
+    // ============================================================
+    // AWAKE
+    // ============================================================
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -39,19 +44,31 @@ public class NetworkBootstrap : MonoBehaviour
         }
 
         Instance = this;
+
         DontDestroyOnLoad(gameObject);
     }
+
+
+    // ============================================================
+    // START
+    // ============================================================
 
     private async void Start()
     {
         await EnsureServicesInitialized();
     }
 
+
+    // ============================================================
+    // INICIALIZAR UNITY SERVICES
+    // ============================================================
+
     private async Task EnsureServicesInitialized()
     {
         try
         {
-            if (UnityServices.State != ServicesInitializationState.Initialized)
+            if (UnityServices.State !=
+                ServicesInitializationState.Initialized)
             {
                 await UnityServices.InitializeAsync();
             }
@@ -76,6 +93,7 @@ public class NetworkBootstrap : MonoBehaviour
         }
     }
 
+
     // ============================================================
     // CREAR SALA
     // ============================================================
@@ -84,21 +102,21 @@ public class NetworkBootstrap : MonoBehaviour
     {
         try
         {
-            // IMPORTANTE:
-            // No ponemos WithRelayNetwork() acá.
-            // La sesión se crea primero y Relay se inicia
-            // cuando ambos jugadores estén listos.
-
-            SessionOptions options = new SessionOptions
-            {
-                MaxPlayers = maxConnections
-            };
+            SessionOptions options =
+                new SessionOptions
+                {
+                    MaxPlayers = maxConnections
+                };
 
             currentSession =
                 await MultiplayerService.Instance
                     .CreateSessionAsync(options);
 
-            CurrentJoinCode = currentSession.Code;
+            currentSession.PlayerJoined += OnPlayerJoined;
+            currentSession.PlayerLeaving += OnPlayerLeft;
+
+            CurrentJoinCode =
+                currentSession.Code;
 
             Debug.Log(
                 "[Network] Sala creada. Código: " +
@@ -117,6 +135,7 @@ public class NetworkBootstrap : MonoBehaviour
             return null;
         }
     }
+
 
     // ============================================================
     // UNIRSE
@@ -139,11 +158,19 @@ public class NetworkBootstrap : MonoBehaviour
                 await MultiplayerService.Instance
                     .JoinSessionByCodeAsync(joinCode);
 
-            CurrentJoinCode = joinCode;
+            currentSession.PlayerJoined += OnPlayerJoined;
+            currentSession.PlayerLeaving += OnPlayerLeft;
+
+            /*
+             * IMPORTANTE:
+             * Usamos el código REAL de la sesión.
+             */
+            CurrentJoinCode =
+                currentSession.Code;
 
             Debug.Log(
                 "[Network] Unido a la sala: " +
-                joinCode
+                CurrentJoinCode
             );
 
             return true;
@@ -159,6 +186,7 @@ public class NetworkBootstrap : MonoBehaviour
         }
     }
 
+
     // ============================================================
     // JUGADORES
     // ============================================================
@@ -169,63 +197,38 @@ public class NetworkBootstrap : MonoBehaviour
                currentSession.Players.Count >= 2;
     }
 
+
     // ============================================================
-    // READY
+    // EVENTOS DE JUGADORES
     // ============================================================
 
-    public async Task SetReady(bool ready)
+    private void OnPlayerJoined(string playerId)
     {
-        if (currentSession == null)
-            return;
-
-        // Usamos el constructor simple para evitar
-        // el problema con VisibilityOptions.
-
-        PlayerProperty property =
-            new PlayerProperty(
-                ready ? "true" : "false"
-            );
-
-        currentSession.CurrentPlayer.SetProperty(
-            "ready",
-            property
+        Debug.Log(
+            "[Network] PLAYER JOINED: " +
+            playerId
         );
-
-        await currentSession.SaveCurrentPlayerDataAsync();
 
         Debug.Log(
-            "[Network] Ready = " + ready
+            "[Network] Jugadores actuales: " +
+            currentSession.Players.Count
         );
     }
 
-    public bool IsPlayerReady(IReadOnlyPlayer player)
-    {
-        if (player.Properties.TryGetValue(
-            "ready",
-            out PlayerProperty property))
-        {
-            return property.Value == "true";
-        }
 
-        return false;
+    private void OnPlayerLeft(string playerId)
+    {
+        Debug.Log(
+            "[Network] PLAYER LEFT: " +
+            playerId
+        );
+
+        Debug.Log(
+            "[Network] Jugadores actuales: " +
+            currentSession.Players.Count
+        );
     }
 
-    public bool BothPlayersReady()
-    {
-        if (currentSession == null)
-            return false;
-
-        if (currentSession.Players.Count < 2)
-            return false;
-
-        foreach (var player in currentSession.Players)
-        {
-            if (!IsPlayerReady(player))
-                return false;
-        }
-
-        return true;
-    }
 
     // ============================================================
     // EMPEZAR PARTIDA
@@ -233,10 +236,27 @@ public class NetworkBootstrap : MonoBehaviour
 
     public async Task StartMultiplayerGame()
     {
-        if (!IsHost)
+        Debug.Log(
+            "[Network] ===== START MULTIPLAYER GAME ====="
+        );
+
+        // ============================================================
+        // VALIDACIONES
+        // ============================================================
+
+        if (currentSession == null)
         {
-            Debug.LogWarning(
-                "[Network] Solo el Host puede comenzar."
+            Debug.LogError(
+                "[Network] currentSession es NULL."
+            );
+
+            return;
+        }
+
+        if (!currentSession.IsHost)
+        {
+            Debug.LogError(
+                "[Network] Esta instancia no es el Host."
             );
 
             return;
@@ -244,64 +264,171 @@ public class NetworkBootstrap : MonoBehaviour
 
         if (!BothPlayersConnected())
         {
-            Debug.LogWarning(
+            Debug.LogError(
                 "[Network] No hay dos jugadores."
             );
 
             return;
         }
 
-        if (!BothPlayersReady())
-        {
-            Debug.LogWarning(
-                "[Network] Los dos jugadores no están listos."
-            );
-
-            return;
-        }
-
         Debug.Log(
-            "[Network] Ambos jugadores listos."
+            "[Network] Validaciones correctas."
         );
 
         try
         {
-            /*
-             * En esta versión de Multiplayer Services,
-             * StartRelayNetworkAsync requiere RelayNetworkOptions.
-             *
-             * Usamos la configuración por defecto.
-             */
+            // ========================================================
+            // ESTADO INICIAL DE LA RED
+            // ========================================================
 
-            await currentSession
-                .AsHost()
-                .Network
-                .StartRelayNetworkAsync(
-                    new RelayNetworkOptions()
+            Debug.Log(
+                "[Network] Estado de red antes de Relay: " +
+                currentSession.Network.State
+            );
+
+
+            // ========================================================
+            // EVENTOS DE RED
+            // ========================================================
+
+            currentSession.Network.StateChanged += OnNetworkStateChanged;
+            currentSession.Network.StartFailed += OnNetworkStartFailed;
+
+
+            // ========================================================
+            // INICIAR RELAY
+            // ========================================================
+
+            Debug.Log(
+                "[Network] >>> INICIANDO RELAY <<<"
+            );
+
+            Task relayTask =
+                currentSession
+                    .AsHost()
+                    .Network
+                    .StartRelayNetworkAsync(
+                        new RelayNetworkOptions()
+                    );
+
+
+            // Esperamos a que StartRelayNetworkAsync termine.
+            await relayTask;
+
+
+            Debug.Log(
+                "[Network] >>> StartRelayNetworkAsync TERMINÓ <<<"
+            );
+
+            Debug.Log(
+                "[Network] Estado de red: " +
+                currentSession.Network.State
+            );
+
+
+            // ========================================================
+            // ESPERAR A QUE LA RED ESTÉ STARTED
+            // ========================================================
+
+            float tiempoEsperado = 0f;
+
+            while (
+                currentSession.Network.State !=
+                NetworkState.Started
+            )
+            {
+                await Task.Delay(100);
+
+                tiempoEsperado += 0.1f;
+
+                Debug.Log(
+                    "[Network] Estado de red: " +
+                    currentSession.Network.State
+                );
+
+                if (tiempoEsperado >= 10f)
+                {
+                    Debug.LogError(
+                        "[Network] La red no llegó a NetworkState.Started."
+                    );
+
+                    return;
+                }
+            }
+
+
+            Debug.Log(
+                "[Network] >>> RED INICIADA CORRECTAMENTE <<<"
+            );
+
+
+            // ========================================================
+            // NETWORK MANAGER
+            // ========================================================
+
+            if (NetworkManager.Singleton == null)
+            {
+                Debug.LogError(
+                    "[Network] NetworkManager.Singleton es NULL."
+                );
+
+                return;
+            }
+
+            Debug.Log(
+                "[Network] NetworkManager encontrado."
+            );
+
+            Debug.Log(
+                "[Network] IsListening: " +
+                NetworkManager.Singleton.IsListening
+            );
+
+
+            // ========================================================
+            // CARGAR ESCENA
+            // ========================================================
+
+            Debug.Log(
+                "[Network] >>> CARGANDO MainSceneMultiPlayer <<<"
+            );
+
+            var resultado =
+                NetworkManager.Singleton.SceneManager.LoadScene(
+                    "MainSceneMultiPlayer",
+                    LoadSceneMode.Single
                 );
 
             Debug.Log(
-                "[Network] Relay iniciado."
-            );
-
-            await Task.Yield();
-
-            Debug.Log(
-                "[Network] Cargando MainSceneMultiPlayer..."
-            );
-
-            NetworkManager.Singleton.SceneManager.LoadScene(
-                "MainSceneMultiPlayer",
-                LoadSceneMode.Single
+                "[Network] Resultado LoadScene: " +
+                resultado
             );
         }
         catch (Exception e)
         {
             Debug.LogError(
-                "[Network] Error iniciando partida: " +
-                e.Message
+                "[Network] EXCEPCIÓN EN StartMultiplayerGame:"
             );
+
+            Debug.LogException(e);
         }
+    }
+
+
+    private void OnNetworkStateChanged(NetworkState state)
+    {
+        Debug.Log(
+            "[Network] NetworkState cambió a: " +
+            state
+        );
+    }
+
+    private void OnNetworkStartFailed(SessionError error)
+    {
+        Debug.LogError(
+            "[Network] ERROR iniciando Network: " +
+            error
+        );
     }
 
     // ============================================================
@@ -315,6 +442,7 @@ public class NetworkBootstrap : MonoBehaviour
             if (currentSession != null)
             {
                 await currentSession.LeaveAsync();
+
                 currentSession = null;
             }
 

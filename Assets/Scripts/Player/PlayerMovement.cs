@@ -1,8 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Unity.Netcode;
 
 [RequireComponent(typeof(CharacterController))]
-public class PlayerMovement : MonoBehaviour
+public class PlayerMovement : NetworkBehaviour
 {
     [SerializeField] private Transform cameraTransform;
     [SerializeField] private float moveSpeed = 5f;
@@ -10,8 +11,6 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float jumpForce = 6f;
     [SerializeField] private float gravity = -15f;
     [SerializeField] private float groundedVelocity = -2f;
-    [SerializeField] private Animator thirdPersonAnimator;
-    [SerializeField] private Weapon weapon;
 
     [Header("Estamina")]
     [SerializeField] private float maxStamina = 5f;
@@ -34,8 +33,6 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 moveInput;
     private float velocityY;
     private bool isExhausted;
-    
-    
 
     private float standingHeight;
     private Vector3 standingCenter;
@@ -53,22 +50,34 @@ public class PlayerMovement : MonoBehaviour
         standingCenter = characterController.center;
         standingCameraPosition = cameraTransform.localPosition;
 
-        crouchCenter = new Vector3(standingCenter.x, crouchHeight / 2f, standingCenter.z);
+        crouchCenter = new Vector3(
+            standingCenter.x,
+            crouchHeight / 2f,
+            standingCenter.z
+        );
 
-        float heightDifference = standingHeight - crouchHeight;
-        crouchCameraPosition = standingCameraPosition - new Vector3(0f, heightDifference, 0f);
+        float heightDifference =
+            standingHeight - crouchHeight;
+
+        crouchCameraPosition =
+            standingCameraPosition -
+            new Vector3(0f, heightDifference, 0f);
     }
+
     private void Start()
     {
-        if (thirdPersonAnimator != null)
-        {
-            thirdPersonAnimator.SetInteger("old_pistol", 0);
-        }
+        if (IsSpawned && !IsOwner)
+            return;
     }
 
     private void OnEnable()
     {
+        // El Player remoto NO procesa input.
+        if (IsSpawned && !IsOwner)
+            return;
+
         controls.Player.Enable();
+
         controls.Player.Move.performed += OnMove;
         controls.Player.Move.canceled += OnMove;
         controls.Player.Jump.performed += OnJump;
@@ -76,20 +85,53 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnDisable()
     {
+        if (controls == null)
+            return;
+
         controls.Player.Move.performed -= OnMove;
         controls.Player.Move.canceled -= OnMove;
         controls.Player.Jump.performed -= OnJump;
+
         controls.Player.Disable();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        if (!IsOwner)
+        {
+            enabled = false;
+            return;
+        }
+
+        controls.Player.Enable();
+
+        Debug.Log(
+            "[PlayerMovement] Player local inicializado. ClientId: " +
+            OwnerClientId
+        );
     }
 
     private void OnMove(InputAction.CallbackContext context)
     {
         moveInput = context.ReadValue<Vector2>();
+
+        Debug.Log(
+            "[MOVEMENT] " +
+            gameObject.name +
+            " input = " +
+            moveInput
+        );
     }
 
     private void OnJump(InputAction.CallbackContext context)
     {
-        if (characterController.isGrounded && !IsCrouching)
+        if (!IsOwner)
+            return;
+
+        if (
+            characterController.isGrounded &&
+            !IsCrouching
+        )
         {
             velocityY = jumpForce;
         }
@@ -102,54 +144,142 @@ public class PlayerMovement : MonoBehaviour
         ApplyGravity();
 
         float currentSpeed = moveSpeed;
-        if (IsCrouching) currentSpeed = crouchSpeed;
-        else if (IsSprinting) currentSpeed = sprintSpeed;
 
-        Vector3 horizontalMovement = transform.right * moveInput.x + transform.forward * moveInput.y;
-        Vector3 fullMovement = horizontalMovement * currentSpeed + Vector3.up * velocityY;
+        if (IsCrouching)
+            currentSpeed = crouchSpeed;
+        else if (IsSprinting)
+            currentSpeed = sprintSpeed;
 
-        characterController.Move(fullMovement * Time.deltaTime);
+        Vector3 horizontalMovement =
+            transform.right * moveInput.x +
+            transform.forward * moveInput.y;
+
+        Vector3 fullMovement =
+            horizontalMovement * currentSpeed +
+            Vector3.up * velocityY;
+
+        Vector3 beforePosition = transform.position;
+
+        CollisionFlags flags =
+            characterController.Move(
+                fullMovement * Time.deltaTime
+            );
+
+        Vector3 afterPosition = transform.position;
+
+        if (moveInput != Vector2.zero)
+        {
+            Debug.Log(
+                "[MOVEMENT DEBUG] " +
+                gameObject.name +
+                " | MoveInput=" + moveInput +
+                " | Speed=" + currentSpeed +
+                " | CC Enabled=" + characterController.enabled +
+                " | Before=" + beforePosition +
+                " | After=" + afterPosition +
+                " | CollisionFlags=" + flags
+            );
+        }
     }
 
     private void HandleCrouch()
     {
-        bool wantsToCrouch = controls.Player.Crouch.IsPressed();
+        if (!IsOwner)
+            return;
+
+        bool wantsToCrouch =
+            controls.Player.Crouch.IsPressed();
 
         if (wantsToCrouch && !IsCrouching)
         {
             IsCrouching = true;
         }
-        else if (!wantsToCrouch && IsCrouching && CanStandUp())
+        else if (
+            !wantsToCrouch &&
+            IsCrouching &&
+            CanStandUp()
+        )
         {
             IsCrouching = false;
         }
 
-        float targetHeight = IsCrouching ? crouchHeight : standingHeight;
-        Vector3 targetCenter = IsCrouching ? crouchCenter : standingCenter;
-        Vector3 targetCameraPosition = IsCrouching ? crouchCameraPosition : standingCameraPosition;
+        float targetHeight =
+            IsCrouching
+                ? crouchHeight
+                : standingHeight;
 
-        characterController.height = Mathf.Lerp(characterController.height, targetHeight, crouchTransitionSpeed * Time.deltaTime);
-        characterController.center = Vector3.Lerp(characterController.center, targetCenter, crouchTransitionSpeed * Time.deltaTime);
-        cameraTransform.localPosition = Vector3.Lerp(cameraTransform.localPosition, targetCameraPosition, crouchTransitionSpeed * Time.deltaTime);
+        Vector3 targetCenter =
+            IsCrouching
+                ? crouchCenter
+                : standingCenter;
+
+        Vector3 targetCameraPosition =
+            IsCrouching
+                ? crouchCameraPosition
+                : standingCameraPosition;
+
+        characterController.height =
+            Mathf.Lerp(
+                characterController.height,
+                targetHeight,
+                crouchTransitionSpeed *
+                Time.deltaTime
+            );
+
+        characterController.center =
+            Vector3.Lerp(
+                characterController.center,
+                targetCenter,
+                crouchTransitionSpeed *
+                Time.deltaTime
+            );
+
+        cameraTransform.localPosition =
+            Vector3.Lerp(
+                cameraTransform.localPosition,
+                targetCameraPosition,
+                crouchTransitionSpeed *
+                Time.deltaTime
+            );
     }
 
     private bool CanStandUp()
     {
-        float checkDistance = standingHeight - crouchHeight;
-        Vector3 origin = transform.position + Vector3.up * crouchHeight;
-        return !Physics.Raycast(origin, Vector3.up, checkDistance);
+        float checkDistance =
+            standingHeight - crouchHeight;
+
+        Vector3 origin =
+            transform.position +
+            Vector3.up * crouchHeight;
+
+        return !Physics.Raycast(
+            origin,
+            Vector3.up,
+            checkDistance
+        );
     }
 
     private void HandleStamina()
     {
-        bool isAiming = weapon != null && weapon.IsAiming;
+        if (!IsOwner)
+            return;
 
-        bool wantsToSprint = controls.Player.Sprint.IsPressed() && moveInput.magnitude > 0.1f && !isExhausted && !IsCrouching && !isAiming;
+        bool wantsToSprint =
+            controls.Player.Sprint.IsPressed() &&
+            moveInput.magnitude > 0.1f &&
+            !isExhausted &&
+            !IsCrouching;
 
-        if (wantsToSprint && CurrentStamina > 0f)
+        if (
+            wantsToSprint &&
+            CurrentStamina > 0f
+        )
         {
             IsSprinting = true;
-            CurrentStamina -= staminaDrainRate * Time.deltaTime;
+
+            CurrentStamina -=
+                staminaDrainRate *
+                Time.deltaTime;
 
             if (CurrentStamina <= 0f)
             {
@@ -161,10 +291,24 @@ public class PlayerMovement : MonoBehaviour
         else
         {
             IsSprinting = false;
-            CurrentStamina += staminaRegenRate * Time.deltaTime;
-            CurrentStamina = Mathf.Clamp(CurrentStamina, 0f, maxStamina);
 
-            if (isExhausted && CurrentStamina >= maxStamina * exhaustedRecoverThreshold)
+            CurrentStamina +=
+                staminaRegenRate *
+                Time.deltaTime;
+
+            CurrentStamina =
+                Mathf.Clamp(
+                    CurrentStamina,
+                    0f,
+                    maxStamina
+                );
+
+            if (
+                isExhausted &&
+                CurrentStamina >=
+                maxStamina *
+                exhaustedRecoverThreshold
+            )
             {
                 isExhausted = false;
             }
@@ -173,13 +317,21 @@ public class PlayerMovement : MonoBehaviour
 
     private void ApplyGravity()
     {
-        if (characterController.isGrounded && velocityY < 0f)
+        if (!IsOwner)
+            return;
+
+        if (
+            characterController.isGrounded &&
+            velocityY < 0f
+        )
         {
             velocityY = groundedVelocity;
         }
         else
         {
-            velocityY += gravity * Time.deltaTime;
+            velocityY +=
+                gravity *
+                Time.deltaTime;
         }
     }
 }

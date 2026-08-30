@@ -1,9 +1,9 @@
 using UnityEngine;
 using UnityEngine.AI;
+using Unity.Netcode;
 
-public class ZombieAI : MonoBehaviour
+public class ZombieAI : NetworkBehaviour
 {
-    [SerializeField] private Transform target;
     [SerializeField] private float attackRange = 1.8f;
     [SerializeField] private int attackDamage = 10;
     [SerializeField] private float attackCooldown = 1.5f;
@@ -11,8 +11,10 @@ public class ZombieAI : MonoBehaviour
     private NavMeshAgent agent;
     private Animator animator;
     private ZombieHealth zombieHealth;
-    private float nextAttackTime;
     private ZombieAudio zombieAudio;
+
+    private float nextAttackTime;
+    private Transform target;
 
     private void Awake()
     {
@@ -22,21 +24,45 @@ public class ZombieAI : MonoBehaviour
         zombieAudio = GetComponent<ZombieAudio>();
     }
 
-    private void Start()
+    public override void OnNetworkSpawn()
     {
-        if (target == null)
+        Debug.Log(
+            "[ZombieAI] Spawn | " +
+            gameObject.name +
+            " | IsServer=" + IsServer +
+            " | IsClient=" + IsClient
+        );
+
+        // La IA solamente funciona en el servidor.
+        if (!IsServer)
         {
-            GameObject player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null) target = player.transform;
+            enabled = false;
+            return;
         }
+
+        // El servidor busca inmediatamente
+        // al jugador más cercano.
+        FindClosestPlayer();
     }
 
     private void Update()
     {
-        if (zombieHealth != null && zombieHealth.IsDead) return;
-        if (target == null) return;
+        if (!IsServer)
+            return;
 
-        float distanceToTarget = Vector3.Distance(transform.position, target.position);
+        if (zombieHealth != null && zombieHealth.IsDead)
+            return;
+
+        FindClosestPlayer();
+
+        if (target == null)
+            return;
+
+        float distanceToTarget =
+            Vector3.Distance(
+                transform.position,
+                target.position
+            );
 
         if (distanceToTarget <= attackRange)
         {
@@ -46,10 +72,49 @@ public class ZombieAI : MonoBehaviour
         else
         {
             agent.isStopped = false;
-            agent.SetDestination(target.position);
+
+            if (agent.isOnNavMesh)
+            {
+                agent.SetDestination(target.position);
+            }
         }
 
         UpdateAnimator();
+    }
+
+    private void FindClosestPlayer()
+    {
+        if (NetworkManager.Singleton == null)
+            return;
+
+        float closestDistance = Mathf.Infinity;
+        Transform closestPlayer = null;
+
+        foreach (
+            NetworkClient client
+            in NetworkManager.Singleton.ConnectedClientsList
+        )
+        {
+            if (client.PlayerObject == null)
+                continue;
+
+            Transform player =
+                client.PlayerObject.transform;
+
+            float distance =
+                Vector3.Distance(
+                    transform.position,
+                    player.position
+                );
+
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestPlayer = player;
+            }
+        }
+
+        target = closestPlayer;
     }
 
     private void TryAttack()
@@ -57,13 +122,17 @@ public class ZombieAI : MonoBehaviour
         if (Time.time < nextAttackTime)
             return;
 
-        nextAttackTime = Time.time + attackCooldown;
+        nextAttackTime =
+            Time.time + attackCooldown;
 
         if (animator != null)
             animator.SetTrigger("Attack");
 
         if (zombieAudio != null)
             zombieAudio.PlayAttackSound();
+
+        if (target == null)
+            return;
 
         PlayerHealth playerHealth =
             target.GetComponentInParent<PlayerHealth>();
@@ -73,24 +142,26 @@ public class ZombieAI : MonoBehaviour
             playerHealth.TakeDamage(attackDamage);
 
             Debug.Log(
-                "Zombie hizo " +
-                attackDamage +
-                " de daño al jugador."
-            );
-        }
-        else
-        {
-            Debug.LogWarning(
-                "Zombie no encontró PlayerHealth en el objetivo."
+                "[ZombieAI] Zombie atacó a Player " +
+                playerHealth.name
             );
         }
     }
 
     private void UpdateAnimator()
     {
-        if (animator == null) return;
+        if (animator == null)
+            return;
 
-        float speed = agent.velocity.magnitude;
-        animator.SetFloat("Speed", speed);
+        if (agent == null || !agent.isOnNavMesh)
+            return;
+
+        float speed =
+            agent.velocity.magnitude;
+
+        animator.SetFloat(
+            "Speed",
+            speed
+        );
     }
 }

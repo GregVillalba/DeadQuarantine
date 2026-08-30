@@ -6,236 +6,142 @@ using UnityEngine.InputSystem.UI;
 
 public class GameplayPopupsController : MonoBehaviour
 {
-    [Header("Paneles Emergentes")]
-    [SerializeField] private GameObject popupHistoria;
-    [SerializeField] private GameObject popupMenuHome;
+    [Header("Paneles de resultado")]
     [SerializeField] private GameObject panelGanador;
     [SerializeField] private GameObject panelPerdedor;
-    [SerializeField] private IntroScreenAnimator introAnimator;
 
-    [Header("Configuración Escenas")]
+    [Header("Configuración")]
     [SerializeField] private string nombreEscenaMenu = "PantallasUI";
 
-    [Header("Objetos a desactivar al pausar (HUD, etc.)")]
-    [SerializeField] private GameObject[] objetosParaDesactivar;
-
-    [Header("Control del jugador a desactivar al pausar")]
-    [SerializeField] private PlayerMovement playerMovement;
-    [SerializeField] private PlayerLook playerLook;
-    [SerializeField] private Weapon weapon;
-
-    [Header("Panel Ganador - Ronda")]
-   
-
-
     public static GameplayPopupsController Instance { get; private set; }
-
-
-    private bool juegoIniciado;
-    private bool estaPausado;
 
     private void Awake()
     {
         Instance = this;
-        if(SceneManager.GetActiveScene().name == "MainScene"){
-            if (EventSystem.current == null)
-            new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule)); // ← antes: StandaloneInputModule
 
-            if (introAnimator != null)
-                introAnimator.PlayIn();
-
-            if (popupMenuHome != null)
-                popupMenuHome.SetActive(false);
-
-            juegoIniciado = false;
-            SetEstadoPausa(true);
-        }
-        else
+        if (EventSystem.current == null)
         {
-            if (EventSystem.current == null)
-            new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
-
-            if (popupMenuHome != null)
-            popupMenuHome.SetActive(false);
-
-            // Arranca directo, sin popup de historia
-            juegoIniciado = true;
-            SetEstadoPausa(false);
+            new GameObject(
+                "EventSystem",
+                typeof(EventSystem),
+                typeof(InputSystemUIInputModule)
+            );
         }
 
-  /*      if (EventSystem.current == null)
-            new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule)); // ← antes: StandaloneInputModule
+        if (panelGanador != null)
+            panelGanador.SetActive(false);
 
-        if (introAnimator != null)
-            introAnimator.PlayIn();
-
-        if (popupMenuHome != null)
-            popupMenuHome.SetActive(false);
-
-        juegoIniciado = false;
-        SetEstadoPausa(true);*/
+        if (panelPerdedor != null)
+            panelPerdedor.SetActive(false);
     }
 
     private void Update()
     {
+        // Siguiente ronda desde el panel de ganador
         if (panelGanador != null && panelGanador.activeSelf)
         {
-            if (Keyboard.current != null && Keyboard.current.sKey.wasPressedThisFrame)
+            if (
+                Keyboard.current != null &&
+                Keyboard.current.sKey.wasPressedThisFrame
+            )
             {
-               // SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
                 OnSiguienteRondaPresionado();
             }
+
             return;
         }
 
-        if (Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame)
+        // Reintentar después de perder
+        if (
+            Keyboard.current != null &&
+            Keyboard.current.qKey.wasPressedThisFrame
+        )
         {
             ReintentarDespuesDePerder();
         }
-
-        if (!juegoIniciado) return;
-
-        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
-        {
-            TogglePausa();
-        }
-
-        EnforceCursorState();
-    }
-    
-    private void EnforceCursorState()
-    {
-        CursorLockMode expectedLock = estaPausado ? CursorLockMode.None : CursorLockMode.Locked;
-        bool expectedVisible = estaPausado;
-
-        if (Cursor.lockState != expectedLock)
-            Cursor.lockState = expectedLock;
-
-        if (Cursor.visible != expectedVisible)
-            Cursor.visible = expectedVisible;
     }
 
-    private void TogglePausa()
-    {
-        if (estaPausado)
-            VolverALaPartida();
-        else
-            AbrirConfirmarSalir();
-    }
-
-    // --- POPUP HISTORIA ---
-    public void CerrarHistoria()
-    {
-        if (introAnimator != null)
-        {
-            introAnimator.PlayOut(() =>
-            {
-                juegoIniciado = true;
-                SetEstadoPausa(false);
-            });
-        }
-        else
-        {
-            juegoIniciado = true;
-            SetEstadoPausa(false);
-        }
-    }
-
-    // --- MENÚ PAUSA ---
-    public void AbrirConfirmarSalir()
-    {
-        if (popupMenuHome != null)
-            popupMenuHome.SetActive(true);
-
-        SetEstadoPausa(true);
-    }
-
-    public void VolverALaPartida()
-    {
-        if (popupMenuHome != null)
-            popupMenuHome.SetActive(false);
-
-        SetEstadoPausa(false);
-    }
-
-    public void ReiniciarJuego()
-    {
-        Time.timeScale = 1f;
-        AudioListener.pause = false;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-    }
-
-    public void VolverAlMenuPrincipal()
-    {
-        Time.timeScale = 1f;
-        AudioListener.pause = false;
-        SceneManager.LoadScene(nombreEscenaMenu);
-    }
-
-    private void SetEstadoPausa(bool pausar)
-    {
-        estaPausado = pausar;
-
-        Time.timeScale = pausar ? 0f : 1f;
-        AudioListener.pause = pausar;
-
-        Cursor.visible = pausar;
-        Cursor.lockState = pausar ? CursorLockMode.None : CursorLockMode.Locked;
-
-        if (playerMovement != null) playerMovement.enabled = !pausar;
-        if (playerLook != null) playerLook.enabled = !pausar;
-        if (weapon != null) weapon.enabled = !pausar;
-
-        if (objetosParaDesactivar != null)
-        {
-            foreach (var go in objetosParaDesactivar)
-                if (go != null) go.SetActive(!pausar);
-        }
-    }
-    //================ GANADOR ==
+    // ============================================================
+    // GANADOR
+    // ============================================================
 
     public void MostrarPanelGanador()
     {
-    if (panelGanador != null) 
-    {
-        panelGanador.SetActive(true);
-        SetEstadoPausa(true);
+        if (panelGanador != null)
+        {
+            panelGanador.SetActive(true);
+        }
+        else
+        {
+            Debug.LogError(
+                "El panelGanador no está asignado en el Inspector."
+            );
+        }
     }
-        else Debug.LogError("El panelGanador no está asignado en el inspector.");
-    }
+
     public void OcultarPanelGanador()
     {
-        if (panelGanador != null) panelGanador.SetActive(false);
+        if (panelGanador != null)
+            panelGanador.SetActive(false);
     }
 
     private void OnSiguienteRondaPresionado()
     {
         OcultarPanelGanador();
-        SetEstadoPausa(false);
 
-        //if (RoundManager.Instance != null) RoundManager.Instance.ConfirmarSiguienteRonda();
-        if (RoundManager.Instance != null) RoundManager.Instance.StartRound(RoundManager.Instance.CurrentRound + 1);
+        if (RoundManager.Instance != null)
+        {
+            RoundManager.Instance.StartRound(
+                RoundManager.Instance.CurrentRound + 1
+            );
+        }
     }
- //================ PERDEDOR =====================
+
+    // ============================================================
+    // PERDEDOR
+    // ============================================================
+
     public void MostrarPanelPerdedor()
     {
-    if (panelPerdedor != null) 
-    {
-        panelPerdedor.SetActive(true);
-        SetEstadoPausa(true);
+        if (panelPerdedor != null)
+        {
+            panelPerdedor.SetActive(true);
+        }
+        else
+        {
+            Debug.LogError(
+                "El panelPerdedor no está asignado en el Inspector."
+            );
+        }
     }
-        else Debug.LogError("El panelPerdedor no está asignado en el inspector.");
-    }
+
     public void OcultarPanelPerdedor()
     {
-        if (panelPerdedor != null) panelPerdedor.SetActive(false);
+        if (panelPerdedor != null)
+            panelPerdedor.SetActive(false);
     }
 
     public void ReintentarDespuesDePerder()
     {
         OcultarPanelPerdedor();
-        SetEstadoPausa(false);
 
-        ReiniciarJuego();
+        Time.timeScale = 1f;
+        AudioListener.pause = false;
+
+        SceneManager.LoadScene(
+            SceneManager.GetActiveScene().name
+        );
+    }
+
+    // ============================================================
+    // VOLVER AL MENÚ
+    // ============================================================
+
+    public void VolverAlMenuPrincipal()
+    {
+        Time.timeScale = 1f;
+        AudioListener.pause = false;
+
+        SceneManager.LoadScene(nombreEscenaMenu);
     }
 }

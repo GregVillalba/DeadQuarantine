@@ -20994,12 +20994,12 @@ GameObject:
   m_Component:
   - component: {fileID: 743906675660740788}
   - component: {fileID: 2447260628304406095}
+  - component: {fileID: 6189086483092170042}
   - component: {fileID: 6608177231255014548}
   - component: {fileID: 3708671194836258994}
   - component: {fileID: 1732161291972723517}
   - component: {fileID: 615676994576246421}
   - component: {fileID: 4052097465454359484}
-  - component: {fileID: 6189086483092170042}
   - component: {fileID: 1996292083816822475}
   - component: {fileID: 4478834269503319619}
   m_Layer: 0
@@ -21023,6 +21023,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6832276281200379899}
+  - {fileID: 8861472214010452736}
+  - {fileID: 3939009676086942615}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!143 &2447260628304406095
@@ -21050,6 +21052,33 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 1, z: 0}
+--- !u!114 &6189086483092170042
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2752674126575035209}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 363112785
+  InScenePlacedSourceGlobalObjectIdHash: 363112785
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 0
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!114 &6608177231255014548
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21062,6 +21091,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a7b4d8e59fd2be7469205525cf346797, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerLook
+  ShowTopMostFoldoutHeaderGroup: 1
   cameraTransform: {fileID: 6832276281200379899}
   mouseSensitivity: 0.1
   minPitch: -80
@@ -21078,14 +21108,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa823245a22a4534ba60f749fa8d4b25, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
+  ShowTopMostFoldoutHeaderGroup: 1
   cameraTransform: {fileID: 6832276281200379899}
   moveSpeed: 4
   sprintSpeed: 6
   jumpForce: 6
   gravity: -15
   groundedVelocity: -2
-  thirdPersonAnimator: {fileID: 172907025505618570}
-  weapon: {fileID: 3873147708319045271}
   maxStamina: 5
   staminaDrainRate: 1.5
   staminaRegenRate: 1
@@ -21223,33 +21252,6 @@ MonoBehaviour:
   - {fileID: 8300000, guid: d2add02f58e61e640aba3ae9110591cb, type: 3}
   crouchClips: []
   movementThreshold: 0.1
---- !u!114 &6189086483092170042
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2752674126575035209}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 363112785
-  InScenePlacedSourceGlobalObjectIdHash: 363112785
-  m_InScenePlacedDisabledByDefault: 0
-  DeferredDespawnTick: 0
-  Ownership: 1
-  AlwaysReplicateAsRoot: 0
-  SynchronizeTransform: 1
-  m_InScenePlaced: 0
-  ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 0
-  SpawnWithObservers: 1
-  DontDestroyWithOwner: 0
-  AutoObjectParentSync: 1
-  SyncOwnerTransformWhenParented: 1
-  AllowOwnerToParent: 0
 --- !u!114 &1996292083816822475
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -47332,9 +47334,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 1.6, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 8861472214010452736}
-  - {fileID: 3939009676086942615}
+  m_Children: []
   m_Father: {fileID: 743906675660740788}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!20 &5539936941264764005
@@ -47568,7 +47568,7 @@ Transform:
   m_GameObject: {fileID: 8131158149844750480}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.76604444, z: -0, w: 0.64278764}
-  m_LocalPosition: {x: -0.008, y: -1.6, z: -0.047}
+  m_LocalPosition: {x: -0.008, y: 0, z: -0.047}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -47577,7 +47577,7 @@ Transform:
   - {fileID: 5892849097790208927}
   - {fileID: 532175292308765308}
   - {fileID: 1797867005096459889}
-  m_Father: {fileID: 6832276281200379899}
+  m_Father: {fileID: 743906675660740788}
   m_LocalEulerAnglesHint: {x: 0, y: 100, z: 0}
 --- !u!95 &172907025505618570
 Animator:
@@ -49122,14 +49122,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8570332882816917385}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.069, y: -0.026, z: 0.052}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.069, y: 1.5739994, z: 0.052}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1334411418741885948}
   - {fileID: 5922460915953011137}
-  m_Father: {fileID: 6832276281200379899}
+  m_Father: {fileID: 743906675660740788}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!20 &3790141141120844484
 Camera:

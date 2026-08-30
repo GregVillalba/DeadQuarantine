@@ -1,66 +1,162 @@
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.UI;
+using Unity.Netcode;
 
-public class ZombieHealth : MonoBehaviour
+public class ZombieHealth : NetworkBehaviour
 {
     [Header("--- SALUD ---")]
     [Tooltip("Cantidad de balazos que soporta el zombie antes de morir")]
     [SerializeField] private int maxHealth = 3;
+
     [SerializeField] private float destroyDelay = 3f;
 
     [Header("--- BARRA DE VIDA FLOTANTE ---")]
-    [Tooltip("Arrastra el Slider flotante que est· sobre su cabeza")]
+    [Tooltip("Arrastra el Slider flotante que est√° sobre su cabeza")]
     [SerializeField] private Slider healthSlider;
+
     [Tooltip("Arrastra el objeto Fill (dentro de Fill Area) para que cambie de color")]
     [SerializeField] private Image healthFillImage;
+
     [Tooltip("El Canvas completo, para ocultarlo al morir")]
     [SerializeField] private GameObject healthBarCanvas;
 
-    [Header("--- COLORES SEG⁄N VIDA ---")]
-    [SerializeField] private Color colorVidaAlta = Color.green;   // 3/3 (o m·s de 2/3 de vida)
-    [SerializeField] private Color colorVidaMedia = Color.yellow; // 2/3 de vida
-    [SerializeField] private Color colorVidaBaja = Color.red;     // 1/3 de vida o menos
+    [Header("--- COLORES SEG√öN VIDA ---")]
+    [SerializeField] private Color colorVidaAlta = Color.green;
+    [SerializeField] private Color colorVidaMedia = Color.yellow;
+    [SerializeField] private Color colorVidaBaja = Color.red;
 
-    public bool IsDead { get; private set; }
+    // =========================================================
+    // ESTADO DE RED
+    // =========================================================
 
-    private int currentHealth;
+    public NetworkVariable<int> CurrentHealth =
+        new NetworkVariable<int>(
+            3,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+
+    public NetworkVariable<bool> IsDeadNetwork =
+        new NetworkVariable<bool>(
+            false,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+
+    public bool IsDead => IsDeadNetwork.Value;
+
     private Animator animator;
     private NavMeshAgent agent;
     private ZombieAI zombieAI;
     private ZombieAudio zombieAudio;
 
+    // =========================================================
+    // AWAKE
+    // =========================================================
+
     private void Awake()
     {
-        currentHealth = maxHealth;
         animator = GetComponent<Animator>();
         agent = GetComponent<NavMeshAgent>();
         zombieAI = GetComponent<ZombieAI>();
         zombieAudio = GetComponent<ZombieAudio>();
+    }
 
-        // Inicializa los valores de la UI
+    // =========================================================
+    // NETWORK SPAWN
+    // =========================================================
+
+    public override void OnNetworkSpawn()
+    {
+        // El servidor establece la vida inicial.
+        if (IsServer)
+        {
+            CurrentHealth.Value = maxHealth;
+            IsDeadNetwork.Value = false;
+        }
+
+        // Todos los clientes escuchan cambios de vida.
+        CurrentHealth.OnValueChanged += OnHealthChanged;
+
+        // Todos escuchan cuando el zombie muere.
+        IsDeadNetwork.OnValueChanged += OnDeathStateChanged;
+
+        // Actualizar inmediatamente la barra.
         ActualizarBarraDeVida();
     }
 
-    public void TakeDamage(int amount)
+    // =========================================================
+    // NETWORK DESPAWN
+    // =========================================================
+
+    public override void OnNetworkDespawn()
     {
-        if (IsDead)
-            return;
+        CurrentHealth.OnValueChanged -= OnHealthChanged;
+        IsDeadNetwork.OnValueChanged -= OnDeathStateChanged;
+    }
 
-        currentHealth -= amount;
-        currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+    // =========================================================
+    // CAMBIO DE VIDA
+    // =========================================================
 
-        Debug.Log($"[ZombieHealth] RecibiÛ {amount} de daÒo. Vida actual: {currentHealth}/{maxHealth}");
-
-        // Actualiza el decremento visual en la barra
+    private void OnHealthChanged(
+        int previousHealth,
+        int newHealth
+    )
+    {
         ActualizarBarraDeVida();
 
-        if (currentHealth <= 0)
+        Debug.Log(
+            "[ZombieHealth] Vida sincronizada: " +
+            newHealth +
+            "/" +
+            maxHealth
+        );
+    }
+
+    // =========================================================
+    // RECIBIR DA√ëO
+    // =========================================================
+
+    public void TakeDamage(int amount)
+    {
+        // SOLO EL SERVIDOR MODIFICA LA VIDA.
+        if (!IsServer)
+            return;
+
+        if (IsDeadNetwork.Value)
+            return;
+
+        if (amount <= 0)
+            return;
+
+        CurrentHealth.Value -= amount;
+
+        CurrentHealth.Value = Mathf.Clamp(
+            CurrentHealth.Value,
+            0,
+            maxHealth
+        );
+
+        Debug.Log(
+            "[ZombieHealth] Recibi√≥ " +
+            amount +
+            " de da√±o. Vida actual: " +
+            CurrentHealth.Value +
+            "/" +
+            maxHealth
+        );
+
+        if (CurrentHealth.Value <= 0)
         {
             Die();
         }
         else
         {
+            // La animaci√≥n de Hit debe ejecutarse
+            // en el servidor y NetworkAnimator
+            // la replica al resto.
             if (animator != null)
                 animator.SetTrigger("Hit");
 
@@ -69,44 +165,67 @@ public class ZombieHealth : MonoBehaviour
         }
     }
 
+    // =========================================================
+    // BARRA DE VIDA
+    // =========================================================
+
     private void ActualizarBarraDeVida()
     {
-        float porcentaje = (float)currentHealth / maxHealth;
+        float porcentaje =
+            maxHealth > 0
+                ? (float)CurrentHealth.Value / maxHealth
+                : 0f;
 
-        // 1. Si est·s usando un Slider
+        // Slider
         if (healthSlider != null)
         {
             healthSlider.maxValue = maxHealth;
-            healthSlider.value = currentHealth;
+            healthSlider.value = CurrentHealth.Value;
         }
 
-        // 2. Si est·s usando una Image tipo Filled
+        // Image Filled
         if (healthFillImage != null)
         {
             healthFillImage.fillAmount = porcentaje;
-            healthFillImage.color = ObtenerColorSegunVida(porcentaje);
+            healthFillImage.color =
+                ObtenerColorSegunVida(porcentaje);
         }
     }
 
-    private Color ObtenerColorSegunVida(float porcentaje)
+    // =========================================================
+    // COLOR DE VIDA
+    // =========================================================
+
+    private Color ObtenerColorSegunVida(
+        float porcentaje
+    )
     {
-        // Con maxHealth = 3: 3/3 = 100% verde, 2/3 = 66% amarillo, 1/3 = 33% rojo
         if (porcentaje > 0.66f)
             return colorVidaAlta;
-        else if (porcentaje > 0.33f)
+
+        if (porcentaje > 0.33f)
             return colorVidaMedia;
-        else
-            return colorVidaBaja;
+
+        return colorVidaBaja;
     }
+
+    // =========================================================
+    // MUERTE
+    // =========================================================
 
     private void Die()
     {
-        if (IsDead)
+        // Solamente el servidor puede decidir
+        // que el zombie muri√≥.
+        if (!IsServer)
             return;
 
-        IsDead = true;
+        if (IsDeadNetwork.Value)
+            return;
 
-        // Oculta la barra de vida inmediatamente cuando el zombie cae
+        IsDeadNetwork.Value = true;
+
+        // Ocultar barra de vida.
         if (healthBarCanvas != null)
         {
             healthBarCanvas.SetActive(false);
@@ -116,24 +235,53 @@ public class ZombieHealth : MonoBehaviour
             healthSlider.gameObject.SetActive(false);
         }
 
+        // Desactivar IA.
         if (zombieAI != null)
             zombieAI.enabled = false;
 
-        if (agent != null)
+        // Desactivar NavMesh.
+        if (agent != null && agent.enabled)
             agent.enabled = false;
 
+        // Animaci√≥n de muerte.
         if (animator != null)
             animator.SetTrigger("Death");
 
+        // Sonido de muerte.
         if (zombieAudio != null)
             zombieAudio.PlayDeathSound();
 
-        // Avisar al sistema de rondas.
+        // Avisar al RoundManager.
         if (RoundManager.Instance != null)
         {
             RoundManager.Instance.ZombieDied();
         }
 
+        // Destruir despu√©s del delay.
         Destroy(gameObject, destroyDelay);
+    }
+
+    // =========================================================
+    // ESTADO DE MUERTE EN CLIENTES
+    // =========================================================
+
+    private void OnDeathStateChanged(
+        bool previousState,
+        bool newState
+    )
+    {
+        if (!newState)
+            return;
+
+        // Los clientes tambi√©n ocultan
+        // su barra de vida.
+        if (healthBarCanvas != null)
+        {
+            healthBarCanvas.SetActive(false);
+        }
+        else if (healthSlider != null)
+        {
+            healthSlider.gameObject.SetActive(false);
+        }
     }
 }
