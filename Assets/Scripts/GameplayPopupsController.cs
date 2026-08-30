@@ -94,9 +94,7 @@ public class GameplayPopupsController : MonoBehaviour
 
         if (RoundManager.Instance != null)
         {
-            RoundManager.Instance.StartRound(
-                RoundManager.Instance.CurrentRound + 1
-            );
+            RoundManager.Instance.ConfirmarSiguienteRonda();
         }
     }
 

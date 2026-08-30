@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Netcode;
 
 public class ThirdPersonSync : MonoBehaviour
 {
@@ -14,28 +15,61 @@ public class ThirdPersonSync : MonoBehaviour
     {
         if (thirdPersonAnimator != null)
         {
-            thirdPersonAnimator.SetInteger("old_pistol", 0);
+            thirdPersonAnimator.SetInteger(
+                "old_pistol",
+                0
+            );
         }
 
         if (weapon != null)
         {
-            currentAmmoLastFrame = weapon.CurrentAmmo;
+            currentAmmoLastFrame =
+                weapon.CurrentAmmo;
         }
     }
 
     private void Update()
     {
-        if (thirdPersonAnimator == null || weapon == null || characterController == null) return;
+        if (thirdPersonAnimator == null ||
+            weapon == null ||
+            characterController == null)
+            return;
 
-        float speed = characterController.velocity.magnitude;
+        // Solamente el jugador dueño genera
+        // los parámetros a partir de su input.
+        NetworkObject networkObject =
+            GetComponentInParent<NetworkObject>();
 
-        thirdPersonAnimator.SetFloat("TP_Speed", speed);
-        thirdPersonAnimator.SetBool("TP_IsAiming", weapon.IsAiming);
-        thirdPersonAnimator.SetBool("TP_IsEmpty", weapon.CurrentAmmo == 0);
+        if (networkObject != null &&
+            !networkObject.IsOwner)
+        {
+            return;
+        }
+
+        float speed =
+            characterController.velocity.magnitude;
+
+        thirdPersonAnimator.SetFloat(
+            "TP_Speed",
+            speed
+        );
+
+        thirdPersonAnimator.SetBool(
+            "TP_IsAiming",
+            weapon.IsAiming
+        );
+
+        thirdPersonAnimator.SetBool(
+            "TP_IsEmpty",
+            weapon.CurrentAmmo == 0
+        );
 
         if (playerMovement != null)
         {
-            thirdPersonAnimator.SetBool("TP_IsCrouching", playerMovement.IsCrouching);
+            thirdPersonAnimator.SetBool(
+                "TP_IsCrouching",
+                playerMovement.IsCrouching
+            );
         }
 
         DetectFire();
@@ -44,23 +78,32 @@ public class ThirdPersonSync : MonoBehaviour
 
     private void DetectFire()
     {
-        if (weapon.CurrentAmmo < currentAmmoLastFrame)
+        if (weapon.CurrentAmmo <
+            currentAmmoLastFrame)
         {
-            thirdPersonAnimator.SetTrigger("TP_Fire");
+            thirdPersonAnimator.SetTrigger(
+                "TP_Fire"
+            );
         }
 
-        currentAmmoLastFrame = weapon.CurrentAmmo;
+        currentAmmoLastFrame =
+            weapon.CurrentAmmo;
     }
 
     private void DetectReload()
     {
-        bool isReloadingNow = weapon.IsReloading;
+        bool isReloadingNow =
+            weapon.IsReloading;
 
-        if (isReloadingNow && !wasReloading)
+        if (isReloadingNow &&
+            !wasReloading)
         {
-            thirdPersonAnimator.SetTrigger("TP_Reload");
+            thirdPersonAnimator.SetTrigger(
+                "TP_Reload"
+            );
         }
 
-        wasReloading = isReloadingNow;
+        wasReloading =
+            isReloadingNow;
     }
 }

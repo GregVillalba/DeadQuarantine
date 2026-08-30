@@ -8,7 +8,6 @@ public class HUDController : MonoBehaviour
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private Weapon weapon;
 
-    // No hace falta asignarlo desde el Inspector.
     private RoundManager roundManager;
 
     [Header("Vida")]
@@ -29,7 +28,6 @@ public class HUDController : MonoBehaviour
     [Header("Rondas")]
     [SerializeField] private TextMeshProUGUI roundsText;
     [SerializeField] private TextMeshProUGUI zombiesText;
-    [SerializeField] private TextMeshProUGUI rondaTexto;
 
     [Header("Crosshair")]
     [SerializeField] private GameObject crosshairRoot;
@@ -40,9 +38,49 @@ public class HUDController : MonoBehaviour
     [SerializeField] private float crosshairMinGap = 6f;
     [SerializeField] private float crosshairMaxGap = 22f;
 
+    private void Awake()
+    {
+        roundManager =
+            FindFirstObjectByType<RoundManager>();
+    }
+
+    private void OnEnable()
+    {
+        if (roundManager == null)
+            roundManager =
+                FindFirstObjectByType<RoundManager>();
+
+        if (roundManager != null)
+        {
+            roundManager.CurrentRoundNetwork.OnValueChanged +=
+                OnRoundChanged;
+
+            roundManager.AliveZombiesNetwork.OnValueChanged +=
+                OnAliveZombiesChanged;
+
+            roundManager.ZombiesThisRoundNetwork.OnValueChanged +=
+                OnZombiesThisRoundChanged;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (roundManager != null)
+        {
+            roundManager.CurrentRoundNetwork.OnValueChanged -=
+                OnRoundChanged;
+
+            roundManager.AliveZombiesNetwork.OnValueChanged -=
+                OnAliveZombiesChanged;
+
+            roundManager.ZombiesThisRoundNetwork.OnValueChanged -=
+                OnZombiesThisRoundChanged;
+        }
+    }
+
     private void Start()
     {
-        roundManager = RoundManager.Instance;
+        ActualizarHUDRondas();
     }
 
     private void Update()
@@ -50,9 +88,12 @@ public class HUDController : MonoBehaviour
         UpdateHealthBar();
         UpdateStaminaBar();
         UpdateAmmoText();
-        UpdateRounds();
         UpdateCrosshair();
     }
+
+    // =========================================================
+    // VIDA DEL PLAYER
+    // =========================================================
 
     private void UpdateHealthBar()
     {
@@ -63,28 +104,42 @@ public class HUDController : MonoBehaviour
             (float)playerHealth.CurrentHealth.Value /
             playerHealth.MaxHealth;
 
-        healthFill.fillAmount = percentage;
+        if (healthFill != null)
+            healthFill.fillAmount = percentage;
 
-        healthPercentText.text =
-            Mathf.RoundToInt(percentage * 100f) + "%";
+        if (healthPercentText != null)
+        {
+            healthPercentText.text =
+                Mathf.RoundToInt(
+                    percentage * 100f
+                ) + "%";
+        }
 
-        healthFill.color =
-            percentage > 0.5f
-                ? Color.Lerp(
-                    healthColorHalf,
-                    healthColorFull,
-                    (percentage - 0.5f) / 0.5f
-                )
-                : Color.Lerp(
-                    healthColorLow,
-                    healthColorHalf,
-                    percentage / 0.5f
-                );
+        if (healthFill != null)
+        {
+            healthFill.color =
+                percentage > 0.5f
+                    ? Color.Lerp(
+                        healthColorHalf,
+                        healthColorFull,
+                        (percentage - 0.5f) / 0.5f
+                    )
+                    : Color.Lerp(
+                        healthColorLow,
+                        healthColorHalf,
+                        percentage / 0.5f
+                    );
+        }
     }
+
+    // =========================================================
+    // ESTAMINA
+    // =========================================================
 
     private void UpdateStaminaBar()
     {
-        if (playerMovement == null)
+        if (playerMovement == null ||
+            staminaFill == null)
             return;
 
         staminaFill.fillAmount =
@@ -92,56 +147,87 @@ public class HUDController : MonoBehaviour
             playerMovement.MaxStamina;
     }
 
+    // =========================================================
+    // MUNICIÓN
+    // =========================================================
+
     private void UpdateAmmoText()
     {
         if (weapon == null)
             return;
 
-        ammoText.text =
-            weapon.CurrentAmmo.ToString();
+        if (ammoText != null)
+            ammoText.text =
+                weapon.CurrentAmmo.ToString();
 
-        ammoMaxText.text =
-            "/ " + weapon.MaxAmmo;
+        if (ammoMaxText != null)
+            ammoMaxText.text =
+                "/ " + weapon.MaxAmmo;
 
-        weaponNameText.text =
-            weapon.WeaponName.ToUpper();
+        if (weaponNameText != null)
+            weaponNameText.text =
+                weapon.WeaponName.ToUpper();
     }
 
-    private void UpdateRounds()
+    // =========================================================
+    // RONDAS
+    // =========================================================
+
+    private void OnRoundChanged(
+        int previousValue,
+        int newValue
+    )
     {
-        // Por si RoundManager todavía no estaba disponible al iniciar.
+        ActualizarHUDRondas();
+    }
+
+    private void OnAliveZombiesChanged(
+        int previousValue,
+        int newValue
+    )
+    {
+        ActualizarHUDRondas();
+    }
+
+    private void OnZombiesThisRoundChanged(
+        int previousValue,
+        int newValue
+    )
+    {
+        ActualizarHUDRondas();
+    }
+
+    private void ActualizarHUDRondas()
+    {
         if (roundManager == null)
-        {
-            roundManager = RoundManager.Instance;
+            return;
 
-            if (roundManager == null)
-                return;
+        if (roundsText != null)
+        {
+            roundsText.text =
+                "RONDAS   " +
+                roundManager.CurrentRound +
+                "/" +
+                roundManager.MaxRounds;
         }
 
-        roundsText.text =
-            "RONDAS   " +
-            roundManager.CurrentRound +
-            "/" +
-            roundManager.MaxRounds;
-
-        zombiesText.text =
-            roundManager.AliveZombies +
-            "/" +
-            roundManager.ZombiesThisRound;
-
-        if(roundManager.CurrentRound != 5)
+        if (zombiesText != null)
         {
-            rondaTexto.text = "Ronda " + roundManager.CurrentRound;
-        }
-        else
-        {
-            rondaTexto.text = "Ronda Final";
+            zombiesText.text =
+                roundManager.AliveZombies +
+                "/" +
+                roundManager.ZombiesThisRound;
         }
     }
+
+    // =========================================================
+    // CROSSHAIR
+    // =========================================================
 
     private void UpdateCrosshair()
     {
-        if (weapon == null)
+        if (weapon == null ||
+            crosshairRoot == null)
             return;
 
         if (weapon.IsAiming)
@@ -159,16 +245,20 @@ public class HUDController : MonoBehaviour
                 weapon.CurrentSpreadNormalized
             );
 
-        dashTop.anchoredPosition =
-            new Vector2(0f, gap);
+        if (dashTop != null)
+            dashTop.anchoredPosition =
+                new Vector2(0f, gap);
 
-        dashBottom.anchoredPosition =
-            new Vector2(0f, -gap);
+        if (dashBottom != null)
+            dashBottom.anchoredPosition =
+                new Vector2(0f, -gap);
 
-        dashLeft.anchoredPosition =
-            new Vector2(-gap, 0f);
+        if (dashLeft != null)
+            dashLeft.anchoredPosition =
+                new Vector2(-gap, 0f);
 
-        dashRight.anchoredPosition =
-            new Vector2(gap, 0f);
+        if (dashRight != null)
+            dashRight.anchoredPosition =
+                new Vector2(gap, 0f);
     }
 }

@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using Unity.Netcode;
+using UnityEngine.SceneManagement;
 
 public class RoundManager : NetworkBehaviour
 {
@@ -129,6 +130,29 @@ public class RoundManager : NetworkBehaviour
         if (roundStartHUD != null)
             roundStartHUD.Hide();
 
+        // =====================================================
+        // SINGLEPLAYER
+        // =====================================================
+
+        if (SceneManager.GetActiveScene().name ==
+            "MainSceneSinglePlayer")
+        {
+            // NO iniciar la ronda todavía.
+            //
+            // El PauseController del PlayerMultiplayer
+            // mostrará la historia y llamará a:
+            //
+            // RoundManager.Instance.StartRound(1);
+            //
+            // cuando se pulse CONTINUAR.
+
+            return;
+        }
+
+        // =====================================================
+        // MULTIPLAYER
+        // =====================================================
+
         StartRound(1);
     }
 
@@ -147,9 +171,13 @@ public class RoundManager : NetworkBehaviour
     // CAMBIOS DE RED
     // =========================================================
 
-    private void OnRoundChanged(int previousValue, int newValue)
+    private void OnRoundChanged(
+        int previousValue,
+        int newValue
+    )
     {
-        // El HUD principal lee directamente CurrentRoundNetwork.
+        // El HUD principal lee directamente
+        // CurrentRoundNetwork.
     }
 
     private void OnCountdownChanged(
@@ -213,9 +241,10 @@ public class RoundManager : NetworkBehaviour
         if (roundStartHUD != null)
             roundStartHUD.Hide();
 
-        if(GameplayPopupsController.Instance != null)
+        if (GameplayPopupsController.Instance != null)
         {
-            GameplayPopupsController.Instance.MostrarPanelRonda();
+            GameplayPopupsController.Instance
+                .MostrarPanelRonda();
         }
 
         SpawnZombies(
@@ -231,7 +260,7 @@ public class RoundManager : NetworkBehaviour
     }
 
     // =========================================================
-    // SPAWN DE ZOMBIES
+    // SPAWN ZOMBIES
     // =========================================================
 
     private void SpawnZombies(int amount)
@@ -282,7 +311,8 @@ public class RoundManager : NetworkBehaviour
             else
             {
                 Debug.LogError(
-                    "RoundManager: el zombiePrefab no tiene NetworkObject asignado."
+                    "RoundManager: el zombiePrefab no tiene " +
+                    "NetworkObject asignado."
                 );
             }
         }
@@ -332,7 +362,6 @@ public class RoundManager : NetworkBehaviour
 
         roundInProgress = false;
 
-        // Se sincroniza con todos los clientes
         GameLostNetwork.Value = true;
     }
 
@@ -358,46 +387,20 @@ public class RoundManager : NetworkBehaviour
     private void EndRound()
     {
         if (!IsServer)
-        
             return;
 
         roundInProgress = false;
-        StartCoroutine(EndRoundDelay());
 
-      /*  if (GameplayPopupsController.Instance != null)
-        {
-            GameplayPopupsController.Instance
-                .MostrarPanelGanador();
-        }
-        else
-        {
-            Debug.LogError(
-                "RoundManager: GameplayPopupsController.Instance es null."
-            );
-        }*/
-
-    /*    if (CurrentRoundNetwork.Value >= maxRounds)
-        {
-            Debug.Log(
-                "Ronda " +
-                CurrentRoundNetwork.Value +
-                " completada."
-            );
-
-            if (roundStartHUD != null)
-                roundStartHUD.Hide();
-
-            return;
-            yield break;
-        }
-
-        pendingNextRound =
-            CurrentRoundNetwork.Value + 1;*/
+        StartCoroutine(
+            EndRoundDelay()
+        );
     }
 
     private IEnumerator EndRoundDelay()
     {
-        yield return new WaitForSeconds(delayAntesDePanel);
+        yield return new WaitForSeconds(
+            delayAntesDePanel
+        );
 
         if (GameplayPopupsController.Instance != null)
         {
@@ -410,7 +413,7 @@ public class RoundManager : NetworkBehaviour
                 "RoundManager: GameplayPopupsController.Instance es null."
             );
         }
-        
+
         if (CurrentRoundNetwork.Value >= maxRounds)
         {
             Debug.Log(
@@ -422,7 +425,6 @@ public class RoundManager : NetworkBehaviour
             if (roundStartHUD != null)
                 roundStartHUD.Hide();
 
-           // return;
             yield break;
         }
 
@@ -431,7 +433,7 @@ public class RoundManager : NetworkBehaviour
     }
 
     // =========================================================
-    // CONFIRMAR SIGUIENTE RONDA
+    // SIGUIENTE RONDA
     // =========================================================
 
     public void ConfirmarSiguienteRonda()
@@ -468,7 +470,6 @@ public class RoundManager : NetworkBehaviour
 
         countdownInProgress = true;
 
-        // Actualizamos la ronda antes del countdown
         CurrentRoundNetwork.Value = nextRound;
 
         CountdownNetwork.Value = 5;
