@@ -38,61 +38,52 @@ public class HUDController : MonoBehaviour
     [SerializeField] private float crosshairMinGap = 6f;
     [SerializeField] private float crosshairMaxGap = 22f;
 
-    private void Awake()
-    {
-        roundManager =
-            FindFirstObjectByType<RoundManager>();
-    }
-
-    private void OnEnable()
-    {
-        if (roundManager == null)
-            roundManager =
-                FindFirstObjectByType<RoundManager>();
-
-        if (roundManager != null)
-        {
-            roundManager.CurrentRoundNetwork.OnValueChanged +=
-                OnRoundChanged;
-
-            roundManager.AliveZombiesNetwork.OnValueChanged +=
-                OnAliveZombiesChanged;
-
-            roundManager.ZombiesThisRoundNetwork.OnValueChanged +=
-                OnZombiesThisRoundChanged;
-        }
-    }
-
-    private void OnDisable()
-    {
-        if (roundManager != null)
-        {
-            roundManager.CurrentRoundNetwork.OnValueChanged -=
-                OnRoundChanged;
-
-            roundManager.AliveZombiesNetwork.OnValueChanged -=
-                OnAliveZombiesChanged;
-
-            roundManager.ZombiesThisRoundNetwork.OnValueChanged -=
-                OnZombiesThisRoundChanged;
-        }
-    }
-
     private void Start()
     {
-        ActualizarHUDRondas();
+        BuscarRoundManager();
+        ActualizarTodo();
     }
 
     private void Update()
     {
+        if (roundManager == null)
+        {
+            BuscarRoundManager();
+        }
+
+        ActualizarTodo();
+    }
+
+    private void BuscarRoundManager()
+    {
+        roundManager = FindFirstObjectByType<RoundManager>();
+
+        if (roundManager == null)
+            return;
+
+        Debug.Log(
+            "[HUDController] RoundManager encontrado en " +
+            gameObject.name +
+            " | Round=" +
+            roundManager.CurrentRound +
+            " | Zombies=" +
+            roundManager.AliveZombies +
+            "/" +
+            roundManager.ZombiesThisRound
+        );
+    }
+
+    private void ActualizarTodo()
+    {
         UpdateHealthBar();
         UpdateStaminaBar();
         UpdateAmmoText();
+        UpdateRounds();
         UpdateCrosshair();
     }
 
     // =========================================================
-    // VIDA DEL PLAYER
+    // VIDA
     // =========================================================
 
     private void UpdateHealthBar()
@@ -110,9 +101,7 @@ public class HUDController : MonoBehaviour
         if (healthPercentText != null)
         {
             healthPercentText.text =
-                Mathf.RoundToInt(
-                    percentage * 100f
-                ) + "%";
+                Mathf.RoundToInt(percentage * 100f) + "%";
         }
 
         if (healthFill != null)
@@ -173,31 +162,7 @@ public class HUDController : MonoBehaviour
     // RONDAS
     // =========================================================
 
-    private void OnRoundChanged(
-        int previousValue,
-        int newValue
-    )
-    {
-        ActualizarHUDRondas();
-    }
-
-    private void OnAliveZombiesChanged(
-        int previousValue,
-        int newValue
-    )
-    {
-        ActualizarHUDRondas();
-    }
-
-    private void OnZombiesThisRoundChanged(
-        int previousValue,
-        int newValue
-    )
-    {
-        ActualizarHUDRondas();
-    }
-
-    private void ActualizarHUDRondas()
+    private void UpdateRounds()
     {
         if (roundManager == null)
             return;
