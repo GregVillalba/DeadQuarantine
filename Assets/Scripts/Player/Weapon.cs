@@ -313,6 +313,10 @@ public class Weapon : MonoBehaviour
 
     private void Shoot()
     {
+        if(GameplayPopupsController.Instance != null)
+        {
+            GameplayPopupsController.Instance.OcultarPanelRonda();
+        }
         Vector3 spreadDirection =
             ApplySpreadToDirection(
                 playerCamera.transform.forward,

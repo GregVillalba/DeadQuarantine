@@ -3,12 +3,15 @@ using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
+using System.Collections;
 
 public class GameplayPopupsController : MonoBehaviour
 {
     [Header("Paneles de resultado")]
     [SerializeField] private GameObject panelGanador;
     [SerializeField] private GameObject panelPerdedor;
+     [SerializeField] private GameObject panelRonda;
+    
 
     [Header("Configuración")]
     [SerializeField] private string nombreEscenaMenu = "PantallasUI";
@@ -85,7 +88,7 @@ public class GameplayPopupsController : MonoBehaviour
             panelGanador.SetActive(false);
     }
 
-    private void OnSiguienteRondaPresionado()
+    public void OnSiguienteRondaPresionado()
     {
         OcultarPanelGanador();
 
@@ -143,5 +146,26 @@ public class GameplayPopupsController : MonoBehaviour
         AudioListener.pause = false;
 
         SceneManager.LoadScene(nombreEscenaMenu);
+    }
+
+    public void MostrarPanelRonda()
+    {
+        if (panelRonda != null)
+        {
+            panelRonda.SetActive(true);
+          //  StartCoroutine(OcultarPanelRondaDespuesDeTiempo(3f));
+        }
+        else
+        {
+            Debug.LogError(
+                "El panelRonda no está asignado en el Inspector."
+            );
+        }
+    }
+
+    public void OcultarPanelRonda()
+    {
+        if (panelRonda != null)
+            panelRonda.SetActive(false);
     }
 }

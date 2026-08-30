@@ -29,6 +29,7 @@ public class HUDController : MonoBehaviour
     [Header("Rondas")]
     [SerializeField] private TextMeshProUGUI roundsText;
     [SerializeField] private TextMeshProUGUI zombiesText;
+    [SerializeField] private TextMeshProUGUI rondaTexto;
 
     [Header("Crosshair")]
     [SerializeField] private GameObject crosshairRoot;
@@ -127,6 +128,15 @@ public class HUDController : MonoBehaviour
             roundManager.AliveZombies +
             "/" +
             roundManager.ZombiesThisRound;
+
+        if(roundManager.CurrentRound != 5)
+        {
+            rondaTexto.text = "Ronda " + roundManager.CurrentRound;
+        }
+        else
+        {
+            rondaTexto.text = "Ronda Final";
+        }
     }
 
     private void UpdateCrosshair()

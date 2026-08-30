@@ -15,6 +15,7 @@ public class RoundManager : NetworkBehaviour
     [SerializeField] private int zombiesPerRound = 6;
     [SerializeField] private int maxRounds = 5;
     [SerializeField] private float nextRoundDelay = 5f;
+    [SerializeField] private float delayAntesDePanel = 3f;
 
     [Header("HUD de inicio de ronda")]
     [SerializeField] private RoundStartHUD roundStartHUD;
@@ -212,6 +213,11 @@ public class RoundManager : NetworkBehaviour
         if (roundStartHUD != null)
             roundStartHUD.Hide();
 
+        if(GameplayPopupsController.Instance != null)
+        {
+            GameplayPopupsController.Instance.MostrarPanelRonda();
+        }
+
         SpawnZombies(
             ZombiesThisRoundNetwork.Value
         );
@@ -352,9 +358,46 @@ public class RoundManager : NetworkBehaviour
     private void EndRound()
     {
         if (!IsServer)
+        
             return;
 
         roundInProgress = false;
+        StartCoroutine(EndRoundDelay());
+
+      /*  if (GameplayPopupsController.Instance != null)
+        {
+            GameplayPopupsController.Instance
+                .MostrarPanelGanador();
+        }
+        else
+        {
+            Debug.LogError(
+                "RoundManager: GameplayPopupsController.Instance es null."
+            );
+        }*/
+
+    /*    if (CurrentRoundNetwork.Value >= maxRounds)
+        {
+            Debug.Log(
+                "Ronda " +
+                CurrentRoundNetwork.Value +
+                " completada."
+            );
+
+            if (roundStartHUD != null)
+                roundStartHUD.Hide();
+
+            return;
+            yield break;
+        }
+
+        pendingNextRound =
+            CurrentRoundNetwork.Value + 1;*/
+    }
+
+    private IEnumerator EndRoundDelay()
+    {
+        yield return new WaitForSeconds(delayAntesDePanel);
 
         if (GameplayPopupsController.Instance != null)
         {
@@ -367,7 +410,7 @@ public class RoundManager : NetworkBehaviour
                 "RoundManager: GameplayPopupsController.Instance es null."
             );
         }
-
+        
         if (CurrentRoundNetwork.Value >= maxRounds)
         {
             Debug.Log(
@@ -379,7 +422,8 @@ public class RoundManager : NetworkBehaviour
             if (roundStartHUD != null)
                 roundStartHUD.Hide();
 
-            return;
+           // return;
+            yield break;
         }
 
         pendingNextRound =
