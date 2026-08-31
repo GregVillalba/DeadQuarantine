@@ -11,6 +11,11 @@ public class RoundManager : NetworkBehaviour
     [SerializeField] private GameObject zombiePrefab;
     [SerializeField] private Transform[] spawnPoints;
 
+    [Header("Boss")]
+    [SerializeField] private GameObject[] bossPrefabs;
+    [SerializeField] private int bossRound = 5;
+    [SerializeField] private int bossHealthMultiplier = 10;
+
     [Header("Rondas")]
     [SerializeField] private int startingZombies = 6;
     [SerializeField] private int zombiesPerRound = 6;
@@ -27,10 +32,6 @@ public class RoundManager : NetworkBehaviour
 
     [Header("HUD de inicio de ronda")]
     [SerializeField] private RoundStartHUD roundStartHUD;
-
-    // =========================================================
-    // VARIABLES SINCRONIZADAS POR RED
-    // =========================================================
 
     public NetworkVariable<int> CurrentRoundNetwork =
         new NetworkVariable<int>(
@@ -67,10 +68,6 @@ public class RoundManager : NetworkBehaviour
             NetworkVariableWritePermission.Server
         );
 
-    // =========================================================
-    // PROPIEDADES
-    // =========================================================
-
     public int CurrentRound =>
         CurrentRoundNetwork.Value;
 
@@ -89,23 +86,16 @@ public class RoundManager : NetworkBehaviour
     public int CountdownRemaining =>
         CountdownNetwork.Value;
 
-    // =========================================================
-    // VARIABLES LOCALES
-    // =========================================================
-
     private bool roundInProgress;
     private bool countdownInProgress;
 
     private int pendingNextRound;
     private Coroutine spawnRoutine;
 
-    // =========================================================
-    // AWAKE
-    // =========================================================
-
     private void Awake()
     {
-        if (Instance != null && Instance != this)
+        if (Instance != null &&
+            Instance != this)
         {
             Destroy(gameObject);
             return;
@@ -114,78 +104,56 @@ public class RoundManager : NetworkBehaviour
         Instance = this;
     }
 
-    // =========================================================
-    // NETWORK SPAWN
-    // =========================================================
-
     public override void OnNetworkSpawn()
     {
-        // Escuchar cambios de las variables de red
-        CurrentRoundNetwork.OnValueChanged += OnRoundChanged;
-        CountdownNetwork.OnValueChanged += OnCountdownChanged;
-        GameLostNetwork.OnValueChanged += OnGameLostChanged;
+        CurrentRoundNetwork.OnValueChanged +=
+            OnRoundChanged;
 
-        // Si ya se perdió la partida cuando este cliente entró
+        CountdownNetwork.OnValueChanged +=
+            OnCountdownChanged;
+
+        GameLostNetwork.OnValueChanged +=
+            OnGameLostChanged;
+
         if (GameLostNetwork.Value)
         {
             MostrarDerrota();
         }
 
-        // Solamente el servidor controla las rondas
         if (!IsServer)
             return;
 
         if (roundStartHUD != null)
+        {
             roundStartHUD.Hide();
-
-        // =====================================================
-        // SINGLEPLAYER
-        // =====================================================
+        }
 
         if (SceneManager.GetActiveScene().name ==
             "MainSceneSinglePlayer")
         {
-            // NO iniciar la ronda todavía.
-            //
-            // El PauseController del PlayerMultiplayer
-            // mostrará la historia y llamará a:
-            //
-            // RoundManager.Instance.StartRound(1);
-            //
-            // cuando se pulse CONTINUAR.
-
             return;
         }
-
-        // =====================================================
-        // MULTIPLAYER
-        // =====================================================
 
         StartRound(1);
     }
 
-    // =========================================================
-    // NETWORK DESPAWN
-    // =========================================================
-
     public override void OnNetworkDespawn()
     {
-        CurrentRoundNetwork.OnValueChanged -= OnRoundChanged;
-        CountdownNetwork.OnValueChanged -= OnCountdownChanged;
-        GameLostNetwork.OnValueChanged -= OnGameLostChanged;
-    }
+        CurrentRoundNetwork.OnValueChanged -=
+            OnRoundChanged;
 
-    // =========================================================
-    // CAMBIOS DE RED
-    // =========================================================
+        CountdownNetwork.OnValueChanged -=
+            OnCountdownChanged;
+
+        GameLostNetwork.OnValueChanged -=
+            OnGameLostChanged;
+    }
 
     private void OnRoundChanged(
         int previousValue,
         int newValue
     )
     {
-        // El HUD principal lee directamente
-        // CurrentRoundNetwork.
     }
 
     private void OnCountdownChanged(
@@ -234,12 +202,21 @@ public class RoundManager : NetworkBehaviour
 
         CurrentRoundNetwork.Value = round;
 
-        ZombiesThisRoundNetwork.Value =
+        int zombiesThisRound =
             startingZombies +
             (round - 1) * zombiesPerRound;
 
+        bool spawnBoss =
+            round == bossRound &&
+            HasBossPrefab();
+
+        // El boss reemplaza a un zombie normal:
+        // la cantidad total de enemigos no cambia.
+        ZombiesThisRoundNetwork.Value =
+            zombiesThisRound;
+
         AliveZombiesNetwork.Value =
-            ZombiesThisRoundNetwork.Value;
+            zombiesThisRound;
 
         roundInProgress = true;
         countdownInProgress = false;
@@ -247,7 +224,9 @@ public class RoundManager : NetworkBehaviour
         CountdownNetwork.Value = 0;
 
         if (roundStartHUD != null)
+        {
             roundStartHUD.Hide();
+        }
 
         if (GameplayPopupsController.Instance != null)
         {
@@ -256,17 +235,24 @@ public class RoundManager : NetworkBehaviour
         }
 
         if (spawnRoutine != null)
+        {
             StopCoroutine(spawnRoutine);
+        }
 
         spawnRoutine = StartCoroutine(
-            SpawnZombiesRoutine(ZombiesThisRoundNetwork.Value)
+            SpawnZombiesRoutine(
+                zombiesThisRound,
+                spawnBoss
+            )
         );
 
         Debug.Log(
             "Ronda " +
             CurrentRoundNetwork.Value +
             " iniciada. Zombies: " +
-            ZombiesThisRoundNetwork.Value
+            ZombiesThisRoundNetwork.Value +
+            " | Boss: " +
+            (spawnBoss ? "Sí" : "No")
         );
     }
 
@@ -274,7 +260,10 @@ public class RoundManager : NetworkBehaviour
     // SPAWN ZOMBIES
     // =========================================================
 
-    private IEnumerator SpawnZombiesRoutine(int amount)
+    private IEnumerator SpawnZombiesRoutine(
+        int amount,
+        bool spawnBoss
+    )
     {
         if (!IsServer)
             yield break;
@@ -298,89 +287,276 @@ public class RoundManager : NetworkBehaviour
             yield break;
         }
 
-        int round = CurrentRoundNetwork.Value;
+        int round =
+            CurrentRoundNetwork.Value;
 
-        int shotsNeeded = round * shotsIncreasePerRound;
-        int zombieHealthThisRound = shotsNeeded * damagePerShot;
+        int shotsNeeded =
+            round * shotsIncreasePerRound;
 
-        float runChance = maxRounds > 1
-            ? Mathf.Clamp01((round - 1) / (float)(maxRounds - 1))
-            : 0f;
+        int zombieHealthThisRound =
+            shotsNeeded * damagePerShot;
+
+        float runChance =
+            maxRounds > 1
+                ? Mathf.Clamp01(
+                    (round - 1) /
+                    (float)(maxRounds - 1)
+                )
+                : 0f;
 
         Debug.Log(
-            "[RoundManager] Ronda " + round +
-            " | Vida por zombie: " + zombieHealthThisRound +
-            " | Probabilidad de correr: " + (runChance * 100f) + "%"
+            "[RoundManager] Ronda " +
+            round +
+            " | Vida normal: " +
+            zombieHealthThisRound +
+            " | Probabilidad de correr: " +
+            (runChance * 100f) +
+            "%"
         );
 
-        yield return new WaitForSeconds(initialSpawnDelay);
+        yield return new WaitForSeconds(
+            initialSpawnDelay
+        );
 
-        for (int i = 0; i < amount; i++)
+        int normalZombiesToSpawn =
+            amount;
+
+        // =====================================================
+        // BOSS
+        // =====================================================
+
+        if (spawnBoss)
+        {
+            GameObject bossPrefab =
+                GetRandomBossPrefab();
+
+            if (bossPrefab != null)
+            {
+                Transform bossSpawnPoint =
+                    spawnPoints[
+                        Random.Range(
+                            0,
+                            spawnPoints.Length
+                        )
+                    ];
+
+                int bossHealth =
+                    zombieHealthThisRound *
+                    bossHealthMultiplier;
+
+                bool bossSpawned =
+                    SpawnZombie(
+                        bossPrefab,
+                        bossSpawnPoint,
+                        bossHealth,
+                        true
+                    );
+
+                if (bossSpawned)
+                {
+                    // El boss reemplaza exactamente
+                    // a un zombie normal.
+                    normalZombiesToSpawn--;
+
+                    Debug.Log(
+                        "[RoundManager] Boss creado." +
+                        " Vida: " +
+                        bossHealth
+                    );
+
+                    if (normalZombiesToSpawn > 0)
+                    {
+                        float wait =
+                            Random.Range(
+                                minSpawnInterval,
+                                maxSpawnInterval
+                            );
+
+                        yield return new WaitForSeconds(
+                            wait
+                        );
+                    }
+                }
+            }
+        }
+
+        // =====================================================
+        // ZOMBIES NORMALES
+        // =====================================================
+
+        for (int i = 0;
+             i < normalZombiesToSpawn;
+             i++)
         {
             Transform spawnPoint =
                 spawnPoints[
                     i % spawnPoints.Length
                 ];
 
-            GameObject zombieInstance =
-                Instantiate(
-                    zombiePrefab,
-                    spawnPoint.position,
-                    spawnPoint.rotation
+            bool willRun =
+                Random.value < runChance;
+
+            SpawnZombie(
+                zombiePrefab,
+                spawnPoint,
+                zombieHealthThisRound,
+                willRun
+            );
+
+            if (i < normalZombiesToSpawn - 1)
+            {
+                float wait =
+                    Random.Range(
+                        minSpawnInterval,
+                        maxSpawnInterval
+                    );
+
+                yield return new WaitForSeconds(
+                    wait
                 );
-                
-                ZombieAppearance zombieAppearance =
-                    zombieInstance.GetComponent<ZombieAppearance>();
-
-                if (zombieAppearance != null)
-                {
-                    zombieAppearance.SelectRandomModel();
-                }
-
-            // Configurar vida según la ronda ANTES de spawnear en red.
-            ZombieHealth zombieHealthComponent =
-                zombieInstance.GetComponent<ZombieHealth>();
-
-            if (zombieHealthComponent != null)
-            {
-                zombieHealthComponent.InitializeHealth(zombieHealthThisRound);
-            }
-
-            // Decidir si este zombie corre o camina.
-            ZombieAI zombieAIComponent =
-                zombieInstance.GetComponent<ZombieAI>();
-
-            bool willRun = Random.value < runChance;
-
-            NetworkObject netObj =
-                zombieInstance.GetComponent<NetworkObject>();
-
-            if (netObj != null)
-            {
-                netObj.Spawn();
-
-                // La velocidad se aplica después del Spawn, porque
-                // ZombieAI.OnNetworkSpawn() recién ahí inicializa el
-                // NavMeshAgent con la velocidad de caminar por defecto.
-                if (zombieAIComponent != null)
-                {
-                    zombieAIComponent.SetRunning(willRun);
-                }
-            }
-            else
-            {
-                Debug.LogError(
-                    "RoundManager: el zombiePrefab no tiene " +
-                    "NetworkObject asignado."
-                );
-            }
-
-            if (i < amount - 1)
-            {
-                float wait = Random.Range(minSpawnInterval, maxSpawnInterval);
-                yield return new WaitForSeconds(wait);
             }
         }
+    }
+
+    // =========================================================
+    // CREAR UN ZOMBIE
+    // =========================================================
+
+    private bool SpawnZombie(
+        GameObject prefab,
+        Transform spawnPoint,
+        int health,
+        bool willRun
+    )
+    {
+        if (prefab == null ||
+            spawnPoint == null)
+        {
+            return false;
+        }
+
+        GameObject zombieInstance =
+            Instantiate(
+                prefab,
+                spawnPoint.position,
+                spawnPoint.rotation
+            );
+
+        // Si el prefab posee varias apariencias,
+        // elige una al azar antes del Spawn de red.
+        ZombieAppearance zombieAppearance =
+            zombieInstance.GetComponent<
+                ZombieAppearance
+            >();
+
+        if (zombieAppearance != null)
+        {
+            zombieAppearance.SelectRandomModel();
+        }
+
+        ZombieHealth zombieHealthComponent =
+            zombieInstance.GetComponent<
+                ZombieHealth
+            >();
+
+        if (zombieHealthComponent != null)
+        {
+            zombieHealthComponent.InitializeHealth(
+                health
+            );
+        }
+
+        ZombieAI zombieAIComponent =
+            zombieInstance.GetComponent<
+                ZombieAI
+            >();
+
+        NetworkObject netObj =
+            zombieInstance.GetComponent<
+                NetworkObject
+            >();
+
+        if (netObj == null)
+        {
+            Debug.LogError(
+                "RoundManager: el prefab " +
+                prefab.name +
+                " no tiene NetworkObject."
+            );
+
+            Destroy(zombieInstance);
+            return false;
+        }
+
+        netObj.Spawn();
+
+        // Para el boss, willRun siempre es true.
+        if (zombieAIComponent != null)
+        {
+            zombieAIComponent.SetRunning(
+                willRun
+            );
+        }
+
+        return true;
+    }
+
+    // =========================================================
+    // BOSS
+    // =========================================================
+
+    private bool HasBossPrefab()
+    {
+        if (bossPrefabs == null)
+            return false;
+
+        foreach (GameObject bossPrefab in bossPrefabs)
+        {
+            if (bossPrefab != null)
+                return true;
+        }
+
+        return false;
+    }
+
+    private GameObject GetRandomBossPrefab()
+    {
+        if (bossPrefabs == null)
+            return null;
+
+        int availableBosses = 0;
+
+        foreach (GameObject bossPrefab in bossPrefabs)
+        {
+            if (bossPrefab != null)
+            {
+                availableBosses++;
+            }
+        }
+
+        if (availableBosses == 0)
+            return null;
+
+        int selectedBoss =
+            Random.Range(
+                0,
+                availableBosses
+            );
+
+        foreach (GameObject bossPrefab in bossPrefabs)
+        {
+            if (bossPrefab == null)
+                continue;
+
+            if (selectedBoss == 0)
+            {
+                return bossPrefab;
+            }
+
+            selectedBoss--;
+        }
+
+        return null;
     }
 
     // =========================================================
@@ -488,7 +664,9 @@ public class RoundManager : NetworkBehaviour
             );
 
             if (roundStartHUD != null)
+            {
                 roundStartHUD.Hide();
+            }
 
             yield break;
         }

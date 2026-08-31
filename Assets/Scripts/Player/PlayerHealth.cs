@@ -4,7 +4,13 @@ using System;
 
 public class PlayerHealth : NetworkBehaviour
 {
+    [Header("Vida")]
     [SerializeField] private int maxHealth = 100;
+
+    [Header("Regeneración")]
+    [SerializeField] private float regenerationDelay = 5f;
+    [SerializeField] private int healthRecoveredPerTick = 25;
+    [SerializeField] private float regenerationInterval = 1f;
 
     public NetworkVariable<int> CurrentHealth =
         new NetworkVariable<int>(
@@ -15,21 +21,25 @@ public class PlayerHealth : NetworkBehaviour
 
     public int MaxHealth => maxHealth;
 
-    // Evento para que el HUD pueda actualizarse
     public event Action<int, int> OnHealthChanged;
+
+    private float lastDamageTime;
+    private float nextRegenerationTime;
 
     public override void OnNetworkSpawn()
     {
-        // El servidor inicializa la vida
         if (IsServer)
         {
             CurrentHealth.Value = maxHealth;
+
+            lastDamageTime = Time.time;
+            nextRegenerationTime =
+                Time.time + regenerationDelay;
         }
 
-        // Todos escuchan cambios de vida
-        CurrentHealth.OnValueChanged += HealthChanged;
+        CurrentHealth.OnValueChanged +=
+            HealthChanged;
 
-        // Actualizar inmediatamente el HUD
         OnHealthChanged?.Invoke(
             CurrentHealth.Value,
             CurrentHealth.Value
@@ -38,7 +48,44 @@ public class PlayerHealth : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
-        CurrentHealth.OnValueChanged -= HealthChanged;
+        CurrentHealth.OnValueChanged -=
+            HealthChanged;
+    }
+
+    private void Update()
+    {
+        if (!IsServer)
+            return;
+
+        RegenerateHealth();
+    }
+
+    private void RegenerateHealth()
+    {
+        if (CurrentHealth.Value <= 0)
+            return;
+
+        if (CurrentHealth.Value >= maxHealth)
+            return;
+
+        if (Time.time <
+            lastDamageTime + regenerationDelay)
+        {
+            return;
+        }
+
+        if (Time.time < nextRegenerationTime)
+            return;
+
+        CurrentHealth.Value =
+            Mathf.Min(
+                CurrentHealth.Value +
+                healthRecoveredPerTick,
+                maxHealth
+            );
+
+        nextRegenerationTime =
+            Time.time + regenerationInterval;
     }
 
     private void HealthChanged(
@@ -64,7 +111,6 @@ public class PlayerHealth : NetworkBehaviour
 
     public void TakeDamage(int amount)
     {
-        // El daño solamente lo procesa el servidor
         if (!IsServer)
             return;
 
@@ -78,11 +124,17 @@ public class PlayerHealth : NetworkBehaviour
             0,
             maxHealth
         );
+
+        // Cada golpe reinicia los cinco segundos
+        // antes de comenzar la regeneración.
+        lastDamageTime = Time.time;
+
+        nextRegenerationTime =
+            Time.time + regenerationDelay;
     }
 
     private void Muerte()
     {
-        // Solamente el servidor decide que el jugador murió
         if (!IsServer)
             return;
 

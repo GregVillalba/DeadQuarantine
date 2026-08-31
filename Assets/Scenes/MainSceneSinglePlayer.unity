@@ -18229,6 +18229,11 @@ MonoBehaviour:
   - {fileID: 8575581568521005552, guid: 88a627715d965cc4d8827ccc0e8cfabf, type: 3}
   - {fileID: 1697192475577254904, guid: b1acfbb370161b2469b5e53fba01242e, type: 3}
   - {fileID: 5920932348367715314, guid: 8e74e8752090fa7418b2347fc201c51b, type: 3}
+  bossPrefabs:
+  - {fileID: 1658146812600542, guid: 574d3bbe7d1c8684f9101c2b823c5770, type: 3}
+  - {fileID: 1960997148460282, guid: a3029e28af10f4f458f5d25d6118a906, type: 3}
+  bossRound: 5
+  bossHealthMultiplier: 10
   startingZombies: 6
   zombiesPerRound: 6
   maxRounds: 5
@@ -18238,7 +18243,7 @@ MonoBehaviour:
   shotsIncreasePerRound: 2
   initialSpawnDelay: 5
   minSpawnInterval: 0.5
-  maxSpawnInterval: 10
+  maxSpawnInterval: 7
   roundStartHUD: {fileID: 2008552052}
   CurrentRoundNetwork:
     UpdateTraits:
