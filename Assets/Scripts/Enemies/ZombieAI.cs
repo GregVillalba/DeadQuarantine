@@ -8,6 +8,10 @@ public class ZombieAI : NetworkBehaviour
     [SerializeField] private int attackDamage = 10;
     [SerializeField] private float attackCooldown = 1.5f;
 
+    [Header("Velocidad")]
+    [SerializeField] private float walkSpeed = 1.5f;
+    [SerializeField] private float runSpeed = 3f;
+
     private NavMeshAgent agent;
     private Animator animator;
     private ZombieHealth zombieHealth;
@@ -40,9 +44,25 @@ public class ZombieAI : NetworkBehaviour
             return;
         }
 
+        // Velocidad por defecto: caminando.
+        // RoundManager puede sobreescribirla llamando SetRunning()
+        // justo después del Spawn, según la ronda actual.
+        if (agent != null)
+        {
+            agent.speed = walkSpeed;
+        }
+
         // El servidor busca inmediatamente
         // al jugador más cercano.
         FindClosestPlayer();
+    }
+
+    public void SetRunning(bool isRunning)
+    {
+        if (agent != null)
+        {
+            agent.speed = isRunning ? runSpeed : walkSpeed;
+        }
     }
 
     private void Update()

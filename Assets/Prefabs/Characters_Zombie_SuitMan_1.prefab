@@ -1433,7 +1433,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3216689111
+  GlobalObjectIdHash: 3686226812
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -1462,8 +1462,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Scripts::ZombieAI
   ShowTopMostFoldoutHeaderGroup: 1
   attackRange: 1.8
-  attackDamage: 10
+  attackDamage: 30
   attackCooldown: 1.5
+  walkSpeed: 1.5
+  runSpeed: 3
 --- !u!114 &8548795641319873136
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1485,16 +1487,6 @@ MonoBehaviour:
   colorVidaAlta: {r: 0, g: 1, b: 0, a: 1}
   colorVidaMedia: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   colorVidaBaja: {r: 1, g: 0, b: 0, a: 1}
-  CurrentHealth:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 3
-  IsDeadNetwork:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 0
 --- !u!82 &1462951353628928330
 AudioSource:
   m_ObjectHideFlags: 0

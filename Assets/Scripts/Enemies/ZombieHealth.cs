@@ -42,6 +42,18 @@ public class ZombieHealth : NetworkBehaviour
         zombieAudio = GetComponent<ZombieAudio>();
     }
 
+    // =========================================================
+    // CONFIGURAR VIDA SEGÚN LA RONDA
+    // =========================================================
+
+    // Debe llamarse DESPUÉS de Instantiate() y ANTES de
+    // NetworkObject.Spawn(), para que OnNetworkSpawn() ya
+    // tenga el maxHealth correcto al inicializar la NetworkVariable.
+    public void InitializeHealth(int newMaxHealth)
+    {
+        maxHealth = newMaxHealth;
+    }
+
     public override void OnNetworkSpawn()
     {
         currentHealthNetwork.OnValueChanged += OnHealthChanged;

@@ -17,6 +17,13 @@ public class RoundManager : NetworkBehaviour
     [SerializeField] private int maxRounds = 5;
     [SerializeField] private float nextRoundDelay = 5f;
     [SerializeField] private float delayAntesDePanel = 3f;
+    [SerializeField] private int damagePerShot = 25;
+    [SerializeField] private int shotsIncreasePerRound = 2;
+
+    [Header("Spawn escalonado")]
+    [SerializeField] private float initialSpawnDelay = 5f;
+    [SerializeField] private float minSpawnInterval = 2f;
+    [SerializeField] private float maxSpawnInterval = 10f;
 
     [Header("HUD de inicio de ronda")]
     [SerializeField] private RoundStartHUD roundStartHUD;
@@ -90,6 +97,7 @@ public class RoundManager : NetworkBehaviour
     private bool countdownInProgress;
 
     private int pendingNextRound;
+    private Coroutine spawnRoutine;
 
     // =========================================================
     // AWAKE
@@ -247,8 +255,11 @@ public class RoundManager : NetworkBehaviour
                 .MostrarPanelRonda();
         }
 
-        SpawnZombies(
-            ZombiesThisRoundNetwork.Value
+        if (spawnRoutine != null)
+            StopCoroutine(spawnRoutine);
+
+        spawnRoutine = StartCoroutine(
+            SpawnZombiesRoutine(ZombiesThisRoundNetwork.Value)
         );
 
         Debug.Log(
@@ -263,10 +274,10 @@ public class RoundManager : NetworkBehaviour
     // SPAWN ZOMBIES
     // =========================================================
 
-    private void SpawnZombies(int amount)
+    private IEnumerator SpawnZombiesRoutine(int amount)
     {
         if (!IsServer)
-            return;
+            yield break;
 
         if (zombiePrefab == null)
         {
@@ -274,7 +285,7 @@ public class RoundManager : NetworkBehaviour
                 "RoundManager: falta asignar Zombie Prefab."
             );
 
-            return;
+            yield break;
         }
 
         if (spawnPoints == null ||
@@ -284,8 +295,25 @@ public class RoundManager : NetworkBehaviour
                 "RoundManager: no hay Spawn Points."
             );
 
-            return;
+            yield break;
         }
+
+        int round = CurrentRoundNetwork.Value;
+
+        int shotsNeeded = round * shotsIncreasePerRound;
+        int zombieHealthThisRound = shotsNeeded * damagePerShot;
+
+        float runChance = maxRounds > 1
+            ? Mathf.Clamp01((round - 1) / (float)(maxRounds - 1))
+            : 0f;
+
+        Debug.Log(
+            "[RoundManager] Ronda " + round +
+            " | Vida por zombie: " + zombieHealthThisRound +
+            " | Probabilidad de correr: " + (runChance * 100f) + "%"
+        );
+
+        yield return new WaitForSeconds(initialSpawnDelay);
 
         for (int i = 0; i < amount; i++)
         {
@@ -301,12 +329,35 @@ public class RoundManager : NetworkBehaviour
                     spawnPoint.rotation
                 );
 
+            // Configurar vida según la ronda ANTES de spawnear en red.
+            ZombieHealth zombieHealthComponent =
+                zombieInstance.GetComponent<ZombieHealth>();
+
+            if (zombieHealthComponent != null)
+            {
+                zombieHealthComponent.InitializeHealth(zombieHealthThisRound);
+            }
+
+            // Decidir si este zombie corre o camina.
+            ZombieAI zombieAIComponent =
+                zombieInstance.GetComponent<ZombieAI>();
+
+            bool willRun = Random.value < runChance;
+
             NetworkObject netObj =
                 zombieInstance.GetComponent<NetworkObject>();
 
             if (netObj != null)
             {
                 netObj.Spawn();
+
+                // La velocidad se aplica después del Spawn, porque
+                // ZombieAI.OnNetworkSpawn() recién ahí inicializa el
+                // NavMeshAgent con la velocidad de caminar por defecto.
+                if (zombieAIComponent != null)
+                {
+                    zombieAIComponent.SetRunning(willRun);
+                }
             }
             else
             {
@@ -314,6 +365,12 @@ public class RoundManager : NetworkBehaviour
                     "RoundManager: el zombiePrefab no tiene " +
                     "NetworkObject asignado."
                 );
+            }
+
+            if (i < amount - 1)
+            {
+                float wait = Random.Range(minSpawnInterval, maxSpawnInterval);
+                yield return new WaitForSeconds(wait);
             }
         }
     }
