@@ -3709,6 +3709,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameplayPopupsController
   panelGanador: {fileID: 1382926344}
   panelPerdedor: {fileID: 1156462001}
+  panelRonda: {fileID: 0}
   nombreEscenaMenu: PantallasUI
 --- !u!114 &185060684
 MonoBehaviour:
@@ -29771,18 +29772,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Scripts::RoundManager
   ShowTopMostFoldoutHeaderGroup: 1
-  zombiePrefab: {fileID: 4453093751207024546, guid: 649b1aee3a3770a41b9e75128cb23ed6, type: 3}
+  zombiePrefab: {fileID: 1055470696967520, guid: bb116383f6f80bf4d90cb48aeca8e8bf, type: 3}
   spawnPoints:
-  - {fileID: 4752755693479083466, guid: 73d4181f97765184482b4a832c2418f2, type: 3}
-  - {fileID: 346105181548593871, guid: 0ae377d969f5f9d4a8481d71c640dd80, type: 3}
-  - {fileID: 6122629339187665613, guid: 9ed6ca531a6837b4bba03bc506a4c68c, type: 3}
-  - {fileID: 8813201442323708702, guid: 7c89d11d007ab6b4da4f585981eb8172, type: 3}
-  - {fileID: 5455803630631481349, guid: c535c94132fdca94d95e8978533d5d77, type: 3}
-  - {fileID: 7502502601001167395, guid: ab0616f1d721f9b409b2f02a7de9ac83, type: 3}
+  - {fileID: 6668265159536594423, guid: 476f634cbd3dcd74d8deb571bbab1a44, type: 3}
+  - {fileID: 8347267628157338294, guid: ddb4987e70372e64084e61854aa3f35d, type: 3}
+  - {fileID: 2387354737839150996, guid: 6bf2401596c10264cbb6506219976720, type: 3}
+  - {fileID: 3270861447063832977, guid: b1633049667e2fb4b8f3f0dba91acd38, type: 3}
+  - {fileID: 2421757255896559854, guid: 12e9df4907faa3045a7969948fad6542, type: 3}
+  - {fileID: 2816214383832638484, guid: f36b5f0a9fa247442ac84c8407553475, type: 3}
+  - {fileID: 8575581568521005552, guid: 88a627715d965cc4d8827ccc0e8cfabf, type: 3}
+  - {fileID: 1697192475577254904, guid: b1acfbb370161b2469b5e53fba01242e, type: 3}
+  - {fileID: 5920932348367715314, guid: 8e74e8752090fa7418b2347fc201c51b, type: 3}
   startingZombies: 6
   zombiesPerRound: 6
   maxRounds: 5
   nextRoundDelay: 5
+  delayAntesDePanel: 3
+  damagePerShot: 25
+  shotsIncreasePerRound: 2
+  initialSpawnDelay: 5
+  minSpawnInterval: 0
+  maxSpawnInterval: 7
   roundStartHUD: {fileID: 0}
   CurrentRoundNetwork:
     UpdateTraits:

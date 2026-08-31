@@ -11,118 +11,53 @@ using Unity.Services.Multiplayer;
 
 public class MultiplayerLobbyController : MonoBehaviour
 {
-    // ============================================================
-    // PANELES
-    // ============================================================
-
     [Header("--- PANELES ---")]
-
     [SerializeField] private GameObject modoMultiplayerPanel;
     [SerializeField] private GameObject ingresarCodPanel;
     [SerializeField] private GameObject salaEsperaPanel;
 
-
-    // ============================================================
-    // NETWORK
-    // ============================================================
-
     [Header("--- NETWORK ---")]
-
     [SerializeField] private NetworkBootstrap network;
 
-
-    // ============================================================
-    // INGRESAR CÓDIGO
-    // ============================================================
-
     [Header("--- INGRESAR CÓDIGO ---")]
-
     [SerializeField] private TMP_InputField codigoInputField;
 
-
-    // ============================================================
-    // CÓDIGO DE SALA
-    // ============================================================
-
     [Header("--- CÓDIGO DE SALA ---")]
-
     [SerializeField] private Button botonCopiarCodigo;
     [SerializeField] private TMP_Text labelCodigoACopiar;
     [SerializeField] private TMP_Text feedbackCopiarText;
 
-
-    // ============================================================
-    // JUGADOR 1
-    // ============================================================
-
     [Header("--- JUGADOR 1 ---")]
-
     [SerializeField] private TMP_Text p1ConexionText;
     [SerializeField] private TMP_Text p1EstadoText;
     [SerializeField] private Image p1ConexionIcon;
     [SerializeField] private Image p1EstadoIcon;
 
-
-    // ============================================================
-    // JUGADOR 2
-    // ============================================================
-
     [Header("--- JUGADOR 2 ---")]
-
     [SerializeField] private TMP_Text p2ConexionText;
     [SerializeField] private TMP_Text p2EstadoText;
     [SerializeField] private Image p2ConexionIcon;
     [SerializeField] private Image p2EstadoIcon;
 
-
-    // ============================================================
-    // BOTÓN LISTO
-    // ============================================================
-
     [Header("--- BOTÓN LISTO ---")]
-
     [SerializeField] private Button btnPlayMultiplayer;
     [SerializeField] private TMP_Text btnPlayMultiplayerText;
 
-
-    // ============================================================
-    // COUNTDOWN
-    // ============================================================
-
     [Header("--- COUNTDOWN ---")]
-
     [SerializeField] private GameObject countdownPanel;
     [SerializeField] private TMP_Text countdownText;
 
-
-    // ============================================================
-    // ESCENA
-    // ============================================================
-
     [Header("--- ESCENA ---")]
-
     [SerializeField] private string nombreEscenaJuego =
         "MainSceneMultiPlayer";
 
-
-    // ============================================================
-    // COLOR DE ESTADO NEGATIVO
-    // ============================================================
-
     [Header("--- COLOR ESTADO NEGATIVO ---")]
-
     [SerializeField] private Color colorRojo =
         new Color(1f, 0.1f, 0.1f, 1f);
 
-        [Header("--- ICONOS DE ESTADO ---")]
-
+    [Header("--- ICONOS DE ESTADO ---")]
     [SerializeField] private Sprite iconoVerde;
     [SerializeField] private Sprite iconoRojo;
-
-
-    // ============================================================
-    // ESTADO INTERNO
-    // ============================================================
 
     private bool estoyEnSala = false;
     private bool countdownIniciado = false;
@@ -130,12 +65,10 @@ public class MultiplayerLobbyController : MonoBehaviour
     private float tiempoCountdown = -1f;
 
     private const string READY_PROPERTY = "Ready";
-    private const string COUNTDOWN_PROPERTY = "Countdown";
 
-
-    // ============================================================
-    // AWAKE
-    // ============================================================
+    // Guarda una fecha/hora final, no el número 5, 4, 3...
+    private const string COUNTDOWN_PROPERTY =
+        "CountdownEndUtcTicks";
 
     private void Awake()
     {
@@ -143,23 +76,28 @@ public class MultiplayerLobbyController : MonoBehaviour
             network = NetworkBootstrap.Instance;
 
         if (botonCopiarCodigo != null)
-            botonCopiarCodigo.onClick.AddListener(OnClick_CopiarCodigo);
+        {
+            botonCopiarCodigo.onClick.AddListener(
+                OnClick_CopiarCodigo
+            );
+        }
     }
-
-
-    // ============================================================
-    // START
-    // ============================================================
 
     private void Start()
     {
         MostrarPanel(modoMultiplayerPanel);
 
         if (feedbackCopiarText != null)
-            feedbackCopiarText.gameObject.SetActive(false);
+        {
+            feedbackCopiarText.gameObject.SetActive(
+                false
+            );
+        }
 
         if (countdownPanel != null)
+        {
             countdownPanel.SetActive(false);
+        }
 
         ActualizarUI(
             jugador1Conectado: false,
@@ -169,24 +107,19 @@ public class MultiplayerLobbyController : MonoBehaviour
         );
     }
 
-
-    // ============================================================
-    // UPDATE
-    // ============================================================
-
     private void Update()
     {
         if (!estoyEnSala)
             return;
 
         ActualizarEstadoSala();
+        LeerCountdownDeSesion();
         ActualizarCountdownVisual();
     }
 
-
-    // ============================================================
+    // =========================================================
     // CREAR SALA
-    // ============================================================
+    // =========================================================
 
     public async void OnClick_CrearSala()
     {
@@ -204,7 +137,8 @@ public class MultiplayerLobbyController : MonoBehaviour
 
         try
         {
-            string codigo = await network.StartHost();
+            string codigo =
+                await network.StartHost();
 
             if (string.IsNullOrEmpty(codigo))
             {
@@ -216,9 +150,12 @@ public class MultiplayerLobbyController : MonoBehaviour
             }
 
             estoyEnSala = true;
+            tiempoCountdown = -1f;
 
             if (labelCodigoACopiar != null)
+            {
                 labelCodigoACopiar.text = codigo;
+            }
 
             miReady = false;
 
@@ -229,34 +166,32 @@ public class MultiplayerLobbyController : MonoBehaviour
             MostrarPanel(salaEsperaPanel);
 
             Debug.Log(
-                "[Lobby] Sala creada. Código: " + codigo
+                "[Lobby] Sala creada. Código: " +
+                codigo
             );
         }
         catch (Exception e)
         {
             Debug.LogError(
-                "[Lobby] Error creando sala: " + e.Message
+                "[Lobby] Error creando sala: " +
+                e.Message
             );
         }
     }
 
-
-    // ============================================================
-    // IR A INGRESAR CÓDIGO
-    // ============================================================
+    // =========================================================
+    // UNIRSE A SALA
+    // =========================================================
 
     public void OnClick_IrAIngresarCodigo()
     {
         if (codigoInputField != null)
+        {
             codigoInputField.text = "";
+        }
 
         MostrarPanel(ingresarCodPanel);
     }
-
-
-    // ============================================================
-    // UNIRSE CON CÓDIGO
-    // ============================================================
 
     public async void OnClick_ConfirmarUnirseConCodigo()
     {
@@ -302,6 +237,7 @@ public class MultiplayerLobbyController : MonoBehaviour
             }
 
             estoyEnSala = true;
+            tiempoCountdown = -1f;
 
             miReady = false;
 
@@ -309,14 +245,17 @@ public class MultiplayerLobbyController : MonoBehaviour
 
             ActualizarBotonReady(false);
 
-            // Mostrar el mismo código que acabamos de utilizar
             if (labelCodigoACopiar != null)
-                labelCodigoACopiar.text = network.CurrentJoinCode;
+            {
+                labelCodigoACopiar.text =
+                    network.CurrentJoinCode;
+            }
 
             MostrarPanel(salaEsperaPanel);
 
             Debug.Log(
-                "[Lobby] Unido a la sala: " + codigo
+                "[Lobby] Unido a la sala: " +
+                codigo
             );
         }
         catch (Exception e)
@@ -328,10 +267,9 @@ public class MultiplayerLobbyController : MonoBehaviour
         }
     }
 
-
-    // ============================================================
+    // =========================================================
     // BOTÓN LISTO
-    // ============================================================
+    // =========================================================
 
     public async void OnClick_Listo()
     {
@@ -343,7 +281,10 @@ public class MultiplayerLobbyController : MonoBehaviour
 
         if (network.CurrentSession == null)
         {
-            Debug.LogError("[Lobby] No existe una sesión.");
+            Debug.LogError(
+                "[Lobby] No existe una sesión."
+            );
+
             return;
         }
 
@@ -355,13 +296,11 @@ public class MultiplayerLobbyController : MonoBehaviour
 
         Debug.Log(
             "[Lobby] Mi estado Ready: " +
-            (miReady ? "LISTO" : "NO LISTO")
+            (miReady
+                ? "LISTO"
+                : "NO LISTO")
         );
     }
-
-    // ============================================================
-    // CAMBIAR READY
-    // ============================================================
 
     private async Task CambiarReady(bool listo)
     {
@@ -377,7 +316,9 @@ public class MultiplayerLobbyController : MonoBehaviour
         player.SetProperty(
             READY_PROPERTY,
             new PlayerProperty(
-                listo ? "true" : "false"
+                listo
+                    ? "true"
+                    : "false"
             )
         );
 
@@ -385,10 +326,9 @@ public class MultiplayerLobbyController : MonoBehaviour
             .SaveCurrentPlayerDataAsync();
     }
 
-
-    // ============================================================
-    // ACTUALIZAR ESTADO DE LA SALA
-    // ============================================================
+    // =========================================================
+    // ESTADO DE LA SALA
+    // =========================================================
 
     private void ActualizarEstadoSala()
     {
@@ -416,13 +356,17 @@ public class MultiplayerLobbyController : MonoBehaviour
         if (jugador1Conectado)
         {
             jugador1Listo =
-                ObtenerReadyJugador(jugadores[0]);
+                ObtenerReadyJugador(
+                    jugadores[0]
+                );
         }
 
         if (jugador2Conectado)
         {
             jugador2Listo =
-                ObtenerReadyJugador(jugadores[1]);
+                ObtenerReadyJugador(
+                    jugadores[1]
+                );
         }
 
         ActualizarUI(
@@ -432,37 +376,23 @@ public class MultiplayerLobbyController : MonoBehaviour
             jugador2Listo
         );
 
-        Debug.Log(
-        "[Lobby] P1=" + jugador1Listo +
-        " P2=" + jugador2Listo +
-        " Jugadores=" + jugadores.Count +
-        " Host=" + network.CurrentSession.IsHost +
-        " CountdownIniciado=" + countdownIniciado
-    );
-
-        // El countdown solamente lo controla el Host.
-        if (network.CurrentSession.IsHost)
+        // Solo el host inicia la cuenta.
+        if (network.CurrentSession.IsHost &&
+            jugador1Conectado &&
+            jugador2Conectado &&
+            jugador1Listo &&
+            jugador2Listo &&
+            !countdownIniciado)
         {
-            if (jugador1Conectado &&
-                jugador2Conectado &&
-                jugador1Listo &&
-                jugador2Listo &&
-                !countdownIniciado)
-            {
-                countdownIniciado = true;
+            countdownIniciado = true;
 
-                _ = IniciarCountdown();
-            }
+            _ = IniciarCountdown();
         }
     }
 
-
-    // ============================================================
-    // LEER READY
-    // ============================================================
-
     private bool ObtenerReadyJugador(
-        IReadOnlyPlayer player)
+        IReadOnlyPlayer player
+    )
     {
         if (player == null)
             return false;
@@ -477,19 +407,17 @@ public class MultiplayerLobbyController : MonoBehaviour
         return propiedad.Value == "true";
     }
 
-
-    // ============================================================
-    // ACTUALIZAR UI
-    // ============================================================
+    // =========================================================
+    // UI DE JUGADORES
+    // =========================================================
 
     private void ActualizarUI(
         bool jugador1Conectado,
         bool jugador2Conectado,
         bool jugador1Listo,
-        bool jugador2Listo)
+        bool jugador2Listo
+    )
     {
-                // JUGADOR 1 - CONEXIÓN
-
         if (p1ConexionText != null)
         {
             p1ConexionText.text =
@@ -510,9 +438,6 @@ public class MultiplayerLobbyController : MonoBehaviour
                     ? iconoVerde
                     : iconoRojo;
         }
-
-
-        // JUGADOR 1 - READY
 
         if (p1EstadoText != null)
         {
@@ -535,8 +460,6 @@ public class MultiplayerLobbyController : MonoBehaviour
                     : iconoRojo;
         }
 
-        // JUGADOR 2 - CONEXIÓN
-
         if (p2ConexionText != null)
         {
             p2ConexionText.text =
@@ -557,9 +480,6 @@ public class MultiplayerLobbyController : MonoBehaviour
                     ? iconoVerde
                     : iconoRojo;
         }
-
-
-        // JUGADOR 2 - READY
 
         if (p2EstadoText != null)
         {
@@ -583,11 +503,6 @@ public class MultiplayerLobbyController : MonoBehaviour
         }
     }
 
-
-    // ============================================================
-    // TEXTO DEL BOTÓN LISTO
-    // ============================================================
-
     private void ActualizarBotonReady(bool listo)
     {
         if (btnPlayMultiplayerText != null)
@@ -599,98 +514,55 @@ public class MultiplayerLobbyController : MonoBehaviour
         }
 
         if (btnPlayMultiplayer != null)
+        {
             btnPlayMultiplayer.interactable = true;
+        }
     }
 
-
-    // ============================================================
+    // =========================================================
     // COUNTDOWN
-    // ============================================================
+    // =========================================================
 
     private async Task IniciarCountdown()
     {
-        Debug.Log("[Lobby] >>> COUNTDOWN INICIADO <<<");
-
         if (network == null ||
             network.CurrentSession == null ||
             !network.CurrentSession.IsHost)
         {
-            Debug.LogError(
-                "[Lobby] No se puede iniciar el countdown: no soy Host."
-            );
-
             countdownIniciado = false;
             return;
         }
 
-        tiempoCountdown = 5f;
+        // El host escribe una única vez
+        // cuándo debe terminar la cuenta.
+        DateTime countdownEndTime =
+            DateTime.UtcNow.AddSeconds(5);
 
-        if (countdownPanel != null)
-            countdownPanel.SetActive(true);
-
-        if (countdownText != null)
-        {
-            countdownText.text =
-                "LA PARTIDA COMIENZA EN: 5";
-        }
-
-        Debug.Log("[Lobby] Countdown: 5");
-
-        await Task.Delay(1000);
-
-        tiempoCountdown = 4f;
-
-        if (countdownText != null)
-            countdownText.text =
-                "LA PARTIDA COMIENZA EN: 4";
-
-        Debug.Log("[Lobby] Countdown: 4");
-
-        await Task.Delay(1000);
-
-        tiempoCountdown = 3f;
-
-        if (countdownText != null)
-            countdownText.text =
-                "LA PARTIDA COMIENZA EN: 3";
-
-        Debug.Log("[Lobby] Countdown: 3");
-
-        await Task.Delay(1000);
-
-        tiempoCountdown = 2f;
-
-        if (countdownText != null)
-            countdownText.text =
-                "LA PARTIDA COMIENZA EN: 2";
-
-        Debug.Log("[Lobby] Countdown: 2");
-
-        await Task.Delay(1000);
-
-        tiempoCountdown = 1f;
-
-        if (countdownText != null)
-            countdownText.text =
-                "LA PARTIDA COMIENZA EN: 1";
-
-        Debug.Log("[Lobby] Countdown: 1");
-
-        await Task.Delay(1000);
-
-        tiempoCountdown = 0f;
-
-        if (countdownText != null)
-            countdownText.text =
-                "LA PARTIDA COMIENZA EN: 0";
-
-        Debug.Log("[Lobby] Countdown: 0");
-
-        await Task.Delay(500);
-
-        Debug.Log(
-            "[Lobby] >>> LLAMANDO StartMultiplayerGame() <<<"
+        await EscribirCountdown(
+            countdownEndTime.Ticks
         );
+
+        while (true)
+        {
+            double remainingSeconds =
+                (countdownEndTime - DateTime.UtcNow)
+                    .TotalSeconds;
+
+            tiempoCountdown =
+                Mathf.Max(
+                    0f,
+                    (float)remainingSeconds
+                );
+
+            ActualizarCountdownVisual();
+
+            if (remainingSeconds <= 0d)
+                break;
+
+            // Solo espera localmente; no escribe
+            // propiedades online cada segundo.
+            await Task.Delay(50);
+        }
 
         if (network != null &&
             network.CurrentSession != null &&
@@ -698,37 +570,81 @@ public class MultiplayerLobbyController : MonoBehaviour
         {
             await network.StartMultiplayerGame();
         }
-        else
-        {
-            Debug.LogError(
-                "[Lobby] El Host perdió la sesión antes de iniciar."
-            );
-        }
     }
 
-    private async Task EscribirCountdown(int valor)
+    private async Task EscribirCountdown(
+        long endUtcTicks
+    )
     {
         if (network == null ||
             network.CurrentSession == null ||
-            !network.IsHost)
+            !network.CurrentSession.IsHost)
         {
             return;
         }
 
-        var hostSession = network.CurrentSession.AsHost();
+        var hostSession =
+            network.CurrentSession.AsHost();
 
         hostSession.SetProperty(
-            "countdown",
-            new SessionProperty(valor.ToString())
+            COUNTDOWN_PROPERTY,
+            new SessionProperty(
+                endUtcTicks.ToString()
+            )
         );
 
         await hostSession.SavePropertiesAsync();
     }
 
+    private void LeerCountdownDeSesion()
+    {
+        if (network == null ||
+            network.CurrentSession == null)
+        {
+            return;
+        }
 
-    // ============================================================
-    // MOSTRAR COUNTDOWN
-    // ============================================================
+        if (!network.CurrentSession.Properties.TryGetValue(
+                COUNTDOWN_PROPERTY,
+                out var countdownProperty))
+        {
+            return;
+        }
+
+        if (!long.TryParse(
+                countdownProperty.Value,
+                out long endUtcTicks))
+        {
+            return;
+        }
+
+        DateTime endTime =
+            new DateTime(
+                endUtcTicks,
+                DateTimeKind.Utc
+            );
+
+        double remainingSeconds =
+            (endTime - DateTime.UtcNow)
+                .TotalSeconds;
+
+        if (remainingSeconds <= 0d)
+        {
+            // La escena va a cambiar enseguida;
+            // evita que el cliente quede mostrando 0.
+            tiempoCountdown = -1f;
+
+            if (countdownPanel != null)
+            {
+                countdownPanel.SetActive(false);
+            }
+
+            return;
+        }
+
+        tiempoCountdown =
+            (float)remainingSeconds;
+    }
 
     private void ActualizarCountdownVisual()
     {
@@ -736,27 +652,31 @@ public class MultiplayerLobbyController : MonoBehaviour
             return;
 
         if (countdownPanel != null)
+        {
             countdownPanel.SetActive(true);
+        }
 
         if (countdownText != null)
         {
             countdownText.text =
                 "LA PARTIDA COMIENZA EN: " +
-                Mathf.CeilToInt(tiempoCountdown);
+                Mathf.CeilToInt(
+                    tiempoCountdown
+                );
         }
     }
 
-
-    // ============================================================
+    // =========================================================
     // COPIAR CÓDIGO
-    // ============================================================
+    // =========================================================
 
     public void OnClick_CopiarCodigo()
     {
         string textoACopiar =
             labelCodigoACopiar != null &&
             !string.IsNullOrEmpty(
-                labelCodigoACopiar.text)
+                labelCodigoACopiar.text
+            )
                 ? labelCodigoACopiar.text.Trim()
                 : "";
 
@@ -771,7 +691,9 @@ public class MultiplayerLobbyController : MonoBehaviour
             feedbackCopiarText.text =
                 "Código copiado!";
 
-            feedbackCopiarText.gameObject.SetActive(true);
+            feedbackCopiarText.gameObject.SetActive(
+                true
+            );
 
             CancelInvoke(
                 nameof(OcultarFeedbackCopiado)
@@ -784,30 +706,29 @@ public class MultiplayerLobbyController : MonoBehaviour
         }
     }
 
-
     private void OcultarFeedbackCopiado()
     {
         if (feedbackCopiarText != null)
-            feedbackCopiarText.gameObject.SetActive(false);
+        {
+            feedbackCopiarText.gameObject.SetActive(
+                false
+            );
+        }
     }
 
-
-    // ============================================================
-    // ATRÁS DESDE INGRESAR CÓDIGO
-    // ============================================================
+    // =========================================================
+    // SALIR / VOLVER
+    // =========================================================
 
     public void OnClick_AtrasDesdeIngresarCodigo()
     {
         if (codigoInputField != null)
+        {
             codigoInputField.text = "";
+        }
 
         MostrarPanel(modoMultiplayerPanel);
     }
-
-
-    // ============================================================
-    // ATRÁS DESDE SALA DE ESPERA
-    // ============================================================
 
     public async void OnClick_AtrasDesdeSalaEspera()
     {
@@ -815,11 +736,6 @@ public class MultiplayerLobbyController : MonoBehaviour
 
         MostrarPanel(modoMultiplayerPanel);
     }
-
-
-    // ============================================================
-    // ATRÁS AL MENÚ PRINCIPAL
-    // ============================================================
 
     public async void OnClick_AtrasAlMenuPrincipal()
     {
@@ -832,15 +748,11 @@ public class MultiplayerLobbyController : MonoBehaviour
         );
     }
 
-
-    // ============================================================
-    // SALIR DE SALA
-    // ============================================================
-
     private async Task SalirDeSala()
     {
         estoyEnSala = false;
         countdownIniciado = false;
+        tiempoCountdown = -1f;
 
         if (network != null &&
             network.CurrentSession != null)
@@ -852,20 +764,21 @@ public class MultiplayerLobbyController : MonoBehaviour
             catch (Exception e)
             {
                 Debug.LogWarning(
-                    "[Lobby] Error saliendo de sala: "
-                    + e.Message
+                    "[Lobby] Error saliendo de sala: " +
+                    e.Message
                 );
             }
         }
 
         if (countdownPanel != null)
+        {
             countdownPanel.SetActive(false);
+        }
     }
 
-
-    // ============================================================
-    // MOSTRAR UN PANEL
-    // ============================================================
+    // =========================================================
+    // PANELES
+    // =========================================================
 
     private void MostrarPanel(GameObject panelActivo)
     {
@@ -890,11 +803,6 @@ public class MultiplayerLobbyController : MonoBehaviour
             );
         }
     }
-
-
-    // ============================================================
-    // DESTROY
-    // ============================================================
 
     private void OnDestroy()
     {

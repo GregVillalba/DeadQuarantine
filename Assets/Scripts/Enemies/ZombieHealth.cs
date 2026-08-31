@@ -36,6 +36,13 @@ public class ZombieHealth : NetworkBehaviour
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Server
         );
+        
+    private NetworkVariable<int> maxHealthNetwork =
+    new NetworkVariable<int>(
+        3,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
 
     private Animator animator;
     private NavMeshAgent agent;
@@ -203,10 +210,21 @@ public class ZombieHealth : NetworkBehaviour
         currentHealthNetwork.OnValueChanged +=
             OnHealthChanged;
 
+        maxHealthNetwork.OnValueChanged +=
+            OnMaxHealthChanged;
+
         if (IsServer)
         {
+            maxHealthNetwork.Value =
+                maxHealth;
+
             currentHealthNetwork.Value =
                 maxHealth;
+        }
+        else
+        {
+            maxHealth =
+                maxHealthNetwork.Value;
         }
 
         ActualizarBarraDeVida();
@@ -216,6 +234,8 @@ public class ZombieHealth : NetworkBehaviour
     {
         currentHealthNetwork.OnValueChanged -=
             OnHealthChanged;
+        maxHealthNetwork.OnValueChanged -=
+        OnMaxHealthChanged;
     }
 
     // =========================================================
@@ -259,8 +279,9 @@ public class ZombieHealth : NetworkBehaviour
         {
             currentHealthNetwork.Value = 0;
 
-            ShowKillHitMarkerClientRpc(
-                shooterClientId
+            ShowHitMarkerClientRpc(
+                shooterClientId,
+                true
             );
 
             Die();
@@ -268,6 +289,11 @@ public class ZombieHealth : NetworkBehaviour
         else
         {
             PlayHitEffectsClientRpc();
+
+            ShowHitMarkerClientRpc(
+                shooterClientId,
+                false
+            );
         }
 
         PlayBloodEffectClientRpc(
@@ -312,8 +338,9 @@ public class ZombieHealth : NetworkBehaviour
     // =========================================================
 
     [ClientRpc]
-    private void ShowKillHitMarkerClientRpc(
-        ulong shooterClientId
+    private void ShowHitMarkerClientRpc(
+        ulong shooterClientId,
+        bool killedZombie
     )
     {
         if (NetworkManager.Singleton == null)
@@ -341,7 +368,9 @@ public class ZombieHealth : NetworkBehaviour
 
         if (hud != null)
         {
-            hud.ShowHitMarker(true);
+            hud.ShowHitMarker(
+                killedZombie
+            );
         }
     }
 
@@ -354,6 +383,16 @@ public class ZombieHealth : NetworkBehaviour
         int newHealth
     )
     {
+        ActualizarBarraDeVida();
+    }
+
+    private void OnMaxHealthChanged(
+        int previousMaxHealth,
+        int newMaxHealth
+    )
+    {
+        maxHealth = newMaxHealth;
+
         ActualizarBarraDeVida();
     }
 
