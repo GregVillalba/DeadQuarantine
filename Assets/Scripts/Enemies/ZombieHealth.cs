@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.UI;
 using Unity.Netcode;
+using System.Collections.Generic;
 
 public class ZombieHealth : NetworkBehaviour
 {
@@ -41,20 +42,157 @@ public class ZombieHealth : NetworkBehaviour
     private ZombieAI zombieAI;
     private ZombieAudio zombieAudio;
 
+    // Colliders del objeto raíz del zombie.
+    // Se desactivan al morir para dejar solamente
+    // los colliders de los huesos del ragdoll.
+    private Collider[] rootColliders;
+
+    // Rigidbodies y colliders creados en los huesos
+    // mediante GameObject > 3D Object > Ragdoll.
+    private Rigidbody[] ragdollRigidbodies;
+    private Collider[] ragdollColliders;
+    private int ragdollLayer;
+
     private void Awake()
     {
         animator = GetComponent<Animator>();
         agent = GetComponent<NavMeshAgent>();
         zombieAI = GetComponent<ZombieAI>();
         zombieAudio = GetComponent<ZombieAudio>();
+
+        rootColliders = GetComponents<Collider>();
+
+        ragdollRigidbodies =
+            GetComponentsInChildren<Rigidbody>(true);
+
+        ragdollColliders =
+            GetRagdollColliders();
+
+        ConfigureRagdollInitialState();
+        ragdollLayer =
+            LayerMask.NameToLayer("Ragdoll");
+    }
+
+    // =========================================================
+    // RAGDOLL
+    // =========================================================
+
+    private Collider[] GetRagdollColliders()
+    {
+        List<Collider> colliders =
+            new List<Collider>();
+
+        foreach (Rigidbody body in ragdollRigidbodies)
+        {
+            if (body == null)
+                continue;
+
+            // El Rigidbody del objeto raíz no forma
+            // parte del ragdoll.
+            if (body.transform == transform)
+                continue;
+
+            Collider[] boneColliders =
+                body.GetComponents<Collider>();
+
+            foreach (Collider boneCollider in boneColliders)
+            {
+                if (boneCollider != null)
+                {
+                    colliders.Add(boneCollider);
+                }
+            }
+        }
+
+        return colliders.ToArray();
+    }
+
+    private void ConfigureRagdollInitialState()
+    {
+        foreach (Rigidbody body in ragdollRigidbodies)
+        {
+            if (body == null)
+                continue;
+
+            body.isKinematic = true;
+            body.useGravity = false;
+        }
+
+        foreach (Collider ragdollCollider in ragdollColliders)
+        {
+            if (ragdollCollider == null)
+                continue;
+
+            ragdollCollider.enabled = false;
+        }
+    }
+
+    private void ActivateRagdoll()
+    {
+        if (animator != null)
+        {
+            animator.enabled = false;
+        }
+
+        if (zombieAI != null)
+        {
+            zombieAI.enabled = false;
+        }
+
+        if (agent != null)
+        {
+            agent.enabled = false;
+        }
+
+        foreach (Collider rootCollider in rootColliders)
+        {
+            if (rootCollider != null)
+            {
+                rootCollider.enabled = false;
+            }
+        }
+
+        foreach (Rigidbody body in ragdollRigidbodies)
+        {
+            if (body == null)
+                continue;
+
+            if (ragdollLayer != -1)
+            {
+                body.gameObject.layer =
+                    ragdollLayer;
+            }
+
+            // Primero deja de ser cinemático.
+            body.isKinematic = false;
+
+            // Ahora sí se puede limpiar cualquier impulso
+            // heredado de la animación o del NavMeshAgent.
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+
+            body.useGravity = true;
+        }
+
+        foreach (Collider ragdollCollider in ragdollColliders)
+        {
+            if (ragdollCollider == null)
+                continue;
+
+            if (ragdollLayer != -1)
+                {
+                    ragdollCollider.gameObject.layer =
+                        ragdollLayer;
+                }
+
+            ragdollCollider.enabled = true;
+        }
     }
 
     // =========================================================
     // CONFIGURAR VIDA SEGÚN LA RONDA
     // =========================================================
 
-    // Debe llamarse DESPUÉS de Instantiate()
-    // y ANTES de NetworkObject.Spawn().
     public void InitializeHealth(int newMaxHealth)
     {
         maxHealth = newMaxHealth;
@@ -111,117 +249,31 @@ public class ZombieHealth : NetworkBehaviour
         if (IsDead)
             return;
 
-        // Jugador que realizó el disparo.
         ulong shooterClientId =
             rpcParams.Receive.SenderClientId;
 
         currentHealthNetwork.Value -=
             amount;
 
-        // =====================================================
-        // MUERTE
-        // =====================================================
-
         if (currentHealthNetwork.Value <= 0)
         {
             currentHealthNetwork.Value = 0;
 
-            // Hit Marker ROJO solamente
-            // para el jugador que mató al zombie.
-            ShowHitMarkerClientRpc(
-                true,
-                GetTargetClientRpcParams(
-                    shooterClientId
-                )
+            ShowKillHitMarkerClientRpc(
+                shooterClientId
             );
 
             Die();
-
-            // Sangre.
-            PlayBloodEffectClientRpc(
-                hitPoint,
-                hitNormal
-            );
-
-            return;
+        }
+        else
+        {
+            PlayHitEffectsClientRpc();
         }
 
-        // =====================================================
-        // IMPACTO NORMAL
-        // =====================================================
-
-        // Hit Marker BLANCO solamente
-        // para el jugador que disparó.
-        ShowHitMarkerClientRpc(
-            false,
-            GetTargetClientRpcParams(
-                shooterClientId
-            )
-        );
-
-        PlayHitEffectsClientRpc();
-
-        // Sangre.
         PlayBloodEffectClientRpc(
             hitPoint,
             hitNormal
         );
-    }
-
-    // =========================================================
-    // TARGET DEL CLIENT RPC
-    // =========================================================
-
-    private ClientRpcParams GetTargetClientRpcParams(
-        ulong clientId
-    )
-    {
-        return new ClientRpcParams
-        {
-            Send = new ClientRpcSendParams
-            {
-                TargetClientIds =
-                    new ulong[]
-                    {
-                        clientId
-                    }
-            }
-        };
-    }
-
-    // =========================================================
-    // HIT MARKER
-    // =========================================================
-
-    [ClientRpc]
-    private void ShowHitMarkerClientRpc(
-        bool killedZombie,
-        ClientRpcParams clientRpcParams = default
-    )
-    {
-        if (NetworkManager.Singleton == null)
-            return;
-
-        HUDController hud = null;
-
-        if (NetworkManager.Singleton.LocalClient != null &&
-            NetworkManager.Singleton.LocalClient.PlayerObject != null)
-        {
-            hud =
-                NetworkManager.Singleton
-                    .LocalClient
-                    .PlayerObject
-                    .GetComponentInChildren<
-                        HUDController
-                    >(true);
-        }
-
-        if (hud != null)
-        {
-            hud.ShowHitMarker(
-                killedZombie
-            );
-        }
     }
 
     // =========================================================
@@ -267,16 +319,13 @@ public class ZombieHealth : NetworkBehaviour
         if (NetworkManager.Singleton == null)
             return;
 
-        // Solamente el jugador que realizó
-        // el disparo recibe el Hit Marker rojo.
         if (NetworkManager.Singleton.LocalClientId !=
             shooterClientId)
         {
             return;
         }
 
-        HUDController hud =
-            null;
+        HUDController hud = null;
 
         if (NetworkManager.Singleton.LocalClient != null &&
             NetworkManager.Singleton.LocalClient.PlayerObject != null)
@@ -285,9 +334,9 @@ public class ZombieHealth : NetworkBehaviour
                 NetworkManager.Singleton
                     .LocalClient
                     .PlayerObject
-                    .GetComponentInChildren<
-                        HUDController
-                    >(true);
+                    .GetComponentInChildren<HUDController>(
+                        true
+                    );
         }
 
         if (hud != null)
@@ -361,11 +410,10 @@ public class ZombieHealth : NetworkBehaviour
     [ClientRpc]
     private void PlayHitEffectsClientRpc()
     {
-        if (animator != null)
+        if (animator != null &&
+            animator.enabled)
         {
-            animator.SetTrigger(
-                "Hit"
-            );
+            animator.SetTrigger("Hit");
         }
 
         if (zombieAudio != null)
@@ -390,27 +438,15 @@ public class ZombieHealth : NetworkBehaviour
 
         if (healthBarCanvas != null)
         {
-            healthBarCanvas.SetActive(
-                false
-            );
+            healthBarCanvas.SetActive(false);
         }
         else if (healthSlider != null)
         {
-            healthSlider.gameObject.SetActive(
-                false
-            );
+            healthSlider.gameObject.SetActive(false);
         }
 
-        if (zombieAI != null)
-        {
-            zombieAI.enabled = false;
-        }
-
-        if (agent != null)
-        {
-            agent.enabled = false;
-        }
-
+        // Lo ejecuta en todos los clientes:
+        // desactiva animación y activa físicas.
         PlayDeathEffectsClientRpc();
 
         if (RoundManager.Instance != null)
@@ -425,18 +461,13 @@ public class ZombieHealth : NetworkBehaviour
     }
 
     // =========================================================
-    // EFECTOS DE MUERTE
+    // EFECTOS DE MUERTE / RAGDOLL
     // =========================================================
 
     [ClientRpc]
     private void PlayDeathEffectsClientRpc()
     {
-        if (animator != null)
-        {
-            animator.SetTrigger(
-                "Death"
-            );
-        }
+        ActivateRagdoll();
 
         if (zombieAudio != null)
         {
@@ -456,9 +487,7 @@ public class ZombieHealth : NetworkBehaviour
         if (NetworkObject != null &&
             NetworkObject.IsSpawned)
         {
-            NetworkObject.Despawn(
-                true
-            );
+            NetworkObject.Despawn(true);
         }
     }
 }

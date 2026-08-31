@@ -328,6 +328,14 @@ public class RoundManager : NetworkBehaviour
                     spawnPoint.position,
                     spawnPoint.rotation
                 );
+                
+                ZombieAppearance zombieAppearance =
+                    zombieInstance.GetComponent<ZombieAppearance>();
+
+                if (zombieAppearance != null)
+                {
+                    zombieAppearance.SelectRandomModel();
+                }
 
             // Configurar vida según la ronda ANTES de spawnear en red.
             ZombieHealth zombieHealthComponent =
