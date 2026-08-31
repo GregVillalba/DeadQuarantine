@@ -19,9 +19,16 @@ public class ZombieHealth : NetworkBehaviour
     [SerializeField] private Color colorVidaMedia = Color.yellow;
     [SerializeField] private Color colorVidaBaja = Color.red;
 
+    [Header("--- EFECTO DE SANGRE ---")]
+    [SerializeField] private GameObject bloodImpactPrefab;
+    [SerializeField] private float bloodDestroyDelay = 2f;
+
     public bool IsDead { get; private set; }
 
+    // =========================================================
     // VIDA SINCRONIZADA
+    // =========================================================
+
     private NetworkVariable<int> currentHealthNetwork =
         new NetworkVariable<int>(
             3,
@@ -46,9 +53,8 @@ public class ZombieHealth : NetworkBehaviour
     // CONFIGURAR VIDA SEGÚN LA RONDA
     // =========================================================
 
-    // Debe llamarse DESPUÉS de Instantiate() y ANTES de
-    // NetworkObject.Spawn(), para que OnNetworkSpawn() ya
-    // tenga el maxHealth correcto al inicializar la NetworkVariable.
+    // Debe llamarse DESPUÉS de Instantiate()
+    // y ANTES de NetworkObject.Spawn().
     public void InitializeHealth(int newMaxHealth)
     {
         maxHealth = newMaxHealth;
@@ -56,11 +62,13 @@ public class ZombieHealth : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        currentHealthNetwork.OnValueChanged += OnHealthChanged;
+        currentHealthNetwork.OnValueChanged +=
+            OnHealthChanged;
 
         if (IsServer)
         {
-            currentHealthNetwork.Value = maxHealth;
+            currentHealthNetwork.Value =
+                maxHealth;
         }
 
         ActualizarBarraDeVida();
@@ -68,37 +76,223 @@ public class ZombieHealth : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
-        currentHealthNetwork.OnValueChanged -= OnHealthChanged;
+        currentHealthNetwork.OnValueChanged -=
+            OnHealthChanged;
     }
 
     // =========================================================
     // DAÑO
     // =========================================================
 
-    public void TakeDamage(int amount)
+    public void TakeDamage(
+        int amount,
+        Vector3 hitPoint,
+        Vector3 hitNormal
+    )
     {
         if (IsDead)
             return;
 
-        TakeDamageServerRpc(amount);
+        TakeDamageServerRpc(
+            amount,
+            hitPoint,
+            hitNormal
+        );
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void TakeDamageServerRpc(int amount)
+    private void TakeDamageServerRpc(
+        int amount,
+        Vector3 hitPoint,
+        Vector3 hitNormal,
+        ServerRpcParams rpcParams = default
+    )
     {
         if (IsDead)
             return;
 
-        currentHealthNetwork.Value -= amount;
+        // Jugador que realizó el disparo.
+        ulong shooterClientId =
+            rpcParams.Receive.SenderClientId;
+
+        currentHealthNetwork.Value -=
+            amount;
+
+        // =====================================================
+        // MUERTE
+        // =====================================================
 
         if (currentHealthNetwork.Value <= 0)
         {
             currentHealthNetwork.Value = 0;
+
+            // Hit Marker ROJO solamente
+            // para el jugador que mató al zombie.
+            ShowHitMarkerClientRpc(
+                true,
+                GetTargetClientRpcParams(
+                    shooterClientId
+                )
+            );
+
             Die();
+
+            // Sangre.
+            PlayBloodEffectClientRpc(
+                hitPoint,
+                hitNormal
+            );
+
+            return;
         }
-        else
+
+        // =====================================================
+        // IMPACTO NORMAL
+        // =====================================================
+
+        // Hit Marker BLANCO solamente
+        // para el jugador que disparó.
+        ShowHitMarkerClientRpc(
+            false,
+            GetTargetClientRpcParams(
+                shooterClientId
+            )
+        );
+
+        PlayHitEffectsClientRpc();
+
+        // Sangre.
+        PlayBloodEffectClientRpc(
+            hitPoint,
+            hitNormal
+        );
+    }
+
+    // =========================================================
+    // TARGET DEL CLIENT RPC
+    // =========================================================
+
+    private ClientRpcParams GetTargetClientRpcParams(
+        ulong clientId
+    )
+    {
+        return new ClientRpcParams
         {
-            PlayHitEffectsClientRpc();
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds =
+                    new ulong[]
+                    {
+                        clientId
+                    }
+            }
+        };
+    }
+
+    // =========================================================
+    // HIT MARKER
+    // =========================================================
+
+    [ClientRpc]
+    private void ShowHitMarkerClientRpc(
+        bool killedZombie,
+        ClientRpcParams clientRpcParams = default
+    )
+    {
+        if (NetworkManager.Singleton == null)
+            return;
+
+        HUDController hud = null;
+
+        if (NetworkManager.Singleton.LocalClient != null &&
+            NetworkManager.Singleton.LocalClient.PlayerObject != null)
+        {
+            hud =
+                NetworkManager.Singleton
+                    .LocalClient
+                    .PlayerObject
+                    .GetComponentInChildren<
+                        HUDController
+                    >(true);
+        }
+
+        if (hud != null)
+        {
+            hud.ShowHitMarker(
+                killedZombie
+            );
+        }
+    }
+
+    // =========================================================
+    // SANGRE
+    // =========================================================
+
+    [ClientRpc]
+    private void PlayBloodEffectClientRpc(
+        Vector3 hitPoint,
+        Vector3 hitNormal
+    )
+    {
+        if (bloodImpactPrefab == null)
+            return;
+
+        Quaternion rotation =
+            Quaternion.LookRotation(
+                -hitNormal
+            );
+
+        GameObject blood =
+            Instantiate(
+                bloodImpactPrefab,
+                hitPoint,
+                rotation
+            );
+
+        Destroy(
+            blood,
+            bloodDestroyDelay
+        );
+    }
+
+    // =========================================================
+    // HIT MARKER DE MUERTE
+    // =========================================================
+
+    [ClientRpc]
+    private void ShowKillHitMarkerClientRpc(
+        ulong shooterClientId
+    )
+    {
+        if (NetworkManager.Singleton == null)
+            return;
+
+        // Solamente el jugador que realizó
+        // el disparo recibe el Hit Marker rojo.
+        if (NetworkManager.Singleton.LocalClientId !=
+            shooterClientId)
+        {
+            return;
+        }
+
+        HUDController hud =
+            null;
+
+        if (NetworkManager.Singleton.LocalClient != null &&
+            NetworkManager.Singleton.LocalClient.PlayerObject != null)
+        {
+            hud =
+                NetworkManager.Singleton
+                    .LocalClient
+                    .PlayerObject
+                    .GetComponentInChildren<
+                        HUDController
+                    >(true);
+        }
+
+        if (hud != null)
+        {
+            hud.ShowHitMarker(true);
         }
     }
 
@@ -122,21 +316,28 @@ public class ZombieHealth : NetworkBehaviour
     {
         float porcentaje =
             maxHealth > 0
-                ? (float)currentHealthNetwork.Value / maxHealth
+                ? (float)currentHealthNetwork.Value /
+                  maxHealth
                 : 0f;
 
         if (healthSlider != null)
         {
-            healthSlider.maxValue = maxHealth;
+            healthSlider.maxValue =
+                maxHealth;
+
             healthSlider.value =
                 currentHealthNetwork.Value;
         }
 
         if (healthFillImage != null)
         {
-            healthFillImage.fillAmount = porcentaje;
+            healthFillImage.fillAmount =
+                porcentaje;
+
             healthFillImage.color =
-                ObtenerColorSegunVida(porcentaje);
+                ObtenerColorSegunVida(
+                    porcentaje
+                );
         }
     }
 
@@ -161,10 +362,16 @@ public class ZombieHealth : NetworkBehaviour
     private void PlayHitEffectsClientRpc()
     {
         if (animator != null)
-            animator.SetTrigger("Hit");
+        {
+            animator.SetTrigger(
+                "Hit"
+            );
+        }
 
         if (zombieAudio != null)
+        {
             zombieAudio.PlayHitSound();
+        }
     }
 
     // =========================================================
@@ -183,18 +390,26 @@ public class ZombieHealth : NetworkBehaviour
 
         if (healthBarCanvas != null)
         {
-            healthBarCanvas.SetActive(false);
+            healthBarCanvas.SetActive(
+                false
+            );
         }
         else if (healthSlider != null)
         {
-            healthSlider.gameObject.SetActive(false);
+            healthSlider.gameObject.SetActive(
+                false
+            );
         }
 
         if (zombieAI != null)
+        {
             zombieAI.enabled = false;
+        }
 
         if (agent != null)
+        {
             agent.enabled = false;
+        }
 
         PlayDeathEffectsClientRpc();
 
@@ -209,15 +424,29 @@ public class ZombieHealth : NetworkBehaviour
         );
     }
 
+    // =========================================================
+    // EFECTOS DE MUERTE
+    // =========================================================
+
     [ClientRpc]
     private void PlayDeathEffectsClientRpc()
     {
         if (animator != null)
-            animator.SetTrigger("Death");
+        {
+            animator.SetTrigger(
+                "Death"
+            );
+        }
 
         if (zombieAudio != null)
+        {
             zombieAudio.PlayDeathSound();
+        }
     }
+
+    // =========================================================
+    // DESPAWN
+    // =========================================================
 
     private void DespawnZombie()
     {
@@ -227,7 +456,9 @@ public class ZombieHealth : NetworkBehaviour
         if (NetworkObject != null &&
             NetworkObject.IsSpawned)
         {
-            NetworkObject.Despawn(true);
+            NetworkObject.Despawn(
+                true
+            );
         }
     }
 }

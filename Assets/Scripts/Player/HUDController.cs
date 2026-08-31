@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
@@ -35,12 +36,40 @@ public class HUDController : MonoBehaviour
     [SerializeField] private RectTransform dashBottom;
     [SerializeField] private RectTransform dashLeft;
     [SerializeField] private RectTransform dashRight;
-    [SerializeField] private float crosshairMinGap = 6f;
-    [SerializeField] private float crosshairMaxGap = 22f;
+
+    [SerializeField] private float crosshairMinGap = 40f;
+    [SerializeField] private float crosshairMaxGap = 140f;
+
+    [Header("Hit Marker")]
+    [SerializeField] private GameObject hitMarker;
+    [SerializeField] private float hitMarkerDuration = 0.10f;
+
+    private Image[] hitMarkerImages;
+
+    private Coroutine hitMarkerCoroutine;
 
     private void Start()
     {
         BuscarRoundManager();
+
+        if (hitMarker != null)
+        {
+            // Obtiene las Images de:
+            //
+            // HitMarker
+            // ├── Dash_Top
+            // ├── Dash_Bottom
+            // ├── Dash_Left
+            // └── Dash_Right
+            //
+            hitMarkerImages =
+                hitMarker.GetComponentsInChildren<Image>(
+                    true
+                );
+
+            hitMarker.SetActive(false);
+        }
+
         ActualizarTodo();
     }
 
@@ -56,7 +85,8 @@ public class HUDController : MonoBehaviour
 
     private void BuscarRoundManager()
     {
-        roundManager = FindFirstObjectByType<RoundManager>();
+        roundManager =
+            FindFirstObjectByType<RoundManager>();
 
         if (roundManager == null)
             return;
@@ -96,12 +126,17 @@ public class HUDController : MonoBehaviour
             playerHealth.MaxHealth;
 
         if (healthFill != null)
-            healthFill.fillAmount = percentage;
+        {
+            healthFill.fillAmount =
+                percentage;
+        }
 
         if (healthPercentText != null)
         {
             healthPercentText.text =
-                Mathf.RoundToInt(percentage * 100f) + "%";
+                Mathf.RoundToInt(
+                    percentage * 100f
+                ) + "%";
         }
 
         if (healthFill != null)
@@ -146,16 +181,23 @@ public class HUDController : MonoBehaviour
             return;
 
         if (ammoText != null)
+        {
             ammoText.text =
                 weapon.CurrentAmmo.ToString();
+        }
 
         if (ammoMaxText != null)
+        {
             ammoMaxText.text =
-                "/ " + weapon.MaxAmmo;
+                "/ " +
+                weapon.MaxAmmo;
+        }
 
         if (weaponNameText != null)
+        {
             weaponNameText.text =
                 weapon.WeaponName.ToUpper();
+        }
     }
 
     // =========================================================
@@ -211,19 +253,100 @@ public class HUDController : MonoBehaviour
             );
 
         if (dashTop != null)
+        {
             dashTop.anchoredPosition =
-                new Vector2(0f, gap);
+                new Vector2(
+                    0f,
+                    gap
+                );
+        }
 
         if (dashBottom != null)
+        {
             dashBottom.anchoredPosition =
-                new Vector2(0f, -gap);
+                new Vector2(
+                    0f,
+                    -gap
+                );
+        }
 
         if (dashLeft != null)
+        {
             dashLeft.anchoredPosition =
-                new Vector2(-gap, 0f);
+                new Vector2(
+                    -gap,
+                    0f
+                );
+        }
 
         if (dashRight != null)
+        {
             dashRight.anchoredPosition =
-                new Vector2(gap, 0f);
+                new Vector2(
+                    gap,
+                    0f
+                );
+        }
+    }
+
+    // =========================================================
+    // HIT MARKER
+    // =========================================================
+
+    public void ShowHitMarker(bool killedZombie)
+    {
+        if (hitMarker == null)
+            return;
+
+        // Por si todavía no se obtuvieron las imágenes.
+        if (hitMarkerImages == null ||
+            hitMarkerImages.Length == 0)
+        {
+            hitMarkerImages =
+                hitMarker.GetComponentsInChildren<Image>(
+                    true
+                );
+        }
+
+        Color markerColor =
+            killedZombie
+                ? Color.red
+                : Color.white;
+
+        // Cambiar el color de las 4 partes
+        // del HitMarker.
+        foreach (Image image in hitMarkerImages)
+        {
+            if (image != null)
+            {
+                image.color =
+                    markerColor;
+            }
+        }
+
+        if (hitMarkerCoroutine != null)
+        {
+            StopCoroutine(
+                hitMarkerCoroutine
+            );
+        }
+
+        hitMarkerCoroutine =
+            StartCoroutine(
+                HitMarkerRoutine()
+            );
+    }
+
+    private IEnumerator HitMarkerRoutine()
+    {
+        hitMarker.SetActive(true);
+
+        yield return new WaitForSecondsRealtime(
+            hitMarkerDuration
+        );
+
+        hitMarker.SetActive(false);
+
+        hitMarkerCoroutine = null;
     }
 }
