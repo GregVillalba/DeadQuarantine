@@ -1,9 +1,10 @@
-using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 using UnityEngine.SceneManagement;
 using Unity.Netcode;
+using System.Collections;
+using System.Collections.Generic;
 
 public class MultiplayerAndGameplayTests
 {
@@ -107,7 +108,7 @@ public class MultiplayerAndGameplayTests
     [UnityTest]
     public IEnumerator TC14_RoundReset_RoundManagerAvailable()
     {
-        var rm = GameObject.FindObjectOfType<RoundManager>();
+        var rm = Object.FindAnyObjectByType<RoundManager>();
         Assert.IsNotNull(rm, "RoundManager debe existir en la escena para gestionar rondas.");
 
         // Llamada segura: StartRound sólo procede si el servidor está activo, aquí verificamos la existencia.
@@ -122,7 +123,7 @@ public class MultiplayerAndGameplayTests
     [UnityTest]
     public IEnumerator TC38_RoundProgression_InstanceExists()
     {
-        var roundManager = GameObject.FindObjectOfType<RoundManager>();
+        var roundManager = Object.FindAnyObjectByType<RoundManager>();
         Assert.IsNotNull(roundManager, "RoundManager debe existir en la escena.");
 
         yield return null;
@@ -134,7 +135,7 @@ public class MultiplayerAndGameplayTests
     [UnityTest]
     public IEnumerator TC27_AllPlayersDead_TriggersGameOverDefeat_Basic()
     {
-        var roundManager = GameObject.FindObjectOfType<RoundManager>();
+        var roundManager = Object.FindAnyObjectByType<RoundManager>();
         Assert.IsNotNull(roundManager, "RoundManager debe existir para gestionar estado de juego.");
 
         // No se manipula un GameState global aquí; comprobamos existencia del manager
