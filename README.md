@@ -195,7 +195,3 @@
 - Coopera con hasta 3 jugadores más
 - Sincronización de vida y munición
 - Boss compartido y oleadas conjuntas
-
----
-
-## 📁 Estructura del Proyecto
