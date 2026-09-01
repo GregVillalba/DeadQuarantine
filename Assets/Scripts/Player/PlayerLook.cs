@@ -4,47 +4,47 @@ using Unity.Netcode;
 
 public class PlayerLook : MonoBehaviour
 {
+    [Header("Camera")]
     [SerializeField] private Transform cameraTransform;
+
+    [Header("Mouse")]
     [SerializeField] private float mouseSensitivity = 0.1f;
+
+    [Header("Vertical Look")]
     [SerializeField] private float minPitch = -80f;
     [SerializeField] private float maxPitch = 80f;
 
     private PlayerControls controls;
-    private Vector2 lookInput;
-    private float pitch;
 
     private NetworkObject networkObject;
     private Transform playerTransform;
+
+    private float pitch = 0f;
 
     private void Awake()
     {
         controls = new PlayerControls();
 
-        networkObject = GetComponentInParent<NetworkObject>();
+        networkObject =
+            GetComponentInParent<NetworkObject>();
 
         if (networkObject != null)
-            playerTransform = networkObject.transform;
+        {
+            playerTransform =
+                networkObject.transform;
+        }
+
+        pitch = 0f;
     }
 
     private void OnEnable()
     {
         controls.Player.Enable();
-
-        controls.Player.Look.performed += OnLook;
-        controls.Player.Look.canceled += OnLook;
     }
 
     private void OnDisable()
     {
-        controls.Player.Look.performed -= OnLook;
-        controls.Player.Look.canceled -= OnLook;
-
         controls.Player.Disable();
-    }
-
-    private void OnLook(InputAction.CallbackContext context)
-    {
-        lookInput = context.ReadValue<Vector2>();
     }
 
     private void Update()
@@ -61,30 +61,43 @@ public class PlayerLook : MonoBehaviour
         if (playerTransform == null)
             return;
 
-        // GIRAR AL PERSONAJE HORIZONTALMENTE
-        float yaw = lookInput.x * mouseSensitivity;
+        if (cameraTransform == null)
+            return;
+
+        // Leer el movimiento del mouse del frame actual.
+        Vector2 lookInput =
+            controls.Player.Look.ReadValue<Vector2>();
+
+        // =====================================================
+        // HORIZONTAL
+        // =====================================================
+
+        float yaw =
+            lookInput.x * mouseSensitivity;
 
         playerTransform.Rotate(
             Vector3.up * yaw
         );
 
-        // MIRAR ARRIBA / ABAJO
-        pitch -= lookInput.y * mouseSensitivity;
+        // =====================================================
+        // VERTICAL
+        // =====================================================
 
-        pitch = Mathf.Clamp(
-            pitch,
-            minPitch,
-            maxPitch
-        );
+        pitch -=
+            lookInput.y * mouseSensitivity;
 
-        if (cameraTransform != null)
-        {
-            cameraTransform.localRotation =
-                Quaternion.Euler(
-                    pitch,
-                    0f,
-                    0f
-                );
-        }
+        pitch =
+            Mathf.Clamp(
+                pitch,
+                minPitch,
+                maxPitch
+            );
+
+        cameraTransform.localRotation =
+            Quaternion.Euler(
+                pitch,
+                0f,
+                0f
+            );
     }
 }

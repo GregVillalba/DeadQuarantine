@@ -155,7 +155,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3200739460
+  GlobalObjectIdHash: 1622879537
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -373,7 +373,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 1
-  m_Volume: 0.043
+  m_Volume: 0.1
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -381,8 +381,8 @@ AudioSource:
   SpatializePostEffects: 0
   Priority: 128
   DopplerLevel: 1
-  MinDistance: 1
-  MaxDistance: 500
+  MinDistance: 2
+  MaxDistance: 15
   Pan2D: 0
   rolloffMode: 0
   BypassEffects: 0
@@ -417,7 +417,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0
+      value: 1
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -470,17 +470,69 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Scripts::ZombieAudio
   growlClips:
-  - {fileID: 8300000, guid: d8ed6de78016b1845a944dd84e455c81, type: 3}
-  growlIntervalMin: 1
-  growlIntervalMax: 10
+  - {fileID: 8300000, guid: caabd0ed789c70c40a3a3b9e70e0769b, type: 3}
+  - {fileID: 8300000, guid: 6566b738dabbe444eb8709add13c194d, type: 3}
+  - {fileID: 8300000, guid: 27ed0d08aae23fe47b9e7abf5a9427ae, type: 3}
+  - {fileID: 8300000, guid: 1da406167bc885e4583f9b81d1c9f272, type: 3}
+  - {fileID: 8300000, guid: ea2772511173fb44e900ead36164c944, type: 3}
+  - {fileID: 8300000, guid: b67f721fec790214babc42989bf91858, type: 3}
+  growlIntervalMin: 3
+  growlIntervalMax: 6
+  runGrowlClips:
+  - {fileID: 8300000, guid: d577b2e686516f742a21edeece5e20bc, type: 3}
+  - {fileID: 8300000, guid: c9804c38cd7219844a84f30d66996de7, type: 3}
+  - {fileID: 8300000, guid: 0bb5f7f82c909fa428b1b08b5956247a, type: 3}
+  - {fileID: 8300000, guid: 4645b9ea34ca7c346b928d612bba1f68, type: 3}
+  - {fileID: 8300000, guid: 063d25197bce189498627ca3fe3d01f8, type: 3}
+  - {fileID: 8300000, guid: bfbd831b685f692408fc0458e7e3ed23, type: 3}
+  - {fileID: 8300000, guid: 9127c3a2e55e9fe4aaa46dc7e681acd3, type: 3}
+  - {fileID: 8300000, guid: 857247bc4f908624ab42dd5b4c2f0d25, type: 3}
+  - {fileID: 8300000, guid: 4ef3e474fdc4a994892201152389bba4, type: 3}
+  runGrowlIntervalMin: 2
+  runGrowlIntervalMax: 4
   footstepClips:
   - {fileID: 8300000, guid: 5bf350cfd986b7e41b0c4950468cd4f4, type: 3}
   footstepInterval: 33
   movementThreshold: 0.1
-  attackClips: []
+  behindPlayerClips:
+  - {fileID: 8300000, guid: 4f12f7693d465ee48ac131cd7ebb4f92, type: 3}
+  - {fileID: 8300000, guid: 9ba73147e8384df458f0ac48b814238e, type: 3}
+  - {fileID: 8300000, guid: a53b3f1b7fe262842b6b4f7a2a6b4be2, type: 3}
+  - {fileID: 8300000, guid: 45a8cd9733ecdb24396616d61290e0fd, type: 3}
+  - {fileID: 8300000, guid: 02ce5d2a19048294383c95580987d4d2, type: 3}
+  - {fileID: 8300000, guid: 4db241cdeea59ec418f34d1940f5116b, type: 3}
+  behindPlayerIntervalMin: 2
+  behindPlayerIntervalMax: 5
+  attackClips:
+  - {fileID: 8300000, guid: dc06a813d70d63748b26867abacf9d7a, type: 3}
+  - {fileID: 8300000, guid: 320b1ebea2f34f34c84260d831f198e7, type: 3}
+  - {fileID: 8300000, guid: 1c8d69c4a8eb61d48ae707b255cdc6f8, type: 3}
+  - {fileID: 8300000, guid: b1102543e36176147b03f74aae28ba8f, type: 3}
+  - {fileID: 8300000, guid: e479d20d59a58e54dac91da19e2f4120, type: 3}
+  - {fileID: 8300000, guid: 7f686ed79e5cf4c45a10fbc816d24f8f, type: 3}
+  - {fileID: 8300000, guid: eed7046f3adee3044b9d0d72f4cbd9c1, type: 3}
+  - {fileID: 8300000, guid: 01f4bfff4bc6e6a43a20492f3cacd3d5, type: 3}
+  - {fileID: 8300000, guid: 37eae858eb35f4a40b8ffea834da9f11, type: 3}
+  - {fileID: 8300000, guid: 3598e5224684c10479d4b37d4bc66530, type: 3}
+  - {fileID: 8300000, guid: 5dedc8f3b0ff6954697b256062f13ce4, type: 3}
+  - {fileID: 8300000, guid: d52386b4bf4b7cd47bac3477614e36ef, type: 3}
+  - {fileID: 8300000, guid: b10857834bb9646418e6d7581ab18497, type: 3}
+  - {fileID: 8300000, guid: 18535fab4bd2b2f40a46827fa2af3876, type: 3}
+  - {fileID: 8300000, guid: c4a52fa261353264db810e3673d61c7a, type: 3}
+  - {fileID: 8300000, guid: b6921e5e2e125c34b9c120c76c170a65, type: 3}
   hitClips: []
   deathClips:
-  - {fileID: 8300000, guid: ab28161855d29a3449c746b316fd80f4, type: 3}
+  - {fileID: 8300000, guid: d12f1ebb3f2701944ae759d2ce339da4, type: 3}
+  - {fileID: 8300000, guid: de92bfa459bc6d243963ad456d969cf8, type: 3}
+  - {fileID: 8300000, guid: eff390e25ef915f488aa4d812ab51141, type: 3}
+  - {fileID: 8300000, guid: c545ccab0cef23f44b1b35bc2219721b, type: 3}
+  - {fileID: 8300000, guid: 6f69780a856c45043971ef929282a69b, type: 3}
+  - {fileID: 8300000, guid: c290b4673dad38542b33ec398a1b5563, type: 3}
+  - {fileID: 8300000, guid: 1e7037042959937448b0e6f057438e4f, type: 3}
+  - {fileID: 8300000, guid: 01957faa8c1a3f94aa9d65a80bf85477, type: 3}
+  - {fileID: 8300000, guid: 656d05b5e5fccd745b5e3b64fb902c53, type: 3}
+  - {fileID: 8300000, guid: 2a6f0bac4eb0d014f8a19b8bb095ae03, type: 3}
+  - {fileID: 8300000, guid: ef4294511edbd1b45a5b8c22c232f731, type: 3}
 --- !u!114 &2913778829879165946
 MonoBehaviour:
   m_ObjectHideFlags: 0

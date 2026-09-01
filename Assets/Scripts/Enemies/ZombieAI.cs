@@ -1,16 +1,26 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Unity.Netcode;
 
 public class ZombieAI : NetworkBehaviour
 {
+    [Header("Ataque")]
     [SerializeField] private float attackRange = 1.8f;
     [SerializeField] private int attackDamage = 10;
-    [SerializeField] private float attackCooldown = 1.5f;
+
+    // Tiempo entre el inicio de un ataque y el siguiente.
+    [SerializeField] private float attackCooldown = 0.9f;
+
+    // Tiempo desde que comienza la animación
+    // hasta que realmente impacta el golpe.
+    [SerializeField] private float attackHitDelay = 0.35f;
 
     [Header("Velocidad")]
     [SerializeField] private float walkSpeed = 1.5f;
     [SerializeField] private float runSpeed = 3f;
+
+    public bool IsRunning { get; private set; }
 
     private NavMeshAgent agent;
     private Animator animator;
@@ -19,6 +29,10 @@ public class ZombieAI : NetworkBehaviour
 
     private float nextAttackTime;
     private Transform target;
+
+    // Evita que haya varios ataques ejecutándose
+    // al mismo tiempo.
+    private bool isAttacking;
 
     private void Awake()
     {
@@ -59,10 +73,31 @@ public class ZombieAI : NetworkBehaviour
 
     public void SetRunning(bool isRunning)
     {
+        IsRunning = isRunning;
+
         if (agent != null)
         {
             agent.speed = isRunning ? runSpeed : walkSpeed;
         }
+    }
+
+    public bool IsBehindTarget()
+    {
+        if (target == null)
+            return false;
+
+        Vector3 directionToZombie =
+            (transform.position - target.position).normalized;
+
+        float dot =
+            Vector3.Dot(
+                target.forward,
+                directionToZombie
+            );
+
+        // dot negativo significa que el zombie está
+        // del lado opuesto a hacia donde mira el jugador.
+        return dot < -0.3f;
     }
 
     private void Update()
@@ -70,7 +105,8 @@ public class ZombieAI : NetworkBehaviour
         if (!IsServer)
             return;
 
-        if (zombieHealth != null && zombieHealth.IsDead)
+        if (zombieHealth != null &&
+            zombieHealth.IsDead)
             return;
 
         FindClosestPlayer();
@@ -86,16 +122,30 @@ public class ZombieAI : NetworkBehaviour
 
         if (distanceToTarget <= attackRange)
         {
-            agent.isStopped = true;
+            if (agent != null)
+            {
+                agent.isStopped = true;
+            }
+
             TryAttack();
         }
         else
         {
-            agent.isStopped = false;
-
-            if (agent.isOnNavMesh)
+            // Si está fuera del rango y no está ejecutando
+            // un ataque, puede volver a perseguir.
+            if (!isAttacking)
             {
-                agent.SetDestination(target.position);
+                if (agent != null)
+                {
+                    agent.isStopped = false;
+
+                    if (agent.isOnNavMesh)
+                    {
+                        agent.SetDestination(
+                            target.position
+                        );
+                    }
+                }
             }
         }
 
@@ -107,7 +157,9 @@ public class ZombieAI : NetworkBehaviour
         if (NetworkManager.Singleton == null)
             return;
 
-        float closestDistance = Mathf.Infinity;
+        float closestDistance =
+            Mathf.Infinity;
+
         Transform closestPlayer = null;
 
         foreach (
@@ -139,33 +191,92 @@ public class ZombieAI : NetworkBehaviour
 
     private void TryAttack()
     {
-        if (Time.time < nextAttackTime)
+        // Ya hay un ataque en curso.
+        if (isAttacking)
             return;
 
-        nextAttackTime =
-            Time.time + attackCooldown;
-
-        if (animator != null)
-            animator.SetTrigger("Attack");
-
-        if (zombieAudio != null)
-            zombieAudio.PlayAttackSound();
+        // Todavía está en cooldown.
+        if (Time.time < nextAttackTime)
+            return;
 
         if (target == null)
             return;
 
-        PlayerHealth playerHealth =
-            target.GetComponentInParent<PlayerHealth>();
+        // Comienza el cooldown inmediatamente
+        // al iniciar la animación.
+        nextAttackTime =
+            Time.time + attackCooldown;
 
-        if (playerHealth != null)
+        isAttacking = true;
+
+        // Detener completamente al zombie.
+        if (agent != null)
         {
-            playerHealth.TakeDamage(attackDamage);
-
-            Debug.Log(
-                "[ZombieAI] Zombie atacó a Player " +
-                playerHealth.name
-            );
+            agent.isStopped = true;
         }
+
+        // Iniciar animación.
+        if (animator != null)
+        {
+            animator.SetTrigger("Attack");
+        }
+
+        // Sonido del ataque.
+        if (zombieAudio != null)
+        {
+            zombieAudio.PlayAttackSound();
+        }
+
+        // El daño se aplica después del delay.
+        StartCoroutine(ApplyAttackDamage());
+    }
+
+    private IEnumerator ApplyAttackDamage()
+    {
+        yield return new WaitForSeconds(
+            attackHitDelay
+        );
+
+        // El zombie podría haber muerto
+        // mientras hacía la animación.
+        if (zombieHealth != null &&
+            zombieHealth.IsDead)
+        {
+            isAttacking = false;
+            yield break;
+        }
+
+        if (target != null)
+        {
+            // Comprobamos nuevamente la distancia.
+            // Así el zombie no pega si el jugador
+            // salió del rango durante la animación.
+            float distanceToTarget =
+                Vector3.Distance(
+                    transform.position,
+                    target.position
+                );
+
+            if (distanceToTarget <= attackRange)
+            {
+                PlayerHealth playerHealth =
+                    target.GetComponentInParent<PlayerHealth>();
+
+                if (playerHealth != null)
+                {
+                    playerHealth.TakeDamage(
+                        attackDamage
+                    );
+
+                    Debug.Log(
+                        "[ZombieAI] Zombie atacó a Player " +
+                        playerHealth.name
+                    );
+                }
+            }
+        }
+
+        isAttacking = false;
     }
 
     private void UpdateAnimator()
@@ -173,7 +284,8 @@ public class ZombieAI : NetworkBehaviour
         if (animator == null)
             return;
 
-        if (agent == null || !agent.isOnNavMesh)
+        if (agent == null ||
+            !agent.isOnNavMesh)
             return;
 
         float speed =

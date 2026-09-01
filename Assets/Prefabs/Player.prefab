@@ -20012,6 +20012,81 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &4695643460664736385
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5534636776403253550}
+  - component: {fileID: 1863270010036949307}
+  - component: {fileID: 560553113316079753}
+  m_Layer: 3
+  m_Name: DamageVignette
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &5534636776403253550
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4695643460664736385}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2887396819924741446}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &1863270010036949307
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4695643460664736385}
+  m_CullTransparentMesh: 1
+--- !u!114 &560553113316079753
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4695643460664736385}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 0, b: 0, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 21300000, guid: afca10fd5b150da4c9229ae0c3e9aaf9, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &4712056691618331887
 GameObject:
   m_ObjectHideFlags: 0
@@ -22238,12 +22313,12 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2474560208081023371}
-  - {fileID: 7000587175974533}
   - {fileID: 226261314451307686}
+  - {fileID: 2883292750241744731}
+  - {fileID: 7000587175974533}
   - {fileID: 7288683592479657548}
   - {fileID: 787090060113344644}
   - {fileID: 4935948304489739647}
-  - {fileID: 2883292750241744731}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!143 &4434044238315664879
@@ -22310,7 +22385,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a7b4d8e59fd2be7469205525cf346797, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerLook
-  cameraTransform: {fileID: 226261314451307686}
+  cameraTransform: {fileID: 6766171541677822829}
   mouseSensitivity: 0.1
   minPitch: -80
   maxPitch: 80
@@ -22328,12 +22403,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
   ShowTopMostFoldoutHeaderGroup: 1
   cameraTransform: {fileID: 226261314451307686}
-  moveSpeed: 4
-  sprintSpeed: 6
+  moveSpeed: 5
+  sprintSpeed: 7.5
   jumpForce: 6
   gravity: -15
   groundedVelocity: -2
-  maxStamina: 5
+  maxStamina: 9
   staminaDrainRate: 1.5
   staminaRegenRate: 1
   exhaustedRecoverThreshold: 0.25
@@ -22354,6 +22429,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
   ShowTopMostFoldoutHeaderGroup: 1
   maxHealth: 100
+  regenerationDelay: 5
+  healthRecoveredPerTick: 25
+  regenerationInterval: 1
   CurrentHealth:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
@@ -22817,6 +22895,7 @@ GameObject:
   - component: {fileID: 8884011811728304703}
   - component: {fileID: 3877726030777468331}
   - component: {fileID: 101452102690540902}
+  - component: {fileID: 2572015956964376660}
   m_Layer: 0
   m_Name: Camera
   m_TagString: MainCamera
@@ -22833,7 +22912,7 @@ Transform:
   m_GameObject: {fileID: 5802491283031396125}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.6, z: 0}
+  m_LocalPosition: {x: 0, y: 1.6000001, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -22857,7 +22936,7 @@ Camera:
   m_ShutterSpeed: 0.005
   m_Aperture: 16
   m_FocusDistance: 10
-  m_FocalLength: 50
+  m_FocalLength: 20.78461
   m_BladeCount: 5
   m_Curvature: {x: 2, y: 11}
   m_BarrelClipping: 0.25
@@ -22870,9 +22949,9 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.2
+  near clip plane: 0.1
   far clip plane: 1000
-  field of view: 60
+  field of view: 60.000004
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
@@ -22943,6 +23022,30 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &2572015956964376660
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5802491283031396125}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed0b878eda450d040ad3e0f44e3bc423, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::PlayerDamageEffects
+  playerHealth: {fileID: 2373627705313556358}
+  cameraShakeTransform: {fileID: 226261314451307686}
+  damageVignette: {fileID: 560553113316079753}
+  shakeDuration: 0.15
+  shakeIntensity: 1
+  shakeRotation: 2
+  highHealthThreshold: 0.9
+  healthWarningThreshold: 0.5
+  criticalHealthThreshold: 0.25
+  softVignetteAlpha: 0.1
+  normalVignetteAlpha: 0.22
+  criticalVignetteAlpha: 0.45
 --- !u!1 &5853692405020399798
 GameObject:
   m_ObjectHideFlags: 0
@@ -26985,6 +27088,7 @@ RectTransform:
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 5534636776403253550}
   - {fileID: 6526402151077599386}
   - {fileID: 7496660369075236988}
   - {fileID: 9216820349589059348}
@@ -37044,7 +37148,7 @@ Transform:
   m_GameObject: {fileID: 8972921293497775450}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.76604444, z: -0, w: 0.64278764}
-  m_LocalPosition: {x: -0.007999897, y: 0, z: -0.047000885}
+  m_LocalPosition: {x: -0.00799942, y: 0, z: -0.047000885}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

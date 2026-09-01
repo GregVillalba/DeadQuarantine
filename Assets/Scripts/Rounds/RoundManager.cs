@@ -27,8 +27,13 @@ public class RoundManager : NetworkBehaviour
 
     [Header("Spawn escalonado")]
     [SerializeField] private float initialSpawnDelay = 5f;
-    [SerializeField] private float minSpawnInterval = 2f;
-    [SerializeField] private float maxSpawnInterval = 10f;
+
+    [Header("Intervalos de spawn")]
+    [SerializeField] private float round1MinSpawnInterval = 2f;
+    [SerializeField] private float round1MaxSpawnInterval = 4f;
+
+    [SerializeField] private float finalRoundMinSpawnInterval = 0.8f;
+    [SerializeField] private float finalRoundMaxSpawnInterval = 1.6f;
 
     [Header("HUD de inicio de ronda")]
     [SerializeField] private RoundStartHUD roundStartHUD;
@@ -257,6 +262,44 @@ public class RoundManager : NetworkBehaviour
     }
 
     // =========================================================
+    // OBTENER INTERVALO SEGÚN RONDA
+    // =========================================================
+
+    private float GetRandomSpawnInterval(int round)
+    {
+        if (maxRounds <= 1)
+        {
+            return Random.Range(
+                round1MinSpawnInterval,
+                round1MaxSpawnInterval
+            );
+        }
+
+        float roundProgress =
+            (round - 1f) /
+            (maxRounds - 1f);
+
+        float currentMinInterval =
+            Mathf.Lerp(
+                round1MinSpawnInterval,
+                finalRoundMinSpawnInterval,
+                roundProgress
+            );
+
+        float currentMaxInterval =
+            Mathf.Lerp(
+                round1MaxSpawnInterval,
+                finalRoundMaxSpawnInterval,
+                roundProgress
+            );
+
+        return Random.Range(
+            currentMinInterval,
+            currentMaxInterval
+        );
+    }
+
+    // =========================================================
     // SPAWN ZOMBIES
     // =========================================================
 
@@ -367,9 +410,8 @@ public class RoundManager : NetworkBehaviour
                     if (normalZombiesToSpawn > 0)
                     {
                         float wait =
-                            Random.Range(
-                                minSpawnInterval,
-                                maxSpawnInterval
+                            GetRandomSpawnInterval(
+                                round
                             );
 
                         yield return new WaitForSeconds(
@@ -384,9 +426,11 @@ public class RoundManager : NetworkBehaviour
         // ZOMBIES NORMALES
         // =====================================================
 
-        for (int i = 0;
-             i < normalZombiesToSpawn;
-             i++)
+        for (
+            int i = 0;
+            i < normalZombiesToSpawn;
+            i++
+        )
         {
             Transform spawnPoint =
                 spawnPoints[
@@ -406,9 +450,8 @@ public class RoundManager : NetworkBehaviour
             if (i < normalZombiesToSpawn - 1)
             {
                 float wait =
-                    Random.Range(
-                        minSpawnInterval,
-                        maxSpawnInterval
+                    GetRandomSpawnInterval(
+                        round
                     );
 
                 yield return new WaitForSeconds(
@@ -510,7 +553,10 @@ public class RoundManager : NetworkBehaviour
         if (bossPrefabs == null)
             return false;
 
-        foreach (GameObject bossPrefab in bossPrefabs)
+        foreach (
+            GameObject bossPrefab
+            in bossPrefabs
+        )
         {
             if (bossPrefab != null)
                 return true;
@@ -526,7 +572,10 @@ public class RoundManager : NetworkBehaviour
 
         int availableBosses = 0;
 
-        foreach (GameObject bossPrefab in bossPrefabs)
+        foreach (
+            GameObject bossPrefab
+            in bossPrefabs
+        )
         {
             if (bossPrefab != null)
             {
@@ -543,7 +592,10 @@ public class RoundManager : NetworkBehaviour
                 availableBosses
             );
 
-        foreach (GameObject bossPrefab in bossPrefabs)
+        foreach (
+            GameObject bossPrefab
+            in bossPrefabs
+        )
         {
             if (bossPrefab == null)
                 continue;
