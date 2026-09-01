@@ -5,7 +5,7 @@ using Unity.Netcode;
 [RequireComponent(typeof(CharacterController))]
 public class PlayerMovement : NetworkBehaviour
 {
-    [SerializeField] private Transform cameraTransform;
+    [Header("Movimiento")]
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float sprintSpeed = 8f;
     [SerializeField] private float jumpForce = 6f;
@@ -25,62 +25,65 @@ public class PlayerMovement : NetworkBehaviour
 
     public float CurrentStamina { get; private set; }
     public float MaxStamina => maxStamina;
+
     public bool IsSprinting { get; private set; }
     public bool IsCrouching { get; private set; }
 
     private CharacterController characterController;
     private PlayerControls controls;
+    private PlayerHealth playerHealth;
+
     private Vector2 moveInput;
     private float velocityY;
     private bool isExhausted;
 
     private float standingHeight;
     private Vector3 standingCenter;
-    private Vector3 standingCameraPosition;
     private Vector3 crouchCenter;
-    private Vector3 crouchCameraPosition;
 
     private void Awake()
     {
-        characterController = GetComponent<CharacterController>();
-        controls = new PlayerControls();
-        CurrentStamina = maxStamina;
+        characterController =
+            GetComponent<CharacterController>();
 
-        standingHeight = characterController.height;
-        standingCenter = characterController.center;
-        standingCameraPosition = cameraTransform.localPosition;
+        controls =
+            new PlayerControls();
 
-        crouchCenter = new Vector3(
-            standingCenter.x,
-            crouchHeight / 2f,
-            standingCenter.z
-        );
+        playerHealth =
+            GetComponent<PlayerHealth>();
 
-        float heightDifference =
-            standingHeight - crouchHeight;
+        CurrentStamina =
+            maxStamina;
 
-        crouchCameraPosition =
-            standingCameraPosition -
-            new Vector3(0f, heightDifference, 0f);
-    }
+        standingHeight =
+            characterController.height;
 
-    private void Start()
-    {
-        if (IsSpawned && !IsOwner)
-            return;
+        standingCenter =
+            characterController.center;
+
+        crouchCenter =
+            new Vector3(
+                standingCenter.x,
+                crouchHeight / 2f,
+                standingCenter.z
+            );
     }
 
     private void OnEnable()
     {
-        // El Player remoto NO procesa input.
         if (IsSpawned && !IsOwner)
             return;
 
         controls.Player.Enable();
 
-        controls.Player.Move.performed += OnMove;
-        controls.Player.Move.canceled += OnMove;
-        controls.Player.Jump.performed += OnJump;
+        controls.Player.Move.performed +=
+            OnMove;
+
+        controls.Player.Move.canceled +=
+            OnMove;
+
+        controls.Player.Jump.performed +=
+            OnJump;
     }
 
     private void OnDisable()
@@ -88,9 +91,14 @@ public class PlayerMovement : NetworkBehaviour
         if (controls == null)
             return;
 
-        controls.Player.Move.performed -= OnMove;
-        controls.Player.Move.canceled -= OnMove;
-        controls.Player.Jump.performed -= OnJump;
+        controls.Player.Move.performed -=
+            OnMove;
+
+        controls.Player.Move.canceled -=
+            OnMove;
+
+        controls.Player.Jump.performed -=
+            OnJump;
 
         controls.Player.Disable();
     }
@@ -111,44 +119,65 @@ public class PlayerMovement : NetworkBehaviour
         );
     }
 
-    private void OnMove(InputAction.CallbackContext context)
+    private void OnMove(
+        InputAction.CallbackContext context)
     {
-        moveInput = context.ReadValue<Vector2>();
-
-        Debug.Log(
-            "[MOVEMENT] " +
-            gameObject.name +
-            " input = " +
-            moveInput
-        );
+        moveInput =
+            context.ReadValue<Vector2>();
     }
 
-    private void OnJump(InputAction.CallbackContext context)
+    private void OnJump(
+        InputAction.CallbackContext context)
     {
         if (!IsOwner)
             return;
 
-        if (
-            characterController.isGrounded &&
-            !IsCrouching
-        )
+        if (playerHealth != null &&
+            !playerHealth.IsAlive)
         {
-            velocityY = jumpForce;
+            return;
+        }
+
+        if (characterController.isGrounded &&
+            !IsCrouching)
+        {
+            velocityY =
+                jumpForce;
         }
     }
 
     private void Update()
     {
+        if (!IsOwner)
+            return;
+
+        // Mientras está abatido no procesa
+        // movimiento ni crouch.
+        if (playerHealth != null &&
+            playerHealth.IsDowned)
+        {
+            HandleDowned();
+
+            return;
+        }
+
         HandleCrouch();
         HandleStamina();
         ApplyGravity();
 
-        float currentSpeed = moveSpeed;
+        float currentSpeed =
+            moveSpeed;
 
         if (IsCrouching)
-            currentSpeed = crouchSpeed;
+        {
+            currentSpeed =
+                crouchSpeed;
+        }
         else if (IsSprinting)
-            currentSpeed = sprintSpeed;
+        {
+            currentSpeed =
+                sprintSpeed;
+        }
 
         Vector3 horizontalMovement =
             transform.right * moveInput.x +
@@ -158,28 +187,51 @@ public class PlayerMovement : NetworkBehaviour
             horizontalMovement * currentSpeed +
             Vector3.up * velocityY;
 
-        Vector3 beforePosition = transform.position;
+        characterController.Move(
+            fullMovement *
+            Time.deltaTime
+        );
+    }
 
-        CollisionFlags flags =
-            characterController.Move(
-                fullMovement * Time.deltaTime
+    private void HandleDowned()
+    {
+        // Bloquear movimiento.
+        moveInput =
+            Vector2.zero;
+
+        IsSprinting =
+            false;
+
+        IsCrouching =
+            false;
+
+        isExhausted =
+            false;
+
+        // Evitar que quede saltando.
+        velocityY =
+            groundedVelocity;
+
+        // Mantener el CharacterController
+        // en su configuración normal.
+        characterController.height =
+            Mathf.Lerp(
+                characterController.height,
+                standingHeight,
+                crouchTransitionSpeed *
+                Time.deltaTime
             );
 
-        Vector3 afterPosition = transform.position;
-
-        if (moveInput != Vector2.zero)
-        {
-            Debug.Log(
-                "[MOVEMENT DEBUG] " +
-                gameObject.name +
-                " | MoveInput=" + moveInput +
-                " | Speed=" + currentSpeed +
-                " | CC Enabled=" + characterController.enabled +
-                " | Before=" + beforePosition +
-                " | After=" + afterPosition +
-                " | CollisionFlags=" + flags
+        characterController.center =
+            Vector3.Lerp(
+                characterController.center,
+                standingCenter,
+                crouchTransitionSpeed *
+                Time.deltaTime
             );
-        }
+
+        // No tocamos la cámara acá.
+        // PlayerDownedEffects se ocupa de ella.
     }
 
     private void HandleCrouch()
@@ -187,12 +239,20 @@ public class PlayerMovement : NetworkBehaviour
         if (!IsOwner)
             return;
 
+        if (playerHealth != null &&
+            !playerHealth.IsAlive)
+        {
+            return;
+        }
+
         bool wantsToCrouch =
             controls.Player.Crouch.IsPressed();
 
-        if (wantsToCrouch && !IsCrouching)
+        if (wantsToCrouch &&
+            !IsCrouching)
         {
-            IsCrouching = true;
+            IsCrouching =
+                true;
         }
         else if (
             !wantsToCrouch &&
@@ -200,7 +260,8 @@ public class PlayerMovement : NetworkBehaviour
             CanStandUp()
         )
         {
-            IsCrouching = false;
+            IsCrouching =
+                false;
         }
 
         float targetHeight =
@@ -212,11 +273,6 @@ public class PlayerMovement : NetworkBehaviour
             IsCrouching
                 ? crouchCenter
                 : standingCenter;
-
-        Vector3 targetCameraPosition =
-            IsCrouching
-                ? crouchCameraPosition
-                : standingCameraPosition;
 
         characterController.height =
             Mathf.Lerp(
@@ -233,24 +289,18 @@ public class PlayerMovement : NetworkBehaviour
                 crouchTransitionSpeed *
                 Time.deltaTime
             );
-
-        cameraTransform.localPosition =
-            Vector3.Lerp(
-                cameraTransform.localPosition,
-                targetCameraPosition,
-                crouchTransitionSpeed *
-                Time.deltaTime
-            );
     }
 
     private bool CanStandUp()
     {
         float checkDistance =
-            standingHeight - crouchHeight;
+            standingHeight -
+            crouchHeight;
 
         Vector3 origin =
             transform.position +
-            Vector3.up * crouchHeight;
+            Vector3.up *
+            crouchHeight;
 
         return !Physics.Raycast(
             origin,
@@ -264,18 +314,26 @@ public class PlayerMovement : NetworkBehaviour
         if (!IsOwner)
             return;
 
+        if (playerHealth != null &&
+            !playerHealth.IsAlive)
+        {
+            IsSprinting =
+                false;
+
+            return;
+        }
+
         bool wantsToSprint =
             controls.Player.Sprint.IsPressed() &&
             moveInput.magnitude > 0.1f &&
             !isExhausted &&
             !IsCrouching;
 
-        if (
-            wantsToSprint &&
-            CurrentStamina > 0f
-        )
+        if (wantsToSprint &&
+            CurrentStamina > 0f)
         {
-            IsSprinting = true;
+            IsSprinting =
+                true;
 
             CurrentStamina -=
                 staminaDrainRate *
@@ -283,14 +341,20 @@ public class PlayerMovement : NetworkBehaviour
 
             if (CurrentStamina <= 0f)
             {
-                CurrentStamina = 0f;
-                isExhausted = true;
-                IsSprinting = false;
+                CurrentStamina =
+                    0f;
+
+                isExhausted =
+                    true;
+
+                IsSprinting =
+                    false;
             }
         }
         else
         {
-            IsSprinting = false;
+            IsSprinting =
+                false;
 
             CurrentStamina +=
                 staminaRegenRate *
@@ -310,7 +374,8 @@ public class PlayerMovement : NetworkBehaviour
                 exhaustedRecoverThreshold
             )
             {
-                isExhausted = false;
+                isExhausted =
+                    false;
             }
         }
     }
@@ -325,7 +390,8 @@ public class PlayerMovement : NetworkBehaviour
             velocityY < 0f
         )
         {
-            velocityY = groundedVelocity;
+            velocityY =
+                groundedVelocity;
         }
         else
         {
@@ -333,5 +399,35 @@ public class PlayerMovement : NetworkBehaviour
                 gravity *
                 Time.deltaTime;
         }
+    }
+
+    public void ResetMovementState()
+    {
+        if (!IsOwner)
+            return;
+
+        moveInput =
+            Vector2.zero;
+
+        IsSprinting =
+            false;
+
+        IsCrouching =
+            false;
+
+        isExhausted =
+            false;
+
+        CurrentStamina =
+            maxStamina;
+
+        velocityY =
+            groundedVelocity;
+
+        characterController.height =
+            standingHeight;
+
+        characterController.center =
+            standingCenter;
     }
 }

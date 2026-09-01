@@ -3014,7 +3014,7 @@ Animator:
   m_GameObject: {fileID: 1960997148460282}
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: 03336d372b3854043b18096209507e9b, type: 3}
-  m_Controller: {fileID: 9100000, guid: 47c24d998ff796c44b5f4654b6c4d716, type: 2}
+  m_Controller: {fileID: 9100000, guid: fca6af1bf88e90f48ac946d0430cc9ce, type: 2}
   m_CullingMode: 1
   m_UpdateMode: 0
   m_ApplyRootMotion: 1
@@ -3113,10 +3113,26 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   NetworkAnimatorExpanded: 0
   AuthorityMode: 0
-  m_Animator: {fileID: 0}
+  m_Animator: {fileID: 95075453375667064}
   TransitionStateInfoList: []
   AnimatorParameterEntries:
-    ParameterEntries: []
+    ParameterEntries:
+    - name: Speed
+      NameHash: -823668238
+      Synchronize: 1
+      ParameterType: 1
+    - name: Attack
+      NameHash: 1080829965
+      Synchronize: 1
+      ParameterType: 9
+    - name: Death
+      NameHash: 646380074
+      Synchronize: 1
+      ParameterType: 9
+    - name: Hit
+      NameHash: 1654612129
+      Synchronize: 1
+      ParameterType: 9
   AnimatorParametersExpanded: 0
 --- !u!114 &3481732289097150300
 MonoBehaviour:
@@ -3180,6 +3196,7 @@ MonoBehaviour:
   attackRange: 1.8
   attackDamage: 30
   attackCooldown: 1.5
+  attackHitDelay: 0.35
   walkSpeed: 1.5
   runSpeed: 3
 --- !u!82 &1408592114313194350
@@ -3295,10 +3312,16 @@ MonoBehaviour:
   - {fileID: 8300000, guid: d8ed6de78016b1845a944dd84e455c81, type: 3}
   growlIntervalMin: 1
   growlIntervalMax: 10
+  runGrowlClips: []
+  runGrowlIntervalMin: 1.5
+  runGrowlIntervalMax: 4
   footstepClips:
   - {fileID: 8300000, guid: 5bf350cfd986b7e41b0c4950468cd4f4, type: 3}
   footstepInterval: 33
   movementThreshold: 0.1
+  behindPlayerClips: []
+  behindPlayerIntervalMin: 2
+  behindPlayerIntervalMax: 5
   attackClips: []
   hitClips: []
   deathClips:

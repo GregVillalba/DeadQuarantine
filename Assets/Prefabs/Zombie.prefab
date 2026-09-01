@@ -155,7 +155,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1622879537
+  GlobalObjectIdHash: 3200739460
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -335,6 +335,7 @@ MonoBehaviour:
   attackRange: 1.8
   attackDamage: 30
   attackCooldown: 1.5
+  attackHitDelay: 0.35
   walkSpeed: 1.5
   runSpeed: 3
 --- !u!114 &8216558089616959420
@@ -488,8 +489,8 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 9127c3a2e55e9fe4aaa46dc7e681acd3, type: 3}
   - {fileID: 8300000, guid: 857247bc4f908624ab42dd5b4c2f0d25, type: 3}
   - {fileID: 8300000, guid: 4ef3e474fdc4a994892201152389bba4, type: 3}
-  runGrowlIntervalMin: 2
-  runGrowlIntervalMax: 4
+  runGrowlIntervalMin: 1
+  runGrowlIntervalMax: 3
   footstepClips:
   - {fileID: 8300000, guid: 5bf350cfd986b7e41b0c4950468cd4f4, type: 3}
   footstepInterval: 33

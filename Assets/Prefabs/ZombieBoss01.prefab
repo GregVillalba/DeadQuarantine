@@ -507,7 +507,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &4758394499118602
 Transform:
   m_ObjectHideFlags: 0
@@ -1795,7 +1795,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &4514898500189092
 Transform:
   m_ObjectHideFlags: 0
@@ -2542,6 +2542,7 @@ MonoBehaviour:
   attackRange: 1.8
   attackDamage: 30
   attackCooldown: 1.5
+  attackHitDelay: 0.35
   walkSpeed: 1.5
   runSpeed: 3
 --- !u!114 &2002627523088998024
@@ -2762,10 +2763,16 @@ MonoBehaviour:
   - {fileID: 8300000, guid: d8ed6de78016b1845a944dd84e455c81, type: 3}
   growlIntervalMin: 1
   growlIntervalMax: 10
+  runGrowlClips: []
+  runGrowlIntervalMin: 1.5
+  runGrowlIntervalMax: 4
   footstepClips:
   - {fileID: 8300000, guid: 5bf350cfd986b7e41b0c4950468cd4f4, type: 3}
   footstepInterval: 33
   movementThreshold: 0.1
+  behindPlayerClips: []
+  behindPlayerIntervalMin: 2
+  behindPlayerIntervalMax: 5
   attackClips: []
   hitClips: []
   deathClips:

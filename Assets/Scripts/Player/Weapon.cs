@@ -134,6 +134,26 @@ public class Weapon : MonoBehaviour
                         HUDController
                     >(true);
         }
+
+        // Intentar encontrar PlayerMovement
+        // automáticamente si no está asignado.
+        if (playerMovement == null)
+        {
+            playerMovement =
+                GetComponentInParent<
+                    PlayerMovement
+                >();
+        }
+
+        // Intentar encontrar CharacterController
+        // automáticamente si no está asignado.
+        if (characterController == null)
+        {
+            characterController =
+                GetComponentInParent<
+                    CharacterController
+                >();
+        }
     }
 
     private void OnEnable()
@@ -153,23 +173,11 @@ public class Weapon : MonoBehaviour
             OnAimCanceled;
     }
 
-    public void AnimationAmmunitionFill()
-    {
-        currentAmmo =
-            maxAmmo;
-    }
-
-    public void AnimationReloadFinished()
-    {
-        currentAmmo =
-            maxAmmo;
-
-        isReloading =
-            false;
-    }
-
     private void OnDisable()
     {
+        if (controls == null)
+            return;
+
         controls.Player.Fire.performed -=
             OnFire;
 
@@ -188,8 +196,24 @@ public class Weapon : MonoBehaviour
             false;
     }
 
+    public void AnimationAmmunitionFill()
+    {
+        currentAmmo =
+            maxAmmo;
+    }
+
+    public void AnimationReloadFinished()
+    {
+        currentAmmo =
+            maxAmmo;
+
+        isReloading =
+            false;
+    }
+
     private void Update()
     {
+        UpdateSprintAimRestriction();
         UpdateAimFOV();
         UpdateSpread();
         UpdateJumpSpread();
@@ -203,8 +227,19 @@ public class Weapon : MonoBehaviour
     private void OnAimStarted(
         InputAction.CallbackContext context)
     {
+        // No se puede apuntar durante la recarga.
         if (isReloading)
             return;
+
+        // No se puede apuntar mientras se corre.
+        if (playerMovement != null &&
+            playerMovement.IsSprinting)
+        {
+            IsAiming =
+                false;
+
+            return;
+        }
 
         IsAiming =
             true;
@@ -215,6 +250,23 @@ public class Weapon : MonoBehaviour
     {
         IsAiming =
             false;
+    }
+
+    private void UpdateSprintAimRestriction()
+    {
+        if (!IsAiming)
+            return;
+
+        if (playerMovement == null)
+            return;
+
+        // Si empieza a correr mientras apuntaba,
+        // cancelar inmediatamente el apuntado.
+        if (playerMovement.IsSprinting)
+        {
+            IsAiming =
+                false;
+        }
     }
 
     private void UpdateAimFOV()
@@ -247,7 +299,9 @@ public class Weapon : MonoBehaviour
 
         if (IsAiming)
         {
-            currentSpread = 0f;
+            currentSpread =
+                spreadAiming;
+
             return;
         }
 
@@ -259,15 +313,18 @@ public class Weapon : MonoBehaviour
         if (playerMovement != null &&
             playerMovement.IsCrouching)
         {
-            targetSpread = spreadCrouching;
+            targetSpread =
+                spreadCrouching;
         }
         else if (IsMovingOnGround())
         {
-            targetSpread = spreadMoving;
+            targetSpread =
+                spreadMoving;
         }
         else
         {
-            targetSpread = spreadIdle;
+            targetSpread =
+                spreadIdle;
         }
 
         float recoverySpeed =
@@ -279,7 +336,8 @@ public class Weapon : MonoBehaviour
             Mathf.MoveTowards(
                 currentSpread,
                 targetSpread,
-                recoverySpeed * Time.deltaTime
+                recoverySpeed *
+                Time.deltaTime
             );
 
         currentSpread =
@@ -409,7 +467,9 @@ public class Weapon : MonoBehaviour
 
         if (EventSystem.current != null &&
             EventSystem.current.currentSelectedGameObject != null)
+        {
             return;
+        }
 
         if (isReloading)
             return;
@@ -475,6 +535,7 @@ public class Weapon : MonoBehaviour
         if (currentAmmo == maxAmmo)
             return;
 
+        // Recargar cancela el apuntado.
         IsAiming =
             false;
 
@@ -575,8 +636,6 @@ public class Weapon : MonoBehaviour
 
             if (zombieHealth != null)
             {
-                // ZombieHealth decide en el servidor
-                // si fue un impacto normal o mortal.
                 zombieHealth.TakeDamage(
                     damage,
                     hit.point,
@@ -651,8 +710,7 @@ public class Weapon : MonoBehaviour
 
     private Vector3 ApplySpreadToDirection(
         Vector3 baseDirection,
-        float spreadDegrees
-    )
+        float spreadDegrees)
     {
         if (spreadDegrees <= 0f)
             return baseDirection;
