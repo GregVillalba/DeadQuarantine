@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Unity.Netcode;
 using System;
 using System.Collections;
@@ -26,6 +27,10 @@ public class PlayerHealth : NetworkBehaviour
     [SerializeField] private float regenerationDelay = 5f;
     [SerializeField] private int healthRecoveredPerTick = 25;
     [SerializeField] private float regenerationInterval = 1f;
+
+    [Header("Escenas")]
+    [SerializeField] private string singleplayerSceneName =
+        "MainSceneSinglePlayer";
 
     public NetworkVariable<int> CurrentHealth =
         new NetworkVariable<int>(
@@ -57,23 +62,33 @@ public class PlayerHealth : NetworkBehaviour
 
     public int MaxHealth => maxHealth;
 
-    public int StartingLives => startingLives;
+    public int StartingLives =>
+        startingLives;
 
     public bool IsAlive =>
-        State.Value == PlayerState.Alive;
+        State.Value ==
+        PlayerState.Alive;
 
     public bool IsDowned =>
-        State.Value == PlayerState.Downed;
+        State.Value ==
+        PlayerState.Downed;
 
     public bool IsSpectating =>
-        State.Value == PlayerState.Spectating;
+        State.Value ==
+        PlayerState.Spectating;
 
     public bool IsDead =>
-        State.Value == PlayerState.Dead;
+        State.Value ==
+        PlayerState.Dead;
 
-    public event Action<int, int> OnHealthChanged;
-    public event Action<int, int> OnLivesChanged;
-    public event Action<PlayerState, PlayerState> OnStateChanged;
+    public event Action<int, int>
+        OnHealthChanged;
+
+    public event Action<int, int>
+        OnLivesChanged;
+
+    public event Action<PlayerState, PlayerState>
+        OnStateChanged;
 
     private float lastDamageTime;
     private float nextRegenerationTime;
@@ -88,7 +103,8 @@ public class PlayerHealth : NetworkBehaviour
     {
         if (IsServer)
         {
-            CurrentHealth.Value = maxHealth;
+            CurrentHealth.Value =
+                maxHealth;
 
             Lives.Value =
                 startingLives;
@@ -142,15 +158,6 @@ public class PlayerHealth : NetworkBehaviour
 
         State.OnValueChanged -=
             StateChanged;
-
-        if (downedCoroutine != null)
-        {
-            StopCoroutine(
-                downedCoroutine
-            );
-
-            downedCoroutine = null;
-        }
     }
 
     // =========================================================
@@ -213,7 +220,7 @@ public class PlayerHealth : NetworkBehaviour
     }
 
     // =========================================================
-    // RECIBIR DAÑO
+    // DAÑO
     // =========================================================
 
     public void TakeDamage(int amount)
@@ -221,8 +228,6 @@ public class PlayerHealth : NetworkBehaviour
         if (!IsServer)
             return;
 
-        // Un jugador abatido no puede recibir
-        // daño adicional.
         if (
             State.Value !=
             PlayerState.Alive
@@ -253,14 +258,10 @@ public class PlayerHealth : NetworkBehaviour
 
         if (CurrentHealth.Value <= 0)
         {
-            // Todavía tiene una vida:
-            // queda abatido.
             if (Lives.Value > 0)
             {
                 EnterDownedState();
             }
-            // Ya no tiene vidas:
-            // pasa a espectador.
             else
             {
                 EliminatePlayer();
@@ -269,7 +270,7 @@ public class PlayerHealth : NetworkBehaviour
     }
 
     // =========================================================
-    // ENTRAR EN ESTADO ABATIDO
+    // ABATIDO
     // =========================================================
 
     private void EnterDownedState()
@@ -309,10 +310,6 @@ public class PlayerHealth : NetworkBehaviour
                 DownedRoutine()
             );
     }
-
-    // =========================================================
-    // CUENTA REGRESIVA ABATIDO
-    // =========================================================
 
     private IEnumerator DownedRoutine()
     {
@@ -364,14 +361,12 @@ public class PlayerHealth : NetworkBehaviour
             return;
         }
 
-        // Consume la única vida.
         Lives.Value =
             Mathf.Max(
                 Lives.Value - 1,
                 0
             );
 
-        // Se recupera completamente.
         CurrentHealth.Value =
             maxHealth;
 
@@ -395,19 +390,19 @@ public class PlayerHealth : NetworkBehaviour
     }
 
     // =========================================================
-    // ELIMINAR / ESPECTADOR
+    // ELIMINAR
     // =========================================================
 
-    private void EliminatePlayer()
+    public void EliminatePlayer()
     {
         if (!IsServer)
             return;
 
         if (
             State.Value ==
-            PlayerState.Spectating ||
+                PlayerState.Dead ||
             State.Value ==
-            PlayerState.Dead
+                PlayerState.Spectating
         )
         {
             return;
@@ -419,22 +414,98 @@ public class PlayerHealth : NetworkBehaviour
         DownedTimeRemaining.Value =
             0f;
 
-        State.Value =
-            PlayerState.Spectating;
+        int connectedPlayers = 0;
+
+        if (NetworkManager.Singleton != null)
+        {
+            connectedPlayers =
+                NetworkManager.Singleton
+                    .ConnectedClientsList.Count;
+        }
+
+        bool anotherPlayerIsAlive =
+            false;
+
+        if (NetworkManager.Singleton != null)
+        {
+            foreach (
+                NetworkClient client
+                in NetworkManager.Singleton
+                    .ConnectedClientsList
+            )
+            {
+                if (client.PlayerObject == null)
+                    continue;
+
+                if (
+                    client.PlayerObject.NetworkObjectId ==
+                    NetworkObject.NetworkObjectId
+                )
+                {
+                    continue;
+                }
+
+                PlayerHealth otherPlayer =
+                    client.PlayerObject
+                        .GetComponent<PlayerHealth>();
+
+                if (otherPlayer == null)
+                    continue;
+
+                if (otherPlayer.IsAlive)
+                {
+                    anotherPlayerIsAlive =
+                        true;
+
+                    break;
+                }
+            }
+        }
 
         Debug.Log(
             "[PlayerHealth] " +
-            gameObject.name +
-            " pasó a ESPECTADOR."
+            "EliminatePlayer | " +
+            "Jugadores conectados: " +
+            connectedPlayers +
+            " | Otro jugador vivo: " +
+            anotherPlayerIsAlive
         );
 
-        if (
-            RoundManager.Instance !=
-            null
-        )
+        // =====================================================
+        // SINGLEPLAYER
+        // =====================================================
+
+        if (!anotherPlayerIsAlive)
         {
-            RoundManager.Instance
-                .PlayerDied();
+            State.Value =
+                PlayerState.Dead;
+
+            Debug.Log(
+                "[PlayerHealth] " +
+                gameObject.name +
+                " → DEAD"
+            );
+        }
+
+        // =====================================================
+        // MULTIPLAYER
+        // =====================================================
+
+        else
+        {
+            State.Value =
+                PlayerState.Spectating;
+
+            Debug.Log(
+                "[PlayerHealth] " +
+                gameObject.name +
+                " → SPECTATING"
+            );
+        }
+
+        if (RoundManager.Instance != null)
+        {
+            RoundManager.Instance.PlayerDied();
         }
     }
 
@@ -447,23 +518,37 @@ public class PlayerHealth : NetworkBehaviour
         if (!IsServer)
             return;
 
-        if (downedCoroutine != null)
-        {
-            StopCoroutine(
-                downedCoroutine
-            );
-
-            downedCoroutine = null;
-        }
-
-        State.Value =
-            PlayerState.Spectating;
-
         CurrentHealth.Value =
             0;
 
         DownedTimeRemaining.Value =
             0f;
+
+        State.Value =
+            PlayerState.Spectating;
+    }
+
+    // =========================================================
+    // RECUPERAR VIDA EN NUEVA RONDA
+    // =========================================================
+
+    public void RecoverLifeAtNewRound()
+    {
+        if (!IsServer)
+            return;
+
+        // Solamente recupera una vida si tiene 0.
+        if (Lives.Value > 0)
+            return;
+
+        Lives.Value = 1;
+
+        Debug.Log(
+            "[PlayerHealth] " +
+            gameObject.name +
+            " recuperó 1 vida por comenzar " +
+            "una nueva ronda."
+        );
     }
 
     // =========================================================
@@ -475,23 +560,11 @@ public class PlayerHealth : NetworkBehaviour
         if (!IsServer)
             return;
 
-        if (downedCoroutine != null)
-        {
-            StopCoroutine(
-                downedCoroutine
-            );
-
-            downedCoroutine = null;
-        }
-
         CurrentHealth.Value =
             maxHealth;
 
         State.Value =
             PlayerState.Alive;
-
-        DownedTimeRemaining.Value =
-            0f;
 
         lastDamageTime =
             Time.time;
@@ -499,6 +572,9 @@ public class PlayerHealth : NetworkBehaviour
         nextRegenerationTime =
             Time.time +
             regenerationDelay;
+
+        DownedTimeRemaining.Value =
+            0f;
 
         Debug.Log(
             "[PlayerHealth] " +
@@ -508,7 +584,7 @@ public class PlayerHealth : NetworkBehaviour
     }
 
     // =========================================================
-    // EVENTO VIDA
+    // EVENTOS
     // =========================================================
 
     private void HealthChanged(
@@ -529,10 +605,6 @@ public class PlayerHealth : NetworkBehaviour
         );
     }
 
-    // =========================================================
-    // EVENTO VIDAS
-    // =========================================================
-
     private void LivesChanged(
         int previousLives,
         int newLives
@@ -548,10 +620,6 @@ public class PlayerHealth : NetworkBehaviour
             newLives
         );
     }
-
-    // =========================================================
-    // EVENTO ESTADO
-    // =========================================================
 
     private void StateChanged(
         PlayerState previousState,

@@ -18,11 +18,13 @@ public class PlayerDownedEffects : NetworkBehaviour
     [SerializeField] private float downedCameraTransitionSpeed = 8f;
 
     [Header("Filtro blanco y negro")]
-    [SerializeField] private Volume postProcessVolume;
     [SerializeField] private float normalSaturation = 0f;
     [SerializeField] private float downedSaturation = -100f;
 
     private ColorAdjustments colorAdjustments;
+
+    private Volume localVolume;
+    private VolumeProfile localVolumeProfile;
 
     private Vector3 normalCameraLocalPosition;
 
@@ -30,6 +32,10 @@ public class PlayerDownedEffects : NetworkBehaviour
     private bool knockdownStarted;
 
     private float knockdownStartTime;
+
+    // =========================================================
+    // AWAKE
+    // =========================================================
 
     private void Awake()
     {
@@ -48,9 +54,7 @@ public class PlayerDownedEffects : NetworkBehaviour
         if (cameraTransform == null)
         {
             Camera playerCamera =
-                GetComponentInChildren<Camera>(
-                    true
-                );
+                GetComponentInChildren<Camera>(true);
 
             if (playerCamera != null)
             {
@@ -59,6 +63,10 @@ public class PlayerDownedEffects : NetworkBehaviour
             }
         }
     }
+
+    // =========================================================
+    // NETWORK SPAWN
+    // =========================================================
 
     public override void OnNetworkSpawn()
     {
@@ -93,33 +101,13 @@ public class PlayerDownedEffects : NetworkBehaviour
             );
         }
 
-        if (postProcessVolume == null)
-        {
-            postProcessVolume =
-                FindFirstObjectByType<Volume>();
-        }
+        // -----------------------------------------------------
+        // VOLUME LOCAL DEL JUGADOR
+        // -----------------------------------------------------
 
-        if (IsOwner &&
-            postProcessVolume != null)
+        if (IsOwner)
         {
-            if (
-                postProcessVolume.profile != null &&
-                postProcessVolume.profile.TryGet(
-                    out colorAdjustments
-                )
-            )
-            {
-                colorAdjustments.saturation.value =
-                    normalSaturation;
-            }
-            else
-            {
-                Debug.LogError(
-                    "[PlayerDownedEffects] " +
-                    "El Volume no contiene " +
-                    "Color Adjustments."
-                );
-            }
+            CreateLocalVolume();
         }
 
         playerHealth.State.OnValueChanged +=
@@ -137,6 +125,117 @@ public class PlayerDownedEffects : NetworkBehaviour
         );
     }
 
+    // =========================================================
+    // CREAR VOLUME LOCAL
+    // =========================================================
+
+    private void CreateLocalVolume()
+    {
+        if (cameraTransform == null)
+            return;
+
+        Camera playerCamera =
+            cameraTransform.GetComponent<Camera>();
+
+        if (playerCamera == null)
+        {
+            Debug.LogError(
+                "[PlayerDownedEffects] " +
+                "cameraTransform no tiene Camera."
+            );
+
+            return;
+        }
+
+        // -----------------------------------------------------
+        // CREAR OBJETO PARA EL VOLUME
+        // -----------------------------------------------------
+
+        GameObject volumeObject =
+            new GameObject(
+                "Local Downed Volume"
+            );
+
+        volumeObject.transform.SetParent(
+            cameraTransform,
+            false
+        );
+
+        volumeObject.transform.localPosition =
+            Vector3.zero;
+
+        volumeObject.transform.localRotation =
+            Quaternion.identity;
+
+        // Usamos la misma layer de la cámara.
+        // De esta forma nos aseguramos de que la cámara
+        // pueda detectar este Volume.
+        volumeObject.layer =
+            cameraTransform.gameObject.layer;
+
+        // -----------------------------------------------------
+        // VOLUME
+        // -----------------------------------------------------
+
+        localVolume =
+            volumeObject.AddComponent<Volume>();
+
+        localVolume.isGlobal = true;
+        localVolume.priority = 100f;
+        localVolume.weight = 1f;
+
+        // -----------------------------------------------------
+        // PERFIL NUEVO EXCLUSIVO PARA ESTE JUGADOR
+        // -----------------------------------------------------
+
+        localVolumeProfile =
+            ScriptableObject.CreateInstance<
+                VolumeProfile
+            >();
+
+        colorAdjustments =
+            localVolumeProfile.Add<
+                ColorAdjustments
+            >();
+
+        colorAdjustments.saturation.overrideState =
+            true;
+
+        colorAdjustments.saturation.value =
+            normalSaturation;
+
+        localVolume.profile =
+            localVolumeProfile;
+
+        // -----------------------------------------------------
+        // ASEGURAR QUE LA CÁMARA DETECTE LA LAYER DEL VOLUME
+        // -----------------------------------------------------
+
+        UniversalAdditionalCameraData cameraData =
+            playerCamera.GetComponent<
+                UniversalAdditionalCameraData
+            >();
+
+        if (cameraData != null)
+        {
+            int volumeLayer =
+                1 << volumeObject.layer;
+
+            cameraData.volumeLayerMask |=
+                volumeLayer;
+        }
+
+        Debug.Log(
+            "[PlayerDownedEffects] " +
+            "Volume local creado para " +
+            gameObject.name
+        );
+    }
+
+    // =========================================================
+    // NETWORK DESPAWN
+    // =========================================================
+
     public override void OnNetworkDespawn()
     {
         if (playerHealth != null)
@@ -144,11 +243,31 @@ public class PlayerDownedEffects : NetworkBehaviour
             playerHealth.State.OnValueChanged -=
                 OnStateChanged;
         }
+
+        if (localVolumeProfile != null)
+        {
+            Destroy(localVolumeProfile);
+            localVolumeProfile = null;
+        }
+
+        if (localVolume != null)
+        {
+            Destroy(
+                localVolume.gameObject
+            );
+
+            localVolume = null;
+        }
     }
+
+    // =========================================================
+    // CAMBIO DE ESTADO
+    // =========================================================
 
     private void OnStateChanged(
         PlayerHealth.PlayerState previousState,
-        PlayerHealth.PlayerState newState)
+        PlayerHealth.PlayerState newState
+    )
     {
         Debug.Log(
             "[PlayerDownedEffects] " +
@@ -162,11 +281,17 @@ public class PlayerDownedEffects : NetworkBehaviour
         ApplyState(newState);
     }
 
+    // =========================================================
+    // APLICAR ESTADO
+    // =========================================================
+
     private void ApplyState(
-        PlayerHealth.PlayerState state)
+        PlayerHealth.PlayerState state
+    )
     {
         isDowned =
-            state == PlayerHealth.PlayerState.Downed;
+            state ==
+            PlayerHealth.PlayerState.Downed;
 
         if (isDowned)
         {
@@ -178,11 +303,20 @@ public class PlayerDownedEffects : NetworkBehaviour
         }
     }
 
+    // =========================================================
+    // INICIAR DOWNED
+    // =========================================================
+
     private void StartDowned()
     {
         knockdownStarted = true;
+
         knockdownStartTime =
             Time.time;
+
+        // -----------------------------------------------------
+        // ANIMACIÓN
+        // -----------------------------------------------------
 
         if (animator != null)
         {
@@ -208,15 +342,26 @@ public class PlayerDownedEffects : NetworkBehaviour
             );
         }
 
+        // -----------------------------------------------------
+        // BLANCO Y NEGRO
+        // -----------------------------------------------------
+
         if (
             IsOwner &&
             colorAdjustments != null
         )
         {
+            colorAdjustments.saturation.overrideState =
+                true;
+
             colorAdjustments.saturation.value =
                 downedSaturation;
         }
     }
+
+    // =========================================================
+    // TERMINAR DOWNED
+    // =========================================================
 
     private void StopDowned()
     {
@@ -228,6 +373,9 @@ public class PlayerDownedEffects : NetworkBehaviour
             colorAdjustments != null
         )
         {
+            colorAdjustments.saturation.overrideState =
+                true;
+
             colorAdjustments.saturation.value =
                 normalSaturation;
         }
@@ -239,6 +387,10 @@ public class PlayerDownedEffects : NetworkBehaviour
         }
     }
 
+    // =========================================================
+    // LATE UPDATE
+    // =========================================================
+
     private void LateUpdate()
     {
         if (!isDowned)
@@ -247,6 +399,10 @@ public class PlayerDownedEffects : NetworkBehaviour
         HandleDownedCamera();
         KeepKnockdownAnimation();
     }
+
+    // =========================================================
+    // CÁMARA DOWNED
+    // =========================================================
 
     private void HandleDownedCamera()
     {
@@ -259,8 +415,6 @@ public class PlayerDownedEffects : NetworkBehaviour
         Vector3 targetPosition =
             normalCameraLocalPosition;
 
-        // Siempre baja respecto de la posición
-        // normal, nunca sube.
         targetPosition.y =
             normalCameraLocalPosition.y +
             downedCameraOffsetY;
@@ -273,6 +427,10 @@ public class PlayerDownedEffects : NetworkBehaviour
                 Time.deltaTime
             );
     }
+
+    // =========================================================
+    // MANTENER ANIMACIÓN
+    // =========================================================
 
     private void KeepKnockdownAnimation()
     {
@@ -290,13 +448,13 @@ public class PlayerDownedEffects : NetworkBehaviour
         AnimatorStateInfo stateInfo =
             animator.GetCurrentAnimatorStateInfo(0);
 
-        // Si otro sistema del personaje cambió
-        // el estado, volvemos a Knockdown.
-        if (stateInfo.fullPathHash !=
+        if (
+            stateInfo.fullPathHash !=
             Animator.StringToHash(
                 "Base Layer." +
                 knockdownStateName
-            ))
+            )
+        )
         {
             float elapsed =
                 Time.time -
@@ -304,7 +462,8 @@ public class PlayerDownedEffects : NetworkBehaviour
 
             float normalizedTime =
                 stateInfo.length > 0f
-                    ? elapsed / stateInfo.length
+                    ? elapsed /
+                      stateInfo.length
                     : 0f;
 
             animator.Play(

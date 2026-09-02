@@ -22293,6 +22293,7 @@ GameObject:
   - component: {fileID: 7884848672497508362}
   - component: {fileID: 8219460636330262207}
   - component: {fileID: 6118534843392074237}
+  - component: {fileID: 3279410425743433227}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -22676,6 +22677,26 @@ MonoBehaviour:
   postProcessVolume: {fileID: 0}
   normalSaturation: 0
   downedSaturation: -100
+--- !u!114 &3279410425743433227
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5539736354694109012}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1dc44c24d2a47c944bea251ddc3d0912, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::PlayerSpectator
+  ShowTopMostFoldoutHeaderGroup: 1
+  playerHealth: {fileID: 2373627705313556358}
+  spectatorCamera: {fileID: 6766171541677822829}
+  weaponCameraObject: {fileID: 4340520466520270462}
+  polygonFPSObject: {fileID: 8972921293497775450}
+  cameraOffset: {x: 0, y: 1.6, z: -3.5}
+  cameraFollowSpeed: 8
+  lookHeight: 1.2
 --- !u!1 &5571725089696515958
 GameObject:
   m_ObjectHideFlags: 0
@@ -23077,7 +23098,7 @@ MonoBehaviour:
   cameraShakeTransform: {fileID: 226261314451307686}
   damageVignette: {fileID: 560553113316079753}
   shakeDuration: 0.15
-  shakeIntensity: 2
+  shakeIntensity: 1
   shakeRotation: 2
   highHealthThreshold: 0.9
   healthWarningThreshold: 0.5

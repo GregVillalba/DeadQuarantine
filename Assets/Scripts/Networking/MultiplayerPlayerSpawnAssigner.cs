@@ -37,14 +37,71 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
         if (newValue == -1)
             return;
 
-        MoveToAssignedSpawn(
-            newValue
-        );
+        MoveToAssignedSpawn(newValue);
     }
 
-    private void MoveToAssignedSpawn(
-        int index
+    // =========================================================
+    // COMPROBAR SI ESTÁ EN SU SPAWN
+    // =========================================================
+
+    public bool IsAtAssignedSpawn(
+        float tolerance = 0.5f
     )
+    {
+        if (AssignedSpawnIndex.Value < 0)
+            return false;
+
+        MultiplayerPlayerSpawner spawner =
+            FindFirstObjectByType<
+                MultiplayerPlayerSpawner
+            >();
+
+        if (spawner == null)
+            return false;
+
+        Transform spawnPoint =
+            spawner.GetSpawnPoint(
+                AssignedSpawnIndex.Value
+            );
+
+        if (spawnPoint == null)
+            return false;
+
+        return Vector3.Distance(
+            transform.position,
+            spawnPoint.position
+        ) <= tolerance;
+    }
+
+    // =========================================================
+    // RESPAWN AL SPAWN ORIGINAL
+    // =========================================================
+
+    public void RespawnAtAssignedSpawn()
+    {
+        if (!IsServer)
+            return;
+
+        int index =
+            AssignedSpawnIndex.Value;
+
+        if (index < 0)
+        {
+            Debug.LogWarning(
+                "[SpawnAssigner] No hay spawn asignado."
+            );
+
+            return;
+        }
+
+        MoveToAssignedSpawn(index);
+    }
+
+    // =========================================================
+    // MOVER AL SPAWN
+    // =========================================================
+
+    private void MoveToAssignedSpawn(int index)
     {
         MultiplayerPlayerSpawner spawner =
             FindFirstObjectByType<
@@ -54,7 +111,7 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
         if (spawner == null)
         {
             Debug.LogWarning(
-                "[SpawnAssigner] No se encontró MultiplayerPlayerSpawner."
+                "[SpawnAssigner] No se encontró MultiplayerPlayerSpawner en la escena."
             );
 
             return;
@@ -99,26 +156,6 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
             "[SpawnAssigner] Jugador movido a SpawnIndex " +
             index
         );
-    }
-
-    public void RespawnAtAssignedSpawn()
-    {
-        if (!IsServer)
-            return;
-
-        int index =
-            AssignedSpawnIndex.Value;
-
-        if (index == -1)
-        {
-            Debug.LogWarning(
-                "[SpawnAssigner] El jugador no tiene SpawnIndex."
-            );
-
-            return;
-        }
-
-        MoveToAssignedSpawn(index);
     }
 
     public override void OnNetworkDespawn()

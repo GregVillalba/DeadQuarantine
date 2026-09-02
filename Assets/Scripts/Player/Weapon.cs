@@ -601,6 +601,21 @@ public class Weapon : MonoBehaviour
                 currentSpread
             );
 
+        Vector3 bulletStartPosition =
+            firePoint.position;
+
+        PlayerHealth playerHealth =
+            GetComponentInParent<PlayerHealth>();
+
+        if (
+            playerHealth != null &&
+            playerHealth.IsDowned
+        )
+        {
+            bulletStartPosition =
+                playerCamera.transform.position;
+        }
+
         Ray ray =
             new Ray(
                 playerCamera.transform.position,
@@ -618,21 +633,20 @@ public class Weapon : MonoBehaviour
             );
 
             Debug.DrawLine(
-                firePoint.position,
+                bulletStartPosition,
                 hit.point,
                 Color.red,
                 1f
             );
 
             SpawnBulletTrail(
-                hit.point
+                hit.point,
+                bulletStartPosition
             );
 
             ZombieHealth zombieHealth =
                 hit.collider
-                    .GetComponentInParent<
-                        ZombieHealth
-                    >();
+                    .GetComponentInParent<ZombieHealth>();
 
             if (zombieHealth != null)
             {
@@ -655,18 +669,18 @@ public class Weapon : MonoBehaviour
         else
         {
             Vector3 missPoint =
-                firePoint.position +
+                playerCamera.transform.position +
                 spreadDirection *
                 range;
 
             SpawnBulletTrail(
-                missPoint
+                missPoint,
+                bulletStartPosition
             );
 
             Debug.DrawRay(
-                firePoint.position,
-                spreadDirection *
-                range,
+                bulletStartPosition,
+                spreadDirection * range,
                 Color.yellow,
                 1f
             );
@@ -678,23 +692,26 @@ public class Weapon : MonoBehaviour
     // =========================================================
 
     private void SpawnBulletTrail(
-        Vector3 targetPoint)
+        Vector3 targetPoint,
+        Vector3 startPoint
+    )
     {
-        if (bulletTrailPrefab == null ||
-            firePoint == null)
+        if (
+            bulletTrailPrefab == null
+        )
+        {
             return;
+        }
 
         GameObject trailObject =
             Instantiate(
                 bulletTrailPrefab,
-                firePoint.position,
+                startPoint,
                 Quaternion.identity
             );
 
         BulletTrail trail =
-            trailObject.GetComponent<
-                BulletTrail
-            >();
+            trailObject.GetComponent<BulletTrail>();
 
         if (trail != null)
         {
