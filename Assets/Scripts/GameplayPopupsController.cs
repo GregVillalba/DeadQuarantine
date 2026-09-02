@@ -8,8 +8,8 @@ using System.Collections;
 public class GameplayPopupsController : MonoBehaviour
 {
     [Header("Paneles de resultado")]
-    [SerializeField] private GameObject panelGanador;
-    [SerializeField] private GameObject panelPerdedor;
+  //  [SerializeField] private GameObject panelGanador;
+//    [SerializeField] private GameObject panelPerdedor;
      [SerializeField] private GameObject panelRonda;
     
 
@@ -31,14 +31,14 @@ public class GameplayPopupsController : MonoBehaviour
             );
         }
 
-        if (panelGanador != null)
+     /*   if (panelGanador != null)
             panelGanador.SetActive(false);
 
         if (panelPerdedor != null)
-            panelPerdedor.SetActive(false);
+            panelPerdedor.SetActive(false);*/
     }
 
-    private void Update()
+ /*   private void Update()
     {
         // Siguiente ronda desde el panel de ganador
         if (panelGanador != null && panelGanador.activeSelf)
@@ -62,13 +62,13 @@ public class GameplayPopupsController : MonoBehaviour
         {
             ReintentarDespuesDePerder();
         }
-    }
+    }*/
 
     // ============================================================
     // GANADOR
     // ============================================================
 
-    public void MostrarPanelGanador()
+   /* public void MostrarPanelGanador()
     {
         if (panelGanador != null)
         {
@@ -132,7 +132,7 @@ public class GameplayPopupsController : MonoBehaviour
         SceneManager.LoadScene(
             SceneManager.GetActiveScene().name
         );
-    }
+    }*/
 
     // ============================================================
     // VOLVER AL MENÚ

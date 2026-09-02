@@ -812,7 +812,7 @@ public class RoundManager : NetworkBehaviour
 
     private void MostrarDerrota()
     {
-        if (
+       /* if (
             GameplayPopupsController.Instance !=
             null
         )
@@ -827,8 +827,42 @@ public class RoundManager : NetworkBehaviour
                 "GameplayPopupsController.Instance " +
                 "es null."
             );
-        }
+        }*/
+//========================CAMBIO=================================
+        MostrarDerrotaClientRpc();
     }
+
+[ClientRpc]
+private void MostrarVictoriaClientRpc()
+{
+    var local = NetworkManager.Singleton.LocalClient?.PlayerObject;
+
+    if (local == null)
+        return;
+
+    var pause = local.GetComponentInChildren<PauseController>();
+
+    if (pause != null)
+        pause.MostrarVictoria();
+}
+
+[ClientRpc]
+private void MostrarDerrotaClientRpc()
+{
+    var local = NetworkManager.Singleton.LocalClient?.PlayerObject;
+
+    if (local == null)
+        return;
+
+    var pause = local.GetComponentInChildren<PauseController>();
+
+    if (pause != null)
+        pause.MostrarDerrota();
+}
+
+
+
+
 
     // =========================================================
     // FIN DE RONDA
@@ -852,7 +886,7 @@ public class RoundManager : NetworkBehaviour
             delayAntesDePanel
         );
 
-        if (
+ /*       if (
             GameplayPopupsController.Instance !=
             null
         )
@@ -867,7 +901,7 @@ public class RoundManager : NetworkBehaviour
                 "GameplayPopupsController.Instance " +
                 "es null."
             );
-        }
+        }*/
 
         if (
             CurrentRoundNetwork.Value >=
