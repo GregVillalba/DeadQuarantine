@@ -831,6 +831,7 @@ public class RoundManager : NetworkBehaviour
 //========================CAMBIO=================================
         MostrarDerrotaClientRpc();
     }
+   
 
 [ClientRpc]
 private void MostrarVictoriaClientRpc()
@@ -902,6 +903,8 @@ private void MostrarDerrotaClientRpc()
                 "es null."
             );
         }*/
+
+        MostrarVictoriaClientRpc();
 
         if (
             CurrentRoundNetwork.Value >=
