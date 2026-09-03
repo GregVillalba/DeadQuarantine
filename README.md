@@ -95,7 +95,6 @@
 - ✅ Hitmarker visual al golpear enemigos
 
 ### Modo Multijugador
-- ✅ Cooperativo para hasta 4 jugadores
 - ✅ Sistema de lobby
 - ✅ Sincronización de vida y munición entre jugadores
 - ✅ Boss en modo multijugador
