@@ -40,6 +40,9 @@ public class GameplayPopupsController : MonoBehaviour
         Time.timeScale = 1f;
         AudioListener.pause = false;
 
+        // Señalizamos al controlador del menú que muestre la pestaña Rating al abrir
+        PantallasUIController.ShowRatingOnOpen = true;
+
         SceneManager.LoadScene(nombreEscenaMenu);
     }
 
