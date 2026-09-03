@@ -18653,6 +18653,7 @@ MonoBehaviour:
   botonReiniciar: {fileID: 5975623508404432693}
   popupVictoria: {fileID: 5420595360567528867}
   popupDerrota: {fileID: 8473775903894595391}
+  ratingPopup: {fileID: 414907819403229706, guid: 3588a5ce017d1364db88d77a8453e821, type: 3}
 --- !u!1 &2431381131157331111
 GameObject:
   m_ObjectHideFlags: 0
@@ -23560,7 +23561,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 4516312890393998974}
         m_TargetAssemblyTypeName: PauseController, Scripts
-        m_MethodName: Salir
+        m_MethodName: OnReintentarPresionado
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

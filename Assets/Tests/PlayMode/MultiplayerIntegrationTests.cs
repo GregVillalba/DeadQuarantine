@@ -16,7 +16,7 @@ public class MultiplayerAndGameplayTests
     public IEnumerator SetUp()
     {
         // Carga la escena principal del juego antes de cada test
-        yield return SceneManager.LoadSceneAsync("SampleScene", LoadSceneMode.Single);
+        yield return SceneManager.LoadSceneAsync("MainSceneMultiPlayer", LoadSceneMode.Single);
         yield return new WaitForSeconds(0.5f);
     }
 
