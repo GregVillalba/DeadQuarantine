@@ -517,5 +517,10 @@ public class PauseController : NetworkBehaviour
         ReiniciarJuego();
     }
 
+    public void ContinuarDespuesDeRating()
+    {
+        Salir();
+    }
+
 }
 
