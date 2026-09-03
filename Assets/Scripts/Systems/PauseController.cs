@@ -25,11 +25,11 @@ public class PauseController : NetworkBehaviour
     [Header("Botón Reiniciar")]
     [SerializeField] private GameObject botonReiniciar;
 
-//=================CAMBIOS=========================================
+
      [Header("Fin de Ronda")]
     [SerializeField] private GameObject popupVictoria;
     [SerializeField] private GameObject popupDerrota;
-//=================================================================
+
 
     private bool estaPausado;
     private bool historiaActiva;
@@ -39,9 +39,9 @@ public class PauseController : NetworkBehaviour
     private bool lookWasEnabled;
     private bool weaponWasEnabled;
 
-    //=========================================CAMBIO================================
+   
     private bool finDeRondaActivo;
-//=========================================================================
+
 
 
     private void Awake()
@@ -68,14 +68,13 @@ public class PauseController : NetworkBehaviour
             weapon =
                 GetComponentInChildren<Weapon>(true);
 
-        //=========================================CAMBIO================================
         if (popupVictoria != null)
             popupVictoria.SetActive(false);
 
         if (popupDerrota != null)
             popupDerrota.SetActive(false);
     }
-//=========================================================================
+
 
     
 
@@ -102,62 +101,40 @@ public class PauseController : NetworkBehaviour
 
     private void Update()
     {
-       /* if (!IsOwner)
+        if (!IsOwner)
             return;
-
-        if (historiaActiva)
-            return;
-
-        if (
-            Keyboard.current != null &&
-            Keyboard.current.escapeKey.wasPressedThisFrame
-        )
-        {
-            if (estaPausado)
-                ReanudarJuego();
-            else
-                PausarJuego();
-        }
-
-        ActualizarCursor();*/
-
-         //=========================================CAMBIO================================
-
-         if (!IsOwner)
-        return;
 
     // Mientras la historia o el fin de ronda están abiertos,
     // ESC no abre el menú de pausa.
-    if (historiaActiva || finDeRondaActivo)
-    {
-        if (finDeRondaActivo && Keyboard.current != null)
+        if (historiaActiva || finDeRondaActivo)
         {
-            if (popupVictoria != null && popupVictoria.activeSelf &&
-                Keyboard.current.sKey.wasPressedThisFrame)
+            if (finDeRondaActivo && Keyboard.current != null)
             {
-                OnSiguienteRondaPresionado();
+                if (popupVictoria != null && popupVictoria.activeSelf &&
+                    Keyboard.current.sKey.wasPressedThisFrame)
+                {
+                    OnSiguienteRondaPresionado();
+                }
+                else if (popupDerrota != null && popupDerrota.activeSelf &&
+                    Keyboard.current.qKey.wasPressedThisFrame)
+                {
+                    OnReintentarPresionado();
+                }
             }
-            else if (popupDerrota != null && popupDerrota.activeSelf &&
-                Keyboard.current.qKey.wasPressedThisFrame)
-            {
-                OnReintentarPresionado();
-            }
+
+            return;
         }
 
-        return;
-    }
-
-    if (Keyboard.current != null &&
-        Keyboard.current.escapeKey.wasPressedThisFrame)
-    {
-        if (estaPausado)
-            ReanudarJuego();
+        if (Keyboard.current != null &&
+            Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            if (estaPausado)
+                ReanudarJuego();
         else
             PausarJuego();
-    }
+        }
 
     ActualizarCursor();
-   //=========================================================================
   
     }
 
@@ -272,9 +249,8 @@ public class PauseController : NetworkBehaviour
 
         // Restaurar EXACTAMENTE el estado anterior.
         RestaurarEstadoJugador();
-    //=====================================CAMBIO====================================
         HabilitarJugador();
-//=========================================================================
+
         if (EsSinglePlayer())
         {
             Time.timeScale = 1f;
@@ -462,7 +438,6 @@ public class PauseController : NetworkBehaviour
             AudioListener.pause = false;
         }
     }
-//==========================CAMBIO======================================
 // =========================================================
 // VICTORIA / DERROTA
 // =========================================================
@@ -524,8 +499,8 @@ public class PauseController : NetworkBehaviour
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
-        if (RoundManager.Instance != null)
-            RoundManager.Instance.ConfirmarSiguienteRonda();
+        Salir();
+
 }
 
 // Llamar desde el botón "Reintentar" del popup de derrota
@@ -541,6 +516,6 @@ public class PauseController : NetworkBehaviour
 
         ReiniciarJuego();
     }
-//=========================================================================
+
 }
 

@@ -812,58 +812,41 @@ public class RoundManager : NetworkBehaviour
 
     private void MostrarDerrota()
     {
-       /* if (
-            GameplayPopupsController.Instance !=
-            null
-        )
-        {
-            GameplayPopupsController.Instance
-                .MostrarPanelPerdedor();
-        }
-        else
-        {
-            Debug.LogError(
-                "RoundManager: " +
-                "GameplayPopupsController.Instance " +
-                "es null."
-            );
-        }*/
-//========================CAMBIO=================================
         MostrarDerrotaClientRpc();
     }
    
 
-[ClientRpc]
-private void MostrarVictoriaClientRpc()
-{
-    var local = NetworkManager.Singleton.LocalClient?.PlayerObject;
+    [ClientRpc]
+    private void MostrarVictoriaClientRpc()
+    {
+        var local = NetworkManager.Singleton.LocalClient?.PlayerObject;
 
-    if (local == null)
-        return;
+        if (local == null)
+            return;
 
-    var pause = local.GetComponentInChildren<PauseController>();
+        var pause = local.GetComponentInChildren<PauseController>();
 
-    if (pause != null)
-        pause.MostrarVictoria();
-}
+        if (pause != null)
+        {
+            pause.MostrarVictoria();
+        }
+    }
 
-[ClientRpc]
-private void MostrarDerrotaClientRpc()
-{
-    var local = NetworkManager.Singleton.LocalClient?.PlayerObject;
+    [ClientRpc]
+    private void MostrarDerrotaClientRpc()
+    {
+        var local = NetworkManager.Singleton.LocalClient?.PlayerObject;
 
-    if (local == null)
-        return;
+        if (local == null)
+            return;
 
-    var pause = local.GetComponentInChildren<PauseController>();
+        var pause = local.GetComponentInChildren<PauseController>();
 
-    if (pause != null)
-        pause.MostrarDerrota();
-}
-
-
-
-
+        if (pause != null)
+        {
+            pause.MostrarDerrota();
+        }
+    }
 
     // =========================================================
     // FIN DE RONDA
@@ -887,30 +870,13 @@ private void MostrarDerrotaClientRpc()
             delayAntesDePanel
         );
 
- /*       if (
-            GameplayPopupsController.Instance !=
-            null
-        )
-        {
-            GameplayPopupsController.Instance
-                .MostrarPanelGanador();
-        }
-        else
-        {
-            Debug.LogError(
-                "RoundManager: " +
-                "GameplayPopupsController.Instance " +
-                "es null."
-            );
-        }*/
-
-        MostrarVictoriaClientRpc();
-
-        if (
+        bool esRondaFinal =
             CurrentRoundNetwork.Value >=
-            maxRounds
-        )
+            maxRounds;
+
+        if (esRondaFinal)
         {
+            MostrarVictoriaClientRpc();
             Debug.Log(
                 "Ronda " +
                 CurrentRoundNetwork.Value +
@@ -928,6 +894,7 @@ private void MostrarDerrotaClientRpc()
         pendingNextRound =
             CurrentRoundNetwork.Value +
             1;
+        ConfirmarSiguienteRonda();
     }
 
     // =========================================================
