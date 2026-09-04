@@ -19130,7 +19130,7 @@ RectTransform:
   m_GameObject: {fileID: 2606784499837394124}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 2.644564, y: 2.644564, z: 2.644564}
+  m_LocalScale: {x: 1.0021757, y: 1.0021757, z: 1.0021757}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3161517241323424656}
@@ -19138,7 +19138,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1292.9427, y: -509}
+  m_AnchoredPosition: {x: 406, y: -229}
   m_SizeDelta: {x: 258, y: 54}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &315172261888303355
@@ -30865,7 +30865,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
-  m_UiScaleMode: 0
+  m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 800, y: 600}
@@ -34553,6 +34553,7 @@ MonoBehaviour:
   cameraTransform: {fileID: 6766171541677822829}
   moveSpeed: 5
   sprintSpeed: 7.5
+  downedMoveSpeed: 2
   jumpForce: 6
   gravity: -15
   groundedVelocity: -2
