@@ -12,6 +12,7 @@ public class PlayerMovement : NetworkBehaviour
     [SerializeField] private Transform cameraTransform;
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float sprintSpeed = 8f;
+    [SerializeField] private float downedMoveSpeed = 2f;
     [SerializeField] private float jumpForce = 6f;
     [SerializeField] private float gravity = -15f;
     [SerializeField] private float groundedVelocity = -2f;
@@ -100,6 +101,7 @@ public class PlayerMovement : NetworkBehaviour
 
     private CharacterController characterController;
     private PlayerControls controls;
+    private PlayerHealth playerHealth;
 
     private Vector2 moveInput;
     private float velocityY;
@@ -133,6 +135,9 @@ public class PlayerMovement : NetworkBehaviour
 
         controls =
             new PlayerControls();
+
+        playerHealth =
+            GetComponent<PlayerHealth>();
 
         CurrentStamina =
             maxStamina;
@@ -315,7 +320,13 @@ public class PlayerMovement : NetworkBehaviour
         float currentSpeed =
             moveSpeed;
 
-        if (IsCrouching)
+        if (playerHealth != null &&
+            playerHealth.IsDowned)
+        {
+            currentSpeed =
+                downedMoveSpeed;
+        }
+        else if (IsCrouching)
         {
             currentSpeed =
                 crouchSpeed;
@@ -1720,7 +1731,9 @@ public class PlayerMovement : NetworkBehaviour
             moveInput.magnitude > 0.1f &&
             !isExhausted &&
             !IsCrouching &&
-            !isParkouring;
+            !isParkouring &&
+            (playerHealth == null ||
+             !playerHealth.IsDowned);
 
         if (
             wantsToSprint &&
