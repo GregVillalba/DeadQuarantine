@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
@@ -416,8 +417,8 @@ public class RoundManager : NetworkBehaviour
         float runChance =
             maxRounds > 1
                 ? Mathf.Clamp01(
-                    (round - 1) /
-                    (float)(maxRounds - 1)
+                    (round - 1f) /
+                    (maxRounds - 1f)
                 )
                 : 0f;
 
@@ -439,6 +440,49 @@ public class RoundManager : NetworkBehaviour
             amount;
 
         // =====================================================
+        // ORDEN ALEATORIO DE SPAWNS
+        // =====================================================
+
+        List<Transform> shuffledSpawnPoints =
+            new List<Transform>();
+
+        foreach (
+            Transform spawnPoint
+            in spawnPoints
+        )
+        {
+            if (spawnPoint != null)
+            {
+                shuffledSpawnPoints.Add(
+                    spawnPoint
+                );
+            }
+        }
+
+        // Fisher-Yates Shuffle.
+        for (
+            int i = shuffledSpawnPoints.Count - 1;
+            i > 0;
+            i--
+        )
+        {
+            int randomIndex =
+                Random.Range(
+                    0,
+                    i + 1
+                );
+
+            Transform temp =
+                shuffledSpawnPoints[i];
+
+            shuffledSpawnPoints[i] =
+                shuffledSpawnPoints[randomIndex];
+
+            shuffledSpawnPoints[randomIndex] =
+                temp;
+        }
+
+        // =====================================================
         // BOSS
         // =====================================================
 
@@ -450,10 +494,10 @@ public class RoundManager : NetworkBehaviour
             if (bossPrefab != null)
             {
                 Transform bossSpawnPoint =
-                    spawnPoints[
+                    shuffledSpawnPoints[
                         Random.Range(
                             0,
-                            spawnPoints.Length
+                            shuffledSpawnPoints.Count
                         )
                     ];
 
@@ -509,9 +553,8 @@ public class RoundManager : NetworkBehaviour
         )
         {
             Transform spawnPoint =
-                spawnPoints[
-                    i %
-                    spawnPoints.Length
+                shuffledSpawnPoints[
+                    i % shuffledSpawnPoints.Count
                 ];
 
             bool willRun =
@@ -530,6 +573,38 @@ public class RoundManager : NetworkBehaviour
                 normalZombiesToSpawn - 1
             )
             {
+                // Cuando se usan todos los puntos,
+                // se vuelven a mezclar antes de repetirlos.
+                if (
+                    (i + 1) %
+                    shuffledSpawnPoints.Count ==
+                    0
+                )
+                {
+                    for (
+                        int j =
+                            shuffledSpawnPoints.Count - 1;
+                        j > 0;
+                        j--
+                    )
+                    {
+                        int randomIndex =
+                            Random.Range(
+                                0,
+                                j + 1
+                            );
+
+                        Transform temp =
+                            shuffledSpawnPoints[j];
+
+                        shuffledSpawnPoints[j] =
+                            shuffledSpawnPoints[randomIndex];
+
+                        shuffledSpawnPoints[randomIndex] =
+                            temp;
+                    }
+                }
+
                 float wait =
                     GetRandomSpawnInterval(
                         round
