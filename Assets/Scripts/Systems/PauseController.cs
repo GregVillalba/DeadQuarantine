@@ -33,6 +33,11 @@ public class PauseController : NetworkBehaviour
     [SerializeField] private TMPro.TextMeshProUGUI textoPuntajeDerrota;
     [SerializeField] private PlayerScore playerScore;
 
+    [Header("Valoración")]
+    [SerializeField] private GameObject popupValoracion; //referencia al panel de valoración
+
+
+
 
     private bool estaPausado;
     private bool historiaActiva;
@@ -44,6 +49,7 @@ public class PauseController : NetworkBehaviour
 
    
     private bool finDeRondaActivo;
+    private bool pendienteAccionEsVictoria; //"banderita" que guarda si el jugador ganó o perdió
 
 
 
@@ -78,6 +84,10 @@ public class PauseController : NetworkBehaviour
 
         if (popupDerrota != null)
             popupDerrota.SetActive(false);
+
+        //Al iniciar el juego, el popup de valoración debe estar oculto
+        if (popupValoracion != null)
+            popupValoracion.SetActive(false);
     }
 
 
@@ -491,6 +501,12 @@ public class PauseController : NetworkBehaviour
 
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
+    }
+    //Te faltaba este metodo para mostrar el popup de valoración después de la victoria o derrota
+    public void MostrarValoracion()
+{
+    if (popupValoracion != null)
+        popupValoracion.SetActive(true);
 }
 
 // Llamar desde el botón "Siguiente ronda" del popup de victoria
@@ -504,6 +520,8 @@ public class PauseController : NetworkBehaviour
         if (popupVictoria != null)
             popupVictoria.SetActive(false);
 
+        // Guardamos que la acción pendiente es salir del juego, ya que el jugador ganó
+
         if (hud != null)
             hud.SetActive(true);
 
@@ -512,7 +530,10 @@ public class PauseController : NetworkBehaviour
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
-        Salir();
+        pendienteAccionEsVictoria = true;
+        MostrarValoracion();
+
+       // Salir();
 
 }
 
@@ -526,13 +547,26 @@ public class PauseController : NetworkBehaviour
 
         if (popupDerrota != null)
             popupDerrota.SetActive(false);
+        
+        // Guardamos que la acción pendiente es reiniciar el juego, ya que el jugador perdió
+        pendienteAccionEsVictoria = false;
+        MostrarValoracion();
 
-        ReiniciarJuego();
+    //    ReiniciarJuego();
     }
-
+    // Llamar desde el botón "Continuar" del popup de valoración
     public void ContinuarDespuesDeRating()
     {
+        if (!IsOwner)
+        return;
+
+    if (popupValoracion != null)
+        popupValoracion.SetActive(false);
+
+    if (pendienteAccionEsVictoria)
         Salir();
+    else
+        ReiniciarJuego();
     }
 
 }
