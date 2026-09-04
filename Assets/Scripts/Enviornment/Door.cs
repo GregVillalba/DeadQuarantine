@@ -5,20 +5,37 @@ public class Door : NetworkBehaviour
 {
     [Header("Puerta")]
     [SerializeField] private Transform doorLeaf;
-    [SerializeField] private float interactRange = 3f;
     [SerializeField] private float openAngle = 90f;
     [SerializeField] private float openSpeed = 2f;
+
+    [Header("Dirección")]
+    [SerializeField] private bool invertOpenDirection = false;
+
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip doorOpenSound;
+    [SerializeField] private AudioClip doorCloseSound;
 
     private PlayerControls controls;
 
     private Quaternion closedRotation;
-    private Quaternion openRotation;
     private Quaternion startRotation;
 
-    private bool isPlayerLooking;
     private float timeElapsed = 1f;
 
-    // Estado de la puerta sincronizado.
+    private Camera localPlayerCamera;
+
+    // =========================================================
+    // SINGLEPLAYER
+    // =========================================================
+
+    private bool isOpenLocal = false;
+    private float openDirectionLocal = 1f;
+
+    // =========================================================
+    // MULTIPLAYER
+    // =========================================================
+
     private NetworkVariable<bool> isOpenNetwork =
         new NetworkVariable<bool>(
             false,
@@ -26,7 +43,28 @@ public class Door : NetworkBehaviour
             NetworkVariableWritePermission.Server
         );
 
-    private Camera localPlayerCamera;
+    private NetworkVariable<float> openDirectionNetwork =
+        new NetworkVariable<float>(
+            1f,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+
+    // =========================================================
+    // PROPIEDADES
+    // =========================================================
+
+    public bool IsOpen
+    {
+        get
+        {
+            return ObtenerEstadoAbierto();
+        }
+    }
+
+    // =========================================================
+    // AWAKE
+    // =========================================================
 
     private void Awake()
     {
@@ -38,18 +76,14 @@ public class Door : NetworkBehaviour
             closedRotation =
                 doorLeaf.localRotation;
 
-            openRotation =
-                closedRotation *
-                Quaternion.Euler(
-                    0f,
-                    openAngle,
-                    0f
-                );
-
             startRotation =
                 closedRotation;
         }
     }
+
+    // =========================================================
+    // ENABLE / DISABLE
+    // =========================================================
 
     private void OnEnable()
     {
@@ -61,22 +95,33 @@ public class Door : NetworkBehaviour
         controls.Player.Disable();
     }
 
+    // =========================================================
+    // NETWORK
+    // =========================================================
+
     public override void OnNetworkSpawn()
     {
         isOpenNetwork.OnValueChanged +=
             OnDoorStateChanged;
 
-        // Aplicar inmediatamente el estado actual.
-        AplicarEstadoPuerta(
-            isOpenNetwork.Value
-        );
+        openDirectionNetwork.OnValueChanged +=
+            OnOpenDirectionChanged;
+
+        AplicarEstadoActual();
     }
 
     public override void OnNetworkDespawn()
     {
         isOpenNetwork.OnValueChanged -=
             OnDoorStateChanged;
+
+        openDirectionNetwork.OnValueChanged -=
+            OnOpenDirectionChanged;
     }
+
+    // =========================================================
+    // UPDATE
+    // =========================================================
 
     private void Update()
     {
@@ -85,10 +130,8 @@ public class Door : NetworkBehaviour
         if (localPlayerCamera == null)
             return;
 
-        CheckIfPlayerIsLooking();
-
         if (controls.Player.Interact.triggered &&
-            isPlayerLooking)
+            EstaMirandoLaPuerta())
         {
             ToggleDoor();
         }
@@ -110,22 +153,6 @@ public class Door : NetworkBehaviour
 
         localPlayerCamera = null;
 
-        // Primero intenta con la Main Camera.
-        Camera mainCamera =
-            Camera.main;
-
-        if (mainCamera != null &&
-            mainCamera.isActiveAndEnabled)
-        {
-            localPlayerCamera =
-                mainCamera;
-
-            return;
-        }
-
-        // Fallback para multiplayer:
-        // busca una cámara perteneciente
-        // al PlayerMultiplayer local.
         Camera[] cameras =
             FindObjectsByType<Camera>(
                 FindObjectsSortMode.None
@@ -141,6 +168,7 @@ public class Door : NetworkBehaviour
                     NetworkObject
                 >();
 
+            // Multiplayer
             if (networkObject != null &&
                 networkObject.IsSpawned &&
                 networkObject.IsOwner)
@@ -150,20 +178,46 @@ public class Door : NetworkBehaviour
 
                 return;
             }
+
+            // Singleplayer
+            if (networkObject == null &&
+                cam == Camera.main)
+            {
+                localPlayerCamera =
+                    cam;
+
+                return;
+            }
+        }
+
+        // Fallback
+        if (Camera.main != null &&
+            Camera.main.isActiveAndEnabled)
+        {
+            NetworkObject networkObject =
+                Camera.main.GetComponentInParent<
+                    NetworkObject
+                >();
+
+            if (networkObject == null ||
+                networkObject.IsOwner)
+            {
+                localPlayerCamera =
+                    Camera.main;
+            }
         }
     }
 
     // =========================================================
-    // DETECTAR PUERTA
+    // DETECTAR SI EL JUGADOR MIRA LA PUERTA
     // =========================================================
 
-    private void CheckIfPlayerIsLooking()
+    private bool EstaMirandoLaPuerta()
     {
         if (localPlayerCamera == null ||
             doorLeaf == null)
         {
-            isPlayerLooking = false;
-            return;
+            return false;
         }
 
         Ray ray =
@@ -172,20 +226,44 @@ public class Door : NetworkBehaviour
                 localPlayerCamera.transform.forward
             );
 
-        if (Physics.Raycast(
+        if (!Physics.Raycast(
             ray,
             out RaycastHit hit,
-            interactRange
+            3f
         ))
         {
-            isPlayerLooking =
-                hit.transform == doorLeaf ||
-                hit.transform.IsChildOf(transform);
+            return false;
         }
-        else
+
+        return
+            hit.transform == doorLeaf ||
+            hit.transform.IsChildOf(transform);
+    }
+
+    // =========================================================
+    // ESTADO
+    // =========================================================
+
+    private bool ObtenerEstadoAbierto()
+    {
+        if (NetworkManager.Singleton != null &&
+            NetworkManager.Singleton.IsListening)
         {
-            isPlayerLooking = false;
+            return isOpenNetwork.Value;
         }
+
+        return isOpenLocal;
+    }
+
+    private float ObtenerDireccionApertura()
+    {
+        if (NetworkManager.Singleton != null &&
+            NetworkManager.Singleton.IsListening)
+        {
+            return openDirectionNetwork.Value;
+        }
+
+        return openDirectionLocal;
     }
 
     // =========================================================
@@ -194,25 +272,122 @@ public class Door : NetworkBehaviour
 
     private void ToggleDoor()
     {
-        // Si Netcode está funcionando,
-        // el servidor controla el estado.
+        bool currentlyOpen =
+            ObtenerEstadoAbierto();
+
+        // MULTIPLAYER
         if (NetworkManager.Singleton != null &&
             NetworkManager.Singleton.IsListening)
         {
-            ToggleDoorServerRpc();
+            if (!currentlyOpen)
+            {
+                float direction =
+                    CalcularDireccionApertura();
+
+                ToggleDoorServerRpc(
+                    direction
+                );
+            }
+            else
+            {
+                ToggleDoorServerRpc(
+                    openDirectionNetwork.Value
+                );
+            }
+
             return;
         }
 
-        // Singleplayer sin Netcode activo.
-        isOpenNetwork.Value =
-            !isOpenNetwork.Value;
+        // SINGLEPLAYER
+        if (!currentlyOpen)
+        {
+            openDirectionLocal =
+                CalcularDireccionApertura();
+        }
+
+        bool wasOpen =
+            isOpenLocal;
+
+        isOpenLocal =
+            !isOpenLocal;
+
+        startRotation =
+            doorLeaf.localRotation;
+
+        timeElapsed = 0f;
+
+        ReproducirSonidoLocal(
+            !wasOpen
+        );
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void ToggleDoorServerRpc()
+    private void ToggleDoorServerRpc(
+        float requestedDirection
+    )
     {
+        bool wasOpen =
+            isOpenNetwork.Value;
+
+        if (!wasOpen)
+        {
+            openDirectionNetwork.Value =
+                requestedDirection >= 0f
+                    ? 1f
+                    : -1f;
+        }
+
         isOpenNetwork.Value =
             !isOpenNetwork.Value;
+
+        PlayDoorSoundClientRpc(
+            !wasOpen
+        );
+    }
+
+    // =========================================================
+    // DIRECCIÓN DE APERTURA
+    // =========================================================
+
+    private float CalcularDireccionApertura()
+    {
+        if (localPlayerCamera == null ||
+            doorLeaf == null)
+        {
+            return 1f;
+        }
+
+        Vector3 directionFromDoor =
+            localPlayerCamera.transform.position -
+            doorLeaf.position;
+
+        // Usamos el eje Z local del doorLeaf
+        // para determinar de qué lado está el jugador.
+        float side =
+            Vector3.Dot(
+                directionFromDoor,
+                doorLeaf.forward
+            );
+
+        float direction;
+
+        // El jugador está delante.
+        // La puerta abre hacia atrás.
+        if (side > 0f)
+        {
+            direction = 1f;
+        }
+        else
+        {
+            direction = -1f;
+        }
+
+        if (invertOpenDirection)
+        {
+            direction *= -1f;
+        }
+
+        return direction;
     }
 
     // =========================================================
@@ -233,12 +408,42 @@ public class Door : NetworkBehaviour
         timeElapsed = 0f;
     }
 
-    private void AplicarEstadoPuerta(
-        bool open
+    private void OnOpenDirectionChanged(
+        float previousValue,
+        float newValue
     )
     {
         if (doorLeaf == null)
             return;
+
+        if (ObtenerEstadoAbierto())
+        {
+            startRotation =
+                doorLeaf.localRotation;
+
+            timeElapsed = 0f;
+        }
+    }
+
+    // =========================================================
+    // APLICAR ESTADO ACTUAL
+    // =========================================================
+
+    private void AplicarEstadoActual()
+    {
+        if (doorLeaf == null)
+            return;
+
+        float direction =
+            ObtenerDireccionApertura();
+
+        Quaternion openRotation =
+            closedRotation *
+            Quaternion.Euler(
+                0f,
+                openAngle * direction,
+                0f
+            );
 
         startRotation =
             doorLeaf.localRotation;
@@ -246,13 +451,13 @@ public class Door : NetworkBehaviour
         timeElapsed = 1f;
 
         doorLeaf.localRotation =
-            open
+            ObtenerEstadoAbierto()
                 ? openRotation
                 : closedRotation;
     }
 
     // =========================================================
-    // ROTACIÓN
+    // ROTACIÓN DE LA PUERTA
     // =========================================================
 
     private void RotateDoor()
@@ -272,8 +477,19 @@ public class Door : NetworkBehaviour
                 timeElapsed
             );
 
+        float direction =
+            ObtenerDireccionApertura();
+
+        Quaternion openRotation =
+            closedRotation *
+            Quaternion.Euler(
+                0f,
+                openAngle * direction,
+                0f
+            );
+
         Quaternion targetRotation =
-            isOpenNetwork.Value
+            ObtenerEstadoAbierto()
                 ? openRotation
                 : closedRotation;
 
@@ -283,5 +499,39 @@ public class Door : NetworkBehaviour
                 targetRotation,
                 clampedTime
             );
+    }
+
+    // =========================================================
+    // AUDIO
+    // =========================================================
+
+    [ClientRpc]
+    private void PlayDoorSoundClientRpc(
+        bool opening
+    )
+    {
+        ReproducirSonidoLocal(
+            opening
+        );
+    }
+
+    private void ReproducirSonidoLocal(
+        bool opening
+    )
+    {
+        if (audioSource == null)
+            return;
+
+        AudioClip clip =
+            opening
+                ? doorOpenSound
+                : doorCloseSound;
+
+        if (clip == null)
+            return;
+
+        audioSource.PlayOneShot(
+            clip
+        );
     }
 }

@@ -134,26 +134,6 @@ public class Weapon : MonoBehaviour
                         HUDController
                     >(true);
         }
-
-        // Intentar encontrar PlayerMovement
-        // automáticamente si no está asignado.
-        if (playerMovement == null)
-        {
-            playerMovement =
-                GetComponentInParent<
-                    PlayerMovement
-                >();
-        }
-
-        // Intentar encontrar CharacterController
-        // automáticamente si no está asignado.
-        if (characterController == null)
-        {
-            characterController =
-                GetComponentInParent<
-                    CharacterController
-                >();
-        }
     }
 
     private void OnEnable()
@@ -173,11 +153,23 @@ public class Weapon : MonoBehaviour
             OnAimCanceled;
     }
 
+    public void AnimationAmmunitionFill()
+    {
+        currentAmmo =
+            maxAmmo;
+    }
+
+    public void AnimationReloadFinished()
+    {
+        currentAmmo =
+            maxAmmo;
+
+        isReloading =
+            false;
+    }
+
     private void OnDisable()
     {
-        if (controls == null)
-            return;
-
         controls.Player.Fire.performed -=
             OnFire;
 
@@ -196,24 +188,8 @@ public class Weapon : MonoBehaviour
             false;
     }
 
-    public void AnimationAmmunitionFill()
-    {
-        currentAmmo =
-            maxAmmo;
-    }
-
-    public void AnimationReloadFinished()
-    {
-        currentAmmo =
-            maxAmmo;
-
-        isReloading =
-            false;
-    }
-
     private void Update()
     {
-        UpdateSprintAimRestriction();
         UpdateAimFOV();
         UpdateSpread();
         UpdateJumpSpread();
@@ -227,19 +203,8 @@ public class Weapon : MonoBehaviour
     private void OnAimStarted(
         InputAction.CallbackContext context)
     {
-        // No se puede apuntar durante la recarga.
         if (isReloading)
             return;
-
-        // No se puede apuntar mientras se corre.
-        if (playerMovement != null &&
-            playerMovement.IsSprinting)
-        {
-            IsAiming =
-                false;
-
-            return;
-        }
 
         IsAiming =
             true;
@@ -250,23 +215,6 @@ public class Weapon : MonoBehaviour
     {
         IsAiming =
             false;
-    }
-
-    private void UpdateSprintAimRestriction()
-    {
-        if (!IsAiming)
-            return;
-
-        if (playerMovement == null)
-            return;
-
-        // Si empieza a correr mientras apuntaba,
-        // cancelar inmediatamente el apuntado.
-        if (playerMovement.IsSprinting)
-        {
-            IsAiming =
-                false;
-        }
     }
 
     private void UpdateAimFOV()
@@ -297,14 +245,15 @@ public class Weapon : MonoBehaviour
         if (characterController == null)
             return;
 
+        // Al apuntar, la dispersión es siempre 0.
         if (IsAiming)
         {
-            currentSpread =
-                spreadAiming;
-
+            currentSpread = 0f;
             return;
         }
 
+        // Mientras está en el aire,
+        // mantiene la dispersión del salto.
         if (!characterController.isGrounded)
             return;
 
@@ -362,6 +311,7 @@ public class Weapon : MonoBehaviour
         bool isGrounded =
             characterController.isGrounded;
 
+        // Empieza el salto.
         if (wasGrounded && !isGrounded)
         {
             currentSpread =
@@ -373,6 +323,7 @@ public class Weapon : MonoBehaviour
                 );
         }
 
+        // Acaba de tocar el suelo.
         if (!wasGrounded && isGrounded)
         {
             landingRecoveryTimer =
@@ -413,8 +364,7 @@ public class Weapon : MonoBehaviour
             return;
 
         float speed =
-            characterController.velocity
-                .magnitude;
+            characterController.velocity.magnitude;
 
         weaponAnimator.SetFloat(
             "Speed",
@@ -467,12 +417,17 @@ public class Weapon : MonoBehaviour
 
         if (EventSystem.current != null &&
             EventSystem.current.currentSelectedGameObject != null)
-        {
             return;
-        }
 
         if (isReloading)
             return;
+
+        // NO DISPARAR MIENTRAS CORRE.
+        if (playerMovement != null &&
+            playerMovement.IsSprinting)
+        {
+            return;
+        }
 
         if (Time.time < nextFireTime)
             return;
@@ -535,7 +490,6 @@ public class Weapon : MonoBehaviour
         if (currentAmmo == maxAmmo)
             return;
 
-        // Recargar cancela el apuntado.
         IsAiming =
             false;
 
@@ -601,52 +555,117 @@ public class Weapon : MonoBehaviour
                 currentSpread
             );
 
-        Vector3 bulletStartPosition =
-            firePoint.position;
-
-        PlayerHealth playerHealth =
-            GetComponentInParent<PlayerHealth>();
-
-        if (
-            playerHealth != null &&
-            playerHealth.IsDowned
-        )
-        {
-            bulletStartPosition =
-                playerCamera.transform.position;
-        }
-
         Ray ray =
             new Ray(
                 playerCamera.transform.position,
                 spreadDirection
             );
 
-        if (Physics.Raycast(
-            ray,
-            out RaycastHit hit,
-            range))
+        // Obtener TODOS los colliders atravesados
+        // por el disparo.
+        RaycastHit[] hits =
+            Physics.RaycastAll(
+                ray,
+                range
+            );
+
+        // Ordenarlos desde el más cercano
+        // al más lejano.
+        System.Array.Sort(
+            hits,
+            (a, b) =>
+                a.distance.CompareTo(
+                    b.distance
+                )
+        );
+
+        bool validHitFound = false;
+        RaycastHit validHit = default;
+
+        foreach (RaycastHit hit in hits)
         {
+            // =================================================
+            // IGNORAR JUGADORES
+            // =================================================
+
+            PlayerHealth playerHit =
+                hit.collider.GetComponentInParent<
+                    PlayerHealth
+                >();
+
+            if (playerHit != null)
+            {
+                continue;
+            }
+
+            // =================================================
+            // IGNORAR PROPIO PLAYER
+            // =================================================
+
+            if (hit.collider.transform.root ==
+                transform.root)
+            {
+                continue;
+            }
+
+            // =================================================
+            // IGNORAR CUALQUIER COMPONENTE DEL PLAYER
+            // =================================================
+
+            PlayerMovement movementHit =
+                hit.collider.GetComponentInParent<
+                    PlayerMovement
+                >();
+
+            if (movementHit != null)
+            {
+                continue;
+            }
+
+            // Este es el primer objeto válido.
+            validHit =
+                hit;
+
+            validHitFound =
+                true;
+
+            break;
+        }
+
+        // =====================================================
+        // IMPACTO VÁLIDO
+        // =====================================================
+
+        if (validHitFound)
+        {
+            RaycastHit hit =
+                validHit;
+
             Debug.Log(
                 "Impacto en: " +
                 hit.collider.name
             );
 
             Debug.DrawLine(
-                bulletStartPosition,
+                firePoint.position,
                 hit.point,
                 Color.red,
                 1f
             );
 
             SpawnBulletTrail(
-                hit.point,
-                bulletStartPosition
+                hit.point
             );
+
+            // =================================================
+            // ZOMBIE
+            // =================================================
 
             ZombieHealth zombieHealth =
                 hit.collider
-                    .GetComponentInParent<ZombieHealth>();
+                    .GetComponentInParent<
+                        ZombieHealth
+                    >();
 
             if (zombieHealth != null)
             {
@@ -655,9 +674,15 @@ public class Weapon : MonoBehaviour
                     hit.point,
                     hit.normal
                 );
+
+                return;
             }
-            else if (
-                DecalManager.Instance != null)
+
+            // =================================================
+            // PARED / OBJETO
+            // =================================================
+
+            if (DecalManager.Instance != null)
             {
                 DecalManager.Instance
                     .SpawnBulletHole(
@@ -668,19 +693,23 @@ public class Weapon : MonoBehaviour
         }
         else
         {
+            // =================================================
+            // NO IMPACTÓ CONTRA NADA VÁLIDO
+            // =================================================
+
             Vector3 missPoint =
-                playerCamera.transform.position +
+                firePoint.position +
                 spreadDirection *
                 range;
 
             SpawnBulletTrail(
-                missPoint,
-                bulletStartPosition
+                missPoint
             );
 
             Debug.DrawRay(
-                bulletStartPosition,
-                spreadDirection * range,
+                firePoint.position,
+                spreadDirection *
+                range,
                 Color.yellow,
                 1f
             );
@@ -692,26 +721,24 @@ public class Weapon : MonoBehaviour
     // =========================================================
 
     private void SpawnBulletTrail(
-        Vector3 targetPoint,
-        Vector3 startPoint
+        Vector3 targetPoint
     )
     {
-        if (
-            bulletTrailPrefab == null
-        )
-        {
+        if (bulletTrailPrefab == null ||
+            firePoint == null)
             return;
-        }
 
         GameObject trailObject =
             Instantiate(
                 bulletTrailPrefab,
-                startPoint,
+                firePoint.position,
                 Quaternion.identity
             );
 
         BulletTrail trail =
-            trailObject.GetComponent<BulletTrail>();
+            trailObject.GetComponent<
+                BulletTrail
+            >();
 
         if (trail != null)
         {
@@ -727,7 +754,8 @@ public class Weapon : MonoBehaviour
 
     private Vector3 ApplySpreadToDirection(
         Vector3 baseDirection,
-        float spreadDegrees)
+        float spreadDegrees
+    )
     {
         if (spreadDegrees <= 0f)
             return baseDirection;
