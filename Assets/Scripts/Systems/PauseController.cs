@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
-
+using System.Collections;
 public class PauseController : NetworkBehaviour
 {
     [Header("Pausa")]
@@ -36,7 +36,10 @@ public class PauseController : NetworkBehaviour
     [Header("Valoración")]
     [SerializeField] private GameObject popupValoracion; //referencia al panel de valoración
 
-
+    [Header("Ronda")]
+    [SerializeField] private GameObject panelRonda;
+    [SerializeField] private float duracionPanelRonda = 3f;
+    [SerializeField] private TMPro.TextMeshProUGUI textoRonda;
 
 
     private bool estaPausado;
@@ -50,6 +53,7 @@ public class PauseController : NetworkBehaviour
    
     private bool finDeRondaActivo;
     private bool pendienteAccionEsVictoria; //"banderita" que guarda si el jugador ganó o perdió
+    private Coroutine ocultarPanelRondaCoroutine;
 
 
 
@@ -88,6 +92,9 @@ public class PauseController : NetworkBehaviour
         //Al iniciar el juego, el popup de valoración debe estar oculto
         if (popupValoracion != null)
             popupValoracion.SetActive(false);
+
+        if (panelRonda != null)
+            panelRonda.SetActive(false);
     }
 
 
@@ -569,5 +576,47 @@ public class PauseController : NetworkBehaviour
         ReiniciarJuego();
     }
 
+     public void MostrarPanelRonda(int ronda, bool esRondaFinal)
+{
+    if (!IsOwner)
+        return;
+
+    if (panelRonda == null)
+    {
+        Debug.LogError("El panelRonda no está asignado en el Inspector.");
+        return;
+    }
+
+    if (textoRonda != null)
+    {
+        textoRonda.text = esRondaFinal
+            ? "Ronda Final"
+            : "Ronda " + ronda;
+    }
+
+    panelRonda.SetActive(true);
+
+    if (ocultarPanelRondaCoroutine != null)
+        StopCoroutine(ocultarPanelRondaCoroutine);
+
+    ocultarPanelRondaCoroutine =
+        StartCoroutine(OcultarPanelRondaDespuesDeTiempo(duracionPanelRonda));
 }
+
+public void OcultarPanelRonda()
+{
+    if (panelRonda != null)
+        panelRonda.SetActive(false);
+}
+
+private IEnumerator OcultarPanelRondaDespuesDeTiempo(float segundos)
+{
+    yield return new WaitForSeconds(segundos);
+    OcultarPanelRonda();
+
+}
+}
+
+
+
 

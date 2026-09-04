@@ -269,14 +269,8 @@ public class RoundManager : NetworkBehaviour
             roundStartHUD.Hide();
         }
 
-        if (
-            GameplayPopupsController.Instance !=
-            null
-        )
-        {
-            GameplayPopupsController.Instance
-                .MostrarPanelRonda();
-        }
+        bool esRondaFinal = round >= maxRounds;
+        MostrarPanelRondaClientRpc(round, esRondaFinal);
 
         if (spawnRoutine != null)
         {
@@ -1002,5 +996,18 @@ public class RoundManager : NetworkBehaviour
             playerHealth.Respawn();
         }
     }
+
+     [ClientRpc]
+private void MostrarPanelRondaClientRpc(int ronda, bool esRondaFinal)
+{
+    var local = NetworkManager.Singleton.LocalClient?.PlayerObject;
+    if (local == null)
+        return;
+
+    var pause = local.GetComponentInChildren<PauseController>();
+    if (pause != null)
+        pause.MostrarPanelRonda(ronda, esRondaFinal);
+}
+
 
 }
