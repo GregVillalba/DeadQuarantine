@@ -284,7 +284,7 @@ public class ZombieHealth : NetworkBehaviour
                 true
             );
 
-            Die();
+            Die(shooterClientId);
         }
         else
         {
@@ -465,7 +465,7 @@ public class ZombieHealth : NetworkBehaviour
     // MUERTE
     // =========================================================
 
-    private void Die()
+    private void Die(ulong shooterClientId)
     {
         if (!IsServer)
             return;
@@ -492,6 +492,7 @@ public class ZombieHealth : NetworkBehaviour
         {
             RoundManager.Instance.ZombieDied();
         }
+        SumarPuntoAlJugador(shooterClientId);
 
         Invoke(
             nameof(DespawnZombie),
@@ -528,5 +529,32 @@ public class ZombieHealth : NetworkBehaviour
         {
             NetworkObject.Despawn(true);
         }
+    }
+
+    private void SumarPuntoAlJugador(ulong shooterClientId)
+    {
+        if(!IsServer)
+            return;
+
+        if (NetworkManager.Singleton == null)
+            return;
+
+        if (!NetworkManager.Singleton.ConnectedClients.TryGetValue(
+            shooterClientId,
+            out NetworkClient shooterClient))
+        {
+            return;
+        }
+        if (shooterClient.PlayerObject == null)
+        {
+                return;
+        }
+        PlayerScore playerScore =
+                    shooterClient.PlayerObject.GetComponentInChildren<PlayerScore>();
+
+        if (playerScore != null)
+                {
+                    playerScore.SumarPuntos(50);
+                }
     }
 }

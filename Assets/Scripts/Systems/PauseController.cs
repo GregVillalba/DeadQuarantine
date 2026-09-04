@@ -29,6 +29,9 @@ public class PauseController : NetworkBehaviour
      [Header("Fin de Ronda")]
     [SerializeField] private GameObject popupVictoria;
     [SerializeField] private GameObject popupDerrota;
+    [SerializeField] private TMPro.TextMeshProUGUI textoPuntajeVictoria;
+    [SerializeField] private TMPro.TextMeshProUGUI textoPuntajeDerrota;
+    [SerializeField] private PlayerScore playerScore;
 
 
     private bool estaPausado;
@@ -46,6 +49,8 @@ public class PauseController : NetworkBehaviour
 
     private void Awake()
     {
+        playerScore = GetComponent<PlayerScore>();
+        
         if (popupMenuHome != null)
             popupMenuHome.SetActive(false);
 
@@ -457,6 +462,11 @@ public class PauseController : NetworkBehaviour
         if (popupVictoria != null)
             popupVictoria.SetActive(true);
 
+        if (textoPuntajeVictoria != null && playerScore != null)
+            textoPuntajeVictoria.text = "Puntaje final: " + playerScore.ScoreNetwork.Value;
+
+
+
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None; 
 }
@@ -475,6 +485,9 @@ public class PauseController : NetworkBehaviour
 
         if (popupDerrota != null)
             popupDerrota.SetActive(true);
+
+        if (textoPuntajeDerrota != null && playerScore != null)
+            textoPuntajeDerrota.text = "Puntaje obtenido: " + playerScore.ScoreNetwork.Value;
 
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;

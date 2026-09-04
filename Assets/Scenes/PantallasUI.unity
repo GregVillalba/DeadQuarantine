@@ -8091,6 +8091,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fc8d29203708d33458843c2df55eadc0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Scripts::MultiplayerLobbyController
+  modoMultiplayerPanel: {fileID: 0}
+  ingresarCodPanel: {fileID: 0}
+  salaEsperaPanel: {fileID: 0}
+  network: {fileID: 0}
+  codigoInputField: {fileID: 0}
+  botonCopiarCodigo: {fileID: 0}
+  labelCodigoACopiar: {fileID: 0}
+  feedbackCopiarText: {fileID: 0}
+  p1ConexionText: {fileID: 0}
+  p1EstadoText: {fileID: 0}
+  p1ConexionIcon: {fileID: 0}
+  p1EstadoIcon: {fileID: 0}
+  p2ConexionText: {fileID: 0}
+  p2EstadoText: {fileID: 0}
+  p2ConexionIcon: {fileID: 0}
+  p2EstadoIcon: {fileID: 0}
+  btnPlayMultiplayer: {fileID: 0}
+  btnPlayMultiplayerText: {fileID: 0}
+  countdownPanel: {fileID: 0}
+  countdownText: {fileID: 0}
+  nombreEscenaJuego: MainSceneMultiPlayer
+  colorRojo: {r: 1, g: 0.1, b: 0.1, a: 1}
+  iconoVerde: {fileID: 0}
+  iconoRojo: {fileID: 0}
 --- !u!114 &1098545882
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15279,6 +15303,10 @@ PrefabInstance:
     - target: {fileID: 414907819403229706, guid: 3588a5ce017d1364db88d77a8453e821, type: 3}
       propertyPath: m_Name
       value: RatingPopop
+      objectReference: {fileID: 0}
+    - target: {fileID: 414907819403229706, guid: 3588a5ce017d1364db88d77a8453e821, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4845353449139311631, guid: 3588a5ce017d1364db88d77a8453e821, type: 3}
       propertyPath: comoJugarPanel
