@@ -3,6 +3,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 using System.Collections;
+using TMPro;
 public class PauseController : NetworkBehaviour
 {
     [Header("Pausa")]
@@ -26,11 +27,17 @@ public class PauseController : NetworkBehaviour
     [SerializeField] private GameObject botonReiniciar;
 
 
-     [Header("Fin de Ronda")]
+    [Header("Fin de Ronda")]
     [SerializeField] private GameObject popupVictoria;
     [SerializeField] private GameObject popupDerrota;
-    [SerializeField] private TMPro.TextMeshProUGUI textoPuntajeVictoria;
-    [SerializeField] private TMPro.TextMeshProUGUI textoPuntajeDerrota;
+    [SerializeField] private TextMeshProUGUI textoPuntajeVictoria;
+    [SerializeField] private TextMeshProUGUI textoPuntajeDerrota;
+    [SerializeField] private TextMeshProUGUI textoRondaDerrota;
+    [SerializeField] private TextMeshProUGUI textoZombiesDerrota;
+    [SerializeField] private TextMeshProUGUI textoZombiesVictoria;
+    [SerializeField] private TextMeshProUGUI textoPrecisionDerrota;
+    [SerializeField] private TextMeshProUGUI textoPrecisionVictoria;
+   
     [SerializeField] private PlayerScore playerScore;
 
     [Header("Valoración")]
@@ -39,7 +46,7 @@ public class PauseController : NetworkBehaviour
     [Header("Ronda")]
     [SerializeField] private GameObject panelRonda;
     [SerializeField] private float duracionPanelRonda = 3f;
-    [SerializeField] private TMPro.TextMeshProUGUI textoRonda;
+    [SerializeField] private TextMeshProUGUI textoRonda;
 
 
     private bool estaPausado;
@@ -59,7 +66,7 @@ public class PauseController : NetworkBehaviour
 
     private void Awake()
     {
-        playerScore = GetComponent<PlayerScore>();
+        playerScore = transform.root.GetComponentInChildren<PlayerScore>();
         
         if (popupMenuHome != null)
             popupMenuHome.SetActive(false);
@@ -480,9 +487,13 @@ public class PauseController : NetworkBehaviour
             popupVictoria.SetActive(true);
 
         if (textoPuntajeVictoria != null && playerScore != null)
-            textoPuntajeVictoria.text = "Puntaje final: " + playerScore.ScoreNetwork.Value;
+            textoPuntajeVictoria.text = playerScore.ScoreNetwork.Value.ToString();
 
+        if (textoZombiesVictoria != null && playerScore != null)
+            textoZombiesVictoria.text = playerScore.ZombiesEliminadosNetwork.Value.ToString();
 
+        if (textoPrecisionVictoria != null && playerScore != null)
+            textoPrecisionVictoria.text = playerScore.PrecisionPorcentaje.ToString() + "%";
 
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None; 
@@ -504,7 +515,16 @@ public class PauseController : NetworkBehaviour
             popupDerrota.SetActive(true);
 
         if (textoPuntajeDerrota != null && playerScore != null)
-            textoPuntajeDerrota.text = "Puntaje obtenido: " + playerScore.ScoreNetwork.Value;
+            textoPuntajeDerrota.text = playerScore.ScoreNetwork.Value.ToString();
+
+        if (textoZombiesDerrota != null && playerScore != null)
+            textoZombiesDerrota.text = playerScore.ZombiesEliminadosNetwork.Value.ToString();
+
+        if (textoPrecisionDerrota != null && playerScore != null)
+            textoPrecisionDerrota.text = playerScore.PrecisionPorcentaje.ToString() + "%";
+
+        if (textoRondaDerrota != null && playerScore != null)
+            textoRondaDerrota.text = RoundManager.Instance.CurrentRound + " / " + RoundManager.Instance.MaxRounds;
 
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;

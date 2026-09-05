@@ -488,11 +488,12 @@ public class ZombieHealth : NetworkBehaviour
         // desactiva animación y activa físicas.
         PlayDeathEffectsClientRpc();
 
+        SumarPuntoAlJugador(shooterClientId);
+
         if (RoundManager.Instance != null)
         {
             RoundManager.Instance.ZombieDied();
         }
-        SumarPuntoAlJugador(shooterClientId);
 
         Invoke(
             nameof(DespawnZombie),
@@ -555,6 +556,7 @@ public class ZombieHealth : NetworkBehaviour
         if (playerScore != null)
                 {
                     playerScore.SumarPuntos(50);
+                    playerScore.SumarZombieEliminado();
                 }
     }
 }

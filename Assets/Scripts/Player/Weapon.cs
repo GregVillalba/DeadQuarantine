@@ -104,6 +104,8 @@ public class Weapon : MonoBehaviour
 
     private float landingRecoveryTimer;
 
+    private PlayerScore playerScore;
+
     private void Awake()
     {
         controls =
@@ -133,6 +135,13 @@ public class Weapon : MonoBehaviour
                     .GetComponentInChildren<
                         HUDController
                     >(true);
+        }
+
+        playerScore = GetComponentInParent<PlayerScore>();
+
+        if(playerScore == null)
+        {
+            playerScore = transform.root.GetComponentInChildren<PlayerScore>(true);
         }
     }
 
@@ -464,6 +473,11 @@ public class Weapon : MonoBehaviour
 
         currentAmmo--;
 
+        if(playerScore != null)
+        {
+            playerScore.RegistrarDisparoServerRpc();
+        }
+
         currentSpread =
             Mathf.Clamp(
                 currentSpread +
@@ -554,11 +568,6 @@ public class Weapon : MonoBehaviour
 
     private void Shoot()
     {
-        if (GameplayPopupsController.Instance != null)
-        {
-            GameplayPopupsController.Instance
-                .OcultarPanelRonda();
-        }
 
         Vector3 spreadDirection =
             ApplySpreadToDirection(
@@ -685,6 +694,11 @@ public class Weapon : MonoBehaviour
                     hit.point,
                     hit.normal
                 );
+
+                if(playerScore != null)
+                {
+                    playerScore.RegistrarImpactoServerRpc();
+                }
 
                 return;
             }

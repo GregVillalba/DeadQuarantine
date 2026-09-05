@@ -37,6 +37,6 @@ public class ScoreHUD : NetworkBehaviour
     private void ActualizarTexto(int anterior, int nuevo)
     {
         if (textoPuntaje != null)
-            textoPuntaje.text = "Puntaje: " + nuevo;
+            textoPuntaje.text = nuevo.ToString();
     }
 }

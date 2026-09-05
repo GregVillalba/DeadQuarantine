@@ -13368,7 +13368,7 @@ GameObject:
   - component: {fileID: 1640114415595401237}
   - component: {fileID: 8134971678351256670}
   m_Layer: 5
-  m_Name: Numeropuntaje
+  m_Name: puntajeAlcanzadoDerrota
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -13390,7 +13390,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 442, y: -0}
+  m_AnchoredPosition: {x: 452, y: -0}
   m_SizeDelta: {x: 42, y: 18}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &807843515385400892
@@ -15343,7 +15343,7 @@ GameObject:
   - component: {fileID: 1632833385006667108}
   - component: {fileID: 3657695645262821424}
   m_Layer: 5
-  m_Name: 64%
+  m_Name: precisionDerrota
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -15365,7 +15365,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 447.2, y: 1.6}
+  m_AnchoredPosition: {x: 451, y: 1.6}
   m_SizeDelta: {x: 48.7237, y: 15.65}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &5220049608301086239
@@ -15416,7 +15416,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 64%
+  m_text: 0%
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -18560,6 +18560,11 @@ MonoBehaviour:
   popupDerrota: {fileID: 8473775903894595391}
   textoPuntajeVictoria: {fileID: 405400109173657536}
   textoPuntajeDerrota: {fileID: 1640114415595401237}
+  textoRondaDerrota: {fileID: 6234788007501858823}
+  textoZombiesDerrota: {fileID: 7180595050072543923}
+  textoZombiesVictoria: {fileID: 7593579396395790429}
+  textoPrecisionDerrota: {fileID: 1632833385006667108}
+  textoPrecisionVictoria: {fileID: 5317254949958524470}
   playerScore: {fileID: 0}
   popupValoracion: {fileID: 3854256343841152975}
   panelRonda: {fileID: 4879903094776176469}
@@ -18849,7 +18854,7 @@ GameObject:
   - component: {fileID: 7180595050072543923}
   - component: {fileID: 7391478795253832720}
   m_Layer: 5
-  m_Name: 88
+  m_Name: zombiesEliminadosDerrota
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -18871,7 +18876,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 448.5, y: 4.6}
+  m_AnchoredPosition: {x: 452, y: -0}
   m_SizeDelta: {x: 17, y: 18}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &646663866920307041
@@ -18922,7 +18927,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 88
+  m_text: 0
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -19502,7 +19507,7 @@ GameObject:
   - component: {fileID: 405400109173657536}
   - component: {fileID: 8433418765150958285}
   m_Layer: 5
-  m_Name: 24,500 PTS
+  m_Name: puntosTotalesVictoria
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -19524,7 +19529,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 400, y: -0}
+  m_AnchoredPosition: {x: 450, y: -0}
   m_SizeDelta: {x: 84, y: 18}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &3727255940965228531
@@ -19575,7 +19580,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 0 PTS
+  m_text: 0
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -26091,7 +26096,7 @@ GameObject:
   - component: {fileID: 6234788007501858823}
   - component: {fileID: 5024823947607989531}
   m_Layer: 5
-  m_Name: 4 / 5
+  m_Name: RondaAlcanzada
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -26113,7 +26118,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 442, y: -0}
+  m_AnchoredPosition: {x: 443, y: -0}
   m_SizeDelta: {x: 42, y: 18}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &2949269747796440577
@@ -26164,7 +26169,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 4 / 5
+  m_text: 1 / 5
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -33735,7 +33740,7 @@ GameObject:
   - component: {fileID: 5317254949958524470}
   - component: {fileID: 296979854291203426}
   m_Layer: 5
-  m_Name: 78%
+  m_Name: presicionVictoria
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -33757,7 +33762,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 458, y: -0}
+  m_AnchoredPosition: {x: 450, y: -0}
   m_SizeDelta: {x: 26, y: 18}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &4196939006793763855
@@ -33808,7 +33813,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 78%
+  m_text: 0%
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -34890,6 +34895,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Scripts::PlayerScore
   ShowTopMostFoldoutHeaderGroup: 1
   ScoreNetwork:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  ZombiesEliminadosNetwork:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  DisparosRealizadosNetwork:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  DisparosAcertadosNetwork:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
@@ -41017,7 +41037,7 @@ GameObject:
   - component: {fileID: 7593579396395790429}
   - component: {fileID: 6234004424066391980}
   m_Layer: 5
-  m_Name: 142
+  m_Name: zombiesEliminadosVictoria
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -41039,7 +41059,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 458, y: -0}
+  m_AnchoredPosition: {x: 450, y: -0}
   m_SizeDelta: {x: 26, y: 18}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &7203868378453876596
@@ -41090,7 +41110,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 142
+  m_text: 0
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -47233,7 +47253,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 475, y: -0}
+  m_AnchoredPosition: {x: 451, y: -0}
   m_SizeDelta: {x: 9, y: 18}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &7208639695881843375
@@ -53566,7 +53586,7 @@ GameObject:
   - component: {fileID: 3997704820058207463}
   - component: {fileID: 1669750895901359909}
   m_Layer: 5
-  m_Name: 3
+  m_Name: caidastotales
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -53588,7 +53608,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 454, y: 3.1}
+  m_AnchoredPosition: {x: 451, y: 3.1}
   m_SizeDelta: {x: 9, y: 18}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &7431673178784460565
@@ -53639,7 +53659,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 3
+  m_text: 0
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -54474,7 +54494,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 475, y: -0}
+  m_AnchoredPosition: {x: 450, y: -0}
   m_SizeDelta: {x: 9, y: 18}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &5275627714891412250
