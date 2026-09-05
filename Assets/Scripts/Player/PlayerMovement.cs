@@ -16,6 +16,7 @@ public class PlayerMovement : NetworkBehaviour
     [SerializeField] private float jumpForce = 6f;
     [SerializeField] private float gravity = -15f;
     [SerializeField] private float groundedVelocity = -2f;
+    [SerializeField] private WeaponSwitcher weaponSwitcher;
 
     [Header("Estamina")]
     [SerializeField] private float maxStamina = 5f;
@@ -1701,19 +1702,20 @@ public class PlayerMovement : NetworkBehaviour
 
     private bool CanStandUp()
     {
-        float checkDistance =
-            standingHeight -
-            crouchHeight;
+        float checkDistance = standingHeight - crouchHeight;
+        if (checkDistance <= 0f)
+            return true;
 
-        Vector3 origin =
-            transform.position +
-            Vector3.up *
-            crouchHeight;
+        const float skin = 0.05f; // margen para no autodetectarnos
+
+        Vector3 origin = transform.position + Vector3.up * (crouchHeight + skin);
 
         return !Physics.Raycast(
             origin,
             Vector3.up,
-            checkDistance
+            checkDistance - skin,
+            ~0,
+            QueryTriggerInteraction.Ignore
         );
     }
 
@@ -1726,14 +1728,19 @@ public class PlayerMovement : NetworkBehaviour
         if (!IsOwner)
             return;
 
+        bool isReloading =
+            weaponSwitcher != null &&
+            weaponSwitcher.CurrentWeapon != null &&
+            weaponSwitcher.CurrentWeapon.IsReloading;
+
         bool wantsToSprint =
             controls.Player.Sprint.IsPressed() &&
             moveInput.magnitude > 0.1f &&
             !isExhausted &&
             !IsCrouching &&
             !isParkouring &&
-            (playerHealth == null ||
-             !playerHealth.IsDowned);
+            !isReloading && 
+            (playerHealth == null || !playerHealth.IsDowned);
 
         if (
             wantsToSprint &&

@@ -83,6 +83,11 @@ public class HUDController : MonoBehaviour
         ActualizarTodo();
     }
 
+    public void SetWeapon(Weapon newWeapon)
+    {
+        weapon = newWeapon;
+    }
+
     private void BuscarRoundManager()
     {
         roundManager =

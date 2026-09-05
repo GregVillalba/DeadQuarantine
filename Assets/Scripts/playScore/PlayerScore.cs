@@ -1,5 +1,7 @@
+using System;
 using Unity.Netcode;
 using UnityEngine;
+
 public class PlayerScore : NetworkBehaviour
 {
     public NetworkVariable<int> ScoreNetwork = new NetworkVariable<int>(
@@ -31,6 +33,35 @@ public class PlayerScore : NetworkBehaviour
         )
         : 0;
 
+    public event Action<string, bool> OnPurchaseResult;
+
+    [ServerRpc]
+    public void ComprarArmaServerRpc(string weaponId, int costo)
+    {
+        bool alcanza = ScoreNetwork.Value >= costo;
+
+        if (alcanza)
+        {
+            ScoreNetwork.Value -= costo;
+        }
+
+        ClientRpcParams targetParams = new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = new ulong[] { OwnerClientId }
+            }
+        };
+
+        NotificarResultadoCompraClientRpc(weaponId, alcanza, targetParams);
+    }
+
+    [ClientRpc]
+    private void NotificarResultadoCompraClientRpc(string weaponId, bool exito, ClientRpcParams clientRpcParams = default)
+    {
+        OnPurchaseResult?.Invoke(weaponId, exito);
+    }
+
     public void SumarPuntos(int cantidad)
     {
         if (!IsServer)
@@ -59,4 +90,6 @@ public class PlayerScore : NetworkBehaviour
     {
         DisparosAcertadosNetwork.Value++;
     }
+
+
 }

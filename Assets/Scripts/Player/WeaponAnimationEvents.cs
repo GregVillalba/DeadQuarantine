@@ -10,6 +10,9 @@ public class WeaponAnimationEvents : MonoBehaviour
     [SerializeField] private Transform casingEjectPoint;
     [SerializeField] private float casingForce = 2f;
 
+    [Header("Weapon Switcher")]
+    [SerializeField] private WeaponSwitcher weaponSwitcher;
+
     public void OnEjectCasing()
     {
         if (casingPrefab == null || casingEjectPoint == null)
@@ -39,4 +42,18 @@ public class WeaponAnimationEvents : MonoBehaviour
         if (weapon != null)
             weapon.AnimationReloadFinished();
     }
+
+    public void SetWeapon(Weapon newWeapon)
+    {
+        weapon = newWeapon;
+    }
+
+    public void OnAnimationEndedHolster()
+    {
+        // Se dispara al terminar A_FP_PCH_Handgun_Unholster:
+        // el arma ya terminó de salir y está lista para disparar.
+        if (weaponSwitcher != null)
+            weaponSwitcher.NotifyUnholsterFinished();
+    }
+
 }

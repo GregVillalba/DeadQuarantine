@@ -14,25 +14,25 @@ public class PlayerLook : MonoBehaviour
     [SerializeField] private float minPitch = -80f;
     [SerializeField] private float maxPitch = 80f;
 
+    [Header("Recoil")]
+    [SerializeField] private float recoilRecoverySpeed = 4f;
+
     private PlayerControls controls;
 
     private NetworkObject networkObject;
     private Transform playerTransform;
 
     private float pitch = 0f;
+    private float recoilPitch = 0f; // Se acumula con AddRecoil(), no viene del mouse.
 
     private void Awake()
     {
         controls = new PlayerControls();
 
-        networkObject =
-            GetComponentInParent<NetworkObject>();
+        networkObject = GetComponentInParent<NetworkObject>();
 
         if (networkObject != null)
-        {
-            playerTransform =
-                networkObject.transform;
-        }
+            playerTransform = networkObject.transform;
 
         pitch = 0f;
     }
@@ -64,40 +64,39 @@ public class PlayerLook : MonoBehaviour
         if (cameraTransform == null)
             return;
 
-        // Leer el movimiento del mouse del frame actual.
-        Vector2 lookInput =
-            controls.Player.Look.ReadValue<Vector2>();
+        Vector2 lookInput = controls.Player.Look.ReadValue<Vector2>();
 
         // =====================================================
         // HORIZONTAL
         // =====================================================
 
-        float yaw =
-            lookInput.x * mouseSensitivity;
-
-        playerTransform.Rotate(
-            Vector3.up * yaw
-        );
+        float yaw = lookInput.x * mouseSensitivity;
+        playerTransform.Rotate(Vector3.up * yaw);
 
         // =====================================================
-        // VERTICAL
+        // VERTICAL (mouse)
         // =====================================================
 
-        pitch -=
-            lookInput.y * mouseSensitivity;
+        pitch -= lookInput.y * mouseSensitivity;
+        pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
 
-        pitch =
-            Mathf.Clamp(
-                pitch,
-                minPitch,
-                maxPitch
-            );
+        // =====================================================
+        // RECOIL (independiente del mouse, decae solo)
+        // =====================================================
 
-        cameraTransform.localRotation =
-            Quaternion.Euler(
-                pitch,
-                0f,
-                0f
-            );
+        recoilPitch = Mathf.Lerp(recoilPitch, 0f, recoilRecoverySpeed * Time.deltaTime);
+
+        float finalPitch = Mathf.Clamp(pitch - recoilPitch, minPitch, maxPitch);
+
+        cameraTransform.localRotation = Quaternion.Euler(finalPitch, 0f, 0f);
+    }
+
+    /// <summary>
+    /// Suma recoil vertical (en grados). Positivo = la cámara sube.
+    /// Llamado por Weapon.cs en cada disparo.
+    /// </summary>
+    public void AddRecoil(float amount)
+    {
+        recoilPitch += amount;
     }
 }

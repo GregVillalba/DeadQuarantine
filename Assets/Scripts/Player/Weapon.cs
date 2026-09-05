@@ -14,6 +14,10 @@ public class Weapon : MonoBehaviour
     [SerializeField] private Muzzle muzzle;
     [SerializeField] private GameObject bulletTrailPrefab;
 
+    [Header("Recoil de cámara")]
+    [SerializeField] private PlayerLook playerLook;
+    [SerializeField] private float cameraRecoilPerShot = 0.4f;
+
     private HUDController hudController;
 
     [Header("Audio")]
@@ -24,6 +28,7 @@ public class Weapon : MonoBehaviour
     [SerializeField] private AudioClip reloadEmptySound;
 
     [Header("Pistola")]
+    [SerializeField] private bool isAutomatic = false; // Tildar solo en el Rifle
     [SerializeField] private float fireRate = 0.25f;
     [SerializeField] private float reloadTime = 1.5f;
     [SerializeField] private float range = 100f;
@@ -56,39 +61,26 @@ public class Weapon : MonoBehaviour
 
     public bool IsAiming { get; private set; }
 
-    public int CurrentAmmo =>
-        currentAmmo;
-
-    public int MaxAmmo =>
-        maxAmmo;
+    public int CurrentAmmo => currentAmmo;
+    public int MaxAmmo => maxAmmo;
 
     public float CurrentSpreadNormalized
     {
         get
         {
-            float minimumSpread =
-                IsAiming
-                    ? spreadAiming
-                    : spreadIdle;
+            float minimumSpread = IsAiming ? spreadAiming : spreadIdle;
 
             if (maxSpread <= minimumSpread)
                 return 0f;
 
             return Mathf.Clamp01(
-                Mathf.InverseLerp(
-                    minimumSpread,
-                    maxSpread,
-                    currentSpread
-                )
+                Mathf.InverseLerp(minimumSpread, maxSpread, currentSpread)
             );
         }
     }
 
-    public string WeaponName =>
-        weaponName;
-
-    public bool IsReloading =>
-        isReloading;
+    public string WeaponName => weaponName;
+    public bool IsReloading => isReloading;
 
     private PlayerControls controls;
 
@@ -101,140 +93,109 @@ public class Weapon : MonoBehaviour
     private float aimingBlend;
 
     private bool wasGrounded = true;
-
     private float landingRecoveryTimer;
 
     private PlayerScore playerScore;
 
     private void Awake()
     {
-        controls =
-            new PlayerControls();
-
-        currentAmmo =
-            maxAmmo;
+        controls = new PlayerControls();
+        currentAmmo = maxAmmo;
 
         if (playerCamera != null)
-        {
-            defaultWorldFOV =
-                playerCamera.fieldOfView;
-        }
+            defaultWorldFOV = playerCamera.fieldOfView;
 
-        currentSpread =
-            spreadIdle;
+        currentSpread = spreadIdle;
 
-        hudController =
-            GetComponentInParent<
-                HUDController
-            >();
+        hudController = GetComponentInParent<HUDController>();
 
         if (hudController == null)
-        {
-            hudController =
-                transform.root
-                    .GetComponentInChildren<
-                        HUDController
-                    >(true);
-        }
+            hudController = transform.root.GetComponentInChildren<HUDController>(true);
 
         playerScore = GetComponentInParent<PlayerScore>();
 
-        if(playerScore == null)
-        {
+        if (playerScore == null)
             playerScore = transform.root.GetComponentInChildren<PlayerScore>(true);
-        }
     }
 
     private void OnEnable()
     {
         controls.Player.Enable();
 
-        controls.Player.Fire.performed +=
-            OnFire;
+        // Semiautomático: dispara una sola vez por cada apretada de botón.
+        // Automático (Rifle): el disparo se maneja en Update() mientras se mantiene el botón.
+        if (!isAutomatic)
+            controls.Player.Fire.performed += OnFireSemiAuto;
 
-        controls.Player.Reload.performed +=
-            OnReload;
-
-        controls.Player.Aim.started +=
-            OnAimStarted;
-
-        controls.Player.Aim.canceled +=
-            OnAimCanceled;
-    }
-
-    public void AnimationAmmunitionFill()
-    {
-        currentAmmo =
-            maxAmmo;
-    }
-
-    public void AnimationReloadFinished()
-    {
-        currentAmmo =
-            maxAmmo;
-
-        isReloading =
-            false;
+        controls.Player.Reload.performed += OnReload;
+        controls.Player.Aim.started += OnAimStarted;
+        controls.Player.Aim.canceled += OnAimCanceled;
     }
 
     private void OnDisable()
     {
-        controls.Player.Fire.performed -=
-            OnFire;
+        if (!isAutomatic)
+            controls.Player.Fire.performed -= OnFireSemiAuto;
 
-        controls.Player.Reload.performed -=
-            OnReload;
-
-        controls.Player.Aim.started -=
-            OnAimStarted;
-
-        controls.Player.Aim.canceled -=
-            OnAimCanceled;
+        controls.Player.Reload.performed -= OnReload;
+        controls.Player.Aim.started -= OnAimStarted;
+        controls.Player.Aim.canceled -= OnAimCanceled;
 
         controls.Player.Disable();
 
-        IsAiming =
-            false;
+        IsAiming = false;
+    }
+
+    public void AnimationAmmunitionFill()
+    {
+        currentAmmo = maxAmmo;
+    }
+
+    public void AnimationReloadFinished()
+    {
+        currentAmmo = maxAmmo;
+        isReloading = false;
     }
 
     private void Update()
     {
-        if (IsAiming &&
-            playerMovement != null &&
-            playerMovement.IsSprinting)
-        {
+        if (IsAiming && playerMovement != null && playerMovement.IsSprinting)
             IsAiming = false;
-        }
 
         UpdateAimFOV();
         UpdateSpread();
         UpdateJumpSpread();
         UpdateAnimatorParams();
+
+        if (isAutomatic)
+        {
+            bool tieneBalas = currentAmmo > 0;
+
+            if (tieneBalas && controls.Player.Fire.IsPressed())
+                TryFire();
+            else if (!tieneBalas && controls.Player.Fire.WasPressedThisFrame())
+                TryFire();
+        }
     }
 
     // =========================================================
     // AIM
     // =========================================================
 
-    private void OnAimStarted(
-        InputAction.CallbackContext context)
+    private void OnAimStarted(InputAction.CallbackContext context)
     {
         if (isReloading)
             return;
 
-        if (playerMovement != null &&
-            playerMovement.IsSprinting)
+        if (playerMovement != null && playerMovement.IsSprinting)
             return;
 
-        IsAiming =
-            true;
+        IsAiming = true;
     }
 
-    private void OnAimCanceled(
-        InputAction.CallbackContext context)
+    private void OnAimCanceled(InputAction.CallbackContext context)
     {
-        IsAiming =
-            false;
+        IsAiming = false;
     }
 
     private void UpdateAimFOV()
@@ -242,18 +203,13 @@ public class Weapon : MonoBehaviour
         if (playerCamera == null)
             return;
 
-        float targetFOV =
-            IsAiming
-                ? aimFOV
-                : defaultWorldFOV;
+        float targetFOV = IsAiming ? aimFOV : defaultWorldFOV;
 
-        playerCamera.fieldOfView =
-            Mathf.Lerp(
-                playerCamera.fieldOfView,
-                targetFOV,
-                aimTransitionSpeed *
-                Time.deltaTime
-            );
+        playerCamera.fieldOfView = Mathf.Lerp(
+            playerCamera.fieldOfView,
+            targetFOV,
+            aimTransitionSpeed * Time.deltaTime
+        );
     }
 
     // =========================================================
@@ -265,62 +221,33 @@ public class Weapon : MonoBehaviour
         if (characterController == null)
             return;
 
-        // Al apuntar, la dispersión es siempre 0.
         if (IsAiming)
         {
             currentSpread = 0f;
             return;
         }
 
-        // Mientras está en el aire,
-        // mantiene la dispersión del salto.
         if (!characterController.isGrounded)
             return;
 
         float targetSpread;
 
-        if (playerMovement != null &&
-            playerMovement.IsCrouching)
-        {
-            targetSpread =
-                spreadCrouching;
-        }
+        if (playerMovement != null && playerMovement.IsCrouching)
+            targetSpread = spreadCrouching;
         else if (IsMovingOnGround())
-        {
-            targetSpread =
-                spreadMoving;
-        }
+            targetSpread = spreadMoving;
         else
-        {
-            targetSpread =
-                spreadIdle;
-        }
+            targetSpread = spreadIdle;
 
-        float recoverySpeed =
-            landingRecoveryTimer > 0f
-                ? landingRecoverySpeed
-                : spreadRecoverySpeed;
+        float recoverySpeed = landingRecoveryTimer > 0f
+            ? landingRecoverySpeed
+            : spreadRecoverySpeed;
 
-        currentSpread =
-            Mathf.MoveTowards(
-                currentSpread,
-                targetSpread,
-                recoverySpeed *
-                Time.deltaTime
-            );
-
-        currentSpread =
-            Mathf.Clamp(
-                currentSpread,
-                0f,
-                maxSpread
-            );
+        currentSpread = Mathf.MoveTowards(currentSpread, targetSpread, recoverySpeed * Time.deltaTime);
+        currentSpread = Mathf.Clamp(currentSpread, 0f, maxSpread);
 
         if (landingRecoveryTimer > 0f)
-        {
-            landingRecoveryTimer -=
-                Time.deltaTime;
-        }
+            landingRecoveryTimer -= Time.deltaTime;
     }
 
     private void UpdateJumpSpread()
@@ -328,30 +255,15 @@ public class Weapon : MonoBehaviour
         if (characterController == null)
             return;
 
-        bool isGrounded =
-            characterController.isGrounded;
+        bool isGrounded = characterController.isGrounded;
 
-        // Empieza el salto.
         if (wasGrounded && !isGrounded)
-        {
-            currentSpread =
-                Mathf.Clamp(
-                    currentSpread +
-                    jumpSpread,
-                    0f,
-                    maxSpread
-                );
-        }
+            currentSpread = Mathf.Clamp(currentSpread + jumpSpread, 0f, maxSpread);
 
-        // Acaba de tocar el suelo.
         if (!wasGrounded && isGrounded)
-        {
-            landingRecoveryTimer =
-                landingRecoveryDuration;
-        }
+            landingRecoveryTimer = landingRecoveryDuration;
 
-        wasGrounded =
-            isGrounded;
+        wasGrounded = isGrounded;
     }
 
     private bool IsMovingOnGround()
@@ -362,15 +274,13 @@ public class Weapon : MonoBehaviour
         if (!characterController.isGrounded)
             return false;
 
-        Vector3 horizontalVelocity =
-            new Vector3(
-                characterController.velocity.x,
-                0f,
-                characterController.velocity.z
-            );
+        Vector3 horizontalVelocity = new Vector3(
+            characterController.velocity.x,
+            0f,
+            characterController.velocity.z
+        );
 
-        return horizontalVelocity.magnitude >
-               0.1f;
+        return horizontalVelocity.magnitude > 0.1f;
     }
 
     // =========================================================
@@ -379,24 +289,13 @@ public class Weapon : MonoBehaviour
 
     private void UpdateAnimatorParams()
     {
-        if (weaponAnimator == null ||
-            characterController == null)
+        if (weaponAnimator == null || characterController == null)
             return;
 
-        float speed =
-            characterController.velocity.magnitude;
+        float speed = characterController.velocity.magnitude;
 
-        weaponAnimator.SetFloat(
-            "Speed",
-            speed,
-            0.15f,
-            Time.deltaTime
-        );
-
-        weaponAnimator.SetBool(
-            "IsAiming",
-            IsAiming
-        );
+        weaponAnimator.SetFloat("Speed", speed, 0.15f, Time.deltaTime);
+        weaponAnimator.SetBool("IsAiming", IsAiming);
 
         UpdateAimingBlend();
     }
@@ -406,31 +305,23 @@ public class Weapon : MonoBehaviour
         if (weaponAnimator == null)
             return;
 
-        float target =
-            IsAiming
-                ? 1f
-                : 0f;
+        float target = IsAiming ? 1f : 0f;
 
-        aimingBlend =
-            Mathf.MoveTowards(
-                aimingBlend,
-                target,
-                aimingBlendSpeed *
-                Time.deltaTime
-            );
+        aimingBlend = Mathf.MoveTowards(aimingBlend, target, aimingBlendSpeed * Time.deltaTime);
 
-        weaponAnimator.SetFloat(
-            "Aiming",
-            aimingBlend
-        );
+        weaponAnimator.SetFloat("Aiming", aimingBlend);
     }
 
     // =========================================================
     // DISPARO
     // =========================================================
 
-    private void OnFire(
-        InputAction.CallbackContext context)
+    private void OnFireSemiAuto(InputAction.CallbackContext context)
+    {
+        TryFire();
+    }
+
+    private void TryFire()
     {
         if (Time.timeScale == 0f)
             return;
@@ -443,59 +334,40 @@ public class Weapon : MonoBehaviour
             return;
 
         // NO DISPARAR MIENTRAS CORRE.
-        if (playerMovement != null &&
-            playerMovement.IsSprinting)
-        {
+        if (playerMovement != null && playerMovement.IsSprinting)
             return;
-        }
 
         if (Time.time < nextFireTime)
             return;
 
         if (currentAmmo <= 0)
         {
-            PlaySound(
-                emptySound
-            );
+            PlaySound(emptySound);
 
             if (weaponAnimator != null)
-            {
-                weaponAnimator.SetTrigger(
-                    "FireEmpty"
-                );
-            }
+                weaponAnimator.SetTrigger("FireEmpty");
 
+            // Actualizamos nextFireTime igual: si no, con el botón
+            // mantenido en un arma automática spamea el sonido de vacío cada frame.
+            nextFireTime = Time.time + fireRate;
             return;
         }
 
-        nextFireTime =
-            Time.time + fireRate;
-
+        nextFireTime = Time.time + fireRate;
         currentAmmo--;
 
-        if(playerScore != null)
-        {
+        if (playerScore != null)
             playerScore.RegistrarDisparoServerRpc();
-        }
 
-        currentSpread =
-            Mathf.Clamp(
-                currentSpread +
-                spreadIncreasePerShot,
-                0f,
-                maxSpread
-            );
+        currentSpread = Mathf.Clamp(currentSpread + spreadIncreasePerShot, 0f, maxSpread);
 
-        PlaySound(
-            shootSound
-        );
+        if (playerLook != null)
+            playerLook.AddRecoil(cameraRecoilPerShot);
+
+        PlaySound(shootSound);
 
         if (weaponAnimator != null)
-        {
-            weaponAnimator.SetTrigger(
-                "Fire"
-            );
-        }
+            weaponAnimator.SetTrigger("Fire");
 
         muzzle?.PlayEffect();
 
@@ -506,8 +378,7 @@ public class Weapon : MonoBehaviour
     // RECARGA
     // =========================================================
 
-    private void OnReload(
-        InputAction.CallbackContext context)
+    private void OnReload(InputAction.CallbackContext context)
     {
         if (isReloading)
             return;
@@ -515,51 +386,31 @@ public class Weapon : MonoBehaviour
         if (currentAmmo == maxAmmo)
             return;
 
-        IsAiming =
-            false;
+        // NO RECARGAR MIENTRAS CORRE.
+        if (playerMovement != null && playerMovement.IsSprinting)
+            return;
 
-        isReloading =
-            true;
+        IsAiming = false;
+        isReloading = true;
 
-        bool wasEmpty =
-            currentAmmo == 0;
+        bool wasEmpty = currentAmmo == 0;
 
         if (wasEmpty)
-        {
-            PlaySound(
-                reloadEmptySound
-            );
-        }
+            PlaySound(reloadEmptySound);
         else
-        {
-            PlaySound(
-                reloadSound
-            );
-        }
+            PlaySound(reloadSound);
 
         if (weaponAnimator != null)
         {
-            weaponAnimator.SetBool(
-                "IsEmpty",
-                wasEmpty
-            );
-
-            weaponAnimator.SetTrigger(
-                "Reload"
-            );
+            weaponAnimator.SetBool("IsEmpty", wasEmpty);
+            weaponAnimator.SetTrigger("Reload");
         }
     }
 
-    private void PlaySound(
-        AudioClip clip)
+    private void PlaySound(AudioClip clip)
     {
-        if (audioSource != null &&
-            clip != null)
-        {
-            audioSource.PlayOneShot(
-                clip
-            );
-        }
+        if (audioSource != null && clip != null)
+            audioSource.PlayOneShot(clip);
     }
 
     // =========================================================
@@ -568,176 +419,72 @@ public class Weapon : MonoBehaviour
 
     private void Shoot()
     {
-
-        Vector3 spreadDirection =
-            ApplySpreadToDirection(
-                playerCamera.transform.forward,
-                currentSpread
-            );
-
-        Ray ray =
-            new Ray(
-                playerCamera.transform.position,
-                spreadDirection
-            );
-
-        // Obtener TODOS los colliders atravesados
-        // por el disparo.
-        RaycastHit[] hits =
-            Physics.RaycastAll(
-                ray,
-                range
-            );
-
-        // Ordenarlos desde el más cercano
-        // al más lejano.
-        System.Array.Sort(
-            hits,
-            (a, b) =>
-                a.distance.CompareTo(
-                    b.distance
-                )
+        Vector3 spreadDirection = ApplySpreadToDirection(
+            playerCamera.transform.forward,
+            currentSpread
         );
+
+        Ray ray = new Ray(playerCamera.transform.position, spreadDirection);
+
+        RaycastHit[] hits = Physics.RaycastAll(ray, range);
+
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
 
         bool validHitFound = false;
         RaycastHit validHit = default;
 
         foreach (RaycastHit hit in hits)
         {
-            // =================================================
-            // IGNORAR JUGADORES
-            // =================================================
-
-            PlayerHealth playerHit =
-                hit.collider.GetComponentInParent<
-                    PlayerHealth
-                >();
+            PlayerHealth playerHit = hit.collider.GetComponentInParent<PlayerHealth>();
 
             if (playerHit != null)
-            {
                 continue;
-            }
 
-            // =================================================
-            // IGNORAR PROPIO PLAYER
-            // =================================================
-
-            if (hit.collider.transform.root ==
-                transform.root)
-            {
+            if (hit.collider.transform.root == transform.root)
                 continue;
-            }
 
-            // =================================================
-            // IGNORAR CUALQUIER COMPONENTE DEL PLAYER
-            // =================================================
-
-            PlayerMovement movementHit =
-                hit.collider.GetComponentInParent<
-                    PlayerMovement
-                >();
+            PlayerMovement movementHit = hit.collider.GetComponentInParent<PlayerMovement>();
 
             if (movementHit != null)
-            {
                 continue;
-            }
 
-            // Este es el primer objeto válido.
-            validHit =
-                hit;
-
-            validHitFound =
-                true;
-
+            validHit = hit;
+            validHitFound = true;
             break;
         }
 
-        // =====================================================
-        // IMPACTO VÁLIDO
-        // =====================================================
-
         if (validHitFound)
         {
-            RaycastHit hit =
-                validHit;
+            RaycastHit hit = validHit;
 
-            Debug.Log(
-                "Impacto en: " +
-                hit.collider.name
-            );
+            Debug.Log("Impacto en: " + hit.collider.name);
 
-            Debug.DrawLine(
-                firePoint.position,
-                hit.point,
-                Color.red,
-                1f
-            );
+            Debug.DrawLine(firePoint.position, hit.point, Color.red, 1f);
 
-            SpawnBulletTrail(
-                hit.point
-            );
+            SpawnBulletTrail(hit.point);
 
-            // =================================================
-            // ZOMBIE
-            // =================================================
-
-            ZombieHealth zombieHealth =
-                hit.collider
-                    .GetComponentInParent<
-                        ZombieHealth
-                    >();
+            ZombieHealth zombieHealth = hit.collider.GetComponentInParent<ZombieHealth>();
 
             if (zombieHealth != null)
             {
-                zombieHealth.TakeDamage(
-                    damage,
-                    hit.point,
-                    hit.normal
-                );
+                zombieHealth.TakeDamage(damage, hit.point, hit.normal);
 
-                if(playerScore != null)
-                {
+                if (playerScore != null)
                     playerScore.RegistrarImpactoServerRpc();
-                }
 
                 return;
             }
 
-            // =================================================
-            // PARED / OBJETO
-            // =================================================
-
             if (DecalManager.Instance != null)
-            {
-                DecalManager.Instance
-                    .SpawnBulletHole(
-                        hit.point,
-                        hit.normal
-                    );
-            }
+                DecalManager.Instance.SpawnBulletHole(hit.point, hit.normal);
         }
         else
         {
-            // =================================================
-            // NO IMPACTÓ CONTRA NADA VÁLIDO
-            // =================================================
+            Vector3 missPoint = firePoint.position + spreadDirection * range;
 
-            Vector3 missPoint =
-                firePoint.position +
-                spreadDirection *
-                range;
+            SpawnBulletTrail(missPoint);
 
-            SpawnBulletTrail(
-                missPoint
-            );
-
-            Debug.DrawRay(
-                firePoint.position,
-                spreadDirection *
-                range,
-                Color.yellow,
-                1f
-            );
+            Debug.DrawRay(firePoint.position, spreadDirection * range, Color.yellow, 1f);
         }
     }
 
@@ -745,66 +492,33 @@ public class Weapon : MonoBehaviour
     // BULLET TRAIL
     // =========================================================
 
-    private void SpawnBulletTrail(
-        Vector3 targetPoint
-    )
+    private void SpawnBulletTrail(Vector3 targetPoint)
     {
-        if (bulletTrailPrefab == null ||
-            firePoint == null)
+        if (bulletTrailPrefab == null || firePoint == null)
             return;
 
-        GameObject trailObject =
-            Instantiate(
-                bulletTrailPrefab,
-                firePoint.position,
-                Quaternion.identity
-            );
+        GameObject trailObject = Instantiate(bulletTrailPrefab, firePoint.position, Quaternion.identity);
 
-        BulletTrail trail =
-            trailObject.GetComponent<
-                BulletTrail
-            >();
+        BulletTrail trail = trailObject.GetComponent<BulletTrail>();
 
         if (trail != null)
-        {
-            trail.Init(
-                targetPoint
-            );
-        }
+            trail.Init(targetPoint);
     }
 
     // =========================================================
     // DIRECCIÓN CON DISPERSIÓN
     // =========================================================
 
-    private Vector3 ApplySpreadToDirection(
-        Vector3 baseDirection,
-        float spreadDegrees
-    )
+    private Vector3 ApplySpreadToDirection(Vector3 baseDirection, float spreadDegrees)
     {
         if (spreadDegrees <= 0f)
             return baseDirection;
 
-        float randomX =
-            Random.Range(
-                -spreadDegrees,
-                spreadDegrees
-            );
+        float randomX = Random.Range(-spreadDegrees, spreadDegrees);
+        float randomY = Random.Range(-spreadDegrees, spreadDegrees);
 
-        float randomY =
-            Random.Range(
-                -spreadDegrees,
-                spreadDegrees
-            );
+        Quaternion spreadRotation = Quaternion.Euler(randomY, randomX, 0f);
 
-        Quaternion spreadRotation =
-            Quaternion.Euler(
-                randomY,
-                randomX,
-                0f
-            );
-
-        return spreadRotation *
-               baseDirection;
+        return spreadRotation * baseDirection;
     }
 }
