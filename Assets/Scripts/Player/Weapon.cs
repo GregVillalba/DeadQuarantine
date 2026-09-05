@@ -190,6 +190,13 @@ public class Weapon : MonoBehaviour
 
     private void Update()
     {
+        if (IsAiming &&
+            playerMovement != null &&
+            playerMovement.IsSprinting)
+        {
+            IsAiming = false;
+        }
+
         UpdateAimFOV();
         UpdateSpread();
         UpdateJumpSpread();
@@ -204,6 +211,10 @@ public class Weapon : MonoBehaviour
         InputAction.CallbackContext context)
     {
         if (isReloading)
+            return;
+
+        if (playerMovement != null &&
+            playerMovement.IsSprinting)
             return;
 
         IsAiming =
