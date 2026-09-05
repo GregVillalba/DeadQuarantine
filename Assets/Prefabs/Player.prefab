@@ -34440,6 +34440,7 @@ GameObject:
   - component: {fileID: 6118534843392074237}
   - component: {fileID: 3279410425743433227}
   - component: {fileID: 7812150079876632993}
+  - component: {fileID: 3388812513757388834}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -34511,7 +34512,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1614284941
+  GlobalObjectIdHash: 3516423437
   InScenePlacedSourceGlobalObjectIdHash: 477224611
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -34914,6 +34915,26 @@ MonoBehaviour:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
+--- !u!114 &3388812513757388834
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5539736354694109012}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd21ada0d4938ad499464d38539abcdd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::RatingPopup
+  estrellas:
+  - {fileID: 6644209451954358904}
+  - {fileID: 843539184726809300}
+  - {fileID: 4758357478346980891}
+  - {fileID: 1198417225757603257}
+  - {fileID: 4439693762305984716}
+  textoEstado: {fileID: 7814146748902220088}
+  pauseController: {fileID: 4516312890393998974}
 --- !u!1 &5571725089696515958
 GameObject:
   m_ObjectHideFlags: 0

@@ -9,21 +9,16 @@ public class RatingPopup : MonoBehaviour
     public Button[] estrellas;
     public TextMeshProUGUI textoEstado;
 
+    [Header("Referencia manual")]
+    public PauseController pauseController; 
+
     private string urlWebApp = "https://script.google.com/macros/s/AKfycbzKRaMRKNLNDhNxRDX2jwwEqctZKE3zL6TDVMpM6wVe3V6VGpOQNiPL6faL2d6dlQ4o/exec";
     private string urlIP = "https://api.ipify.org?format=json";
 
     private bool procesando = false;
-    private PauseController pauseController;
-
-    void Awake()
-    {
-        // busca el PauseController en el mismo Player (padre en la jerarquía)
-        pauseController = GetComponentInParent<PauseController>();
-    }
 
     void OnEnable()
     {
-        // se reinicia cada vez que se activa el panel
         procesando = false;
         HabilitarBotones();
 
@@ -81,9 +76,9 @@ public class RatingPopup : MonoBehaviour
         yield return new WaitForSeconds(2f);
 
         if (pauseController != null)
-            pauseController.ContinuarDespuesDeRating();
+            pauseController.ContinuarDespuesDeRating(); // esto es lo que finalmente lleva al menú principal
         else
-            Debug.LogError("RatingPopup: no se encontró PauseController en el padre.");
+            Debug.LogError("RatingPopup: falta asignar 'Pause Controller' en el Inspector.");
     }
 
     IEnumerator EnviarAGoogleSheets(int calificacion, string direccionIP)

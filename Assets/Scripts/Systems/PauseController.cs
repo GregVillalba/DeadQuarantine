@@ -536,7 +536,7 @@ public class PauseController : NetworkBehaviour
         popupValoracion.SetActive(true);
 }
 
-// Llamar desde el botón "Siguiente ronda" del popup de victoria
+    // Llamar desde el botón "Volver al menú" del popup de victoria
     public void OnSiguienteRondaPresionado()
     {
         if (!IsOwner)
@@ -547,24 +547,11 @@ public class PauseController : NetworkBehaviour
         if (popupVictoria != null)
             popupVictoria.SetActive(false);
 
-        // Guardamos que la acción pendiente es salir del juego, ya que el jugador ganó
-
-        if (hud != null)
-            hud.SetActive(true);
-
-        HabilitarJugador();
-
-        Cursor.visible = false;
-        Cursor.lockState = CursorLockMode.Locked;
-
         pendienteAccionEsVictoria = true;
         MostrarValoracion();
+    }
 
-       // Salir();
-
-}
-
-// Llamar desde el botón "Reintentar" del popup de derrota
+    // Llamar desde el botón "Volver al menú" del popup de derrota
     public void OnReintentarPresionado()
     {
         if (!IsOwner)
@@ -574,29 +561,23 @@ public class PauseController : NetworkBehaviour
 
         if (popupDerrota != null)
             popupDerrota.SetActive(false);
-        
-        // Guardamos que la acción pendiente es reiniciar el juego, ya que el jugador perdió
+
         pendienteAccionEsVictoria = false;
         MostrarValoracion();
-
-    //    ReiniciarJuego();
     }
     // Llamar desde el botón "Continuar" del popup de valoración
     public void ContinuarDespuesDeRating()
     {
         if (!IsOwner)
-        return;
+            return;
 
-    if (popupValoracion != null)
-        popupValoracion.SetActive(false);
+        if (popupValoracion != null)
+            popupValoracion.SetActive(false);
 
-    if (pendienteAccionEsVictoria)
         Salir();
-    else
-        ReiniciarJuego();
     }
 
-     public void MostrarPanelRonda(int ronda, bool esRondaFinal)
+    public void MostrarPanelRonda(int ronda, bool esRondaFinal)
 {
     if (!IsOwner)
         return;
