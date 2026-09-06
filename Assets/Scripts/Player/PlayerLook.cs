@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
+using UnityEngine.SceneManagement;
 
 public class PlayerLook : MonoBehaviour
 {
@@ -33,11 +34,13 @@ public class PlayerLook : MonoBehaviour
 
         networkObject = GetComponentInParent<NetworkObject>();
 
-
         if (networkObject != null)
             playerTransform = networkObject.transform;
 
         pitch = 0f;
+
+        // Arranca SIEMPRE bloqueado; se libera explícitamente después.
+        enabled = false;
     }
 
     private void OnEnable()

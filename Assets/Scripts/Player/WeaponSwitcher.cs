@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 public class WeaponSwitcher : MonoBehaviour
 {
@@ -72,6 +73,10 @@ public class WeaponSwitcher : MonoBehaviour
         }
 
         EquipWeaponImmediate(index);
+
+        // Arranca SIEMPRE bloqueado; se libera explícitamente después.
+        if (CurrentWeapon != null)
+            CurrentWeapon.InputLocked = true;
     }
 
     private void OnSwitchWeapon(InputAction.CallbackContext context)

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(CharacterController))]
 public class PlayerMovement : NetworkBehaviour
@@ -244,6 +245,10 @@ public class PlayerMovement : NetworkBehaviour
         }
 
         controls.Player.Enable();
+
+        // Arranca SIEMPRE bloqueado, sin importar la escena en la que nace
+        // Se libera explícitamente por StoryIntroController o GameStartCurtain.
+        MovementLocked = true;
     }
 
     // =========================================================
