@@ -4,13 +4,11 @@ using UnityEngine.InputSystem;
 using Unity.Netcode;
 using System.Collections;
 using TMPro;
+
 public class PauseController : NetworkBehaviour
 {
     [Header("Pausa")]
     [SerializeField] private GameObject popupMenuHome;
-
-    [Header("Historia Singleplayer")]
-    [SerializeField] private GameObject popupHistoria;
 
     [Header("HUD del jugador")]
     [SerializeField] private GameObject hud;
@@ -18,14 +16,16 @@ public class PauseController : NetworkBehaviour
     [Header("Controles del jugador")]
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private PlayerLook playerLook;
-    [SerializeField] private Weapon weapon;
+    [SerializeField] private WeaponSwitcher weaponSwitcher;
 
     [Header("Vida del jugador")]
     [SerializeField] private PlayerHealth playerHealth;
 
+    [Header("Historia (script separado)")]
+    [SerializeField] private StoryIntroController storyIntro;
+
     [Header("Botón Reiniciar")]
     [SerializeField] private GameObject botonReiniciar;
-
 
     [Header("Fin de Ronda")]
     [SerializeField] private GameObject popupVictoria;
@@ -37,58 +37,48 @@ public class PauseController : NetworkBehaviour
     [SerializeField] private TextMeshProUGUI textoZombiesVictoria;
     [SerializeField] private TextMeshProUGUI textoPrecisionDerrota;
     [SerializeField] private TextMeshProUGUI textoPrecisionVictoria;
-   
+
     [SerializeField] private PlayerScore playerScore;
 
     [Header("Valoración")]
-    [SerializeField] private GameObject popupValoracion; //referencia al panel de valoración
+    [SerializeField] private GameObject popupValoracion;
 
     [Header("Ronda")]
     [SerializeField] private GameObject panelRonda;
     [SerializeField] private float duracionPanelRonda = 3f;
     [SerializeField] private TextMeshProUGUI textoRonda;
 
-
     private bool estaPausado;
-    private bool historiaActiva;
 
-    // Guardamos el estado anterior a la pausa.
     private bool movementWasEnabled;
     private bool lookWasEnabled;
     private bool weaponWasEnabled;
 
-   
     private bool finDeRondaActivo;
-    private bool pendienteAccionEsVictoria; //"banderita" que guarda si el jugador ganó o perdió
+    private bool pendienteAccionEsVictoria;
     private Coroutine ocultarPanelRondaCoroutine;
-
-
 
     private void Awake()
     {
         playerScore = transform.root.GetComponentInChildren<PlayerScore>();
-        
+
         if (popupMenuHome != null)
             popupMenuHome.SetActive(false);
 
-        if (popupHistoria != null)
-            popupHistoria.SetActive(false);
-
         if (playerHealth == null)
-            playerHealth =
-                GetComponent<PlayerHealth>();
+            playerHealth = GetComponent<PlayerHealth>();
 
         if (playerMovement == null)
-            playerMovement =
-                GetComponent<PlayerMovement>();
+            playerMovement = GetComponent<PlayerMovement>();
 
         if (playerLook == null)
-            playerLook =
-                GetComponentInChildren<PlayerLook>(true);
+            playerLook = GetComponentInChildren<PlayerLook>(true);
 
-        if (weapon == null)
-            weapon =
-                GetComponentInChildren<Weapon>(true);
+        if (weaponSwitcher == null)
+            weaponSwitcher = GetComponentInChildren<WeaponSwitcher>(true);
+
+        if (storyIntro == null)
+            storyIntro = GetComponent<StoryIntroController>();
 
         if (popupVictoria != null)
             popupVictoria.SetActive(false);
@@ -96,16 +86,12 @@ public class PauseController : NetworkBehaviour
         if (popupDerrota != null)
             popupDerrota.SetActive(false);
 
-        //Al iniciar el juego, el popup de valoración debe estar oculto
         if (popupValoracion != null)
             popupValoracion.SetActive(false);
 
         if (panelRonda != null)
             panelRonda.SetActive(false);
     }
-
-
-    
 
     public override void OnNetworkSpawn()
     {
@@ -117,15 +103,12 @@ public class PauseController : NetworkBehaviour
 
         ActualizarBotonReiniciar();
 
+        // El cursor y el bloqueo inicial de la historia los maneja StoryIntroController.
         if (EsSinglePlayer())
-        {
-            MostrarHistoriaInicial();
             return;
-        }
 
         Cursor.visible = false;
-        Cursor.lockState =
-            CursorLockMode.Locked;
+        Cursor.lockState = CursorLockMode.Locked;
     }
 
     private void Update()
@@ -133,8 +116,9 @@ public class PauseController : NetworkBehaviour
         if (!IsOwner)
             return;
 
-    // Mientras la historia o el fin de ronda están abiertos,
-    // ESC no abre el menú de pausa.
+        bool historiaActiva = storyIntro != null && storyIntro.HistoriaActiva;
+
+        // Mientras la historia o el fin de ronda están abiertos, ESC no abre el menú de pausa.
         if (historiaActiva || finDeRondaActivo)
         {
             if (finDeRondaActivo && Keyboard.current != null)
@@ -154,69 +138,15 @@ public class PauseController : NetworkBehaviour
             return;
         }
 
-        if (Keyboard.current != null &&
-            Keyboard.current.escapeKey.wasPressedThisFrame)
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             if (estaPausado)
                 ReanudarJuego();
-        else
-            PausarJuego();
+            else
+                PausarJuego();
         }
 
-    ActualizarCursor();
-  
-    }
-
-    // =========================================================
-    // HISTORIA
-    // =========================================================
-
-    private void MostrarHistoriaInicial()
-    {
-        historiaActiva = true;
-
-        if (hud != null)
-            hud.SetActive(false);
-
-        BloquearJugador();
-
-        if (popupHistoria != null)
-            popupHistoria.SetActive(true);
-
-        Cursor.visible = true;
-        Cursor.lockState =
-            CursorLockMode.None;
-    }
-
-    public void ContinuarHistoria()
-    {
-        if (!IsOwner)
-            return;
-
-        if (!historiaActiva)
-            return;
-
-        historiaActiva = false;
-
-        if (popupHistoria != null)
-            popupHistoria.SetActive(false);
-
-        if (hud != null)
-            hud.SetActive(true);
-
-        HabilitarJugador();
-
-        Cursor.visible = false;
-        Cursor.lockState =
-            CursorLockMode.Locked;
-
-        if (
-            IsServer &&
-            RoundManager.Instance != null
-        )
-        {
-            RoundManager.Instance.StartRound(1);
-        }
+        ActualizarCursor();
     }
 
     // =========================================================
@@ -225,25 +155,20 @@ public class PauseController : NetworkBehaviour
 
     public void PausarJuego()
     {
-        if (!IsOwner ||estaPausado ||historiaActiva)
-        {
+        bool historiaActiva = storyIntro != null && storyIntro.HistoriaActiva;
+
+        if (!IsOwner || estaPausado || historiaActiva)
             return;
-        }
 
         estaPausado = true;
 
-        // Guardar exactamente cómo estaba el jugador.
-        movementWasEnabled =
-            playerMovement != null &&
-            playerMovement.enabled;
-
-        lookWasEnabled =
-            playerLook != null &&
-            playerLook.enabled;
+        movementWasEnabled = playerMovement != null && playerMovement.enabled;
+        lookWasEnabled = playerLook != null && playerLook.enabled;
 
         weaponWasEnabled =
-            weapon != null &&
-            weapon.enabled;
+            weaponSwitcher != null &&
+            weaponSwitcher.CurrentWeapon != null &&
+            weaponSwitcher.CurrentWeapon.enabled;
 
         if (popupMenuHome != null)
             popupMenuHome.SetActive(true);
@@ -257,26 +182,19 @@ public class PauseController : NetworkBehaviour
         }
 
         Cursor.visible = true;
-        Cursor.lockState =
-            CursorLockMode.None;
+        Cursor.lockState = CursorLockMode.None;
     }
 
     public void ReanudarJuego()
     {
-        if (
-            !IsOwner ||
-            !estaPausado
-        )
-        {
+        if (!IsOwner || !estaPausado)
             return;
-        }
 
         estaPausado = false;
 
         if (popupMenuHome != null)
             popupMenuHome.SetActive(false);
 
-        // Restaurar EXACTAMENTE el estado anterior.
         RestaurarEstadoJugador();
         HabilitarJugador();
 
@@ -287,12 +205,11 @@ public class PauseController : NetworkBehaviour
         }
 
         Cursor.visible = false;
-        Cursor.lockState =
-            CursorLockMode.Locked;
+        Cursor.lockState = CursorLockMode.Locked;
     }
 
     // =========================================================
-    // BLOQUEAR PLAYER
+    // BLOQUEAR / HABILITAR (solo la pausa; historia tiene su propia versión)
     // =========================================================
 
     private void BloquearJugador()
@@ -303,25 +220,14 @@ public class PauseController : NetworkBehaviour
         if (playerLook != null)
             playerLook.enabled = false;
 
-        if (weapon != null)
-            weapon.enabled = false;
+        if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null)
+            weaponSwitcher.CurrentWeapon.enabled = false;
     }
-
-    // =========================================================
-    // HABILITAR PLAYER
-    // =========================================================
 
     private void HabilitarJugador()
     {
-        // La historia solamente puede habilitar controles
-        // si el jugador está realmente vivo.
-        if (
-            playerHealth != null &&
-            !playerHealth.IsAlive
-        )
-        {
+        if (playerHealth != null && !playerHealth.IsAlive)
             return;
-        }
 
         if (playerMovement != null)
             playerMovement.enabled = true;
@@ -329,33 +235,20 @@ public class PauseController : NetworkBehaviour
         if (playerLook != null)
             playerLook.enabled = true;
 
-        if (weapon != null)
-            weapon.enabled = true;
+        if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null)
+            weaponSwitcher.CurrentWeapon.enabled = true;
     }
-
-    // =========================================================
-    // RESTAURAR ESTADO PREVIO A LA PAUSA
-    // =========================================================
 
     private void RestaurarEstadoJugador()
     {
         if (playerMovement != null)
-        {
-            playerMovement.enabled =
-                movementWasEnabled;
-        }
+            playerMovement.enabled = movementWasEnabled;
 
         if (playerLook != null)
-        {
-            playerLook.enabled =
-                lookWasEnabled;
-        }
+            playerLook.enabled = lookWasEnabled;
 
-        if (weapon != null)
-        {
-            weapon.enabled =
-                weaponWasEnabled;
-        }
+        if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null)
+            weaponSwitcher.CurrentWeapon.enabled = weaponWasEnabled;
     }
 
     // =========================================================
@@ -364,8 +257,7 @@ public class PauseController : NetworkBehaviour
 
     private bool EsSinglePlayer()
     {
-        return SceneManager.GetActiveScene().name ==
-               "MainSceneSinglePlayer";
+        return SceneManager.GetActiveScene().name == "MainSceneSinglePlayer";
     }
 
     // =========================================================
@@ -375,37 +267,21 @@ public class PauseController : NetworkBehaviour
     private void ActualizarBotonReiniciar()
     {
         if (botonReiniciar != null)
-        {
-            botonReiniciar.SetActive(
-                EsSinglePlayer()
-            );
-        }
+            botonReiniciar.SetActive(EsSinglePlayer());
     }
 
     public void ReiniciarJuego()
     {
-        if (
-            !IsOwner ||
-            !EsSinglePlayer()
-        )
-        {
+        if (!IsOwner || !EsSinglePlayer())
             return;
-        }
 
         Time.timeScale = 1f;
         AudioListener.pause = false;
 
-        if (
-            NetworkManager.Singleton != null &&
-            NetworkManager.Singleton.IsListening
-        )
-        {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             NetworkManager.Singleton.Shutdown();
-        }
 
-        SceneManager.LoadScene(
-            "MainSceneSinglePlayer"
-        );
+        SceneManager.LoadScene("MainSceneSinglePlayer");
     }
 
     // =========================================================
@@ -420,17 +296,10 @@ public class PauseController : NetworkBehaviour
         Time.timeScale = 1f;
         AudioListener.pause = false;
 
-        if (
-            NetworkManager.Singleton != null &&
-            NetworkManager.Singleton.IsListening
-        )
-        {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             NetworkManager.Singleton.Shutdown();
-        }
 
-        SceneManager.LoadScene(
-            "PantallasUI"
-        );
+        SceneManager.LoadScene("PantallasUI");
     }
 
     // =========================================================
@@ -442,20 +311,15 @@ public class PauseController : NetworkBehaviour
         if (!IsOwner)
             return;
 
-        if (
-            estaPausado ||
-            historiaActiva
-        )
+        if (estaPausado)
         {
             Cursor.visible = true;
-            Cursor.lockState =
-                CursorLockMode.None;
+            Cursor.lockState = CursorLockMode.None;
         }
         else
         {
             Cursor.visible = false;
-            Cursor.lockState =
-                CursorLockMode.Locked;
+            Cursor.lockState = CursorLockMode.Locked;
         }
     }
 
@@ -467,9 +331,10 @@ public class PauseController : NetworkBehaviour
             AudioListener.pause = false;
         }
     }
-// =========================================================
-// VICTORIA / DERROTA
-// =========================================================
+
+    // =========================================================
+    // VICTORIA / DERROTA
+    // =========================================================
 
     public void MostrarVictoria()
     {
@@ -496,8 +361,8 @@ public class PauseController : NetworkBehaviour
             textoPrecisionVictoria.text = playerScore.PrecisionPorcentaje.ToString() + "%";
 
         Cursor.visible = true;
-        Cursor.lockState = CursorLockMode.None; 
-}
+        Cursor.lockState = CursorLockMode.None;
+    }
 
     public void MostrarDerrota()
     {
@@ -529,14 +394,13 @@ public class PauseController : NetworkBehaviour
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
     }
-    //Te faltaba este metodo para mostrar el popup de valoración después de la victoria o derrota
-    public void MostrarValoracion()
-{
-    if (popupValoracion != null)
-        popupValoracion.SetActive(true);
-}
 
-    // Llamar desde el botón "Volver al menú" del popup de victoria
+    public void MostrarValoracion()
+    {
+        if (popupValoracion != null)
+            popupValoracion.SetActive(true);
+    }
+
     public void OnSiguienteRondaPresionado()
     {
         if (!IsOwner)
@@ -547,11 +411,18 @@ public class PauseController : NetworkBehaviour
         if (popupVictoria != null)
             popupVictoria.SetActive(false);
 
+        if (hud != null)
+            hud.SetActive(true);
+
+        HabilitarJugador();
+
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
+
         pendienteAccionEsVictoria = true;
         MostrarValoracion();
     }
 
-    // Llamar desde el botón "Volver al menú" del popup de derrota
     public void OnReintentarPresionado()
     {
         if (!IsOwner)
@@ -565,7 +436,7 @@ public class PauseController : NetworkBehaviour
         pendienteAccionEsVictoria = false;
         MostrarValoracion();
     }
-    // Llamar desde el botón "Continuar" del popup de valoración
+
     public void ContinuarDespuesDeRating()
     {
         if (!IsOwner)
@@ -574,50 +445,43 @@ public class PauseController : NetworkBehaviour
         if (popupValoracion != null)
             popupValoracion.SetActive(false);
 
-        Salir();
+        if (pendienteAccionEsVictoria)
+            Salir();
+        else
+            ReiniciarJuego();
     }
 
     public void MostrarPanelRonda(int ronda, bool esRondaFinal)
-{
-    if (!IsOwner)
-        return;
-
-    if (panelRonda == null)
     {
-        Debug.LogError("El panelRonda no está asignado en el Inspector.");
-        return;
+        if (!IsOwner)
+            return;
+
+        if (panelRonda == null)
+        {
+            Debug.LogError("El panelRonda no está asignado en el Inspector.");
+            return;
+        }
+
+        if (textoRonda != null)
+            textoRonda.text = esRondaFinal ? "Ronda Final" : "Ronda " + ronda;
+
+        panelRonda.SetActive(true);
+
+        if (ocultarPanelRondaCoroutine != null)
+            StopCoroutine(ocultarPanelRondaCoroutine);
+
+        ocultarPanelRondaCoroutine = StartCoroutine(OcultarPanelRondaDespuesDeTiempo(duracionPanelRonda));
     }
 
-    if (textoRonda != null)
+    public void OcultarPanelRonda()
     {
-        textoRonda.text = esRondaFinal
-            ? "Ronda Final"
-            : "Ronda " + ronda;
+        if (panelRonda != null)
+            panelRonda.SetActive(false);
     }
 
-    panelRonda.SetActive(true);
-
-    if (ocultarPanelRondaCoroutine != null)
-        StopCoroutine(ocultarPanelRondaCoroutine);
-
-    ocultarPanelRondaCoroutine =
-        StartCoroutine(OcultarPanelRondaDespuesDeTiempo(duracionPanelRonda));
+    private IEnumerator OcultarPanelRondaDespuesDeTiempo(float segundos)
+    {
+        yield return new WaitForSeconds(segundos);
+        OcultarPanelRonda();
+    }
 }
-
-public void OcultarPanelRonda()
-{
-    if (panelRonda != null)
-        panelRonda.SetActive(false);
-}
-
-private IEnumerator OcultarPanelRondaDespuesDeTiempo(float segundos)
-{
-    yield return new WaitForSeconds(segundos);
-    OcultarPanelRonda();
-
-}
-}
-
-
-
-

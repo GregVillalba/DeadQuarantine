@@ -17951,6 +17951,60 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.ContentSizeFitter
   m_HorizontalFit: 2
   m_VerticalFit: 2
+--- !u!1 &2306147731750913767
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7241393738966287158}
+  - component: {fileID: 6946670302864685145}
+  m_Layer: 3
+  m_Name: StoryController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &7241393738966287158
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2306147731750913767}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 20}
+  m_LocalScale: {x: 0.467652, y: 0.467652, z: 0.467652}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4179107254545099709}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 559.594, y: 356.988}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &6946670302864685145
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2306147731750913767}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6715898c01d4d8c4d84fa9d5dfd96736, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::StoryIntroController
+  ShowTopMostFoldoutHeaderGroup: 1
+  popupHistoria: {fileID: 3798820284741840692}
+  hud: {fileID: 7067101472329872928}
+  playerMovement: {fileID: 7292988215955829792}
+  playerLook: {fileID: 4561189841502104425}
+  weaponCameraObject: {fileID: 4340520466520270462}
 --- !u!1 &2315915895434234652
 GameObject:
   m_ObjectHideFlags: 0
@@ -18768,12 +18822,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Scripts::PauseController
   ShowTopMostFoldoutHeaderGroup: 1
   popupMenuHome: {fileID: 3324429785163474837}
-  popupHistoria: {fileID: 3798820284741840692}
   hud: {fileID: 7067101472329872928}
   playerMovement: {fileID: 7292988215955829792}
   playerLook: {fileID: 4561189841502104425}
-  weapon: {fileID: 0}
-  playerHealth: {fileID: 0}
+  weaponSwitcher: {fileID: 6810323024798160260}
+  playerHealth: {fileID: 2373627705313556358}
+  storyIntro: {fileID: 6946670302864685145}
   botonReiniciar: {fileID: 5975623508404432693}
   popupVictoria: {fileID: 5420595360567528867}
   popupDerrota: {fileID: 8473775903894595391}
@@ -18784,7 +18838,7 @@ MonoBehaviour:
   textoZombiesVictoria: {fileID: 7593579396395790429}
   textoPrecisionDerrota: {fileID: 1632833385006667108}
   textoPrecisionVictoria: {fileID: 5317254949958524470}
-  playerScore: {fileID: 0}
+  playerScore: {fileID: 7812150079876632993}
   popupValoracion: {fileID: 3854256343841152975}
   panelRonda: {fileID: 4879903094776176469}
   duracionPanelRonda: 3
@@ -31646,8 +31700,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 4516312890393998974}
-        m_TargetAssemblyTypeName: PauseController, Scripts
+      - m_Target: {fileID: 6946670302864685145}
+        m_TargetAssemblyTypeName: StoryIntroController, Scripts
         m_MethodName: ContinuarHistoria
         m_Mode: 1
         m_Arguments:
@@ -34763,6 +34817,7 @@ Transform:
   - {fileID: 7288683592479657548}
   - {fileID: 787090060113344644}
   - {fileID: 4935948304489739647}
+  - {fileID: 7241393738966287158}
   - {fileID: 4772619969145133467}
   - {fileID: 6413884412423783833}
   - {fileID: 3509118552110513559}
