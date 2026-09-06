@@ -17,6 +17,23 @@ public class PlayerSpectator : NetworkBehaviour
     [Header("Cámara espectador")]
     [SerializeField] private Vector3 cameraOffset =
         new Vector3(0.8f, 1.6f, -2.5f);
+        
+    [Header("Órbita de cámara")]
+    [SerializeField] private float orbitDistance = 3.5f;
+    [SerializeField] private float orbitHeight = 1.4f;
+    [SerializeField] private float orbitSensitivity = 0.15f;
+    [SerializeField] private float minPitch = -30f;
+    [SerializeField] private float maxPitch = 60f;
+
+    [Header("Colisión de cámara")]
+    [SerializeField] private float collisionRadius = 0.3f;
+    [SerializeField] private float minCollisionDistance = 0.5f;
+    [SerializeField] private LayerMask collisionMask = ~0; // Configurar en el Inspector, ver nota abajo
+
+    private float orbitYaw;
+    private float orbitPitch = 15f;
+
+    private PlayerControls controls;
 
     [SerializeField] private float cameraFollowSpeed = 8f;
 
@@ -47,6 +64,7 @@ public class PlayerSpectator : NetworkBehaviour
 
     private void Awake()
     {
+        controls = new PlayerControls();
         if (playerHealth == null)
         {
             playerHealth =
@@ -293,6 +311,12 @@ public class PlayerSpectator : NetworkBehaviour
         }
 
         FindTargetPlayer();
+
+        if (targetPlayer != null)
+        {
+            orbitYaw = targetPlayer.eulerAngles.y;
+            orbitPitch = 15f;
+        }
 
         Debug.Log(
             "[PlayerSpectator] " +
@@ -682,54 +706,63 @@ public class PlayerSpectator : NetworkBehaviour
 
     private void FollowTarget()
     {
-        if (
-            spectatorCamera == null ||
-            targetPlayer == null
-        )
-        {
+        if (spectatorCamera == null || targetPlayer == null)
             return;
-        }
 
-        Vector3 desiredPosition =
-            targetPlayer.position +
-            targetPlayer.TransformDirection(
-                cameraOffset
-            );
+        // Input de mouse para orbitar alrededor del jugador espectado.
+        Vector2 lookInput = controls.Player.Look.ReadValue<Vector2>();
 
-        spectatorCamera.position =
-            Vector3.Lerp(
-                spectatorCamera.position,
-                desiredPosition,
-                cameraFollowSpeed *
-                Time.deltaTime
-            );
+        orbitYaw += lookInput.x * orbitSensitivity;
+        orbitPitch -= lookInput.y * orbitSensitivity;
+        orbitPitch = Mathf.Clamp(orbitPitch, minPitch, maxPitch);
 
-        Vector3 lookTarget =
-            targetPlayer.position +
-            Vector3.up *
-            lookHeight;
+        Vector3 pivot = targetPlayer.position + Vector3.up * orbitHeight;
 
-        Vector3 direction =
-            lookTarget -
-            spectatorCamera.position;
+        Quaternion orbitRotation = Quaternion.Euler(orbitPitch, orbitYaw, 0f);
+        Vector3 desiredDirection = orbitRotation * Vector3.back;
 
-        if (
-            direction.sqrMagnitude >
-            0.001f
-        )
+        // ===================================================
+        // COLISIÓN: si hay pared entre el pivote y la cámara,
+        // acercamos la distancia en vez de atravesarla.
+        // ===================================================
+
+        float finalDistance = orbitDistance;
+
+        if (Physics.SphereCast(
+                pivot,
+                collisionRadius,
+                desiredDirection,
+                out RaycastHit hit,
+                orbitDistance,
+                collisionMask,
+                QueryTriggerInteraction.Ignore))
         {
-            Quaternion desiredRotation =
-                Quaternion.LookRotation(
-                    direction
-                );
-
-            spectatorCamera.rotation =
-                Quaternion.Lerp(
-                    spectatorCamera.rotation,
-                    desiredRotation,
-                    cameraFollowSpeed *
-                    Time.deltaTime
-                );
+            finalDistance = Mathf.Clamp(hit.distance, minCollisionDistance, orbitDistance);
         }
+
+        Vector3 finalPosition = pivot + desiredDirection * finalDistance;
+
+        spectatorCamera.position = Vector3.Lerp(
+            spectatorCamera.position,
+            finalPosition,
+            cameraFollowSpeed * Time.deltaTime
+        );
+
+        spectatorCamera.rotation = Quaternion.Lerp(
+            spectatorCamera.rotation,
+            Quaternion.LookRotation(pivot - finalPosition),
+            cameraFollowSpeed * Time.deltaTime
+        );
     }
+
+    private void OnEnable()
+    {
+        controls.Player.Enable();
+    }
+
+    private void OnDisable()
+    {
+        controls.Player.Disable();
+    }
+
 }

@@ -11,6 +11,11 @@ public class WeaponWallBuy : MonoBehaviour
     [SerializeField] private Transform lookTarget; // collider sobre SK_AR_01
     [SerializeField] private float interactRange = 3f;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip purchaseSuccessSound;
+    [SerializeField] private AudioClip purchaseDeniedSound; // opcional: sonido de "no alcanza"
+
     private PlayerControls controls;
     private Camera localPlayerCamera;
 
@@ -168,10 +173,18 @@ public class WeaponWallBuy : MonoBehaviour
         if (pendingScore != null)
             pendingScore.OnPurchaseResult -= OnPurchaseResult;
 
+        PlaySound(exito ? purchaseSuccessSound : purchaseDeniedSound);
+
         if (exito && pendingSwitcher != null)
             pendingSwitcher.UnlockWeapon(weaponId, equipAfterUnlock: true);
 
         pendingSwitcher = null;
         pendingScore = null;
+    }
+
+    private void PlaySound(AudioClip clip)
+    {
+        if (audioSource != null && clip != null)
+            audioSource.PlayOneShot(clip);
     }
 }
