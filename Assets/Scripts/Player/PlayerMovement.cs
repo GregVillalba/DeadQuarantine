@@ -99,6 +99,7 @@ public class PlayerMovement : NetworkBehaviour
 
     public bool IsSprinting { get; private set; }
     public bool IsCrouching { get; private set; }
+    public bool MovementLocked { get; set; }
 
     private CharacterController characterController;
     private PlayerControls controls;
@@ -265,6 +266,9 @@ public class PlayerMovement : NetworkBehaviour
     )
     {
         if (!IsOwner)
+        return;
+
+        if (MovementLocked) 
             return;
 
         if (isParkouring)
@@ -316,42 +320,30 @@ public class PlayerMovement : NetworkBehaviour
         }
 
         HandleCrouch();
-        ApplyGravity();
+        ApplyGravity(); // sigue corriendo siempre, pausado o no
 
-        float currentSpeed =
-            moveSpeed;
+        float currentSpeed = moveSpeed;
 
-        if (playerHealth != null &&
-            playerHealth.IsDowned)
-        {
-            currentSpeed =
-                downedMoveSpeed;
-        }
+        if (playerHealth != null && playerHealth.IsDowned)
+            currentSpeed = downedMoveSpeed;
         else if (IsCrouching)
-        {
-            currentSpeed =
-                crouchSpeed;
-        }
+            currentSpeed = crouchSpeed;
         else if (IsSprinting)
-        {
-            currentSpeed =
-                sprintSpeed;
-        }
+            currentSpeed = sprintSpeed;
+
+        // Si está bloqueado (pausa), el input horizontal se anula,
+        // pero la caída por gravedad sigue funcionando normalmente.
+        Vector2 effectiveMoveInput = MovementLocked ? Vector2.zero : moveInput;
 
         Vector3 horizontalMovement =
-            transform.right * moveInput.x +
-            transform.forward * moveInput.y;
+            transform.right * effectiveMoveInput.x +
+            transform.forward * effectiveMoveInput.y;
 
         Vector3 fullMovement =
-            horizontalMovement *
-            currentSpeed +
-            Vector3.up *
-            velocityY;
+            horizontalMovement * currentSpeed +
+            Vector3.up * velocityY;
 
-        characterController.Move(
-            fullMovement *
-            Time.deltaTime
-        );
+        characterController.Move(fullMovement * Time.deltaTime);
     }
 
     // =========================================================

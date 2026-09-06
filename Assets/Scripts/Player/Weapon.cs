@@ -100,6 +100,8 @@ public class Weapon : MonoBehaviour
 
     private PlayerScore playerScore;
 
+    public bool InputLocked { get; set; }
+
     private void Awake()
     {
         controls = new PlayerControls();
@@ -187,6 +189,9 @@ public class Weapon : MonoBehaviour
 
     private void OnAimStarted(InputAction.CallbackContext context)
     {
+        if (InputLocked) 
+            return;
+
         if (isReloading)
             return;
 
@@ -295,7 +300,14 @@ public class Weapon : MonoBehaviour
         if (weaponAnimator == null || characterController == null)
             return;
 
-        float speed = characterController.velocity.magnitude;
+        // Solo velocidad horizontal — la caída (eje Y) no debe contar como "caminar".
+        Vector3 horizontalVelocity = new Vector3(
+            characterController.velocity.x,
+            0f,
+            characterController.velocity.z
+        );
+
+        float speed = horizontalVelocity.magnitude;
 
         weaponAnimator.SetFloat("Speed", speed, 0.15f, Time.deltaTime);
         weaponAnimator.SetBool("IsAiming", IsAiming);
@@ -326,6 +338,9 @@ public class Weapon : MonoBehaviour
 
     private void TryFire()
     {
+        if (InputLocked)
+            return;
+
         if (Time.timeScale == 0f)
             return;
 
@@ -383,6 +398,9 @@ public class Weapon : MonoBehaviour
 
     private void OnReload(InputAction.CallbackContext context)
     {
+        if (InputLocked)
+            return;
+
         if (isReloading)
             return;
 

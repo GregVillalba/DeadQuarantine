@@ -9,6 +9,11 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Server
         );
+    public NetworkVariable<bool> IsAtSpawn = new NetworkVariable<bool>(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
 
     public override void OnNetworkSpawn()
     {
@@ -156,6 +161,8 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
             "[SpawnAssigner] Jugador movido a SpawnIndex " +
             index
         );
+        if (IsOwner)
+            IsAtSpawn.Value = true;
     }
 
     public override void OnNetworkDespawn()

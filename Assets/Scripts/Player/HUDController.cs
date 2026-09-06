@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using Unity.Netcode;
 
 public class HUDController : MonoBehaviour
 {
@@ -9,6 +10,7 @@ public class HUDController : MonoBehaviour
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private Weapon weapon;
     [SerializeField] private Image weaponIcon;
+    [SerializeField] private TextMeshProUGUI playerLabelText;
 
     private RoundManager roundManager;
 
@@ -54,6 +56,23 @@ public class HUDController : MonoBehaviour
     private void Start()
     {
         BuscarRoundManager();
+
+        NetworkObject networkObject =
+            GetComponentInParent<NetworkObject>();
+
+        if (
+            networkObject != null &&
+            networkObject.IsOwner &&
+            NetworkManager.Singleton != null &&
+            NetworkManager.Singleton.IsClient
+        )
+        {
+            if (NetworkManager.Singleton.LocalClientId == 1)
+            {
+                if (playerLabelText != null)
+                    playerLabelText.text = "Jugador 2 (TÚ)";
+            }
+        }
 
         if (hitMarker != null)
         {

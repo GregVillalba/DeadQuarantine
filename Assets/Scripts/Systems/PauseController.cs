@@ -50,9 +50,9 @@ public class PauseController : NetworkBehaviour
 
     private bool estaPausado;
 
-    private bool movementWasEnabled;
+    private bool movementWasLocked;
     private bool lookWasEnabled;
-    private bool weaponWasEnabled;
+    private bool weaponWasLocked;
 
     private bool finDeRondaActivo;
     private bool pendienteAccionEsVictoria;
@@ -91,6 +91,15 @@ public class PauseController : NetworkBehaviour
 
         if (panelRonda != null)
             panelRonda.SetActive(false);
+            
+        if (hud != null)
+            hud.SetActive(false);
+    }
+
+    public void MostrarHUD()
+    {
+        if (hud != null)
+            hud.SetActive(true);
     }
 
     public override void OnNetworkSpawn()
@@ -162,13 +171,13 @@ public class PauseController : NetworkBehaviour
 
         estaPausado = true;
 
-        movementWasEnabled = playerMovement != null && playerMovement.enabled;
+        movementWasLocked = playerMovement != null && playerMovement.MovementLocked;
         lookWasEnabled = playerLook != null && playerLook.enabled;
 
-        weaponWasEnabled =
+        weaponWasLocked =
             weaponSwitcher != null &&
             weaponSwitcher.CurrentWeapon != null &&
-            weaponSwitcher.CurrentWeapon.enabled;
+            weaponSwitcher.CurrentWeapon.InputLocked;
 
         if (popupMenuHome != null)
             popupMenuHome.SetActive(true);
@@ -215,13 +224,13 @@ public class PauseController : NetworkBehaviour
     private void BloquearJugador()
     {
         if (playerMovement != null)
-            playerMovement.enabled = false;
+            playerMovement.MovementLocked = true;
 
         if (playerLook != null)
             playerLook.enabled = false;
 
         if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null)
-            weaponSwitcher.CurrentWeapon.enabled = false;
+            weaponSwitcher.CurrentWeapon.InputLocked = true;
     }
 
     private void HabilitarJugador()
@@ -230,25 +239,25 @@ public class PauseController : NetworkBehaviour
             return;
 
         if (playerMovement != null)
-            playerMovement.enabled = true;
+            playerMovement.MovementLocked = false;
 
         if (playerLook != null)
             playerLook.enabled = true;
 
         if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null)
-            weaponSwitcher.CurrentWeapon.enabled = true;
+            weaponSwitcher.CurrentWeapon.InputLocked = false;
     }
 
     private void RestaurarEstadoJugador()
     {
         if (playerMovement != null)
-            playerMovement.enabled = movementWasEnabled;
+            playerMovement.MovementLocked = movementWasLocked;
 
         if (playerLook != null)
             playerLook.enabled = lookWasEnabled;
 
         if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null)
-            weaponSwitcher.CurrentWeapon.enabled = weaponWasEnabled;
+            weaponSwitcher.CurrentWeapon.InputLocked = weaponWasLocked;
     }
 
     // =========================================================

@@ -39,6 +39,10 @@ public class RoundManager : NetworkBehaviour
     [Header("HUD de inicio de ronda")]
     [SerializeField] private RoundStartHUD roundStartHUD;
 
+    [Header("Espera de inicio (Multiplayer)")]
+    [SerializeField] private int expectedPlayerCount = 2;
+    [SerializeField] private float maxWaitForPlayersTime = 15f;
+
     // =========================================================
     // VARIABLES DE RED
     // =========================================================
@@ -153,15 +157,63 @@ public class RoundManager : NetworkBehaviour
             roundStartHUD.Hide();
         }
 
-        if (
-            SceneManager.GetActiveScene().name ==
-            "MainSceneSinglePlayer"
-        )
+        if (SceneManager.GetActiveScene().name == "MainSceneSinglePlayer")
         {
+            StartRound(1);
             return;
         }
 
-        StartRound(1);
+        // Multiplayer: esperamos a que TODOS estén parados en su spawn
+        // antes de arrancar la Ronda 1 (zombies, panel de ronda, etc).
+        StartCoroutine(WaitForAllPlayersAtSpawnThenStart(1));
+    }
+
+    private IEnumerator WaitForAllPlayersAtSpawnThenStart(int round)
+    {
+        float elapsed = 0f;
+
+        while (elapsed < maxWaitForPlayersTime)
+        {
+            if (AllPlayersAtSpawn())
+                break;
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (!AllPlayersAtSpawn())
+        {
+            Debug.LogWarning(
+                "[RoundManager] Se agotó el tiempo esperando a ambos jugadores. Arrancando de todas formas."
+            );
+        }
+
+        StartRound(round);
+    }
+
+    private bool AllPlayersAtSpawn()
+    {
+        if (NetworkManager.Singleton == null)
+            return false;
+
+        var connectedClients = NetworkManager.Singleton.ConnectedClientsList;
+
+        if (connectedClients.Count < expectedPlayerCount)
+            return false;
+
+        foreach (NetworkClient client in connectedClients)
+        {
+            if (client.PlayerObject == null)
+                return false;
+
+            MultiplayerPlayerSpawnAssigner assigner =
+                client.PlayerObject.GetComponent<MultiplayerPlayerSpawnAssigner>();
+
+            if (assigner == null || !assigner.IsAtSpawn.Value)
+                return false;
+        }
+
+        return true;
     }
 
     public override void OnNetworkDespawn()
