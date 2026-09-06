@@ -30,6 +30,8 @@ public class NetworkBootstrap : MonoBehaviour
 
     public ISession CurrentSession => currentSession;
 
+    private bool isIntentionalLeave;
+
 
     // ============================================================
     // AWAKE
@@ -123,6 +125,9 @@ public class NetworkBootstrap : MonoBehaviour
                 CurrentJoinCode
             );
 
+            if (NetworkManager.Singleton != null)
+                NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+
             return CurrentJoinCode;
         }
         catch (Exception e)
@@ -172,6 +177,8 @@ public class NetworkBootstrap : MonoBehaviour
                 "[Network] Unido a la sala: " +
                 CurrentJoinCode
             );
+            if (NetworkManager.Singleton != null)
+                NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
 
             return true;
         }
@@ -429,6 +436,56 @@ public class NetworkBootstrap : MonoBehaviour
             "[Network] ERROR iniciando Network: " +
             error
         );
+    }
+
+    private void OnClientDisconnected(ulong clientId)
+    {
+        if (NetworkManager.Singleton == null)
+            return;
+
+        // Solo nos interesa cuando el que se desconectó somos nosotros mismos
+        // (por ejemplo, porque el Host cerró la partida).
+        if (clientId != NetworkManager.Singleton.LocalClientId)
+            return;
+
+        if (isIntentionalLeave)
+        {
+            isIntentionalLeave = false;
+            return;
+        }
+
+        Debug.LogWarning("[Network] Se perdió la conexión con el Host. Volviendo al menú.");
+
+        _ = GoToMenuDueToDisconnect();
+    }
+
+    private async Task GoToMenuDueToDisconnect()
+    {
+        if (NetworkManager.Singleton != null)
+            NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
+
+        Time.timeScale = 1f;
+        AudioListener.pause = false;
+
+        try
+        {
+            if (currentSession != null)
+                await currentSession.LeaveAsync();
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning("[Network] Error al abandonar la sesión tras desconexión: " + e.Message);
+        }
+
+        currentSession = null;
+        CurrentJoinCode = null;
+
+        SceneManager.LoadScene("PantallasUI");
+    }
+
+    public void NotifyIntentionalLeave()
+    {
+        isIntentionalLeave = true;
     }
 
     // ============================================================

@@ -308,6 +308,9 @@ public class PauseController : NetworkBehaviour
         Time.timeScale = 1f;
         AudioListener.pause = false;
 
+        if (NetworkBootstrap.Instance != null)
+            NetworkBootstrap.Instance.NotifyIntentionalLeave(); // <- nuevo
+
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             NetworkManager.Singleton.Shutdown();
 
