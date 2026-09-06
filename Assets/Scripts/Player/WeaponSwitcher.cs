@@ -12,6 +12,7 @@ public class WeaponSwitcher : MonoBehaviour
         public Weapon weaponComponent;
         public AnimatorOverrideController overrideController;
         public bool unlockedByDefault;
+        public Sprite weaponIcon;
     }
 
     [Header("Referencias")]
@@ -175,7 +176,10 @@ public class WeaponSwitcher : MonoBehaviour
         slot.weaponRoot.SetActive(true);
 
         if (hudController != null)
-            hudController.SetWeapon(slot.weaponComponent);
+        hudController.SetWeapon(
+            slot.weaponComponent,
+            slot.weaponIcon
+        );
 
         if (weaponAnimationEvents != null)
             weaponAnimationEvents.SetWeapon(slot.weaponComponent);

@@ -17,14 +17,30 @@ public class DecalManager : MonoBehaviour
         Instance = this;
     }
 
-    public void SpawnBulletHole(Vector3 position, Vector3 normal)
+    public void SpawnBulletHole(
+        Vector3 position,
+        Vector3 normal,
+        Collider surfaceCollider
+    )
     {
         if (bulletHolePrefab == null) return;
 
         Vector3 spawnPosition = position + normal * surfaceOffset;
         Quaternion spawnRotation = Quaternion.LookRotation(-normal);
 
-        GameObject decal = Instantiate(bulletHolePrefab, spawnPosition, spawnRotation);
+        GameObject decal = Instantiate(
+            bulletHolePrefab,
+            spawnPosition,
+            spawnRotation
+        );
+
+        if (surfaceCollider != null)
+        {
+            decal.transform.SetParent(
+                surfaceCollider.transform,
+                true
+            );
+        }
 
         Destroy(decal, decalLifetime); // se autodestruye solo a los 3 segundos
 

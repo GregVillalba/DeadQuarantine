@@ -59,6 +59,9 @@ public class Weapon : MonoBehaviour
     [SerializeField] private float landingRecoverySpeed = 25f;
     [SerializeField] private float landingRecoveryDuration = 0.25f;
 
+    [Header("Impactos")]
+    [SerializeField] private LayerMask bulletIgnoredLayers;
+
     public bool IsAiming { get; private set; }
 
     public int CurrentAmmo => currentAmmo;
@@ -443,6 +446,14 @@ public class Weapon : MonoBehaviour
             if (hit.collider.transform.root == transform.root)
                 continue;
 
+            if (
+                (bulletIgnoredLayers.value &
+                 (1 << hit.collider.gameObject.layer)) != 0
+            )
+            {
+                continue;
+            }
+
             PlayerMovement movementHit = hit.collider.GetComponentInParent<PlayerMovement>();
 
             if (movementHit != null)
@@ -476,7 +487,13 @@ public class Weapon : MonoBehaviour
             }
 
             if (DecalManager.Instance != null)
-                DecalManager.Instance.SpawnBulletHole(hit.point, hit.normal);
+            {
+                DecalManager.Instance.SpawnBulletHole(
+                    hit.point,
+                    hit.normal,
+                    hit.collider
+                );
+            }
         }
         else
         {

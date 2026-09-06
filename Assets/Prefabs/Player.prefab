@@ -2987,11 +2987,13 @@ MonoBehaviour:
     weaponComponent: {fileID: 2521587797366648454}
     overrideController: {fileID: 0}
     unlockedByDefault: 1
+    weaponIcon: {fileID: 21300000, guid: 5de2ff934a8b3ea4ebfe923a6f958686, type: 3}
   - weaponId: Rifle
     weaponRoot: {fileID: 3564059095141115869}
     weaponComponent: {fileID: 691320788580134482}
     overrideController: {fileID: 22100000, guid: 2d9a07beb030cb74bb44e2708fd131a9, type: 2}
     unlockedByDefault: 0
+    weaponIcon: {fileID: 21300000, guid: bcc477d9e47ffcf41acc147a6fc51cf9, type: 3}
   startingSlotIndex: 0
 --- !u!114 &4133174266240860137
 MonoBehaviour:
@@ -15397,7 +15399,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 138.5, y: 15.1}
+  m_AnchoredPosition: {x: 143, y: 22.2}
   m_SizeDelta: {x: 200, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7674136669854399329
@@ -17114,6 +17116,9 @@ MonoBehaviour:
   jumpSpread: 5
   landingRecoverySpeed: 25
   landingRecoveryDuration: 0.25
+  bulletIgnoredLayers:
+    serializedVersion: 2
+    m_Bits: 1024
 --- !u!1 &2036095813642063709
 GameObject:
   m_ObjectHideFlags: 0
@@ -22674,14 +22679,14 @@ RectTransform:
   m_GameObject: {fileID: 3237255583719117144}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.9, y: 0.9, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 9216820349589059348}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 54.5, y: 1.7}
+  m_AnchoredPosition: {x: 50, y: 9}
   m_SizeDelta: {x: 500, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &521739546524984948
@@ -34862,7 +34867,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1614284941
+  GlobalObjectIdHash: 3516423437
   InScenePlacedSourceGlobalObjectIdHash: 477224611
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -42404,12 +42409,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HUDController
   playerHealth: {fileID: 2373627705313556358}
   playerMovement: {fileID: 7292988215955829792}
-  weapon: {fileID: 0}
+  weapon: {fileID: 2521587797366648454}
+  weaponIcon: {fileID: 4790521645147884274}
   healthFill: {fileID: 8633492707598573982}
   healthPercentText: {fileID: 3817756123604316028}
   healthColorFull: {r: 0.14117648, g: 0.91764706, b: 0.12156863, a: 1}
   healthColorHalf: {r: 1, g: 0.65, b: 0.3, a: 1}
   healthColorLow: {r: 1, g: 0, b: 0, a: 1}
+  vidas1: {fileID: 3531423080104319319}
+  vidas0: {fileID: 7898995153178106618}
   staminaFill: {fileID: 9093812865115071667}
   ammoText: {fileID: 3450188156193082571}
   ammoMaxText: {fileID: 6824707905497664441}
@@ -56156,7 +56164,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -203, y: 150}
+  m_AnchoredPosition: {x: -251, y: 135}
   m_SizeDelta: {x: 350, y: 130}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &689120578235870408
@@ -61258,6 +61266,9 @@ MonoBehaviour:
   jumpSpread: 10
   landingRecoverySpeed: 25
   landingRecoveryDuration: 0.25
+  bulletIgnoredLayers:
+    serializedVersion: 2
+    m_Bits: 1024
 --- !u!4 &3564059095141284845 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400022, guid: bfda376b0f658a748870ea8f7c2c7c03, type: 3}
