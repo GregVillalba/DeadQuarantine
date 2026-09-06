@@ -33,6 +33,33 @@ public class PlayerScore : NetworkBehaviour
         )
         : 0;
 
+    public NetworkVariable<int> ReaparicionesNetwork = new NetworkVariable<int>(
+    0,
+    NetworkVariableReadPermission.Everyone,
+    NetworkVariableWritePermission.Server
+);
+
+public NetworkVariable<int> CaidasNetwork = new NetworkVariable<int>(
+    0,
+    NetworkVariableReadPermission.Everyone,
+    NetworkVariableWritePermission.Server
+);
+
+public void SumarCaida()
+{
+    if (!IsServer)
+        return;
+
+    CaidasNetwork.Value++;
+}
+
+public void SumarReaparicion()
+{
+    if (!IsServer)
+        return;
+
+    ReaparicionesNetwork.Value++;
+}
     public event Action<string, bool> OnPurchaseResult;
 
     [ServerRpc]
@@ -89,6 +116,7 @@ public class PlayerScore : NetworkBehaviour
     public void RegistrarImpactoServerRpc()
     {
         DisparosAcertadosNetwork.Value++;
+        SumarPuntos(50);
     }
 
 

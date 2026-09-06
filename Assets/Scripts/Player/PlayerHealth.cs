@@ -298,6 +298,15 @@ public class PlayerHealth : NetworkBehaviour
             " está ABATIDO."
         );
 
+        PlayerScore playerScore =
+        transform.root.GetComponentInChildren<PlayerScore>();
+
+    if (playerScore != null)
+        playerScore.SumarCaida();
+
+    if (downedCoroutine != null)
+        StopCoroutine(downedCoroutine);
+
         if (downedCoroutine != null)
         {
             StopCoroutine(
@@ -379,6 +388,12 @@ public class PlayerHealth : NetworkBehaviour
 
         State.Value =
             PlayerState.Alive;
+
+        PlayerScore playerScore =
+        transform.root.GetComponentInChildren<PlayerScore>();
+
+    if (playerScore != null)
+        playerScore.SumarReaparicion();
 
         Debug.Log(
             "[PlayerHealth] " +
@@ -575,6 +590,12 @@ public class PlayerHealth : NetworkBehaviour
 
         DownedTimeRemaining.Value =
             0f;
+
+        PlayerScore playerScore =
+        transform.root.GetComponentInChildren<PlayerScore>();
+
+    if (playerScore != null)
+        playerScore.SumarReaparicion();
 
         Debug.Log(
             "[PlayerHealth] " +

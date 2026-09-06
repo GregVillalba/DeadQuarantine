@@ -37,6 +37,9 @@ public class PauseController : NetworkBehaviour
     [SerializeField] private TextMeshProUGUI textoZombiesVictoria;
     [SerializeField] private TextMeshProUGUI textoPrecisionDerrota;
     [SerializeField] private TextMeshProUGUI textoPrecisionVictoria;
+    [SerializeField] private TextMeshProUGUI textoCaidasDerrota;
+    [SerializeField] private TextMeshProUGUI textoCaidasVictoria;
+    [SerializeField] private TextMeshProUGUI textoReaparicionesVictoria;
 
     [SerializeField] private PlayerScore playerScore;
 
@@ -369,6 +372,14 @@ public class PauseController : NetworkBehaviour
         if (textoPrecisionVictoria != null && playerScore != null)
             textoPrecisionVictoria.text = playerScore.PrecisionPorcentaje.ToString() + "%";
 
+        if (textoReaparicionesVictoria != null && playerScore != null)
+    textoReaparicionesVictoria.text = playerScore.ReaparicionesNetwork.Value.ToString();
+
+if (textoCaidasVictoria != null && playerScore != null)
+        textoCaidasVictoria.text = playerScore.CaidasNetwork.Value.ToString();
+
+
+
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
     }
@@ -399,6 +410,9 @@ public class PauseController : NetworkBehaviour
 
         if (textoRondaDerrota != null && playerScore != null)
             textoRondaDerrota.text = RoundManager.Instance.CurrentRound + " / " + RoundManager.Instance.MaxRounds;
+
+        if (textoCaidasDerrota != null && playerScore != null)
+        textoCaidasDerrota.text = playerScore.CaidasNetwork.Value.ToString();
 
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;

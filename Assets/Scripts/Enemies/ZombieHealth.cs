@@ -555,7 +555,7 @@ public class ZombieHealth : NetworkBehaviour
 
         if (playerScore != null)
                 {
-                    playerScore.SumarPuntos(50);
+                    playerScore.SumarPuntos(500);
                     playerScore.SumarZombieEliminado();
                 }
     }
