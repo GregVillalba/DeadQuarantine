@@ -8,6 +8,7 @@ public class HUDController : MonoBehaviour
     [SerializeField] private PlayerHealth playerHealth;
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private Weapon weapon;
+    [SerializeField] private Image weaponIcon;
 
     private RoundManager roundManager;
 
@@ -17,6 +18,8 @@ public class HUDController : MonoBehaviour
     [SerializeField] private Color healthColorFull = Color.white;
     [SerializeField] private Color healthColorHalf = new Color(1f, 0.65f, 0.3f);
     [SerializeField] private Color healthColorLow = Color.red;
+    [SerializeField] private GameObject vidas1;
+    [SerializeField] private GameObject vidas0;
 
     [Header("Estamina")]
     [SerializeField] private Image staminaFill;
@@ -83,11 +86,29 @@ public class HUDController : MonoBehaviour
         ActualizarTodo();
     }
 
-    public void SetWeapon(Weapon newWeapon)
+    private void UpdateLivesUI()
     {
-        weapon = newWeapon;
+        if (playerHealth == null)
+            return;
+
+        bool mostrarVidaLlena =
+            playerHealth.Lives.Value > 0 &&
+            !playerHealth.IsDowned;
+
+        if (vidas1 != null)
+            vidas1.SetActive(mostrarVidaLlena);
+
+        if (vidas0 != null)
+            vidas0.SetActive(!mostrarVidaLlena);
     }
 
+    public void SetWeapon(Weapon newWeapon, Sprite newIcon)
+    {
+        weapon = newWeapon;
+
+        if (weaponIcon != null)
+            weaponIcon.sprite = newIcon;
+    }
     private void BuscarRoundManager()
     {
         roundManager =
@@ -115,6 +136,7 @@ public class HUDController : MonoBehaviour
         UpdateAmmoText();
         UpdateRounds();
         UpdateCrosshair();
+        UpdateLivesUI();
     }
 
     // =========================================================
