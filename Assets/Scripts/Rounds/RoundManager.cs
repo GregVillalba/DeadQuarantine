@@ -159,7 +159,6 @@ public class RoundManager : NetworkBehaviour
 
         if (SceneManager.GetActiveScene().name == "MainSceneSinglePlayer")
         {
-            StartRound(1);
             return;
         }
 
