@@ -53,6 +53,8 @@ public class PauseController : NetworkBehaviour
 
     private bool estaPausado;
 
+    public bool EstaPausado => estaPausado;
+
     private bool movementWasLocked;
     private bool lookWasEnabled;
     private bool weaponWasLocked;

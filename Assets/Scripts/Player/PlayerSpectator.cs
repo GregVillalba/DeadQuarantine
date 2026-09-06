@@ -49,6 +49,7 @@ public class PlayerSpectator : NetworkBehaviour
     private CharacterController characterController;
 
     private MultiplayerPlayerSpawnAssigner spawnAssigner;
+    private PauseController pauseController;
 
     private Transform targetPlayer;
 
@@ -85,6 +86,13 @@ public class PlayerSpectator : NetworkBehaviour
 
         spawnAssigner =
             GetComponent<MultiplayerPlayerSpawnAssigner>();
+
+        pauseController =
+            GetComponent<PauseController>();
+
+        if (pauseController == null)
+            pauseController =
+                GetComponentInParent<PauseController>();
 
         if (spectatorCamera == null)
         {
@@ -640,6 +648,14 @@ public class PlayerSpectator : NetworkBehaviour
         if (!isSpectating)
             return;
 
+        // Mientras el menú de pausa está abierto no actualizamos el
+        // espectador ni consumimos input de cámara. Esto evita que el
+        // mouse cambie la órbita mientras Time.timeScale está en 0
+        // (Singleplayer) y evita inconsistencias al pausar/reanudar
+        // (Multiplayer).
+        if (pauseController != null && pauseController.EstaPausado)
+            return;
+
         if (targetPlayer == null)
         {
             FindTargetPlayer();
@@ -667,6 +683,10 @@ public class PlayerSpectator : NetworkBehaviour
     private void LateUpdate()
     {
         if (!IsOwner)
+            return;
+
+        // No mover ni rotar la cámara mientras está pausado.
+        if (pauseController != null && pauseController.EstaPausado)
             return;
 
         if (isSpectating)
