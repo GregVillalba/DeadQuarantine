@@ -189,7 +189,11 @@ public class Weapon : MonoBehaviour
 
     private void OnAimStarted(InputAction.CallbackContext context)
     {
-        if (InputLocked) 
+        Debug.Log("[Weapon] OnAimStarted llamado. InputLocked=" + InputLocked +
+            " | isReloading=" + isReloading +
+            " | IsSprinting=" + (playerMovement != null && playerMovement.IsSprinting));
+
+        if (InputLocked)
             return;
 
         if (isReloading)
@@ -333,30 +337,46 @@ public class Weapon : MonoBehaviour
 
     private void OnFireSemiAuto(InputAction.CallbackContext context)
     {
+        Debug.Log("[Weapon] OnFireSemiAuto llamado. InputLocked=" + InputLocked);
         TryFire();
     }
 
     private void TryFire()
     {
         if (InputLocked)
+        {
+            Debug.Log("[Weapon] TryFire bloqueado: InputLocked=true");
             return;
+        }
 
         if (Time.timeScale == 0f)
+        {
+            Debug.Log("[Weapon] TryFire bloqueado: Time.timeScale == 0");
             return;
+        }
 
         if (EventSystem.current != null &&
             EventSystem.current.currentSelectedGameObject != null)
+        {
+            Debug.Log("[Weapon] TryFire bloqueado: hay un objeto de UI seleccionado -> " +
+                EventSystem.current.currentSelectedGameObject.name);
             return;
+        }
 
         if (isReloading)
+        {
+            Debug.Log("[Weapon] TryFire bloqueado: isReloading=true");
             return;
+        }
 
-        // NO DISPARAR MIENTRAS CORRE.
         if (playerMovement != null && playerMovement.IsSprinting)
+        {
+            Debug.Log("[Weapon] TryFire bloqueado: IsSprinting=true");
             return;
+        }
 
         if (Time.time < nextFireTime)
-            return;
+            return; // este es normal (cadencia), no hace falta loguearlo
 
         if (currentAmmo <= 0)
         {

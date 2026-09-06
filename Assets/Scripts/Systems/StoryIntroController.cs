@@ -16,6 +16,7 @@ public class StoryIntroController : NetworkBehaviour
 
     [Header("Cámara del arma (FPS Arms)")]
     [SerializeField] private GameObject weaponCameraObject; // el objeto "WeaponCamera" de la Hierarchy
+    private WeaponSwitcher weaponSwitcher;
 
     private bool historiaActiva;
     public bool HistoriaActiva => historiaActiva;
@@ -67,6 +68,8 @@ public class StoryIntroController : NetworkBehaviour
 
     public void ContinuarHistoria()
     {
+        Debug.Log("[StoryIntro] ContinuarHistoria() INICIO. IsOwner=" + IsOwner + " | historiaActiva=" + historiaActiva);
+
         if (!IsOwner || !historiaActiva)
             return;
 
@@ -85,29 +88,57 @@ public class StoryIntroController : NetworkBehaviour
 
         if (IsServer && RoundManager.Instance != null)
             RoundManager.Instance.StartRound(1);
+
+        Debug.Log("[StoryIntro] ContinuarHistoria() FIN.");
     }
 
     private void BloquearJugador()
     {
+        if (weaponSwitcher == null)
+            weaponSwitcher = transform.root.GetComponentInChildren<WeaponSwitcher>(true);
+
         if (playerMovement != null)
+        {
             playerMovement.enabled = false;
+            playerMovement.MovementLocked = true;
+        }
 
         if (playerLook != null)
             playerLook.enabled = false;
 
-        if (weaponCameraObject != null)
-            weaponCameraObject.SetActive(false);
+        foreach (Weapon arma in transform.root.GetComponentsInChildren<Weapon>(true))
+        {
+            arma.enabled = false;
+            arma.InputLocked = true;
+        }
     }
 
     private void HabilitarJugador()
     {
+        if (weaponSwitcher == null)
+            weaponSwitcher = transform.root.GetComponentInChildren<WeaponSwitcher>(true);
+
+        Debug.Log("[StoryIntro] HabilitarJugador() INICIO. weaponSwitcher=" + (weaponSwitcher != null) +
+            " | CurrentWeapon=" + (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null ? weaponSwitcher.CurrentWeapon.name : "NULL"));
+
         if (playerMovement != null)
+        {
             playerMovement.enabled = true;
+            playerMovement.MovementLocked = false;
+        }
 
         if (playerLook != null)
             playerLook.enabled = true;
 
-        if (weaponCameraObject != null)
-            weaponCameraObject.SetActive(true);
+        if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null)
+        {
+            weaponSwitcher.CurrentWeapon.enabled = true;
+            weaponSwitcher.CurrentWeapon.InputLocked = false;
+            Debug.Log("[StoryIntro] Arma desbloqueada: " + weaponSwitcher.CurrentWeapon.name);
+        }
+        else
+        {
+            Debug.LogWarning("[StoryIntro] Seguimos sin encontrar weaponSwitcher ni con el lookup manual.");
+        }
     }
 }

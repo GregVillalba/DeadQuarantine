@@ -211,6 +211,10 @@ public class WeaponSwitcher : MonoBehaviour
             if (slots[i].weaponId == weaponId)
             {
                 unlocked[i] = true;
+
+                if (slots[i].weaponComponent != null)
+                    slots[i].weaponComponent.InputLocked = false;
+
                 if (equipAfterUnlock)
                     RequestEquip(i);
                 return;
