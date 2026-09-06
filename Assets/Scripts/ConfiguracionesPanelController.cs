@@ -32,7 +32,7 @@ public class ConfiguracionesPanelController : MonoBehaviour
     }
 
     // Botón "Volver" dentro de sonidoPanel o sensibilidadMousePanel
-    public void VolverAConfiguraciones()
+    public void VolverAConfiguraciones()    
     {
         if (sonidoPanel != null) sonidoPanel.SetActive(false);
         if (sensibilidadMousePanel != null) sensibilidadMousePanel.SetActive(false);

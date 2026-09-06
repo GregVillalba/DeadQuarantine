@@ -29,7 +29,10 @@ public class PlayerLook : MonoBehaviour
     {
         controls = new PlayerControls();
 
+        mouseSensitivity = ConfiguracionesJuego.ObtenerSensibilidad();
+
         networkObject = GetComponentInParent<NetworkObject>();
+
 
         if (networkObject != null)
             playerTransform = networkObject.transform;
