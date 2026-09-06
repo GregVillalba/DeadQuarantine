@@ -15009,6 +15009,84 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1071247290}
   m_CullTransparentMesh: 1
+--- !u!1 &1078588351
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1078588355}
+  - component: {fileID: 1078588354}
+  - component: {fileID: 1078588353}
+  - component: {fileID: 1078588352}
+  m_Layer: 0
+  m_Name: TestManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1078588352
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078588351}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52c1c4c998459694ab07664bcde67f97, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PlayMode::EndGameTester
+  rondaBossParaSaltar: 5
+  segundosEsperaSpawnBoss: 6
+--- !u!114 &1078588353
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078588351}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5ee04df857aff64aa0e1381a2885dc3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PlayMode::FPSMonitor
+  fpsMinimoAceptable: 30
+  umbralCongelamientoMs: 100
+  intervaloReporte: 2
+--- !u!114 &1078588354
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078588351}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d537d1af82c2a814899c0894516e1bd3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PlayMode::RoundSpeedTest
+  segundosEsperaPorRonda: 3
+  rondaInicial: 1
+  rondaFinal: 4
+--- !u!4 &1078588355
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078588351}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.61378, y: -1.47025, z: 2.54655}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1080369721
 GameObject:
   m_ObjectHideFlags: 0
@@ -28974,3 +29052,4 @@ SceneRoots:
   - {fileID: 2021986319}
   - {fileID: 469097965}
   - {fileID: 1203940962}
+  - {fileID: 1078588355}
