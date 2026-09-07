@@ -2870,7 +2870,7 @@ AudioSource:
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
-  Priority: 128
+  Priority: 0
   DopplerLevel: 1
   MinDistance: 1
   MaxDistance: 500
@@ -2988,8 +2988,8 @@ MonoBehaviour:
     overrideController: {fileID: 0}
     unlockedByDefault: 1
     weaponIcon: {fileID: 21300000, guid: 5de2ff934a8b3ea4ebfe923a6f958686, type: 3}
-    casingPrefab: {fileID: 0}
-    casingEjectPoint: {fileID: 0}
+    casingPrefab: {fileID: 1492315059354262, guid: e9e4f4e56f1f0a44f9c9d9d846229fba, type: 3}
+    casingEjectPoint: {fileID: 1689013065921820635}
   - weaponId: Rifle
     weaponRoot: {fileID: 3564059095141115869}
     weaponComponent: {fileID: 691320788580134482}
@@ -3970,6 +3970,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Scripts::RoundStartHUD
   roundText: {fileID: 3883058407627006861}
   countdownText: {fileID: 2520638093770123823}
+  maxVisibleTime: 8
 --- !u!1 &368526702209198323
 GameObject:
   m_ObjectHideFlags: 0
@@ -66605,7 +66606,7 @@ MonoBehaviour:
   fireRate: 0.1
   reloadTime: 2.2
   range: 120
-  damage: 18
+  damage: 50
   maxAmmo: 30
   weaponName: Rifle
   aimFOV: 45
