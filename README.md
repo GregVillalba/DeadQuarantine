@@ -67,7 +67,7 @@ Inspirado en los clásicos modos de supervivencia por hordas, los jugadores debe
 | **Disparar** | `Clic Izquierdo` |
 | **Recargar** | `R` |
 | **Interactuar (Puertas / Compra de arma)** | `E` |
-| **Cambiar de arma** | `1` / `2` |
+| **Cambiar de arma** | `2` |
 | **Pausar / Menú de Configuración** | `Esc` |
 
 *(Nota: En el menú de opciones/pausa se puede ajustar la sensibilidad del ratón y el volumen general del juego, configuraciones que quedan guardadas en el sistema).*
