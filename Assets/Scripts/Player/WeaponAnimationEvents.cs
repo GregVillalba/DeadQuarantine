@@ -56,4 +56,10 @@ public class WeaponAnimationEvents : MonoBehaviour
             weaponSwitcher.NotifyUnholsterFinished();
     }
 
+    public void SetCasingData(GameObject newCasingPrefab, Transform newCasingEjectPoint)
+    {
+        casingPrefab = newCasingPrefab;
+        casingEjectPoint = newCasingEjectPoint;
+    }
+
 }

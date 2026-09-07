@@ -14,6 +14,10 @@ public class WeaponSwitcher : MonoBehaviour
         public AnimatorOverrideController overrideController;
         public bool unlockedByDefault;
         public Sprite weaponIcon;
+
+        [Header("Casquillo")] // <- NUEVO
+        public GameObject casingPrefab; // <- NUEVO
+        public Transform casingEjectPoint; // <- NUEVO
     }
 
     [Header("Referencias")]
@@ -187,7 +191,10 @@ public class WeaponSwitcher : MonoBehaviour
         );
 
         if (weaponAnimationEvents != null)
+        {
             weaponAnimationEvents.SetWeapon(slot.weaponComponent);
+            weaponAnimationEvents.SetCasingData(slot.casingPrefab, slot.casingEjectPoint); // <- NUEVO
+        }
     }
 
     public void NotifyUnholsterFinished()
