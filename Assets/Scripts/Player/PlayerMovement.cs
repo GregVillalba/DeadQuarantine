@@ -42,6 +42,10 @@ public class PlayerMovement : NetworkBehaviour
     [SerializeField] private float parkourLowerCheckHeight = 0.55f;
     [SerializeField] private float parkourUpperCheckHeight = 1.8f;
 
+    [Header("Bloqueo suave contra zombies")]
+    [SerializeField] private LayerMask zombieBlockMask;
+    [SerializeField] private float zombiePushBuffer = 0.05f;
+
     [Header("Ventana")]
     [SerializeField] private float windowTraversalDistance = 1.3f;
 
@@ -343,14 +347,74 @@ public class PlayerMovement : NetworkBehaviour
         Vector3 horizontalMovement =
             transform.right * effectiveMoveInput.x +
             transform.forward * effectiveMoveInput.y;
+        
+        // ============ ÚNICO BLOQUE NUEVO — empieza acá ============
+        float moveDistance = horizontalMovement.magnitude * Time.deltaTime;
+
+        if (moveDistance > 0.0001f)
+        {
+            Vector3 moveDirection = horizontalMovement.normalized;
+            float castRadius = characterController.radius * 0.9f;
+            Vector3 castOrigin = transform.position + Vector3.up * (characterController.height * 0.5f);
+
+            if (Physics.SphereCast(
+                    castOrigin,
+                    castRadius,
+                    moveDirection,
+                    out RaycastHit hit,
+                    moveDistance + zombiePushBuffer,
+                    zombieBlockMask,
+                    QueryTriggerInteraction.Ignore))
+            {
+                float allowedDistance = Mathf.Max(hit.distance - zombiePushBuffer, 0f);
+                float scale = allowedDistance / moveDistance;
+                horizontalMovement *= Mathf.Clamp01(scale);
+            }
+        }
+        // ============ ÚNICO BLOQUE NUEVO — termina acá ============
 
         Vector3 fullMovement =
             horizontalMovement * currentSpeed +
             Vector3.up * velocityY;
 
         characterController.Move(fullMovement * Time.deltaTime);
+
+        // ============ BLOQUE 2 (nuevo): corrección posterior ============
+        ResolveZombieOverlap();
+        // ============ FIN BLOQUE 2 ============
     }
 
+    private void ResolveZombieOverlap()
+    {
+        Vector3 checkCenter = transform.position + Vector3.up * (characterController.height * 0.5f);
+        float checkRadius = characterController.radius;
+
+        Collider[] overlaps = Physics.OverlapSphere(
+            checkCenter,
+            checkRadius,
+            zombieBlockMask,
+            QueryTriggerInteraction.Ignore
+        );
+
+        foreach (Collider zombieCollider in overlaps)
+        {
+            Vector3 closestPoint = zombieCollider.ClosestPoint(checkCenter);
+
+            Vector3 offset = checkCenter - closestPoint;
+            offset.y = 0f; // empuje solo horizontal, no queremos afectar la caída/salto
+
+            float distance = offset.magnitude;
+
+            if (distance < checkRadius && distance > 0.0001f)
+            {
+                float pushAmount = checkRadius - distance;
+                Vector3 pushDirection = offset.normalized;
+
+                characterController.Move(pushDirection * pushAmount);
+            }
+        }
+    }
+        
     // =========================================================
     // WINDOW PARKOUR
     // =========================================================

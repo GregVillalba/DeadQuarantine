@@ -3010,7 +3010,7 @@ MonoBehaviour:
   characterController: {fileID: 4434044238315664879}
   weapon: {fileID: 2521587797366648454}
   swayAmount: 0.015
-  maxSwayAmount: 0.05
+  maxSwayAmount: 0.1
   rotationSwayAmount: 3
   maxRotationSway: 5
   swaySmooth: 8
@@ -35311,6 +35311,10 @@ MonoBehaviour:
   parkourArcHeight: 0.7
   parkourLowerCheckHeight: 0.55
   parkourUpperCheckHeight: 1.8
+  zombieBlockMask:
+    serializedVersion: 2
+    m_Bits: 0
+  zombiePushBuffer: 0.05
   windowTraversalDistance: 1.3
   windowHeightOffset: 0.55
   windowArcHeight: 0.08
@@ -36633,7 +36637,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 3703
+    m_Bits: 15991
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
