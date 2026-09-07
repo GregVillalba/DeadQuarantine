@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 
@@ -8,6 +9,12 @@ public class EndGameTester : MonoBehaviour
     [SerializeField] private int rondaBossParaSaltar = 5;
     [SerializeField] private float segundosEsperaSpawnBoss = 6f;
 
+    [Header("Salto solo al Boss")]
+    [SerializeField] private float duracionLimpiezaSegundos = 40f;
+    [SerializeField] private float intervaloLimpieza = 0.5f;
+
+    private Coroutine limpiezaEnCurso;
+
     void Update()
     {
         if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
@@ -15,57 +22,37 @@ public class EndGameTester : MonoBehaviour
 
         if (Keyboard.current == null)
             return;
-
-        // F2: mata todos los zombies vivos de la ronda actual
-       // if (Keyboard.current.f2Key.wasPressedThisFrame)
-       /// {
+        ////
+        //// F2: mata todos los zombies vivos de la ronda actual
+        //if (Keyboard.current.f2Key.wasPressedThisFrame)
+        //{
         //    MatarTodosLosZombiesVivos();
         //}
 
-        // F3: fuerza el salto directo a la ronda del Boss (por defecto 5)
+        //// F3: fuerza el salto directo a la ronda del Boss (por defecto 5)
         //if (Keyboard.current.f3Key.wasPressedThisFrame)
-      //  {
-       //     SaltarARondaBoss();
-      //  }
+        //{
+        //    SaltarARondaBoss();
+        //}
 
-        // F4: mata a todos los jugadores (fuerza Derrota)
-      //  if (Keyboard.current.f4Key.wasPressedThisFrame)
-      //  {
-       //     MatarATodosLosJugadores();
-      //  }
+        //// F4: mata a todos los jugadores (fuerza Derrota)
+        //if (Keyboard.current.f4Key.wasPressedThisFrame)
+        //{
+        //    MatarATodosLosJugadores();
+        //}
+
+        //// F5: salta a la ronda del Boss, matando automáticamente
+        //// a cada zombie normal apenas aparece.
+        //if (Keyboard.current.f5Key.wasPressedThisFrame)
+        //{
+        //    SaltarSoloAlBoss();
+        //}
     }
 
     // =========================================================
-    // CP: "se eliminan todos los zombis... habilita siguiente ronda,
-    // notificando el avance en la interfaz."
-    // (y también cubre Victoria si la ronda actual ya es la final,
-    // porque el mismo AliveZombiesNetwork <= 0 dispara ese flujo)
+    // NUEVO: ronda del Boss, sin la horda normal
     // =========================================================
-    private void MatarTodosLosZombiesVivos()
-    {
-        ZombieHealth[] zombies = FindObjectsOfType<ZombieHealth>();
-        int eliminados = 0;
-
-        foreach (ZombieHealth zombie in zombies)
-        {
-            if (zombie == null || zombie.IsDead)
-                continue;
-
-            zombie.TakeDamage(999999, zombie.transform.position, Vector3.up);
-            eliminados++;
-        }
-
-        Debug.Log(
-            "[EndGameTester] F2 → Se eliminaron " + eliminados +
-            " zombies vivos. Si era la ronda final, debería dispararse Victoria; " +
-            "si no, debería avisar el avance a la siguiente ronda."
-        );
-    }
-
-    // =========================================================
-    // CP: "al arrancar la ronda 5 aparece el Zombie Boss con stats mayores"
-    // =========================================================
-    private void SaltarARondaBoss()
+    private void SaltarSoloAlBoss()
     {
         if (RoundManager.Instance == null)
         {
@@ -74,14 +61,78 @@ public class EndGameTester : MonoBehaviour
         }
 
         Debug.Log(
-            "[EndGameTester] F3 → Forzando inicio de Ronda " + rondaBossParaSaltar +
-            ". Mirá el log '[RoundManager] Boss creado. Vida: X' que aparece solo " +
-            "para confirmar la vida del Boss, y confirmá visualmente en el Game View " +
-            "su escala/modelo y el daño al recibir un ataque."
+            "[EndGameTester] F5 → Forzando Ronda " + rondaBossParaSaltar +
+            " y limpiando zombies normales automáticamente durante " +
+            duracionLimpiezaSegundos + "s, para dejar solo al Boss."
         );
 
         RoundManager.Instance.StartRound(rondaBossParaSaltar);
 
+        if (limpiezaEnCurso != null)
+        {
+            StopCoroutine(limpiezaEnCurso);
+        }
+
+        limpiezaEnCurso = StartCoroutine(LimpiarNormalesDurante(duracionLimpiezaSegundos));
+    }
+
+    private IEnumerator LimpiarNormalesDurante(float duracionTotal)
+    {
+        float tiempoTranscurrido = 0f;
+
+        while (tiempoTranscurrido < duracionTotal)
+        {
+            MatarTodosLosZombiesVivos();
+
+            yield return new WaitForSeconds(intervaloLimpieza);
+            tiempoTranscurrido += intervaloLimpieza;
+        }
+
+        Debug.Log("[EndGameTester] F5 → Limpieza automática finalizada. Solo debería quedar el Boss.");
+        limpiezaEnCurso = null;
+    }
+
+    // =========================================================
+    // (sin cambios respecto a la versión anterior)
+    // =========================================================
+    private void MatarTodosLosZombiesVivos()
+    {
+        ZombieHealth[] zombies = FindObjectsOfType<ZombieHealth>();
+        int eliminados = 0;
+        int saltadosPorSerBoss = 0;
+
+        foreach (ZombieHealth zombie in zombies)
+        {
+            if (zombie == null || zombie.IsDead)
+                continue;
+
+            bool esBoss = zombie.gameObject.name.ToLower().Contains("boss");
+
+            if (esBoss)
+            {
+                saltadosPorSerBoss++;
+                continue;
+            }
+
+            zombie.TakeDamage(999999, zombie.transform.position, Vector3.up);
+            eliminados++;
+        }
+
+        Debug.Log(
+            "[EndGameTester] Limpieza → Se eliminaron " + eliminados +
+            " zombies normales (se dejó con vida a " + saltadosPorSerBoss + " Boss)."
+        );
+    }
+
+    private void SaltarARondaBoss()
+    {
+        if (RoundManager.Instance == null)
+        {
+            Debug.LogError("[EndGameTester] No se encontró RoundManager.Instance.");
+            return;
+        }
+
+        RoundManager.Instance.StartRound(rondaBossParaSaltar);
         Invoke(nameof(ListarZombiesActivos), segundosEsperaSpawnBoss);
     }
 
@@ -106,9 +157,6 @@ public class EndGameTester : MonoBehaviour
         }
     }
 
-    // =========================================================
-    // CP: "Derrota del equipo... se muestra pantalla Game Over"
-    // =========================================================
     private void MatarATodosLosJugadores()
     {
         if (NetworkManager.Singleton == null)
@@ -116,8 +164,6 @@ public class EndGameTester : MonoBehaviour
 
         int cantidad = 0;
 
-        // Primero ponemos las vidas de TODOS en 0, así el próximo
-        // golpe elimina directo (sin pasar por el estado "abatido").
         foreach (NetworkClient client in NetworkManager.Singleton.ConnectedClientsList)
         {
             if (client.PlayerObject == null)
@@ -131,7 +177,6 @@ public class EndGameTester : MonoBehaviour
             playerHealth.Lives.Value = 0;
         }
 
-        // Ahora sí les bajamos la vida a 0 a todos.
         foreach (NetworkClient client in NetworkManager.Singleton.ConnectedClientsList)
         {
             if (client.PlayerObject == null)
@@ -146,9 +191,6 @@ public class EndGameTester : MonoBehaviour
             cantidad++;
         }
 
-        Debug.Log(
-            "[EndGameTester] F4 → Se eliminó la vida de " + cantidad +
-            " jugador(es). Debería dispararse Derrota / Game Over."
-        );
+        Debug.Log("[EndGameTester] F4 → Se eliminó la vida de " + cantidad + " jugador(es).");
     }
 }
