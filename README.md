@@ -1,196 +1,109 @@
-# Dead Quarantine — FPS Cooperativo
+# Dead Quarantine — FPS Cooperativo de Supervivencia 🧟‍♂️🔫
 
-**Dead Quarantine** es un FPS cooperativo desarrollado en **Unity 6** como trabajo universitario. Un juego de acción donde los jugadores deben sobrevivir oleadas de zombies en un ambiente hostil, utilizando armas estratégicamente.
+**Dead Quarantine** es un prototipo de videojuego de acción y disparos en primera persona (FPS) cooperativo para hasta 2 jugadores desarrollado en **Unity 6**. El proyecto fue creado en el marco de la materia **Laboratorio de Construcción de Software (PP1)** de la **Universidad Nacional de General Sarmiento (UNGS)**.
 
----
-
-## 📋 Descripción General
-
-- **Motor:** Unity 6 (URP — Universal Render Pipeline)
-- **Lenguaje:** C#
-- **Género:** FPS Cooperativo
-- **Plataforma:** PC (Windows)
-- **Estado:** En desarrollo activo (Etapa 3 — Multijugador y Sistema de enemigos implementados)
-- **Equipo:** GregVillalba, Luchy-code, martuSoria, Kidje3
+Inspirado en los clásicos modos de supervivencia por hordas, los jugadores deben resistir 5 rondas consecutivas dentro de una casa abandonada, enfrentando hordas progresivas de zombis y derrotando a un temible Zombie Boss final.
 
 ---
 
-## 🎯 Últimos Cambios (31/08/2026)
+## 👥 Equipo de Desarrollo (Grupo 6 - Comisión 1)
 
-### ✨ Nuevas Características Implementadas
+* **Gregorio Villalba** — *Product Owner & Desarrollador*
+* **Luciana Oviedo** — *Scrum Master & Desarrollador & QA Tester*
+* **Martina Soria** — *Desarrollador & QA Tester*
+* **Julian Kidjekouchian** — *Desarrollador*
 
-| Característica | Estado | Descripción |
-|---|---|---|
-| **Sistema de Multijugador** | ✅ Funcional | Sincronización de jugadores, lobby y sistema de conexión |
-| **Boss de Zombies** | ✅ Implementado | Jefe final que aparece al completar oleadas, genera desafíos balanceados |
-| **Efectos de Impacto** | ✅ Implementado | Sangre dinámica al golpear enemigos y "hitmarker" visual |
-| **Mecánica de Oleadas** | ✅ Completa | Sistema de rondas escalables con dificultad progresiva |
-| **Interfaz de Victoria/Derrota** | ✅ Completa | Pantallas de game over y victory funcionales |
-| **Escalado de Dificultad** | ✅ Activo | Velocidad y vida de zombies aumentan por ronda |
-| **Aparición Inteligente de Zombies** | ✅ Aleatoria | Intervalos de aparición dinámicos para mayor tensión |
-
-### 🔧 Mejoras Recientes
-
-- **Arreglos en Multijugador:** Sincronización de vida y lobby corregida
-- **Mejora de Zombies:** Comportamiento mejorado, velocidad y vida escaladas
-- **Navmesh Optimizado:** Recalculado para cubrir toda la casa, permitiendo navegación completa
-- **Skybox y Texturas:** Ambiente visual mejorado con texturas de paredes, piso y cielo
-- **UI de Historias:** Pantalla de narrativa ajustada y funcional
-- **Modo Singleplayer:** Totalmente arreglado y jugable
+* **Docentes:** Juan Carlos Monteros / Amin Sajud  
+* **Fecha de entrega:** 07/09/2026
 
 ---
 
-## 🎮 Características Implementadas
+## 🎮 Mecánicas y Funcionalidades del Juego
 
-### Sistema de Movimiento del Jugador
-- ✅ Movimiento omnidireccional (WASD)
-- ✅ Salto con detección de suelo
-- ✅ Sprint (consumo de estamina)
-- ✅ Agacharse (movimiento ralentizado, altura reducida)
-- ✅ Gravedad y física con Character Controller
+### 1. Sistema de Juego y Progresión
+* **5 Rondas Progresivas:** En cada ronda la cantidad de zombis y su velocidad aumentan (comienzan caminando y luego pasan a correr). Cada zombi eliminado otorga 500 puntos.
+* **Zombie Boss (Ronda 5):** En la ronda final aparece un zombi gigante con mayor escala (1.5x), multiplicador de vida y daño incrementado.
+* **Condición de Victoria:** Sobrevivir a las 5 rondas y derrotar al Boss junto a los zombis remanentes.
+* **Condición de Derrota:** 
+  * *Singleplayer:* Al llegar a 0 de vida se pierde la partida.
+  * *Multiplayer:* Si un jugador cae, pasa a **modo espectador** durante esa ronda; si su compañero sobrevive y limpia la ronda, reaparece con salud completa en la siguiente. La derrota ocurre si ambos caen en la misma ronda o agotan sus vidas. **UNICAMENTE 2 JUGADORES**
+* **Regeneración de Salud:** Alejarse del peligro y evitar contacto con los zombis permite regenerar la salud progresivamente hasta el tope.
 
-### Sistema de Combate
-- ✅ Disparo de revolver con raycast
-- ✅ Dispersión dinámica (variable según estado: reposo, movimiento, agachado, apuntando)
-- ✅ Retroceso (recoil) visual al disparar
-- ✅ Munición limitada (6 disparos por cargador)
-- ✅ Sistema de recarga (atajo R)
-- ✅ Efectos de sangre al impactar
+### 2. Entorno 3D Interactivo (Casa Abandonada)
+* **Exploración Vertical:** Casa de dos plantas modelada con ProBuilder, con escaleras transitables y patio exterior cerrado con rejas.
+* **Puertas Funcionales:** Se pueden abrir y cerrar dinámicamente para gestionar rutas de escape o contención.
+* **Ventanas Atravesables:** Ventanas transitables que el jugador puede saltar/atravesar para huir hacia el exterior.
+* **Físicas y Colisiones Sólidas:** Geometría delimitada para prevenir caídas fuera de mapa y atravesamiento de muros o muebles.
 
-### Aiming (ADS — Aim Down Sights)
-- ✅ Cambio de posición del arma al apuntar
-- ✅ Zoom de cámara independiente
-- ✅ Dispersión eliminada al apuntar
-- ✅ Transición suave entre estados
+### 3. Arsenal y Combate
+* **Pistola Inicial:** Arma base con recarga táctica (capacidad de cargador de 12 balas).
+* **Estación de Compra en Pared:** Ubicada cerca de la escalera, permite comprar un rifle automático interactuando a cambio de puntos.
+* **Alternancia de Armamento:** Tecla rápida para alternar entre pistola y rifle sin perder las armas adquiridas.
+* **Apuntado FPS:** Modo apuntado (ADS) con clic derecho y disparo directo con clic izquierdo.
 
-### Sistema de Cámara
-- ✅ Rotación free-look (ratón)
-- ✅ Camera Stacking (2 cámaras: mundo + arma superpuesta)
-- ✅ Prevención de clipping del arma contra paredes
-- ✅ Sensibilidad configurable
+### 4. Arquitectura Multijugador (Host / Client)
+* **Arquitectura de Red:** Desarrollado con **Netcode for GameObjects (NGO)** y Unity Transport.
+* **Servidor No Dedicado (Host):** El host procesa la lógica autoritativa del juego (IA con NavMesh, spawn de enemigos, cálculo de daño y avance de rondas).
+* **Sincronización:** Posiciones y rotaciones replicadas mediante `NetworkTransform` con interpolación para evitar jittering. Las cámaras locales, inputs y HUD están desacoplados (`IsOwner`) para evitar conflictos entre pantallas.
+* **Conexión:** Unión mediante código de sala o dirección IP local/Relay.
 
-### Sistema de Vida
-- ✅ Barra de salud visual
-- ✅ Regeneración automática (después de 4 segundos sin daño)
-- ✅ Color dinámico de la barra (verde → naranja → rojo)
-- ✅ Sincronización en multijugador
-
-### HUD (Interfaz de Usuario)
-- ✅ Contador de munición
-- ✅ Barra de estamina
-- ✅ Barra de salud con valores numéricos
-- ✅ Crosshair dinámico (se expande con la dispersión)
-- ✅ Indicador de ronda/ola
-
-### Mecánica de Enemigos
-- ✅ Zombies con IA de patrulla y persecución
-- ✅ Sistema de oleadas escalonadas
-- ✅ Boss de Zombies con estadísticas aumentadas
-- ✅ Velocidad y vida escaladas por ronda
-- ✅ Generador de enemigos inteligente con intervalo aleatorio
-
-### Mecánica de Arma
-- ✅ Bob de arma (movimiento oscilante al caminar)
-- ✅ Animación suave de recarga (visual)
-- ✅ Hitmarker visual al golpear enemigos
-
-### Modo Multijugador
-- ✅ Sistema de lobby
-- ✅ Sincronización de vida y munición entre jugadores
-- ✅ Boss en modo multijugador
+### 5. Encuesta de Valoración Automatizada (CSAT)
+* Al finalizar la sesión (Victoria o Derrota), se despliega una pantalla de feedback directo (1 a 5 estrellas).
+* Los datos se envían de forma desatendida mediante un webhook a **Google Apps Script** y se consolidan en una planilla de **Google Sheets** para calcular el índice CSAT en tiempo real.
 
 ---
 
-## 🚀 Guía de Inicio Rápido - CÓMO DESCARGAR Y JUGAR
+## ⌨️ Controles
 
-### 📥 Opción 1: Descargar el Código Fuente
+| Acción | Tecla / Control |
+| :--- | :--- |
+| **Moverse** | `W` `A` `S` `D` |
+| **Mirar / Rotar cámara** | Movimiento del `Mouse` |
+| **Saltar** | `Espacio` |
+| **Atravesar ventana** | `Espacio` (pegado a ventana transitable) |
+| **Correr (Sprint)** | Mantener `Shift` (consume stamina) |
+| **Agacharse** | Mantener / presionar `Ctrl` |
+| **Apuntar (ADS)** | Mantener `Clic Derecho` |
+| **Disparar** | `Clic Izquierdo` |
+| **Recargar** | `R` |
+| **Interactuar (Puertas / Compra de arma)** | `E` |
+| **Cambiar de arma** | `1` / `2` |
+| **Pausar / Menú de Configuración** | `Esc` |
 
-#### Paso 1: Descargar el Proyecto
-
-1. Ve a: [https://github.com/GregVillalba/DeadQuarantine](https://github.com/GregVillalba/DeadQuarantine)
-2. Haz clic en el botón **Code** (color verde)
-3. Selecciona **"Download ZIP"**
-4. Descomprime la carpeta en tu computadora (ej: `C:\Proyectos\DeadQuarantine`)
-
-#### Paso 2: Instalar Unity
-
-1. Descarga **Unity Hub** desde: https://unity.com/download
-2. Instala Unity Hub en tu PC
-3. Abre Unity Hub
-
-#### Paso 3: Instalar Unity 6
-
-1. En Unity Hub, ve a la pestaña **"Installs"**
-2. Haz clic en **"Install Editor"**
-3. Busca **"Unity 6"** (versión LTS recomendada)
-4. Selecciona la versión 6 y haz clic en **"Install"**
-5. Espera a que se complete la instalación (puede tardar 10-15 minutos)
-
-#### Paso 4: Abrir el Proyecto en Unity
-
-1. En Unity Hub, ve a la pestaña **"Projects"**
-2. Haz clic en el botón **"Add"**
-3. Selecciona **"Add project from disk"**
-4. Navega a la carpeta **`DeadQuarantine`** que descargaste
-5. Haz doble clic en la carpeta para seleccionarla
-6. Haz clic en **"Add"** para agregar el proyecto
-7. Espera a que Unity **compile** el proyecto (puede tardar 2-5 minutos en la primera carga)
-
-#### Paso 5: Cargar la Escena del Menú Principal
-
-1. En el panel izquierdo (**Project**), navega a: **`Assets > Scenes > PantallasUI.unity`**
-2. **Haz doble clic** en **`PantallasUI`** para cargarla (este es el punto de entrada del juego)
-
-#### Paso 6: ¡Juega!
-
-1. Busca el botón **▶️ Play** (verde) en la parte superior del editor
-2. Haz clic en él
-3. El juego se ejecutará dentro del editor de Unity
-4. Verás la **pantalla del menú principal** con las opciones:
-   - **Singleplayer:** Juega solo contra oleadas de zombies
-   - **Multiplayer:** Conéctate con otros jugadores
-   - **Historia:** Lee la narrativa del juego
+*(Nota: En el menú de opciones/pausa se puede ajustar la sensibilidad del ratón y el volumen general del juego, configuraciones que quedan guardadas en el sistema).*
 
 ---
 
-### 📥 Opción 2: Compilar un Build Ejecutable
+## 🕹️ Cómo Jugar
 
-*Esta opción es más rápida si ya tienes el proyecto abierto*
+### Modo Un Jugador (Singleplayer)
+1. En el menú principal, haz clic en **Iniciar Partida**.
+2. Selecciona **Un Jugador (Singleplayer)**.
+3. Pulsa **Continuar** tras la pantalla de historia para ingresar a la casa y sobrevivir a las 5 hordas.
 
-1. Ve a **File > Build Settings**
-2. Asegúrate de que **`PantallasUI`** esté agregada a la lista de escenas (Scene 0)
-3. Selecciona **PC, Mac & Linux Standalone** como plataforma
-4. Haz clic en **"Build"**
-5. Elige una carpeta para guardar el ejecutable
-6. Espera a que se compile (2-5 minutos)
-7. Ejecuta el archivo `.exe` generado
+### Modo Multijugador Cooperativo (2 Jugadores)
+* **Si eres el Anfitrión (Host):**
+  1. En el menú selecciona **Multijugador** → **Crear Sala (Host)**.
+  2. Espera en la sala de espera y comparte el código / IP con tu compañero.
+  3. Cuando ambos estén listos, iniciará la cuenta regresiva para entrar a la partida.
+* **Si eres el Invitado (Client):**
+  1. Selecciona **Multijugador** → **Unirse a Sala (Client)**.
+  2. Ingresa el código provisto por el host y presiona **Listo**.
 
 ---
 
-## 🎮 Cómo Jugar
+## 📦 Descarga y Ejecución
 
-### Controles Principales
+### Opción A: Probar el Ejecutable (.exe) directo
+1. Descarga el paquete compilado desde la sección de **Releases** o el enlace del Anexo del informe.
+2. Descomprime el archivo `.zip` en una carpeta local.
+3. Ejecuta directamente `DeadQuarantine.exe`. No requiere configuraciones externas ni software adicional.
 
-| Control | Acción |
-|---|---|
-| **WASD** | Movimiento |
-| **Espacio** | Saltar |
-| **Shift** | Sprint (mantener) |
-| **CTRL** | Agacharse |
-| **Ratón** | Mirar alrededor |
-| **Click Izq.** | Disparar |
-| **Click Der.** | Apuntar (ADS) |
-| **R** | Recargar |
-| **ESC** | Pausa/Menú |
-
-### Modos de Juego
-
-#### 🎯 Singleplayer
-- Sobrevive oleadas de zombies crecientes
-- Vence al Boss final para completar la ronda
-- Aumenta de dificultad con cada oleada
-
-#### 👥 Multiplayer
-- Coopera con hasta 3 jugadores más
-- Sincronización de vida y munición
-- Boss compartido y oleadas conjuntas
+### Opción B: Abrir desde el Editor de Unity
+1. **Requisitos:**
+   * **Unity Hub** instalado.
+   * Versión de motor: **Unity 6 (6000.x)** con soporte de compilación para Windows (Mono/IL2CPP).
+   * Paquetes clave: *Netcode for GameObjects*, *Input System (v2)*, *AI Navigation*, *ProBuilder* y *TextMeshPro*.
+2. **Clonar repositorio:**
+   ```bash
+   git clone [https://github.com/GregVillalba/DeadQuarantine.git](https://github.com/GregVillalba/DeadQuarantine.git)
