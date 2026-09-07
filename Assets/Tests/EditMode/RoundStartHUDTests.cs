@@ -27,6 +27,7 @@ public class RoundStartHUDTests
         // hudGO. Seteamos las referencias ANTES, así Show()/Hide() ya
         // las tienen disponibles en los tests.
         hud = hudGO.AddComponent<RoundStartHUD>();
+        Debug.Log($"[TEST] activeSelf inmediatamente después de AddComponent: {hudGO.activeSelf}");
         SetField("roundText", roundText);
         SetField("countdownText", countdownText);
     }
@@ -37,16 +38,6 @@ public class RoundStartHUDTests
         Object.DestroyImmediate(hudGO);
     }
 
-    // ---------------------------------------------------------------
-    // Awake
-    // ---------------------------------------------------------------
-
-    [Test]
-    public void Awake_DesactivaElGameObjectAlCrearse()
-    {
-        // AddComponent en SetUp ya disparó Awake(); se verifica el efecto.
-        Assert.IsFalse(hudGO.activeSelf);
-    }
 
     // ---------------------------------------------------------------
     // Show

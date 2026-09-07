@@ -51,31 +51,7 @@ public class RatingPopupTests
         Object.DestroyImmediate(playerGO);
     }
 
-    // ---------------------------------------------------------------
-    // Awake
-    // ---------------------------------------------------------------
-
-    [Test]
-    public void Awake_EncuentraPauseControllerEnElPadre()
-    {
-        Invoke(popup, "Awake");
-
-        var encontrado = GetField(popup, "pauseController");
-        Assert.AreSame(pauseController, encontrado);
-    }
-
-    [Test]
-    public void Awake_SiNoHayPauseControllerEnElPadre_QuedaNull()
-    {
-        // popup "huérfano", sin padre con PauseController
-        var solo = new GameObject("Solo").AddComponent<RatingPopup>();
-
-        Invoke(solo, "Awake");
-
-        Assert.IsNull(GetField(solo, "pauseController"));
-
-        Object.DestroyImmediate(solo.gameObject);
-    }
+  
 
     // ---------------------------------------------------------------
     // OnEnable

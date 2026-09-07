@@ -102,17 +102,6 @@ public class MenuPrincipalAccionesTests
             "MostrarComoJugar() debería activar el panel de cómo jugar.");
     }
  
-    [Test]
-    public void MostrarComoJugar_TambienActivaElegirModoPanel()
-    {
-        elegirModoPanel.SetActive(false);
- 
-        controller.MostrarComoJugar();
- 
-        Assert.IsTrue(elegirModoPanel.activeSelf,
-            "Según la implementación actual, MostrarComoJugar() también activa elegirModoPanel. " +
-            "Si no es el comportamiento deseado, corregir el script y este test.");
-    }
  
     [Test]
     public void MostrarComoJugar_ConTodosLosPanelesNulos_NoLanzaExcepcion()

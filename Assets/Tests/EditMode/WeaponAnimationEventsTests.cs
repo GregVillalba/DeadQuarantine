@@ -29,10 +29,21 @@ public class WeaponAnimationEventsTests
         weapon = holderGO.AddComponent<Weapon>();
         weaponSwitcher = holderGO.AddComponent<WeaponSwitcher>();
 
+        // NUEVO: WeaponSwitcher necesita al menos un slot para que
+        // NotifyUnholsterFinished() no rompa por slots == null.
+        var slot = new WeaponSwitcher.WeaponSlot
+        {
+            weaponId = "test",
+            weaponRoot = new GameObject("WeaponRoot")
+        };
+        SetFieldOn(weaponSwitcher, "slots", new[] { slot });
+        SetFieldOn(weaponSwitcher, "currentIndex", 0);
+
         SetField("casingPrefab", casingPrefab);
         SetField("casingEjectPoint", ejectPointGO.transform);
         SetField("weapon", weapon);
         SetField("weaponSwitcher", weaponSwitcher);
+
     }
 
     [TearDown]
@@ -58,7 +69,7 @@ public class WeaponAnimationEventsTests
     {
         events.OnEjectCasing();
 
-        var clon = GameObject.Find("CasingPrefab(Clone)");
+        var clon = FindIncludingInactive("CasingPrefab(Clone)");
         Assert.IsNotNull(clon, "Debería haberse instanciado una copia del prefab de vaina");
 
         Assert.That(clon.transform.position,
@@ -76,7 +87,7 @@ public class WeaponAnimationEventsTests
 
         events.OnEjectCasing();
 
-        Assert.IsNull(GameObject.Find("CasingPrefab(Clone)"));
+        Assert.IsNull(FindIncludingInactive("CasingPrefab(Clone)"));
     }
 
     [Test]
@@ -86,7 +97,7 @@ public class WeaponAnimationEventsTests
 
         events.OnEjectCasing();
 
-        Assert.IsNull(GameObject.Find("CasingPrefab(Clone)"));
+        Assert.IsNull(FindIncludingInactive("CasingPrefab(Clone)"));
     }
 
     // ---------------------------------------------------------------
@@ -201,7 +212,7 @@ public class WeaponAnimationEventsTests
         events.SetCasingData(nuevoPrefab, nuevoPuntoGO.transform);
         events.OnEjectCasing();
 
-        var clon = GameObject.Find("NuevoCasingPrefab(Clone)");
+        var clon = FindIncludingInactive("NuevoCasingPrefab(Clone)");
         Assert.IsNotNull(clon);
         Assert.That(clon.transform.position,
             Is.EqualTo(new Vector3(9f, 9f, 9f))
@@ -210,6 +221,22 @@ public class WeaponAnimationEventsTests
         Object.DestroyImmediate(clon);
         Object.DestroyImmediate(nuevoPrefab);
         Object.DestroyImmediate(nuevoPuntoGO);
+    }
+
+    private void SetFieldOn(object target, string name, object value)
+    {
+        var field = target.GetType().GetField(
+            name, BindingFlags.NonPublic | BindingFlags.Instance);
+        Assert.IsNotNull(field, $"No se encontró el campo '{name}' en {target.GetType().Name}");
+        field.SetValue(target, value);
+    }
+
+    private GameObject FindIncludingInactive(string name)
+    {
+        foreach (var go in GameObject.FindObjectsByType<GameObject>(FindObjectsInactive.Include))
+            if (go.name == name)
+                return go;
+        return null;
     }
 
     // ---------------------------------------------------------------
