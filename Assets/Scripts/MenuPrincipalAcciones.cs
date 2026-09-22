@@ -3,60 +3,93 @@ using UnityEngine.SceneManagement;
 
 public class MenuPrincipalAcciones : MonoBehaviour
 {
+    [Header("Paneles Principales")]
     [SerializeField] private GameObject menuPrincipalPanel;
     [SerializeField] private GameObject comoJugarPanel;
     [SerializeField] private GameObject elegirModoPanel;
+    [SerializeField] private GameObject configuracionesPanel;
+    [SerializeField] private GameObject logrosPanel;
+    [SerializeField] private GameObject creditosInfoPanel;
 
-    // Cargar la escena del juego por su nombre exacto 
-    public void IniciarJuego(string nombreEscena)
-    {
-        SceneManager.LoadScene(nombreEscena);
-    }
+    [Header("Subpaneles de Configuración (Opcional)")]
+    [SerializeField] private GameObject sonidoPanel;
+    [SerializeField] private GameObject sensibilidadMousePanel;
 
-    // Llamar desde el OnClick del botón "INICIAR JUEGO"
+    // Botón "INICIAR PARTIDA"
     public void MostrarModoJuego()
     {
-        if (menuPrincipalPanel != null)
-            menuPrincipalPanel.SetActive(false);
-
-        if (elegirModoPanel != null)
-            elegirModoPanel.SetActive(true);
+        OcultarTodosLosPaneles();
+        if (elegirModoPanel != null) elegirModoPanel.SetActive(true);
     }
 
-    // Llamar desde el OnClick del botón "Como_jugar"
+    // Botón "COMO JUGAR"
     public void MostrarComoJugar()
     {
-        if (menuPrincipalPanel != null)
-            menuPrincipalPanel.SetActive(false);
-
-        if (comoJugarPanel != null)
-            comoJugarPanel.SetActive(true);
-
-        if (elegirModoPanel != null)
-            elegirModoPanel.SetActive(false);
+        OcultarTodosLosPaneles();
+        if (comoJugarPanel != null) comoJugarPanel.SetActive(true);
     }
 
-    // Útil para el botón "Volver" en el panel ComoJugar
+    // Botón "CONFIGURACIONES"
+    public void MostrarConfiguraciones()
+    {
+        OcultarTodosLosPaneles();
+        if (configuracionesPanel != null) configuracionesPanel.SetActive(true);
+    }
+
+    // Botón "LOGROS"
+    public void MostrarLogros()
+    {
+        OcultarTodosLosPaneles();
+        if (logrosPanel != null) logrosPanel.SetActive(true);
+    }
+
+    // Botón "CREDITOS"
+    public void MostrarCreditos()
+    {
+        OcultarTodosLosPaneles();
+        if (creditosInfoPanel != null) creditosInfoPanel.SetActive(true);
+    }
+
+    // Subpanel: Sonido
+    public void MostrarSonido()
+    {
+        if (sonidoPanel != null) sonidoPanel.SetActive(true);
+        if (sensibilidadMousePanel != null) sensibilidadMousePanel.SetActive(false);
+    }
+
+    // Subpanel: Sensibilidad Mouse
+    public void MostrarSensibilidadMouse()
+    {
+        if (sensibilidadMousePanel != null) sensibilidadMousePanel.SetActive(true);
+        if (sonidoPanel != null) sonidoPanel.SetActive(false);
+    }
+
+    // Botón "VOLVER" (vuelve al menú principal desde cualquier panel)
     public void VolverAMenuPrincipal()
     {
-        if (menuPrincipalPanel != null)
-            menuPrincipalPanel.SetActive(true);
-
-        if (comoJugarPanel != null)
-            comoJugarPanel.SetActive(false);
-
-        if (elegirModoPanel != null)
-            elegirModoPanel.SetActive(false);
+        OcultarTodosLosPaneles();
+        if (menuPrincipalPanel != null) menuPrincipalPanel.SetActive(true);
     }
 
+    // Botón "SALIR"
     public void SalirDelJuego()
     {
         Debug.Log("Saliendo del juego...");
         Application.Quit();
+        UnityEditor.EditorApplication.isPlaying = false;
 
-        // Detiene el modo Play si estás dentro del editor de Unity
-        #if UNITY_EDITOR
-                UnityEditor.EditorApplication.isPlaying = false;
-        #endif
+    }
+
+    // Cierra todos los paneles activos de la pantalla
+    private void OcultarTodosLosPaneles()
+    {
+        if (menuPrincipalPanel != null) menuPrincipalPanel.SetActive(false);
+        if (comoJugarPanel != null) comoJugarPanel.SetActive(false);
+        if (elegirModoPanel != null) elegirModoPanel.SetActive(false);
+        if (configuracionesPanel != null) configuracionesPanel.SetActive(false);
+        if (logrosPanel != null) logrosPanel.SetActive(false);
+        if (creditosInfoPanel != null) creditosInfoPanel.SetActive(false);
+        if (sonidoPanel != null) sonidoPanel.SetActive(false);
+        if (sensibilidadMousePanel != null) sensibilidadMousePanel.SetActive(false);
     }
 }

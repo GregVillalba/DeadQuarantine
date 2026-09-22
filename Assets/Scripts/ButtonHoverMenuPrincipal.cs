@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using TMPro;
 
-public class ButtonHoverMenuPrincipal : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+public class ButtonHoverMenuPrincipal : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     [SerializeField] private TextMeshProUGUI textoTMP;
 
@@ -14,7 +14,17 @@ public class ButtonHoverMenuPrincipal : MonoBehaviour, IPointerEnterHandler, IPo
     {
         if (textoTMP == null)
             textoTMP = GetComponentInChildren<TextMeshProUGUI>();
+    }
 
+    // Se ejecuta CADA VEZ que el menú o el botón vuelve a activarse
+    private void OnEnable()
+    {
+        RestaurarColor();
+    }
+
+    // Se ejecuta en cuanto el menú se oculta al abrir otro panel
+    private void OnDisable()
+    {
         RestaurarColor();
     }
 
@@ -26,6 +36,15 @@ public class ButtonHoverMenuPrincipal : MonoBehaviour, IPointerEnterHandler, IPo
 
     public void OnPointerExit(PointerEventData eventData)
     {
+        RestaurarColor();
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        // Quita la selección activa del EventSystem para que no quede trabado
+        if (EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(null);
+
         RestaurarColor();
     }
 
