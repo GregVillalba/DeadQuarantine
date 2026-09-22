@@ -92,4 +92,5 @@ public class MenuPrincipalAcciones : MonoBehaviour
         if (sonidoPanel != null) sonidoPanel.SetActive(false);
         if (sensibilidadMousePanel != null) sensibilidadMousePanel.SetActive(false);
     }
+
 }
