@@ -1,7 +1,6 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using TMPro;
 
 public class ButtonHoverMenuPrincipal : MonoBehaviour,
     IPointerEnterHandler, IPointerExitHandler,
@@ -16,10 +15,10 @@ public class ButtonHoverMenuPrincipal : MonoBehaviour,
     public Color colorHover = new Color32(0, 255, 102, 255);
     public Color colorPressed = new Color32(0, 200, 80, 255);
 
-    [Header("Profundidad / Animación")]
+    [Header("Profundidad / Animaciï¿½n")]
     [SerializeField] private float hoverScale = 1.06f;
     [SerializeField] private float clickScale = 0.94f;
-    [SerializeField] private float pressYOffset = -4f; // Sensación física de pulsar hacia abajo
+    [SerializeField] private float pressYOffset = -4f; // Sensaciï¿½n fï¿½sica de pulsar hacia abajo
     [SerializeField] private float transitionSpeed = 14f;
 
     private Vector3 initialScale;
@@ -67,7 +66,7 @@ public class ButtonHoverMenuPrincipal : MonoBehaviour,
         if (textoTMP != null)
             textoTMP.color = colorPressed;
 
-        // Se comprime y baja unos píxeles dando efecto de click profundo
+        // Se comprime y baja unos pï¿½xeles dando efecto de click profundo
         Vector2 pressedPos = initialAnchoredPosition + new Vector2(0f, pressYOffset);
         AnimateButton(initialScale * clickScale, pressedPos);
     }
