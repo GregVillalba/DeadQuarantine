@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using TMPro;
 
 public class ButtonHoverMenuPrincipal : MonoBehaviour,
     IPointerEnterHandler, IPointerExitHandler,
