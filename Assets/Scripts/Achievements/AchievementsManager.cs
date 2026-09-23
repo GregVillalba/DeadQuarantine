@@ -1,3 +1,4 @@
+using System.IO;
 using UnityEngine;
 using Unity.Netcode;
 
@@ -7,9 +8,24 @@ public class AchievementsManager : MonoBehaviour
 
     private PlayerScore playerScore;
 
+    // Progreso persistente
+    private int zombiesEliminadosTotales;
+
     private bool logro50Desbloqueado;
     private bool logro100Desbloqueado;
     private bool logro300Desbloqueado;
+
+    private string rutaArchivo;
+
+    [System.Serializable]
+    private class AchievementsData
+    {
+        public int zombiesEliminados;
+
+        public bool logro50Desbloqueado;
+        public bool logro100Desbloqueado;
+        public bool logro300Desbloqueado;
+    }
 
     private void Awake()
     {
@@ -21,6 +37,13 @@ public class AchievementsManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+
+        rutaArchivo = Path.Combine(
+            Application.persistentDataPath,
+            "achievements.json"
+        );
+
+        CargarProgreso();
     }
 
     private void Update()
@@ -54,14 +77,21 @@ public class AchievementsManager : MonoBehaviour
         playerScore.ZombiesEliminadosNetwork.OnValueChanged +=
             OnZombiesEliminadosChanged;
 
-        // Comprobamos el valor actual por si ya había progreso
-        ComprobarProgreso(
+        // Comprobamos el valor actual
+        OnZombiesEliminadosChanged(
+            0,
             playerScore.ZombiesEliminadosNetwork.Value
         );
 
         Debug.Log(
             "[ACHIEVEMENTS] PlayerScore encontrado. " +
-            $"Zombies actuales: {playerScore.ZombiesEliminadosNetwork.Value}"
+            $"Zombies de la partida: " +
+            $"{playerScore.ZombiesEliminadosNetwork.Value}"
+        );
+
+        Debug.Log(
+            "[ACHIEVEMENTS] Zombies acumulados: " +
+            $"{zombiesEliminadosTotales}"
         );
     }
 
@@ -69,25 +99,35 @@ public class AchievementsManager : MonoBehaviour
         int valorAnterior,
         int valorNuevo)
     {
-        ComprobarProgreso(valorNuevo);
-    }
+        // Calculamos cuántos zombies nuevos se eliminaron
+        int zombiesNuevos = valorNuevo - valorAnterior;
 
-    private void ComprobarProgreso(int zombiesEliminados)
-    {
+        if (zombiesNuevos <= 0)
+            return;
+
+        zombiesEliminadosTotales += zombiesNuevos;
+
         Debug.Log(
-            $"[ACHIEVEMENTS] Zombies eliminados: " +
-            $"{zombiesEliminados}"
+            "[ACHIEVEMENTS] Zombies acumulados: " +
+            $"{zombiesEliminadosTotales}"
         );
 
+        ComprobarProgreso();
+
+        GuardarProgreso();
+    }
+
+    private void ComprobarProgreso()
+    {
         // LOGRO 50
         if (!logro50Desbloqueado)
         {
             Debug.Log(
                 $"[ACHIEVEMENTS] Derrota 50 zombies: " +
-                $"{Mathf.Min(zombiesEliminados, 50)}/50"
+                $"{Mathf.Min(zombiesEliminadosTotales, 50)}/50"
             );
 
-            if (zombiesEliminados >= 50)
+            if (zombiesEliminadosTotales >= 50)
             {
                 logro50Desbloqueado = true;
 
@@ -103,10 +143,10 @@ public class AchievementsManager : MonoBehaviour
         {
             Debug.Log(
                 $"[ACHIEVEMENTS] Derrota 100 zombies: " +
-                $"{Mathf.Min(zombiesEliminados, 100)}/100"
+                $"{Mathf.Min(zombiesEliminadosTotales, 100)}/100"
             );
 
-            if (zombiesEliminados >= 100)
+            if (zombiesEliminadosTotales >= 100)
             {
                 logro100Desbloqueado = true;
 
@@ -122,10 +162,10 @@ public class AchievementsManager : MonoBehaviour
         {
             Debug.Log(
                 $"[ACHIEVEMENTS] Derrota 300 zombies: " +
-                $"{Mathf.Min(zombiesEliminados, 300)}/300"
+                $"{Mathf.Min(zombiesEliminadosTotales, 300)}/300"
             );
 
-            if (zombiesEliminados >= 300)
+            if (zombiesEliminadosTotales >= 300)
             {
                 logro300Desbloqueado = true;
 
@@ -135,6 +175,67 @@ public class AchievementsManager : MonoBehaviour
                 );
             }
         }
+    }
+
+    private void GuardarProgreso()
+    {
+        AchievementsData datos = new AchievementsData();
+
+        datos.zombiesEliminados = zombiesEliminadosTotales;
+
+        datos.logro50Desbloqueado = logro50Desbloqueado;
+        datos.logro100Desbloqueado = logro100Desbloqueado;
+        datos.logro300Desbloqueado = logro300Desbloqueado;
+
+        string json = JsonUtility.ToJson(datos, true);
+
+        File.WriteAllText(rutaArchivo, json);
+
+        Debug.Log(
+            "[ACHIEVEMENTS] Progreso guardado en: " +
+            rutaArchivo
+        );
+    }
+
+    private void CargarProgreso()
+    {
+        if (!File.Exists(rutaArchivo))
+        {
+            Debug.Log(
+                "[ACHIEVEMENTS] No existe un archivo de progreso. " +
+                "Se comenzará desde cero."
+            );
+
+            return;
+        }
+
+        string json = File.ReadAllText(rutaArchivo);
+
+        AchievementsData datos =
+            JsonUtility.FromJson<AchievementsData>(json);
+
+        if (datos == null)
+        {
+            Debug.LogWarning(
+                "[ACHIEVEMENTS] No se pudo cargar el progreso."
+            );
+
+            return;
+        }
+
+        zombiesEliminadosTotales = datos.zombiesEliminados;
+
+        logro50Desbloqueado = datos.logro50Desbloqueado;
+        logro100Desbloqueado = datos.logro100Desbloqueado;
+        logro300Desbloqueado = datos.logro300Desbloqueado;
+
+        Debug.Log(
+            "[ACHIEVEMENTS] Progreso cargado. " +
+            $"Zombies: {zombiesEliminadosTotales}"
+        );
+
+        // Por seguridad, comprobamos nuevamente los logros
+        ComprobarProgreso();
     }
 
     private void OnDestroy()

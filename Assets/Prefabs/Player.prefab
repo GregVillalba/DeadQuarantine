@@ -27086,8 +27086,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ButtonHoverMenuPrincipal
   textoTMP: {fileID: 0}
+  targetRect: {fileID: 0}
   colorNormal: {r: 0.47058824, g: 0.5686275, b: 0.64705884, a: 1}
   colorHover: {r: 0, g: 1, b: 0.4, a: 1}
+  colorPressed: {r: 0, g: 0.78431374, b: 0.3137255, a: 1}
+  hoverScale: 1.06
+  clickScale: 0.94
+  pressYOffset: -4
+  transitionSpeed: 14
 --- !u!114 &7644397608559702062
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -36697,7 +36703,7 @@ AudioListener:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5802491283031396125}
-  m_Enabled: 1
+  m_Enabled: 0
 --- !u!114 &101452102690540902
 MonoBehaviour:
   m_ObjectHideFlags: 0
