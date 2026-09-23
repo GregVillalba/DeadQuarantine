@@ -1,6 +1,6 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using TMPro;
 
 public class ButtonHoverMenuPrincipal : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
@@ -8,7 +8,7 @@ public class ButtonHoverMenuPrincipal : MonoBehaviour, IPointerEnterHandler, IPo
 
     // Colores configurables desde el Inspector
     public Color colorNormal = new Color32(120, 145, 165, 255); // Gris azulado
-    public Color colorHover = new Color32(0, 255, 102, 255);     // Verde neón
+    public Color colorHover = new Color32(0, 255, 102, 255);     // Verde neï¿½n
 
     private void Awake()
     {
