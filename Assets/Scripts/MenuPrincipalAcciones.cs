@@ -22,11 +22,18 @@ public class MenuPrincipalAcciones : MonoBehaviour
     // CARGA DE ESCENAS
     // ==========================================
 
-    // Conectar este método al botón "JUGAR SOLO" o modo individual
+    // Opción 1: Carga directa de la escena single player (no pide escribir nada en el Inspector)
     public void IniciarJuegoSinglePlayer()
     {
-        Time.timeScale = 1f; // Asegura que la escena no inicie en pausa
+        Time.timeScale = 1f;
         SceneManager.LoadScene(EscenaSinglePlayer);
+    }
+
+    // Opción 2: Carga cualquier escena escribiendo su nombre en el recuadro del botón (como lo tenías antes)
+    public void IniciarJuego(string nombreEscena)
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(nombreEscena);
     }
 
     // ==========================================
