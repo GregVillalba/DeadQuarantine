@@ -15,6 +15,31 @@ public class MenuPrincipalAcciones : MonoBehaviour
     [SerializeField] private GameObject sonidoPanel;
     [SerializeField] private GameObject sensibilidadMousePanel;
 
+    // Nombre exacto de tu escena de un jugador
+    private const string EscenaSinglePlayer = "mainSceneSinglePlayer";
+
+    // ==========================================
+    // CARGA DE ESCENAS
+    // ==========================================
+
+    // Opción 1: Carga directa de la escena single player (no pide escribir nada en el Inspector)
+    public void IniciarJuegoSinglePlayer()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(EscenaSinglePlayer);
+    }
+
+    // Opción 2: Carga cualquier escena escribiendo su nombre en el recuadro del botón (como lo tenías antes)
+    public void IniciarJuego(string nombreEscena)
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(nombreEscena);
+    }
+
+    // ==========================================
+    // CONTROL DE PANELES PRINCIPALES
+    // ==========================================
+
     // Botón "INICIAR PARTIDA"
     public void MostrarModoJuego()
     {
@@ -50,6 +75,10 @@ public class MenuPrincipalAcciones : MonoBehaviour
         if (creditosInfoPanel != null) creditosInfoPanel.SetActive(true);
     }
 
+    // ==========================================
+    // SUBPANELES
+    // ==========================================
+
     // Subpanel: Sonido
     public void MostrarSonido()
     {
@@ -76,8 +105,10 @@ public class MenuPrincipalAcciones : MonoBehaviour
     {
         Debug.Log("Saliendo del juego...");
         Application.Quit();
-        UnityEditor.EditorApplication.isPlaying = false;
 
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#endif
     }
 
     // Cierra todos los paneles activos de la pantalla
@@ -92,5 +123,4 @@ public class MenuPrincipalAcciones : MonoBehaviour
         if (sonidoPanel != null) sonidoPanel.SetActive(false);
         if (sensibilidadMousePanel != null) sensibilidadMousePanel.SetActive(false);
     }
-
 }
