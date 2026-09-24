@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using Unity.Netcode;
@@ -8,24 +9,26 @@ public class AchievementsManager : MonoBehaviour
 
     private PlayerScore playerScore;
 
-    // Progreso persistente
-    private int zombiesEliminadosTotales;
-
-    private bool logro50Desbloqueado;
-    private bool logro100Desbloqueado;
-    private bool logro300Desbloqueado;
-
     private string rutaArchivo;
+    private AchievementsData datos;
+
 
     [System.Serializable]
-    private class AchievementsData
+    public class AchievementData
     {
-        public int zombiesEliminados;
-
-        public bool logro50Desbloqueado;
-        public bool logro100Desbloqueado;
-        public bool logro300Desbloqueado;
+        public string id;
+        public int progreso;
+        public bool desbloqueado;
     }
+
+
+    [System.Serializable]
+    public class AchievementsData
+    {
+        public List<AchievementData> logros =
+            new List<AchievementData>();
+    }
+
 
     private void Awake()
     {
@@ -36,6 +39,7 @@ public class AchievementsManager : MonoBehaviour
         }
 
         Instance = this;
+
         DontDestroyOnLoad(gameObject);
 
         rutaArchivo = Path.Combine(
@@ -44,16 +48,18 @@ public class AchievementsManager : MonoBehaviour
         );
 
         CargarProgreso();
+        InicializarLogros();
     }
+
 
     private void Update()
     {
-        // Todavía no encontramos al jugador local
         if (playerScore == null)
         {
             BuscarPlayerScore();
         }
     }
+
 
     private void BuscarPlayerScore()
     {
@@ -66,177 +72,525 @@ public class AchievementsManager : MonoBehaviour
         if (NetworkManager.Singleton.LocalClient.PlayerObject == null)
             return;
 
+
         playerScore =
             NetworkManager.Singleton.LocalClient.PlayerObject
                 .GetComponentInChildren<PlayerScore>();
 
+
         if (playerScore == null)
             return;
 
-        // Nos suscribimos a los cambios
+
         playerScore.ZombiesEliminadosNetwork.OnValueChanged +=
             OnZombiesEliminadosChanged;
 
-        // Comprobamos el valor actual
+
         OnZombiesEliminadosChanged(
             0,
             playerScore.ZombiesEliminadosNetwork.Value
         );
 
-        Debug.Log(
-            "[ACHIEVEMENTS] PlayerScore encontrado. " +
-            $"Zombies de la partida: " +
-            $"{playerScore.ZombiesEliminadosNetwork.Value}"
-        );
 
         Debug.Log(
-            "[ACHIEVEMENTS] Zombies acumulados: " +
-            $"{zombiesEliminadosTotales}"
+            "[ACHIEVEMENTS] PlayerScore encontrado."
         );
     }
 
-    private void OnZombiesEliminadosChanged(
-        int valorAnterior,
-        int valorNuevo)
+
+    // ============================================================
+    // INICIALIZAR LOGROS
+    // ============================================================
+
+    private void InicializarLogros()
     {
-        // Calculamos cuántos zombies nuevos se eliminaron
-        int zombiesNuevos = valorNuevo - valorAnterior;
-
-        if (zombiesNuevos <= 0)
-            return;
-
-        zombiesEliminadosTotales += zombiesNuevos;
-
-        Debug.Log(
-            "[ACHIEVEMENTS] Zombies acumulados: " +
-            $"{zombiesEliminadosTotales}"
+        CrearLogroSiNoExiste(
+            AchievementId.Zombies50,
+            50
         );
 
-        ComprobarProgreso();
+        CrearLogroSiNoExiste(
+            AchievementId.Zombies100,
+            100
+        );
+
+        CrearLogroSiNoExiste(
+            AchievementId.Zombies300,
+            300
+        );
+
+        CrearLogroSiNoExiste(
+            AchievementId.BossFinal,
+            1
+        );
+
+        CrearLogroSiNoExiste(
+            AchievementId.Headshots10,
+            10
+        );
+
+        CrearLogroSiNoExiste(
+            AchievementId.Headshots50,
+            50
+        );
+
+        CrearLogroSiNoExiste(
+            AchievementId.Headshots100,
+            100
+        );
+
+        CrearLogroSiNoExiste(
+            AchievementId.Headshots300,
+            300
+        );
+
+        CrearLogroSiNoExiste(
+            AchievementId.RondasNormal,
+            1
+        );
+
+        CrearLogroSiNoExiste(
+            AchievementId.RondasDificil,
+            1
+        );
+
+        CrearLogroSiNoExiste(
+            AchievementId.RondasPesadilla,
+            1
+        );
+
+        CrearLogroSiNoExiste(
+            AchievementId.SupervivenciaNormal,
+            1
+        );
+
+        CrearLogroSiNoExiste(
+            AchievementId.SupervivenciaDificil,
+            1
+        );
+
+        CrearLogroSiNoExiste(
+            AchievementId.SupervivenciaPesadilla,
+            1
+        );
+
+        CrearLogroSiNoExiste(
+            AchievementId.HistoriaNormal,
+            1
+        );
+
+        CrearLogroSiNoExiste(
+            AchievementId.HistoriaDificil,
+            1
+        );
+
+        CrearLogroSiNoExiste(
+            AchievementId.HistoriaPesadilla,
+            1
+        );
+
+        CrearLogroSiNoExiste(
+            AchievementId.EasterEgg1,
+            1
+        );
+
+        CrearLogroSiNoExiste(
+            AchievementId.EasterEgg3,
+            3
+        );
+
+        CrearLogroSiNoExiste(
+            AchievementId.MinijuegoZonaTiro,
+            1
+        );
+
 
         GuardarProgreso();
     }
 
-    private void ComprobarProgreso()
+
+    private void CrearLogroSiNoExiste(
+        AchievementId id,
+        int objetivo
+    )
     {
-        // LOGRO 50
-        if (!logro50Desbloqueado)
-        {
-            Debug.Log(
-                $"[ACHIEVEMENTS] Derrota 50 zombies: " +
-                $"{Mathf.Min(zombiesEliminadosTotales, 50)}/50"
+        string idString = id.ToString();
+
+
+        AchievementData logro =
+            datos.logros.Find(
+                x => x.id == idString
             );
 
-            if (zombiesEliminadosTotales >= 50)
-            {
-                logro50Desbloqueado = true;
 
-                Debug.Log(
-                    "[ACHIEVEMENTS] ¡LOGRO DESBLOQUEADO! " +
-                    "Derrota 50 zombies"
-                );
-            }
-        }
-
-        // LOGRO 100
-        if (!logro100Desbloqueado)
+        if (logro == null)
         {
+            logro = new AchievementData();
+
+            logro.id = idString;
+            logro.progreso = 0;
+            logro.desbloqueado = false;
+
+            datos.logros.Add(logro);
+
+
             Debug.Log(
-                $"[ACHIEVEMENTS] Derrota 100 zombies: " +
-                $"{Mathf.Min(zombiesEliminadosTotales, 100)}/100"
+                "[ACHIEVEMENTS] Nuevo logro agregado: " +
+                idString
             );
-
-            if (zombiesEliminadosTotales >= 100)
-            {
-                logro100Desbloqueado = true;
-
-                Debug.Log(
-                    "[ACHIEVEMENTS] ¡LOGRO DESBLOQUEADO! " +
-                    "Derrota 100 zombies"
-                );
-            }
-        }
-
-        // LOGRO 300
-        if (!logro300Desbloqueado)
-        {
-            Debug.Log(
-                $"[ACHIEVEMENTS] Derrota 300 zombies: " +
-                $"{Mathf.Min(zombiesEliminadosTotales, 300)}/300"
-            );
-
-            if (zombiesEliminadosTotales >= 300)
-            {
-                logro300Desbloqueado = true;
-
-                Debug.Log(
-                    "[ACHIEVEMENTS] ¡LOGRO DESBLOQUEADO! " +
-                    "Derrota 300 zombies"
-                );
-            }
         }
     }
+
+
+    // ============================================================
+    // ZOMBIES
+    // ============================================================
+
+    private void OnZombiesEliminadosChanged(
+        int valorAnterior,
+        int valorNuevo
+    )
+    {
+        int zombiesNuevos =
+            valorNuevo - valorAnterior;
+
+
+        if (zombiesNuevos <= 0)
+            return;
+
+
+        SumarProgreso(
+            AchievementId.Zombies50,
+            zombiesNuevos
+        );
+
+        SumarProgreso(
+            AchievementId.Zombies100,
+            zombiesNuevos
+        );
+
+        SumarProgreso(
+            AchievementId.Zombies300,
+            zombiesNuevos
+        );
+    }
+
+
+    // ============================================================
+    // SUMAR PROGRESO
+    // ============================================================
+
+    public void SumarProgreso(
+        AchievementId id,
+        int cantidad
+    )
+    {
+        AchievementData logro =
+            ObtenerLogro(id);
+
+
+        if (logro == null)
+            return;
+
+
+        if (logro.desbloqueado)
+            return;
+
+
+        logro.progreso += cantidad;
+
+
+        Debug.Log(
+            $"[ACHIEVEMENTS] {id}: " +
+            $"{logro.progreso}"
+        );
+
+
+        ComprobarDesbloqueo(id);
+
+
+        GuardarProgreso();
+    }
+
+
+    // ============================================================
+    // DESBLOQUEAR
+    // ============================================================
+
+    public void Desbloquear(
+        AchievementId id
+    )
+    {
+        AchievementData logro =
+            ObtenerLogro(id);
+
+
+        if (logro == null)
+            return;
+
+
+        if (logro.desbloqueado)
+            return;
+
+
+        logro.desbloqueado = true;
+
+
+        Debug.Log(
+            "[ACHIEVEMENTS] LOGRO DESBLOQUEADO: " +
+            id
+        );
+
+
+        MostrarLogroEnHUD(id);
+
+
+        GuardarProgreso();
+    }
+
+
+    // ============================================================
+    // COMPROBAR DESBLOQUEO
+    // ============================================================
+
+    private void ComprobarDesbloqueo(
+        AchievementId id
+    )
+    {
+        AchievementData logro =
+            ObtenerLogro(id);
+
+
+        if (logro == null)
+            return;
+
+
+        int objetivo =
+            ObtenerObjetivo(id);
+
+
+        if (logro.progreso >= objetivo)
+        {
+            logro.progreso = objetivo;
+
+            logro.desbloqueado = true;
+
+
+            Debug.Log(
+                "[ACHIEVEMENTS] LOGRO DESBLOQUEADO: " +
+                id
+            );
+
+
+            MostrarLogroEnHUD(id);
+        }
+    }
+
+
+    // ============================================================
+    // MOSTRAR LOGRO EN HUD
+    // ============================================================
+
+    private void MostrarLogroEnHUD(
+        AchievementId id
+    )
+    {
+        if (GameplayPopupsController.Instance == null)
+        {
+            Debug.LogWarning(
+                "[ACHIEVEMENTS] No existe GameplayPopupsController " +
+                "en la escena actual."
+            );
+
+            return;
+        }
+
+
+        GameplayPopupsController.Instance
+            .MostrarLogro(id);
+    }
+
+
+    // ============================================================
+    // OBJETIVOS
+    // ============================================================
+
+    private int ObtenerObjetivo(
+        AchievementId id
+    )
+    {
+        switch (id)
+        {
+            case AchievementId.Zombies50:
+                return 50;
+
+            case AchievementId.Zombies100:
+                return 100;
+
+            case AchievementId.Zombies300:
+                return 300;
+
+
+            case AchievementId.Headshots10:
+                return 10;
+
+            case AchievementId.Headshots50:
+                return 50;
+
+            case AchievementId.Headshots100:
+                return 100;
+
+            case AchievementId.Headshots300:
+                return 300;
+
+
+            case AchievementId.EasterEgg1:
+                return 1;
+
+            case AchievementId.EasterEgg3:
+                return 3;
+
+
+            default:
+                return 1;
+        }
+    }
+
+
+    // ============================================================
+    // OBTENER LOGRO
+    // ============================================================
+
+    public AchievementData ObtenerLogro(
+        AchievementId id
+    )
+    {
+        if (datos == null)
+            return null;
+
+
+        if (datos.logros == null)
+            return null;
+
+
+        return datos.logros.Find(
+            x => x.id == id.ToString()
+        );
+    }
+
+
+    // ============================================================
+    // ¿ESTÁ DESBLOQUEADO?
+    // ============================================================
+
+    public bool EstaDesbloqueado(
+        AchievementId id
+    )
+    {
+        AchievementData logro =
+            ObtenerLogro(id);
+
+
+        if (logro == null)
+            return false;
+
+
+        return logro.desbloqueado;
+    }
+
+
+    // ============================================================
+    // OBTENER PROGRESO
+    // ============================================================
+
+    public int ObtenerProgreso(
+        AchievementId id
+    )
+    {
+        AchievementData logro =
+            ObtenerLogro(id);
+
+
+        if (logro == null)
+            return 0;
+
+
+        return logro.progreso;
+    }
+
+
+    // ============================================================
+    // GUARDAR
+    // ============================================================
 
     private void GuardarProgreso()
     {
-        AchievementsData datos = new AchievementsData();
+        if (datos == null)
+            return;
 
-        datos.zombiesEliminados = zombiesEliminadosTotales;
 
-        datos.logro50Desbloqueado = logro50Desbloqueado;
-        datos.logro100Desbloqueado = logro100Desbloqueado;
-        datos.logro300Desbloqueado = logro300Desbloqueado;
+        string json =
+            JsonUtility.ToJson(
+                datos,
+                true
+            );
 
-        string json = JsonUtility.ToJson(datos, true);
 
-        File.WriteAllText(rutaArchivo, json);
-
-        Debug.Log(
-            "[ACHIEVEMENTS] Progreso guardado en: " +
-            rutaArchivo
+        File.WriteAllText(
+            rutaArchivo,
+            json
         );
     }
+
+
+    // ============================================================
+    // CARGAR
+    // ============================================================
 
     private void CargarProgreso()
     {
         if (!File.Exists(rutaArchivo))
         {
+            datos = new AchievementsData();
+
+
             Debug.Log(
-                "[ACHIEVEMENTS] No existe un archivo de progreso. " +
-                "Se comenzará desde cero."
+                "[ACHIEVEMENTS] No existe archivo. " +
+                "Creando progreso nuevo."
             );
+
 
             return;
         }
 
-        string json = File.ReadAllText(rutaArchivo);
 
-        AchievementsData datos =
-            JsonUtility.FromJson<AchievementsData>(json);
+        string json =
+            File.ReadAllText(
+                rutaArchivo
+            );
+
+
+        datos =
+            JsonUtility.FromJson<AchievementsData>(
+                json
+            );
+
 
         if (datos == null)
         {
+            datos = new AchievementsData();
+
+
             Debug.LogWarning(
-                "[ACHIEVEMENTS] No se pudo cargar el progreso."
+                "[ACHIEVEMENTS] Archivo inválido."
             );
-
-            return;
         }
-
-        zombiesEliminadosTotales = datos.zombiesEliminados;
-
-        logro50Desbloqueado = datos.logro50Desbloqueado;
-        logro100Desbloqueado = datos.logro100Desbloqueado;
-        logro300Desbloqueado = datos.logro300Desbloqueado;
-
-        Debug.Log(
-            "[ACHIEVEMENTS] Progreso cargado. " +
-            $"Zombies: {zombiesEliminadosTotales}"
-        );
-
-        // Por seguridad, comprobamos nuevamente los logros
-        ComprobarProgreso();
     }
+
+
+    // ============================================================
+    // DESTRUIR
+    // ============================================================
 
     private void OnDestroy()
     {
