@@ -110,7 +110,7 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
 
         Weapon weapon = weaponSwitcher.CurrentWeapon;
 
-        thirdPersonAnimator.SetInteger(
+        thirdPersonAnimator.SetFloat(   // <- antes era SetInteger
             "TP_WeaponID",
             weapon != null ? weaponSwitcher.CurrentWeaponIndex + 1 : 0
         );

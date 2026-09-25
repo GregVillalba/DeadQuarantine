@@ -18,7 +18,7 @@ BlendTree:
     m_Mirror: 0
   - serializedVersion: 2
     m_Motion: {fileID: -3724150319264339176}
-    m_Threshold: 0
+    m_Threshold: 1
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
@@ -26,16 +26,16 @@ BlendTree:
     m_Mirror: 0
   - serializedVersion: 2
     m_Motion: {fileID: -7114150005902870846}
-    m_Threshold: 1
+    m_Threshold: 2
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
     m_DirectBlendParameter: Blend
     m_Mirror: 0
-  m_BlendParameter: WeaponID
+  m_BlendParameter: TP_WeaponID
   m_BlendParameterY: Blend
   m_MinThreshold: -1
-  m_MaxThreshold: 1
+  m_MaxThreshold: 2
   m_UseAutomaticThresholds: 0
   m_NormalizedBlendValues: 0
   m_BlendType: 0
@@ -57,7 +57,7 @@ BlendTree:
     m_Mirror: 0
   - serializedVersion: 2
     m_Motion: {fileID: 7122055377438014230}
-    m_Threshold: 0
+    m_Threshold: 1
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
@@ -65,16 +65,16 @@ BlendTree:
     m_Mirror: 0
   - serializedVersion: 2
     m_Motion: {fileID: 3618919938390047037}
-    m_Threshold: 1
+    m_Threshold: 2
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
     m_DirectBlendParameter: WeaponID
     m_Mirror: 0
-  m_BlendParameter: WeaponID
+  m_BlendParameter: TP_WeaponID
   m_BlendParameterY: WeaponID
   m_MinThreshold: -1
-  m_MaxThreshold: 1
+  m_MaxThreshold: 2
   m_UseAutomaticThresholds: 0
   m_NormalizedBlendValues: 0
   m_BlendType: 0
@@ -266,7 +266,7 @@ BlendTree:
     m_Mirror: 0
   - serializedVersion: 2
     m_Motion: {fileID: -8083959365803612012}
-    m_Threshold: 0
+    m_Threshold: 1
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
@@ -274,16 +274,16 @@ BlendTree:
     m_Mirror: 0
   - serializedVersion: 2
     m_Motion: {fileID: 2481019616704668806}
-    m_Threshold: 1
+    m_Threshold: 2
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
     m_DirectBlendParameter: WeaponID
     m_Mirror: 0
-  m_BlendParameter: WeaponID
+  m_BlendParameter: TP_WeaponID
   m_BlendParameterY: WeaponID
   m_MinThreshold: -1
-  m_MaxThreshold: 1
+  m_MaxThreshold: 2
   m_UseAutomaticThresholds: 0
   m_NormalizedBlendValues: 0
   m_BlendType: 0
@@ -386,7 +386,7 @@ BlendTree:
     m_CycleOffset: 0
     m_DirectBlendParameter: WeaponID
     m_Mirror: 0
-  m_BlendParameter: WeaponID
+  m_BlendParameter: TP_WeaponID
   m_BlendParameterY: WeaponID
   m_MinThreshold: 0
   m_MaxThreshold: 0.1
@@ -589,7 +589,7 @@ AnimatorStateMachine:
     m_Position: {x: 767.6651, y: 173.83862, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -5223259894580879748}
-    m_Position: {x: 407.6651, y: 233.83862, z: 0}
+    m_Position: {x: 410, y: 230, z: 0}
   m_ChildStateMachines: []
   m_AnyStateTransitions: []
   m_EntryTransitions: []
@@ -618,7 +618,7 @@ BlendTree:
     m_Mirror: 0
   - serializedVersion: 2
     m_Motion: {fileID: 7400000, guid: 128f8b38acc4569469b602f208a96553, type: 3}
-    m_Threshold: 0
+    m_Threshold: 1
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
@@ -626,16 +626,16 @@ BlendTree:
     m_Mirror: 0
   - serializedVersion: 2
     m_Motion: {fileID: 7400000, guid: 14e3fa6a465b01d4db725ddba98a2984, type: 3}
-    m_Threshold: 1
+    m_Threshold: 2
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
     m_DirectBlendParameter: WeaponID
     m_Mirror: 0
-  m_BlendParameter: WeaponID
+  m_BlendParameter: TP_WeaponID
   m_BlendParameterY: WeaponID
   m_MinThreshold: -1
-  m_MaxThreshold: 1
+  m_MaxThreshold: 2
   m_UseAutomaticThresholds: 0
   m_NormalizedBlendValues: 0
   m_BlendType: 0
@@ -899,12 +899,6 @@ AnimatorController:
     m_DefaultInt: 0
     m_DefaultBool: 0
     m_Controller: {fileID: 9100000}
-  - m_Name: TP_WeaponID
-    m_Type: 3
-    m_DefaultFloat: 0
-    m_DefaultInt: 0
-    m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
   - m_Name: TP_Look
     m_Type: 1
     m_DefaultFloat: 0
@@ -954,6 +948,12 @@ AnimatorController:
     m_DefaultBool: 0
     m_Controller: {fileID: 9100000}
   - m_Name: Look
+    m_Type: 1
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: TP_WeaponID
     m_Type: 1
     m_DefaultFloat: 0
     m_DefaultInt: 0
@@ -1147,7 +1147,7 @@ BlendTree:
     m_CycleOffset: 0
     m_DirectBlendParameter: WeaponID
     m_Mirror: 0
-  m_BlendParameter: WeaponID
+  m_BlendParameter: TP_WeaponID
   m_BlendParameterY: WeaponID
   m_MinThreshold: 0
   m_MaxThreshold: 0.1
@@ -1460,7 +1460,7 @@ BlendTree:
     m_CycleOffset: 0
     m_DirectBlendParameter: WeaponID
     m_Mirror: 0
-  m_BlendParameter: WeaponID
+  m_BlendParameter: TP_WeaponID
   m_BlendParameterY: WeaponID
   m_MinThreshold: -1
   m_MaxThreshold: 1
@@ -1586,7 +1586,7 @@ BlendTree:
     m_CycleOffset: 0
     m_DirectBlendParameter: WeaponID
     m_Mirror: 0
-  m_BlendParameter: WeaponID
+  m_BlendParameter: TP_WeaponID
   m_BlendParameterY: WeaponID
   m_MinThreshold: 0
   m_MaxThreshold: 0.1
@@ -2048,7 +2048,7 @@ BlendTree:
     m_Mirror: 0
   - serializedVersion: 2
     m_Motion: {fileID: 7400000, guid: 15cac43fc43768c4a891eb3021c00fbe, type: 3}
-    m_Threshold: 0
+    m_Threshold: 1
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
@@ -2056,16 +2056,16 @@ BlendTree:
     m_Mirror: 0
   - serializedVersion: 2
     m_Motion: {fileID: 7400000, guid: ded6c1a159da71146aed0ed52a3d1f4a, type: 3}
-    m_Threshold: 1
+    m_Threshold: 2
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
     m_DirectBlendParameter: WeaponID
     m_Mirror: 0
-  m_BlendParameter: WeaponID
+  m_BlendParameter: TP_WeaponID
   m_BlendParameterY: WeaponID
   m_MinThreshold: -1
-  m_MaxThreshold: 1
+  m_MaxThreshold: 2
   m_UseAutomaticThresholds: 0
   m_NormalizedBlendValues: 0
   m_BlendType: 0
