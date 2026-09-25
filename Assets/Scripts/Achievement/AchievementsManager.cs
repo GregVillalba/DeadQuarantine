@@ -7,11 +7,19 @@ public class AchievementsManager : MonoBehaviour
 {
     public static AchievementsManager Instance { get; private set; }
 
+    [Header("Base de datos de logros")]
+    [SerializeField]
+    private AchievementDatabase achievementDatabase;
+
     private PlayerScore playerScore;
 
     private string rutaArchivo;
     private AchievementsData datos;
 
+
+    // ============================================================
+    // DATOS
+    // ============================================================
 
     [System.Serializable]
     public class AchievementData
@@ -29,6 +37,10 @@ public class AchievementsManager : MonoBehaviour
             new List<AchievementData>();
     }
 
+
+    // ============================================================
+    // AWAKE
+    // ============================================================
 
     private void Awake()
     {
@@ -48,9 +60,32 @@ public class AchievementsManager : MonoBehaviour
         );
 
         CargarProgreso();
+
+        InicializarBaseDeDatos();
+
         InicializarLogros();
     }
 
+
+    private void InicializarBaseDeDatos()
+    {
+        if (achievementDatabase == null)
+        {
+            Debug.LogError(
+                "[ACHIEVEMENTS] AchievementsManager no tiene " +
+                "una AchievementDatabase asignada en el Inspector."
+            );
+
+            return;
+        }
+
+        achievementDatabase.Inicializar();
+    }
+
+
+    // ============================================================
+    // UPDATE
+    // ============================================================
 
     private void Update()
     {
@@ -60,6 +95,10 @@ public class AchievementsManager : MonoBehaviour
         }
     }
 
+
+    // ============================================================
+    // BUSCAR PLAYER SCORE
+    // ============================================================
 
     private void BuscarPlayerScore()
     {
@@ -104,105 +143,31 @@ public class AchievementsManager : MonoBehaviour
 
     private void InicializarLogros()
     {
-        CrearLogroSiNoExiste(
-            AchievementId.Zombies50,
-            50
-        );
+        if (achievementDatabase == null)
+        {
+            Debug.LogError(
+                "[ACHIEVEMENTS] No se puede inicializar la lista " +
+                "porque no existe AchievementDatabase."
+            );
 
-        CrearLogroSiNoExiste(
-            AchievementId.Zombies100,
-            100
-        );
+            return;
+        }
 
-        CrearLogroSiNoExiste(
-            AchievementId.Zombies300,
-            300
-        );
 
-        CrearLogroSiNoExiste(
-            AchievementId.BossFinal,
-            1
-        );
+        IReadOnlyList<AchievementDefinition> definiciones =
+            achievementDatabase.ObtenerTodos();
 
-        CrearLogroSiNoExiste(
-            AchievementId.Headshots10,
-            10
-        );
 
-        CrearLogroSiNoExiste(
-            AchievementId.Headshots50,
-            50
-        );
+        foreach (AchievementDefinition definicion in definiciones)
+        {
+            if (definicion == null)
+                continue;
 
-        CrearLogroSiNoExiste(
-            AchievementId.Headshots100,
-            100
-        );
 
-        CrearLogroSiNoExiste(
-            AchievementId.Headshots300,
-            300
-        );
-
-        CrearLogroSiNoExiste(
-            AchievementId.RondasNormal,
-            1
-        );
-
-        CrearLogroSiNoExiste(
-            AchievementId.RondasDificil,
-            1
-        );
-
-        CrearLogroSiNoExiste(
-            AchievementId.RondasPesadilla,
-            1
-        );
-
-        CrearLogroSiNoExiste(
-            AchievementId.SupervivenciaNormal,
-            1
-        );
-
-        CrearLogroSiNoExiste(
-            AchievementId.SupervivenciaDificil,
-            1
-        );
-
-        CrearLogroSiNoExiste(
-            AchievementId.SupervivenciaPesadilla,
-            1
-        );
-
-        CrearLogroSiNoExiste(
-            AchievementId.HistoriaNormal,
-            1
-        );
-
-        CrearLogroSiNoExiste(
-            AchievementId.HistoriaDificil,
-            1
-        );
-
-        CrearLogroSiNoExiste(
-            AchievementId.HistoriaPesadilla,
-            1
-        );
-
-        CrearLogroSiNoExiste(
-            AchievementId.EasterEgg1,
-            1
-        );
-
-        CrearLogroSiNoExiste(
-            AchievementId.EasterEgg3,
-            3
-        );
-
-        CrearLogroSiNoExiste(
-            AchievementId.MinijuegoZonaTiro,
-            1
-        );
+            CrearLogroSiNoExiste(
+                definicion.id
+            );
+        }
 
 
         GuardarProgreso();
@@ -210,8 +175,7 @@ public class AchievementsManager : MonoBehaviour
 
 
     private void CrearLogroSiNoExiste(
-        AchievementId id,
-        int objetivo
+        AchievementId id
     )
     {
         string idString = id.ToString();
@@ -300,13 +264,37 @@ public class AchievementsManager : MonoBehaviour
         logro.progreso += cantidad;
 
 
-        Debug.Log(
-            $"[ACHIEVEMENTS] {id}: " +
-            $"{logro.progreso}"
-        );
+        AchievementDefinition definicion =
+            ObtenerDefinicion(id);
 
 
-        ComprobarDesbloqueo(id);
+        if (definicion == null)
+            return;
+
+
+        if (logro.progreso >= definicion.objetivo)
+        {
+            logro.progreso =
+                definicion.objetivo;
+
+            logro.desbloqueado = true;
+
+
+            Debug.Log(
+                "[ACHIEVEMENTS] LOGRO DESBLOQUEADO: " +
+                id
+            );
+
+
+            MostrarLogroEnHUD(id);
+        }
+        else
+        {
+            Debug.Log(
+                $"[ACHIEVEMENTS] {id}: " +
+                $"{logro.progreso}/{definicion.objetivo}"
+            );
+        }
 
 
         GuardarProgreso();
@@ -334,6 +322,17 @@ public class AchievementsManager : MonoBehaviour
 
 
         logro.desbloqueado = true;
+
+
+        AchievementDefinition definicion =
+            ObtenerDefinicion(id);
+
+
+        if (definicion != null)
+        {
+            logro.progreso =
+                definicion.objetivo;
+        }
 
 
         Debug.Log(
@@ -365,13 +364,22 @@ public class AchievementsManager : MonoBehaviour
             return;
 
 
-        int objetivo =
-            ObtenerObjetivo(id);
+        if (logro.desbloqueado)
+            return;
 
 
-        if (logro.progreso >= objetivo)
+        AchievementDefinition definicion =
+            ObtenerDefinicion(id);
+
+
+        if (definicion == null)
+            return;
+
+
+        if (logro.progreso >= definicion.objetivo)
         {
-            logro.progreso = objetivo;
+            logro.progreso =
+                definicion.objetivo;
 
             logro.desbloqueado = true;
 
@@ -384,6 +392,28 @@ public class AchievementsManager : MonoBehaviour
 
             MostrarLogroEnHUD(id);
         }
+    }
+
+
+    // ============================================================
+    // OBTENER DEFINICIÓN
+    // ============================================================
+
+    private AchievementDefinition ObtenerDefinicion(
+        AchievementId id
+    )
+    {
+        if (achievementDatabase == null)
+        {
+            Debug.LogError(
+                "[ACHIEVEMENTS] No existe AchievementDatabase."
+            );
+
+            return null;
+        }
+
+
+        return achievementDatabase.Obtener(id);
     }
 
 
@@ -408,52 +438,6 @@ public class AchievementsManager : MonoBehaviour
 
         GameplayPopupsController.Instance
             .MostrarLogro(id);
-    }
-
-
-    // ============================================================
-    // OBJETIVOS
-    // ============================================================
-
-    private int ObtenerObjetivo(
-        AchievementId id
-    )
-    {
-        switch (id)
-        {
-            case AchievementId.Zombies50:
-                return 50;
-
-            case AchievementId.Zombies100:
-                return 100;
-
-            case AchievementId.Zombies300:
-                return 300;
-
-
-            case AchievementId.Headshots10:
-                return 10;
-
-            case AchievementId.Headshots50:
-                return 50;
-
-            case AchievementId.Headshots100:
-                return 100;
-
-            case AchievementId.Headshots300:
-                return 300;
-
-
-            case AchievementId.EasterEgg1:
-                return 1;
-
-            case AchievementId.EasterEgg3:
-                return 3;
-
-
-            default:
-                return 1;
-        }
     }
 
 
@@ -584,6 +568,13 @@ public class AchievementsManager : MonoBehaviour
             Debug.LogWarning(
                 "[ACHIEVEMENTS] Archivo inválido."
             );
+        }
+
+
+        if (datos.logros == null)
+        {
+            datos.logros =
+                new List<AchievementData>();
         }
     }
 

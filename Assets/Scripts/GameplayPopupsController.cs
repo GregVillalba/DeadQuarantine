@@ -7,15 +7,20 @@ using UnityEngine.InputSystem.UI;
 public class GameplayPopupsController : MonoBehaviour
 {
     [Header("Paneles de resultado")]
-    [SerializeField] private GameObject panelRonda;
+    [SerializeField]
+    private GameObject panelRonda;
 
     [Header("HUD de logros")]
-    [SerializeField] private AchievementHUD achievementHUD;
+    [SerializeField]
+    private AchievementHUD achievementHUD;
 
     [Header("Configuración")]
-    [SerializeField] private string nombreEscenaMenu = "PantallasUI";
+    [SerializeField]
+    private string nombreEscenaMenu = "PantallasUI";
+
 
     public static GameplayPopupsController Instance { get; private set; }
+
 
     private void Awake()
     {
@@ -38,27 +43,25 @@ public class GameplayPopupsController : MonoBehaviour
 
         if (achievementHUD == null)
         {
-            achievementHUD = FindAnyObjectByType<AchievementHUD>(
-                FindObjectsInactive.Include
-            );
+            achievementHUD =
+                FindAnyObjectByType<AchievementHUD>(
+                    FindObjectsInactive.Include
+                );
         }
     }
 
-    // ============================================================
-    // VOLVER AL MENÚ
-    // ============================================================
 
     public void VolverAlMenuPrincipal()
     {
         Time.timeScale = 1f;
+
         AudioListener.pause = false;
 
-        SceneManager.LoadScene(nombreEscenaMenu);
+        SceneManager.LoadScene(
+            nombreEscenaMenu
+        );
     }
 
-    // ============================================================
-    // PANEL DE RONDA
-    // ============================================================
 
     public void MostrarPanelRonda()
     {
@@ -74,6 +77,7 @@ public class GameplayPopupsController : MonoBehaviour
         }
     }
 
+
     public void OcultarPanelRonda()
     {
         if (panelRonda != null)
@@ -82,16 +86,15 @@ public class GameplayPopupsController : MonoBehaviour
         }
     }
 
-    // ============================================================
-    // LOGROS
-    // ============================================================
 
     public void MostrarPanelLogro()
     {
         if (achievementHUD == null)
         {
             achievementHUD =
-                FindAnyObjectByType<AchievementHUD>();
+                FindAnyObjectByType<AchievementHUD>(
+                    FindObjectsInactive.Include
+                );
         }
 
         if (achievementHUD == null)
@@ -106,13 +109,15 @@ public class GameplayPopupsController : MonoBehaviour
         achievementHUD.gameObject.SetActive(true);
     }
 
+
     public void MostrarPanelLogro(AchievementId id)
     {
         if (achievementHUD == null)
         {
-            achievementHUD = FindAnyObjectByType<AchievementHUD>(
-                FindObjectsInactive.Include
-            );
+            achievementHUD =
+                FindAnyObjectByType<AchievementHUD>(
+                    FindObjectsInactive.Include
+                );
         }
 
         if (achievementHUD == null)
@@ -127,10 +132,12 @@ public class GameplayPopupsController : MonoBehaviour
         achievementHUD.Show(id);
     }
 
+
     public void MostrarLogro(AchievementId id)
     {
         MostrarPanelLogro(id);
     }
+
 
     public void OcultarPanelLogro()
     {

@@ -26,5 +26,6 @@ public enum AchievementId
     EasterEgg1,
     EasterEgg3,
 
-    MinijuegoZonaTiro
+    MinijuegoZonaTiro,
+    PresionasteK
 }
