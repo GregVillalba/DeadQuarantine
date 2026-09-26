@@ -591,4 +591,18 @@ public class AchievementsManager : MonoBehaviour
                 OnZombiesEliminadosChanged;
         }
     }
+
+    public int ObtenerCantidadTotalLogros()
+{
+    if (achievementDatabase == null)
+        return 0;
+
+    IReadOnlyList<AchievementDefinition> definiciones =
+        achievementDatabase.ObtenerTodos();
+
+    if (definiciones == null)
+        return 0;
+
+    return definiciones.Count;
+}
 }

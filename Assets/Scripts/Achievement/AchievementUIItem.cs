@@ -11,10 +11,15 @@ public class AchievementUIItem : MonoBehaviour
     private GameObject estadoNoLogrado;
 
 
+    // ============================================================
+    // AWAKE
+    // ============================================================
+
     private void Awake()
     {
         Transform estado =
             transform.Find("estado");
+
 
         if (estado == null)
         {
@@ -28,6 +33,7 @@ public class AchievementUIItem : MonoBehaviour
 
         Transform logrado =
             estado.Find("logrado");
+
 
         Transform noLogrado =
             estado.Find("no_logrado");
@@ -48,11 +54,9 @@ public class AchievementUIItem : MonoBehaviour
     }
 
 
-    private void OnEnable()
-    {
-        ActualizarEstado();
-    }
-
+    // ============================================================
+    // ACTUALIZAR ESTADO
+    // ============================================================
 
     public void ActualizarEstado()
     {
@@ -61,9 +65,7 @@ public class AchievementUIItem : MonoBehaviour
 
 
         bool desbloqueado =
-            AchievementsManager.Instance.EstaDesbloqueado(
-                achievementId
-            );
+            EstaDesbloqueado();
 
 
         if (estadoLogrado != null)
@@ -80,5 +82,21 @@ public class AchievementUIItem : MonoBehaviour
                 !desbloqueado
             );
         }
+    }
+
+
+    // ============================================================
+    // ESTADO
+    // ============================================================
+
+    public bool EstaDesbloqueado()
+    {
+        if (AchievementsManager.Instance == null)
+            return false;
+
+
+        return AchievementsManager.Instance.EstaDesbloqueado(
+            achievementId
+        );
     }
 }
