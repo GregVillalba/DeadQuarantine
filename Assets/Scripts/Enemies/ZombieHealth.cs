@@ -59,6 +59,7 @@ public class ZombieHealth : NetworkBehaviour
     private Rigidbody[] ragdollRigidbodies;
     private Collider[] ragdollColliders;
     private int ragdollLayer;
+    private int[] ragdollOriginalLayers;
 
     private void Awake()
     {
@@ -78,6 +79,10 @@ public class ZombieHealth : NetworkBehaviour
         ConfigureRagdollInitialState();
         ragdollLayer =
             LayerMask.NameToLayer("Ragdoll");
+            
+        ragdollOriginalLayers = new int[ragdollColliders.Length];
+        for (int i = 0; i < ragdollColliders.Length; i++)
+            ragdollOriginalLayers[i] = ragdollColliders[i].gameObject.layer;
     }
 
     // =========================================================
@@ -558,5 +563,50 @@ public class ZombieHealth : NetworkBehaviour
                     playerScore.SumarPuntos(500);
                     playerScore.SumarZombieEliminado();
                 }
+    }
+
+    public void CancelScheduledDestroy()
+    {
+        CancelInvoke(nameof(DespawnZombie));
+    }
+
+    // Vuelve el zombie a estar 100% vivo. Pensado para ser llamado
+    // SOLO desde sistemas externos como el respawn del tutorial.
+    public void ResetForRespawn(Vector3 position, Quaternion rotation)
+    {
+        transform.position = position;
+        transform.rotation = rotation;
+
+        IsDead = false;
+
+        if (IsServer)
+            currentHealthNetwork.Value = maxHealth;
+
+        ConfigureRagdollInitialState();
+
+        for (int i = 0; i < ragdollColliders.Length; i++)
+            if (ragdollColliders[i] != null)
+                ragdollColliders[i].gameObject.layer = ragdollOriginalLayers[i];
+
+        foreach (Collider rootCollider in rootColliders)
+            if (rootCollider != null)
+                rootCollider.enabled = true;
+
+        if (agent != null) agent.enabled = true;
+        if (zombieAI != null) zombieAI.enabled = true;
+
+        if (animator != null)
+        {
+            animator.enabled = true;
+            animator.Rebind();
+            animator.Update(0f);
+        }
+
+        if (healthBarCanvas != null)
+            healthBarCanvas.SetActive(true);
+        else if (healthSlider != null)
+            healthSlider.gameObject.SetActive(true);
+
+        ActualizarBarraDeVida();
     }
 }

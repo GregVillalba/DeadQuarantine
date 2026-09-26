@@ -18184,6 +18184,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7241393738966287158}
   - component: {fileID: 6946670302864685145}
+  - component: {fileID: 4991865197007385895}
   m_Layer: 3
   m_Name: StoryController
   m_TagString: Untagged
@@ -18228,6 +18229,22 @@ MonoBehaviour:
   playerMovement: {fileID: 7292988215955829792}
   playerLook: {fileID: 4561189841502104425}
   weaponCameraObject: {fileID: 4340520466520270462}
+--- !u!114 &4991865197007385895
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2306147731750913767}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 147a70856ca50d944943a2d95f44eade, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::TutorialBootstrap
+  ShowTopMostFoldoutHeaderGroup: 1
+  hud: {fileID: 7067101472329872928}
+  playerMovement: {fileID: 7292988215955829792}
+  playerLook: {fileID: 4561189841502104425}
 --- !u!1 &2315915895434234652
 GameObject:
   m_ObjectHideFlags: 0
@@ -66993,7 +67010,7 @@ MonoBehaviour:
     - name: TP_WeaponID
       NameHash: 2047787698
       Synchronize: 1
-      ParameterType: 3
+      ParameterType: 1
     - name: TP_Look
       NameHash: 1450698263
       Synchronize: 1
