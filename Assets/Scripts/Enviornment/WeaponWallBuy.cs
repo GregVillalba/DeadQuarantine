@@ -105,9 +105,9 @@ public class WeaponWallBuy : MonoBehaviour
 
     private bool EstaMirandoElArma()
     {
-        if (localPlayerCamera == null || lookTarget == null)
+        if (localPlayerCamera == null)
         {
-            Debug.LogWarning("[WeaponWallBuy] Falta localPlayerCamera o lookTarget (¿asignaste Look Target en el Inspector?).");
+            Debug.LogWarning("[WeaponWallBuy] Falta localPlayerCamera.");
             return false;
         }
 
@@ -124,8 +124,9 @@ public class WeaponWallBuy : MonoBehaviour
 
         Debug.Log("[WeaponWallBuy] Raycast pegó en: " + hit.transform.name);
 
-        return hit.transform == lookTarget ||
-               hit.transform.IsChildOf(lookTarget);
+        WeaponWallBuy wallBuy = hit.collider.GetComponentInParent<WeaponWallBuy>();
+
+        return wallBuy == this;
     }
 
     private void TryPurchase()
