@@ -2618,6 +2618,7 @@ GameObject:
   - component: {fileID: 122133396}
   - component: {fileID: 122133395}
   - component: {fileID: 122133394}
+  - component: {fileID: 122133397}
   m_Layer: 5
   m_Name: supervivencia
   m_TagString: Untagged
@@ -2688,7 +2689,43 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 122133395}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1447045200}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 1534948965}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 1763791462}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 1
+        m_CallState: 2
 --- !u!114 &122133395
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2727,6 +2764,27 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 122133392}
   m_CullTransparentMesh: 1
+--- !u!114 &122133397
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 122133392}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f42c0d2b2fad25b40a2b197ea9525942, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::ButtonHoverMenuPrincipal
+  textoTMP: {fileID: 0}
+  targetRect: {fileID: 0}
+  colorNormal: {r: 0.47058824, g: 0.5686275, b: 0.64705884, a: 1}
+  colorHover: {r: 0, g: 1, b: 0.4, a: 1}
+  colorPressed: {r: 0, g: 0.78431374, b: 0.3137255, a: 1}
+  hoverScale: 1.06
+  clickScale: 0.94
+  pressYOffset: -4
+  transitionSpeed: 14
 --- !u!1 &123167648
 GameObject:
   m_ObjectHideFlags: 0
@@ -6198,6 +6256,7 @@ GameObject:
   - component: {fileID: 296864935}
   - component: {fileID: 296864934}
   - component: {fileID: 296864933}
+  - component: {fileID: 296864936}
   m_Layer: 5
   m_Name: modos
   m_TagString: Untagged
@@ -6268,7 +6327,43 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 296864934}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1447045200}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 1
+        m_CallState: 2
+      - m_Target: {fileID: 1534948965}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 1763791462}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &296864934
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6307,6 +6402,27 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 296864931}
   m_CullTransparentMesh: 1
+--- !u!114 &296864936
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 296864931}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f42c0d2b2fad25b40a2b197ea9525942, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::ButtonHoverMenuPrincipal
+  textoTMP: {fileID: 0}
+  targetRect: {fileID: 0}
+  colorNormal: {r: 0.47058824, g: 0.5686275, b: 0.64705884, a: 1}
+  colorHover: {r: 0, g: 1, b: 0.4, a: 1}
+  colorPressed: {r: 0, g: 0.78431374, b: 0.3137255, a: 1}
+  hoverScale: 1.06
+  clickScale: 0.94
+  pressYOffset: -4
+  transitionSpeed: 14
 --- !u!1 &299345953
 GameObject:
   m_ObjectHideFlags: 0
@@ -13102,6 +13218,7 @@ GameObject:
   - component: {fileID: 626879847}
   - component: {fileID: 626879846}
   - component: {fileID: 626879850}
+  - component: {fileID: 626879851}
   m_Layer: 5
   m_Name: Home
   m_TagString: Untagged
@@ -13264,6 +13381,27 @@ MonoBehaviour:
   creditosInfoPanel: {fileID: 0}
   sonidoPanel: {fileID: 0}
   sensibilidadMousePanel: {fileID: 0}
+--- !u!114 &626879851
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 626879844}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f42c0d2b2fad25b40a2b197ea9525942, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::ButtonHoverMenuPrincipal
+  textoTMP: {fileID: 0}
+  targetRect: {fileID: 0}
+  colorNormal: {r: 0.47058824, g: 0.5686275, b: 0.64705884, a: 1}
+  colorHover: {r: 0, g: 1, b: 0.4, a: 1}
+  colorPressed: {r: 0, g: 0.78431374, b: 0.3137255, a: 1}
+  hoverScale: 1.06
+  clickScale: 0.94
+  pressYOffset: -4
+  transitionSpeed: 14
 --- !u!1 &632476366
 GameObject:
   m_ObjectHideFlags: 0
@@ -16689,6 +16827,7 @@ GameObject:
   - component: {fileID: 776182154}
   - component: {fileID: 776182153}
   - component: {fileID: 776182152}
+  - component: {fileID: 776182155}
   m_Layer: 5
   m_Name: dificultades
   m_TagString: Untagged
@@ -16759,7 +16898,43 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 776182153}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1534948965}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 1
+        m_CallState: 2
+      - m_Target: {fileID: 1447045200}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 1763791462}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &776182153
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16798,6 +16973,27 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 776182150}
   m_CullTransparentMesh: 1
+--- !u!114 &776182155
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 776182150}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f42c0d2b2fad25b40a2b197ea9525942, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::ButtonHoverMenuPrincipal
+  textoTMP: {fileID: 0}
+  targetRect: {fileID: 0}
+  colorNormal: {r: 0.47058824, g: 0.5686275, b: 0.64705884, a: 1}
+  colorHover: {r: 0, g: 1, b: 0.4, a: 1}
+  colorPressed: {r: 0, g: 0.78431374, b: 0.3137255, a: 1}
+  hoverScale: 1.06
+  clickScale: 0.94
+  pressYOffset: -4
+  transitionSpeed: 14
 --- !u!1 &777982287
 GameObject:
   m_ObjectHideFlags: 0
@@ -23697,7 +23893,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &972996875
 RectTransform:
   m_ObjectHideFlags: 0
@@ -23719,9 +23915,9 @@ RectTransform:
   - {fileID: 296864932}
   - {fileID: 776182151}
   - {fileID: 122133393}
-  - {fileID: 1763791463}
   - {fileID: 1447045201}
   - {fileID: 1534948966}
+  - {fileID: 1763791463}
   m_Father: {fileID: 1098545880}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -30251,6 +30447,7 @@ GameObject:
   - component: {fileID: 1213643468}
   - component: {fileID: 1213643467}
   - component: {fileID: 1213643471}
+  - component: {fileID: 1213643472}
   m_Layer: 5
   m_Name: Play
   m_TagString: Untagged
@@ -30413,6 +30610,27 @@ MonoBehaviour:
   creditosInfoPanel: {fileID: 0}
   sonidoPanel: {fileID: 0}
   sensibilidadMousePanel: {fileID: 0}
+--- !u!114 &1213643472
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1213643465}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f42c0d2b2fad25b40a2b197ea9525942, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::ButtonHoverMenuPrincipal
+  textoTMP: {fileID: 0}
+  targetRect: {fileID: 0}
+  colorNormal: {r: 0.47058824, g: 0.5686275, b: 0.64705884, a: 1}
+  colorHover: {r: 0, g: 1, b: 0.4, a: 1}
+  colorPressed: {r: 0, g: 0.78431374, b: 0.3137255, a: 1}
+  hoverScale: 1.06
+  clickScale: 0.94
+  pressYOffset: -4
+  transitionSpeed: 14
 --- !u!1 &1214608291
 GameObject:
   m_ObjectHideFlags: 0
@@ -35158,13 +35376,14 @@ GameObject:
   - component: {fileID: 1447045201}
   - component: {fileID: 1447045203}
   - component: {fileID: 1447045202}
+  - component: {fileID: 1447045204}
   m_Layer: 5
   m_Name: Image_modo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1447045201
 RectTransform:
   m_ObjectHideFlags: 0
@@ -35225,6 +35444,27 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1447045200}
   m_CullTransparentMesh: 1
+--- !u!114 &1447045204
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1447045200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f42c0d2b2fad25b40a2b197ea9525942, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::ButtonHoverMenuPrincipal
+  textoTMP: {fileID: 0}
+  targetRect: {fileID: 0}
+  colorNormal: {r: 0.47058824, g: 0.5686275, b: 0.64705884, a: 1}
+  colorHover: {r: 0, g: 1, b: 0.4, a: 1}
+  colorPressed: {r: 0, g: 0.78431374, b: 0.3137255, a: 1}
+  hoverScale: 1.06
+  clickScale: 0.94
+  pressYOffset: -4
+  transitionSpeed: 14
 --- !u!1 &1448403702
 GameObject:
   m_ObjectHideFlags: 0
