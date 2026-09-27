@@ -162,6 +162,11 @@ public class Weapon : MonoBehaviour
         isReloading = false;
     }
 
+    public void ForceStopAiming()
+    {
+        IsAiming = false;
+    }
+
     private void Update()
     {
         if (IsAiming && playerMovement != null && playerMovement.IsSprinting)

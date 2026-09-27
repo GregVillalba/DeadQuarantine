@@ -37876,7 +37876,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1614284941
+  GlobalObjectIdHash: 3516423437
   InScenePlacedSourceGlobalObjectIdHash: 477224611
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -74344,6 +74344,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 16e474626b69d024f8bf7c812763932a, type: 3}
+--- !u!1 &4928207162578613728 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 100000, guid: 16e474626b69d024f8bf7c812763932a, type: 3}
+  m_PrefabInstance: {fileID: 4928207162578645824}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &4928207162579036608 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: 16e474626b69d024f8bf7c812763932a, type: 3}
@@ -74433,7 +74438,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f2fc14639e04fde4db228e4d14874d6c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.093
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f2fc14639e04fde4db228e4d14874d6c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -75025,6 +75030,7 @@ MonoBehaviour:
   weaponAnimator: {fileID: 4557263371411451482}
   playerCamera: {fileID: 4105371250691294993}
   weaponSwitcher: {fileID: 967506594462204975}
+  knifeObject: {fileID: 4928207162578613728}
   meleeRange: 2
   meleeDamage: 75
   attackCooldown: 0.6

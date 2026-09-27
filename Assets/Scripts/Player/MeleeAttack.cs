@@ -7,6 +7,7 @@ public class MeleeAttack : MonoBehaviour
     [SerializeField] private Animator weaponAnimator;
     [SerializeField] private Camera playerCamera;
     [SerializeField] private WeaponSwitcher weaponSwitcher;
+    [SerializeField] private GameObject knifeObject;
 
     [Header("Configuración")]
     [SerializeField] private float meleeRange = 2f;
@@ -27,8 +28,11 @@ public class MeleeAttack : MonoBehaviour
     {
         controls = new PlayerControls();
 
+        if (knifeObject != null)
+            knifeObject.SetActive(false);
+
         if (weaponAnimator != null)
-            meleeLayerIndex = weaponAnimator.GetLayerIndex("GranadeKnife");
+            meleeLayerIndex = weaponAnimator.GetLayerIndex("GranadeKnife"); // <- antes decía "Melee"
     }
 
     private void OnEnable()
@@ -50,18 +54,45 @@ public class MeleeAttack : MonoBehaviour
 
         if (meleeLayerIndex < 0)
         {
-            Debug.LogWarning("[MeleeAttack] No se encontró la capa 'Melee' en el Animator. Revisá que el nombre sea EXACTO (mayúsculas, sin espacios de más).");
+            Debug.LogWarning("[MeleeAttack] No se encontró la capa 'GranadeKnife' en el Animator.");
+            return;
+        }
+
+        Weapon currentWeapon = weaponSwitcher != null ? weaponSwitcher.CurrentWeapon : null;
+
+        // No se puede acuchillar mientras se está recargando.
+        if (currentWeapon != null && currentWeapon.IsReloading)
+        {
+            Debug.Log("[MeleeAttack] Bloqueado: el arma está recargando.");
             return;
         }
 
         isAttacking = true;
 
-        if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null)
-            weaponSwitcher.CurrentWeapon.InputLocked = true;
+        // Si estaba apuntando, forzar que deje de apuntar antes del golpe.
+        if (currentWeapon != null && currentWeapon.IsAiming)
+            currentWeapon.ForceStopAiming();
+
+        if (knifeObject != null)
+            knifeObject.SetActive(true);
+
+        if (currentWeapon != null)
+            currentWeapon.InputLocked = true;
 
         weaponAnimator.CrossFade("Knife_Attack", 0.1f, meleeLayerIndex);
 
         Invoke(nameof(FinishAttack), attackCooldown);
+    }
+
+    private void FinishAttack()
+    {
+        isAttacking = false;
+
+        if (knifeObject != null)
+            knifeObject.SetActive(false); // se esconde de nuevo al terminar
+
+        if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null)
+            weaponSwitcher.CurrentWeapon.InputLocked = false;
     }
 
     public void OnMeleeSwoosh()
@@ -78,14 +109,6 @@ public class MeleeAttack : MonoBehaviour
 
         if (clip != null)
             audioSource.PlayOneShot(clip);
-    }
-
-    private void FinishAttack()
-    {
-        isAttacking = false;
-
-        if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null)
-            weaponSwitcher.CurrentWeapon.InputLocked = false;
     }
 
     // Llamado por el Animation Event, en el frame exacto donde el cuchillo conecta.
