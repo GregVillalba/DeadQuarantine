@@ -14,6 +14,11 @@ public class MeleeAttack : MonoBehaviour
     [SerializeField] private float attackCooldown = 0.6f; // un poco menos que la duración del clip
     [SerializeField] private LayerMask hittableMask = ~0;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip[] swingSounds;
+    [SerializeField] private AudioClip impactSound;
+
     private PlayerControls controls;
     private bool isAttacking;
     private int meleeLayerIndex = -1;
@@ -59,6 +64,22 @@ public class MeleeAttack : MonoBehaviour
         Invoke(nameof(FinishAttack), attackCooldown);
     }
 
+    public void OnMeleeSwoosh()
+    {
+        Debug.Log("[MeleeAttack] OnMeleeSwoosh llamado. AudioSource=" + (audioSource != null) +
+            " | Cantidad de clips=" + (swingSounds != null ? swingSounds.Length : 0));
+
+        if (audioSource == null || swingSounds == null || swingSounds.Length == 0)
+            return;
+
+        AudioClip clip = swingSounds[Random.Range(0, swingSounds.Length)];
+
+        Debug.Log("[MeleeAttack] Reproduciendo clip: " + (clip != null ? clip.name : "NULL"));
+
+        if (clip != null)
+            audioSource.PlayOneShot(clip);
+    }
+
     private void FinishAttack()
     {
         isAttacking = false;
@@ -81,11 +102,12 @@ public class MeleeAttack : MonoBehaviour
 
             if (zombie != null)
             {
-                zombie.TakeDamage(
-                    meleeDamage,
-                    hit.point,
-                    hit.normal
-                );
+                zombie.TakeDamage(meleeDamage, hit.point, hit.normal);
+
+                if (audioSource != null && impactSound != null)
+                    audioSource.PlayOneShot(impactSound);
+
+                Debug.Log("[MeleeAttack] Daño aplicado: " + meleeDamage);
             }
         }
     }

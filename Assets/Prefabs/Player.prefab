@@ -74795,10 +74795,10 @@ PrefabInstance:
       addedObject: {fileID: 588322725122010434}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f2fc14639e04fde4db228e4d14874d6c, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 6384497425567042706}
+      addedObject: {fileID: 3001407377085662666}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f2fc14639e04fde4db228e4d14874d6c, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 3001407377085662666}
+      addedObject: {fileID: 6384497425567042706}
   m_SourcePrefab: {fileID: 100100000, guid: f2fc14639e04fde4db228e4d14874d6c, type: 3}
 --- !u!4 &1138621713839567240 stripped
 Transform:
@@ -74913,27 +74913,6 @@ MonoBehaviour:
   recoilKickUp: 2.5
   recoilRandomSide: 1
   recoilRecoverySpeed: 10
---- !u!114 &6384497425567042706
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5787282809299351624}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dc4d2831a1f6c4f4bad33c48c3d501cc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Scripts::MeleeAttack
-  weaponAnimator: {fileID: 4557263371411451482}
-  playerCamera: {fileID: 4105371250691294993}
-  weaponSwitcher: {fileID: 967506594462204975}
-  meleeRange: 2
-  meleeDamage: 75
-  attackCooldown: 0.6
-  hittableMask:
-    serializedVersion: 2
-    m_Bits: 5119
 --- !u!82 &3001407377085662666
 AudioSource:
   m_ObjectHideFlags: 0
@@ -74947,7 +74926,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.15
+  m_Volume: 0.3
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -75031,6 +75010,32 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &6384497425567042706
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5787282809299351624}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc4d2831a1f6c4f4bad33c48c3d501cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::MeleeAttack
+  weaponAnimator: {fileID: 4557263371411451482}
+  playerCamera: {fileID: 4105371250691294993}
+  weaponSwitcher: {fileID: 967506594462204975}
+  meleeRange: 2
+  meleeDamage: 75
+  attackCooldown: 0.6
+  hittableMask:
+    serializedVersion: 2
+    m_Bits: 5119
+  audioSource: {fileID: 3001407377085662666}
+  swingSounds:
+  - {fileID: 8300000, guid: bce84b3643e6f284782de83c55b79cc5, type: 3}
+  - {fileID: 8300000, guid: 18202485ee9f1da45a8dc83de7005216, type: 3}
+  impactSound: {fileID: 8300000, guid: 8381cfa68b44d734b9c039db0dbad2a1, type: 3}
 --- !u!4 &6564946030770742002 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: f2fc14639e04fde4db228e4d14874d6c, type: 3}
