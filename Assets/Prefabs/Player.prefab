@@ -42407,6 +42407,37 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!1 &6208427259840425919
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2762961482793549124}
+  m_Layer: 3
+  m_Name: Arm_Left_Target
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2762961482793549124
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6208427259840425919}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6999794881086647255}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6232318984471346042
 GameObject:
   m_ObjectHideFlags: 0
@@ -74895,7 +74926,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Scripts::MeleeAttack
   weaponAnimator: {fileID: 4557263371411451482}
-  playerCamera: {fileID: 8884011811728304703}
+  playerCamera: {fileID: 4105371250691294993}
   weaponSwitcher: {fileID: 967506594462204975}
   meleeRange: 2
   meleeDamage: 75
@@ -75128,6 +75159,9 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 400006, guid: bfda376b0f658a748870ea8f7c2c7c03, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2762961482793549124}
     - targetCorrespondingSourceObject: {fileID: 400020, guid: bfda376b0f658a748870ea8f7c2c7c03, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6426113321394024928}
