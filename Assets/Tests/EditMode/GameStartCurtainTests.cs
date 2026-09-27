@@ -2,10 +2,6 @@ using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
  
-// Ubicación sugerida en el proyecto: Assets/Tests/EditMode/GameStartCurtainEditModeTests.cs
-// El asmdef de esta carpeta debe referenciar: UnityEngine.TestRunner, UnityEditor.TestRunner (solo EditMode)
-// y el assembly donde vive GameStartCurtain (y Unity.Netcode.Runtime, porque el script lo usa aunque
-// estos tests no ejerciten red real).
  
 [TestFixture]
 public class GameStartCurtainTests
