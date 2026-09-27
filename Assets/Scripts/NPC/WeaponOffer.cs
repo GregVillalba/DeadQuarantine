@@ -17,6 +17,10 @@ public class WeaponOffer
     public string descripcion;
     public int dano;
     public float alcance;
+
+    [Tooltip("Marcalo para armas arrojadizas (granadas, etc). En esos casos no se muestran Cargador ni Cadencia en el panel de detalle.")]
+    public bool esArrojadiza;
+
     public int capacidadCargador;
     public float cadencia;
 }

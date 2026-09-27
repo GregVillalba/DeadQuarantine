@@ -342,17 +342,23 @@ public class NPCShopUI : MonoBehaviour
             descripcionDetalleText.text = haySeleccion ? ofertaSeleccionada.descripcion : textoSinSeleccion;
 
         if (statsDetalleText != null)
-        {
-            statsDetalleText.text = haySeleccion
-                ? "Daño: " + ofertaSeleccionada.dano +
-                  "\nAlcance: " + ofertaSeleccionada.alcance + " m" +
-                  "\nCargador: " + ofertaSeleccionada.capacidadCargador + " balas" +
-                  "\nCadencia: " + ofertaSeleccionada.cadencia
-                : string.Empty;
-        }
+            statsDetalleText.text = haySeleccion ? ConstruirTextoStats(ofertaSeleccionada) : string.Empty;
 
         if (progresoCompraFill != null)
             progresoCompraFill.fillAmount = 0f;
+    }
+
+    private string ConstruirTextoStats(WeaponOffer oferta)
+    {
+        string texto = "Daño: " + oferta.dano + "\nAlcance: " + oferta.alcance + " m";
+
+        if (!oferta.esArrojadiza)
+        {
+            texto += "\nCargador: " + oferta.capacidadCargador + " balas" +
+                     "\nCadencia: " + oferta.cadencia;
+        }
+
+        return texto;
     }
 
     private void ActualizarCompraMantenida()
