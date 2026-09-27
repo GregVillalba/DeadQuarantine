@@ -36,7 +36,6 @@ public class WeaponSwitcher : MonoBehaviour
     private bool isSwitching;
     private int holsterLayerIndex = -1;
     public Weapon CurrentWeapon => slots[currentIndex].weaponComponent;
-    public int CurrentWeaponIndex => currentIndex;
 
     private PlayerControls controls;
 

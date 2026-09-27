@@ -25,7 +25,6 @@ public class PlayerLook : MonoBehaviour
 
     private float pitch = 0f;
     private float recoilPitch = 0f; // Se acumula con AddRecoil(), no viene del mouse.
-    public float Pitch => pitch;
 
     private void Awake()
     {
