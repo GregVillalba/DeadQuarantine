@@ -17,6 +17,7 @@ public class PauseController : NetworkBehaviour
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private PlayerLook playerLook;
     [SerializeField] private WeaponSwitcher weaponSwitcher;
+    [SerializeField] private NPCShopUI shopUI;
 
     [Header("Vida del jugador")]
     [SerializeField] private PlayerHealth playerHealth;
@@ -82,6 +83,12 @@ public class PauseController : NetworkBehaviour
         if (weaponSwitcher == null)
             weaponSwitcher = GetComponentInChildren<WeaponSwitcher>(true);
 
+        if (shopUI == null)
+            shopUI = GetComponentInChildren<NPCShopUI>(true);
+
+        if (shopUI == null)
+            shopUI = transform.root.GetComponentInChildren<NPCShopUI>(true);
+
         if (storyIntro == null)
             storyIntro = GetComponent<StoryIntroController>();
 
@@ -131,9 +138,10 @@ public class PauseController : NetworkBehaviour
             return;
 
         bool historiaActiva = storyIntro != null && storyIntro.HistoriaActiva;
+        bool tiendaActiva = shopUI != null && shopUI.EstaAbierta;
 
-        // Mientras la historia o el fin de ronda están abiertos, ESC no abre el menú de pausa.
-        if (historiaActiva || finDeRondaActivo)
+        // Mientras la historia, el fin de ronda o la tienda están abiertos, ESC no abre el menú de pausa.
+        if (historiaActiva || finDeRondaActivo || tiendaActiva)
         {
             if (finDeRondaActivo && Keyboard.current != null)
             {
