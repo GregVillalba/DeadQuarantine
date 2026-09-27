@@ -368,9 +368,9 @@ RectTransform:
   m_Father: {fileID: 459486968}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: -17, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &11101285
 MonoBehaviour:
@@ -1432,8 +1432,9 @@ GameObject:
   - component: {fileID: 27473719}
   - component: {fileID: 27473721}
   - component: {fileID: 27473720}
+  - component: {fileID: 27473722}
   m_Layer: 5
-  m_Name: logros (9)
+  m_Name: RondasDificil
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1458,10 +1459,10 @@ RectTransform:
   - {fileID: 1559093875}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 576.5, y: -1525}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &27473720
 MonoBehaviour:
@@ -1501,6 +1502,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 27473718}
   m_CullTransparentMesh: 1
+--- !u!114 &27473722
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 27473718}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 9
 --- !u!1 &28476812
 GameObject:
   m_ObjectHideFlags: 0
@@ -2882,143 +2896,6 @@ CanvasRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 46756408}
-  m_CullTransparentMesh: 1
---- !u!1 &55199709
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 55199710}
-  - component: {fileID: 55199712}
-  - component: {fileID: 55199711}
-  m_Layer: 5
-  m_Name: Text (TMP)
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &55199710
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 55199709}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1297497665}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 150, y: 0}
-  m_SizeDelta: {x: 400, y: 50}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &55199711
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 55199709}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_text: /20 logros completados
-  m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
-  m_fontMaterial: {fileID: 0}
-  m_fontMaterials: []
-  m_fontColor32:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
-  m_enableVertexGradient: 0
-  m_colorMode: 3
-  m_fontColorGradient:
-    topLeft: {r: 1, g: 1, b: 1, a: 1}
-    topRight: {r: 1, g: 1, b: 1, a: 1}
-    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
-    bottomRight: {r: 1, g: 1, b: 1, a: 1}
-  m_fontColorGradientPreset: {fileID: 0}
-  m_spriteAsset: {fileID: 0}
-  m_tintAllSprites: 0
-  m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: -1183493901
-  m_overrideHtmlColors: 0
-  m_faceColor:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
-  m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
-  m_fontStyle: 0
-  m_HorizontalAlignment: 1
-  m_VerticalAlignment: 256
-  m_textAlignment: 65535
-  m_characterSpacing: 0
-  m_characterHorizontalScale: 1
-  m_wordSpacing: 0
-  m_lineSpacing: 0
-  m_lineSpacingMax: 0
-  m_paragraphSpacing: 0
-  m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 1
-  m_wordWrappingRatios: 0.4
-  m_overflowMode: 0
-  m_linkedTextComponent: {fileID: 0}
-  parentLinkedComponent: {fileID: 0}
-  m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656b
-  m_enableExtraPadding: 0
-  checkPaddingRequired: 0
-  m_isRichText: 1
-  m_EmojiFallbackSupport: 1
-  m_parseCtrlCharacters: 1
-  m_isOrthographic: 1
-  m_isCullingEnabled: 0
-  m_horizontalMapping: 0
-  m_verticalMapping: 0
-  m_uvLineOffset: 0
-  m_geometrySortingOrder: 0
-  m_IsTextObjectScaleStatic: 0
-  m_VertexBufferAutoSizeReduction: 0
-  m_useMaxVisibleDescender: 1
-  m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
-  m_isUsingLegacyAnimationComponent: 0
-  m_isVolumetricText: 0
-  m_hasFontAssetChanged: 0
-  m_baseMaterial: {fileID: 0}
-  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!222 &55199712
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 55199709}
   m_CullTransparentMesh: 1
 --- !u!1 &56946173
 GameObject:
@@ -4902,8 +4779,9 @@ GameObject:
   - component: {fileID: 132960299}
   - component: {fileID: 132960301}
   - component: {fileID: 132960300}
+  - component: {fileID: 132960302}
   m_Layer: 5
-  m_Name: logros (17)
+  m_Name: EasterEgg1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4928,10 +4806,10 @@ RectTransform:
   - {fileID: 1459784728}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 576.5, y: -125}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &132960300
 MonoBehaviour:
@@ -4971,6 +4849,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 132960298}
   m_CullTransparentMesh: 1
+--- !u!114 &132960302
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 132960298}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 17
 --- !u!1 &144648320
 GameObject:
   m_ObjectHideFlags: 0
@@ -6285,8 +6176,9 @@ GameObject:
   - component: {fileID: 198415826}
   - component: {fileID: 198415828}
   - component: {fileID: 198415827}
+  - component: {fileID: 198415829}
   m_Layer: 5
-  m_Name: logros (4)
+  m_Name: Headshot50
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6311,10 +6203,10 @@ RectTransform:
   - {fileID: 1680193836}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1306.5, y: -2365}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &198415827
 MonoBehaviour:
@@ -6354,6 +6246,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 198415825}
   m_CullTransparentMesh: 1
+--- !u!114 &198415829
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 198415825}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 5
 --- !u!1 &203589037
 GameObject:
   m_ObjectHideFlags: 0
@@ -6502,8 +6407,9 @@ GameObject:
   - component: {fileID: 204547382}
   - component: {fileID: 204547384}
   - component: {fileID: 204547383}
+  - component: {fileID: 204547385}
   m_Layer: 5
-  m_Name: logros (1)
+  m_Name: Zombies100
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6528,10 +6434,10 @@ RectTransform:
   - {fileID: 868198839}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1306.5, y: -1805}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &204547383
 MonoBehaviour:
@@ -6571,6 +6477,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 204547381}
   m_CullTransparentMesh: 1
+--- !u!114 &204547385
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 204547381}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 1
 --- !u!1 &210487670
 GameObject:
   m_ObjectHideFlags: 0
@@ -6582,13 +6501,14 @@ GameObject:
   - component: {fileID: 210487671}
   - component: {fileID: 210487673}
   - component: {fileID: 210487672}
+  - component: {fileID: 210487674}
   m_Layer: 5
   m_Name: panelLogros
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &210487671
 RectTransform:
   m_ObjectHideFlags: 0
@@ -6654,6 +6574,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 210487670}
   m_CullTransparentMesh: 1
+--- !u!114 &210487674
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 210487670}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53af017edc90a2042b75fb1dba518162, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementsMenuUI
+  valorLogrosCompletado: {fileID: 422954532}
+  dropdownFiltro: {fileID: 233005870}
+  barraProgresoLogros: {fileID: 779317251}
 --- !u!1 &211734861
 GameObject:
   m_ObjectHideFlags: 0
@@ -7927,7 +7862,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 233005868}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 639392b2a3ec61647831dc4b424206bb, type: 3}
   m_Name: 
@@ -11036,8 +10971,9 @@ GameObject:
   - component: {fileID: 310072476}
   - component: {fileID: 310072478}
   - component: {fileID: 310072477}
+  - component: {fileID: 310072479}
   m_Layer: 5
-  m_Name: logros (18)
+  m_Name: EasterEgg3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -11062,10 +10998,10 @@ RectTransform:
   - {fileID: 819244523}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 576.5, y: -405}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &310072477
 MonoBehaviour:
@@ -11105,6 +11041,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 310072475}
   m_CullTransparentMesh: 1
+--- !u!114 &310072479
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 310072475}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 18
 --- !u!1 &313187198
 GameObject:
   m_ObjectHideFlags: 0
@@ -13741,8 +13690,9 @@ GameObject:
   - component: {fileID: 393576748}
   - component: {fileID: 393576750}
   - component: {fileID: 393576749}
+  - component: {fileID: 393576751}
   m_Layer: 5
-  m_Name: logros (19)
+  m_Name: MinijuegoDeTiro
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -13767,10 +13717,10 @@ RectTransform:
   - {fileID: 357776142}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1306.5, y: -125}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &393576749
 MonoBehaviour:
@@ -13810,6 +13760,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 393576747}
   m_CullTransparentMesh: 1
+--- !u!114 &393576751
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 393576747}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 19
 --- !u!1 &394926038
 GameObject:
   m_ObjectHideFlags: 0
@@ -14898,7 +14861,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_margin: {x: 0, y: 0, z: -228.27834, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -16223,8 +16186,9 @@ GameObject:
   - component: {fileID: 470952265}
   - component: {fileID: 470952267}
   - component: {fileID: 470952266}
+  - component: {fileID: 470952268}
   m_Layer: 5
-  m_Name: logros (5)
+  m_Name: Headshot10
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -16249,10 +16213,10 @@ RectTransform:
   - {fileID: 34879835}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 576.5, y: -2365}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &470952266
 MonoBehaviour:
@@ -16292,6 +16256,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 470952264}
   m_CullTransparentMesh: 1
+--- !u!114 &470952268
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 470952264}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 4
 --- !u!1 &472946617
 GameObject:
   m_ObjectHideFlags: 0
@@ -19757,8 +19734,9 @@ GameObject:
   - component: {fileID: 543393632}
   - component: {fileID: 543393634}
   - component: {fileID: 543393633}
+  - component: {fileID: 543393635}
   m_Layer: 5
-  m_Name: logros (15)
+  m_Name: HistoriaDificil
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -19783,10 +19761,10 @@ RectTransform:
   - {fileID: 399155992}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1306.5, y: -685}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &543393633
 MonoBehaviour:
@@ -19826,6 +19804,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 543393631}
   m_CullTransparentMesh: 1
+--- !u!114 &543393635
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 543393631}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 15
 --- !u!1 &543829288
 GameObject:
   m_ObjectHideFlags: 0
@@ -25497,8 +25488,9 @@ GameObject:
   - component: {fileID: 722045958}
   - component: {fileID: 722045960}
   - component: {fileID: 722045959}
+  - component: {fileID: 722045961}
   m_Layer: 5
-  m_Name: logros (2)
+  m_Name: Zombies300
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -25523,10 +25515,10 @@ RectTransform:
   - {fileID: 1875081984}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 576.5, y: -2085}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &722045959
 MonoBehaviour:
@@ -25566,6 +25558,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 722045957}
   m_CullTransparentMesh: 1
+--- !u!114 &722045961
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 722045957}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 2
 --- !u!1 &722765188
 GameObject:
   m_ObjectHideFlags: 0
@@ -25851,8 +25856,9 @@ GameObject:
   - component: {fileID: 733034060}
   - component: {fileID: 733034062}
   - component: {fileID: 733034061}
+  - component: {fileID: 733034063}
   m_Layer: 5
-  m_Name: logros (6)
+  m_Name: Headshot100
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -25877,10 +25883,10 @@ RectTransform:
   - {fileID: 1189235598}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 576.5, y: -2645}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &733034061
 MonoBehaviour:
@@ -25920,6 +25926,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 733034059}
   m_CullTransparentMesh: 1
+--- !u!114 &733034063
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 733034059}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 6
 --- !u!1 &744980412
 GameObject:
   m_ObjectHideFlags: 0
@@ -29586,8 +29605,9 @@ GameObject:
   - component: {fileID: 820396701}
   - component: {fileID: 820396703}
   - component: {fileID: 820396702}
+  - component: {fileID: 820396704}
   m_Layer: 5
-  m_Name: logros (7)
+  m_Name: Headshot300
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -29612,10 +29632,10 @@ RectTransform:
   - {fileID: 1728202901}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1306.5, y: -2645}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &820396702
 MonoBehaviour:
@@ -29655,6 +29675,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 820396700}
   m_CullTransparentMesh: 1
+--- !u!114 &820396704
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 820396700}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 7
 --- !u!1 &823349465
 GameObject:
   m_ObjectHideFlags: 0
@@ -30291,8 +30324,9 @@ GameObject:
   - component: {fileID: 836828285}
   - component: {fileID: 836828287}
   - component: {fileID: 836828286}
+  - component: {fileID: 836828288}
   m_Layer: 5
-  m_Name: logros (12)
+  m_Name: SupervivenciaDificil
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -30317,10 +30351,10 @@ RectTransform:
   - {fileID: 1545736099}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1306.5, y: -965}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &836828286
 MonoBehaviour:
@@ -30360,6 +30394,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 836828284}
   m_CullTransparentMesh: 1
+--- !u!114 &836828288
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 836828284}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 12
 --- !u!1 &837327877
 GameObject:
   m_ObjectHideFlags: 0
@@ -31059,8 +31106,8 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 131672902}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.7653428}
-  m_AnchorMax: {x: 1, y: 0.9999998}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -32489,7 +32536,7 @@ RectTransform:
   m_Father: {fileID: 1214608292}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 10, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -32506,7 +32553,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 1, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -34069,6 +34116,51 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 904260450}
   m_CullTransparentMesh: 1
+--- !u!1 &905045625
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 905045627}
+  - component: {fileID: 905045626}
+  m_Layer: 0
+  m_Name: AchievementManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &905045626
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 905045625}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f62e3ef72e6b8242970ce04178c2df5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementsManager
+  achievementDatabase: {fileID: 11400000, guid: 98adc11452bb3bb4793eeaeb39a9703e, type: 2}
+--- !u!4 &905045627
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 905045625}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 577.6467, y: 0.00002, z: 2624.1482}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &912898688
 GameObject:
   m_ObjectHideFlags: 0
@@ -47530,8 +47622,9 @@ GameObject:
   - component: {fileID: 1246649172}
   - component: {fileID: 1246649174}
   - component: {fileID: 1246649173}
+  - component: {fileID: 1246649175}
   m_Layer: 5
-  m_Name: logros (8)
+  m_Name: RondasNormal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -47556,10 +47649,10 @@ RectTransform:
   - {fileID: 1245994256}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1306.5, y: -1245}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1246649173
 MonoBehaviour:
@@ -47599,6 +47692,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1246649171}
   m_CullTransparentMesh: 1
+--- !u!114 &1246649175
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1246649171}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 8
 --- !u!1 &1249445403
 GameObject:
   m_ObjectHideFlags: 0
@@ -48490,8 +48596,9 @@ GameObject:
   - component: {fileID: 1280671073}
   - component: {fileID: 1280671075}
   - component: {fileID: 1280671074}
+  - component: {fileID: 1280671076}
   m_Layer: 5
-  m_Name: logros (10)
+  m_Name: RondasPesadilla
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -48516,10 +48623,10 @@ RectTransform:
   - {fileID: 1954414498}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1306.5, y: -1525}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1280671074
 MonoBehaviour:
@@ -48559,6 +48666,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1280671072}
   m_CullTransparentMesh: 1
+--- !u!114 &1280671076
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1280671072}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 10
 --- !u!1 &1280795303
 GameObject:
   m_ObjectHideFlags: 0
@@ -48865,7 +48985,6 @@ RectTransform:
   m_Children:
   - {fileID: 779317250}
   - {fileID: 422954531}
-  - {fileID: 55199710}
   m_Father: {fileID: 785228835}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -50156,11 +50275,11 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 132960299}
-  - {fileID: 393576748}
   - {fileID: 310072476}
+  - {fileID: 393576748}
   - {fileID: 1928426369}
-  - {fileID: 1596429109}
   - {fileID: 543393632}
+  - {fileID: 1596429109}
   - {fileID: 1575582953}
   - {fileID: 836828285}
   - {fileID: 2108934761}
@@ -50180,7 +50299,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0.0005717947}
-  m_SizeDelta: {x: 0, y: 2770}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1333339246
 MonoBehaviour:
@@ -55687,8 +55806,9 @@ GameObject:
   - component: {fileID: 1481231950}
   - component: {fileID: 1481231952}
   - component: {fileID: 1481231951}
+  - component: {fileID: 1481231953}
   m_Layer: 5
-  m_Name: logros (3)
+  m_Name: BossFinal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -55713,10 +55833,10 @@ RectTransform:
   - {fileID: 526977633}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1306.5, y: -2085}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1481231951
 MonoBehaviour:
@@ -55756,6 +55876,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1481231949}
   m_CullTransparentMesh: 1
+--- !u!114 &1481231953
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1481231949}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 3
 --- !u!1 &1482777948
 GameObject:
   m_ObjectHideFlags: 0
@@ -59058,8 +59191,9 @@ GameObject:
   - component: {fileID: 1575582953}
   - component: {fileID: 1575582955}
   - component: {fileID: 1575582954}
+  - component: {fileID: 1575582956}
   m_Layer: 5
-  m_Name: logros (11)
+  m_Name: SupervivenciaNormal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -59084,10 +59218,10 @@ RectTransform:
   - {fileID: 259928281}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 576.5, y: -965}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1575582954
 MonoBehaviour:
@@ -59127,6 +59261,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1575582952}
   m_CullTransparentMesh: 1
+--- !u!114 &1575582956
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1575582952}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 11
 --- !u!1 &1578419228
 GameObject:
   m_ObjectHideFlags: 0
@@ -60357,8 +60504,9 @@ GameObject:
   - component: {fileID: 1596429109}
   - component: {fileID: 1596429111}
   - component: {fileID: 1596429110}
+  - component: {fileID: 1596429112}
   m_Layer: 5
-  m_Name: logros (16)
+  m_Name: HistoriaPesadilla
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -60383,10 +60531,10 @@ RectTransform:
   - {fileID: 1334035664}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 576.5, y: -685}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1596429110
 MonoBehaviour:
@@ -60426,6 +60574,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1596429108}
   m_CullTransparentMesh: 1
+--- !u!114 &1596429112
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1596429108}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 16
 --- !u!1 &1597744321
 GameObject:
   m_ObjectHideFlags: 0
@@ -71013,8 +71174,9 @@ GameObject:
   - component: {fileID: 1928426369}
   - component: {fileID: 1928426371}
   - component: {fileID: 1928426370}
+  - component: {fileID: 1928426372}
   m_Layer: 5
-  m_Name: logros (14)
+  m_Name: HistoriaNormal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -71039,10 +71201,10 @@ RectTransform:
   - {fileID: 1583135090}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1306.5, y: -405}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1928426370
 MonoBehaviour:
@@ -71082,6 +71244,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1928426368}
   m_CullTransparentMesh: 1
+--- !u!114 &1928426372
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1928426368}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 14
 --- !u!1 &1931595772
 GameObject:
   m_ObjectHideFlags: 0
@@ -77185,8 +77360,9 @@ GameObject:
   - component: {fileID: 2108934761}
   - component: {fileID: 2108934763}
   - component: {fileID: 2108934762}
+  - component: {fileID: 2108934764}
   m_Layer: 5
-  m_Name: logros (13)
+  m_Name: SupervivenciaPesadilla
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -77211,10 +77387,10 @@ RectTransform:
   - {fileID: 1781424774}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 576.5, y: -1245}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2108934762
 MonoBehaviour:
@@ -77254,6 +77430,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2108934760}
   m_CullTransparentMesh: 1
+--- !u!114 &2108934764
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2108934760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 13
 --- !u!1 &2112721708
 GameObject:
   m_ObjectHideFlags: 0
@@ -78562,10 +78751,10 @@ RectTransform:
   - {fileID: 569754264531037321}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 576.5, y: -1805}
-  m_SizeDelta: {x: 700, y: 250}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1288516074142605743
 GameObject:
@@ -79193,8 +79382,9 @@ GameObject:
   - component: {fileID: 1255808170005737296}
   - component: {fileID: 8991578425431111819}
   - component: {fileID: 682469190218930385}
+  - component: {fileID: 8991578425431111820}
   m_Layer: 5
-  m_Name: logros
+  m_Name: Zombies50
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -79293,6 +79483,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7310871360955343015}
   m_CullTransparentMesh: 1
+--- !u!114 &8991578425431111820
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7310871360955343015}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::AchievementUIItem
+  achievementId: 0
 --- !u!1 &9100680522897649585
 GameObject:
   m_ObjectHideFlags: 0
@@ -79340,3 +79543,4 @@ SceneRoots:
   - {fileID: 1223398083}
   - {fileID: 1269988793}
   - {fileID: 1880059632}
+  - {fileID: 905045627}
