@@ -37876,7 +37876,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3516423437
+  GlobalObjectIdHash: 1614284941
   InScenePlacedSourceGlobalObjectIdHash: 477224611
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -74804,6 +74804,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f2fc14639e04fde4db228e4d14874d6c, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6384497425567042706}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f2fc14639e04fde4db228e4d14874d6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5978210009255254380}
   m_SourcePrefab: {fileID: 100100000, guid: f2fc14639e04fde4db228e4d14874d6c, type: 3}
 --- !u!4 &1138621713839567240 stripped
 Transform:
@@ -75042,6 +75045,27 @@ MonoBehaviour:
   - {fileID: 8300000, guid: bce84b3643e6f284782de83c55b79cc5, type: 3}
   - {fileID: 8300000, guid: 18202485ee9f1da45a8dc83de7005216, type: 3}
   impactSound: {fileID: 8300000, guid: 8381cfa68b44d734b9c039db0dbad2a1, type: 3}
+--- !u!114 &5978210009255254380
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5787282809299351624}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2af09920d6fdbbd4d9c7d4da926c7044, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::GrenadeThrow
+  weaponAnimator: {fileID: 4557263371411451482}
+  playerCamera: {fileID: 8884011811728304703}
+  weaponSwitcher: {fileID: 967506594462204975}
+  grenadeHandModel: {fileID: 1948591290861370, guid: 7b04fe350ed10a741a1e245447860d9e, type: 3}
+  throwPoint: {fileID: 1138621713839567240}
+  grenadePrefab: {fileID: 1948591290861370, guid: 7b04fe350ed10a741a1e245447860d9e, type: 3}
+  throwForce: 12
+  throwUpwardArc: 3
+  throwCooldown: 1.2
 --- !u!4 &6564946030770742002 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: f2fc14639e04fde4db228e4d14874d6c, type: 3}
