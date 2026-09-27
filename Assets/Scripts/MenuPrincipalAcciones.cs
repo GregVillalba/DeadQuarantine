@@ -11,25 +11,32 @@ public class MenuPrincipalAcciones : MonoBehaviour
     [SerializeField] private GameObject logrosPanel;
     [SerializeField] private GameObject creditosInfoPanel;
 
-    [Header("Subpaneles de Configuración (Opcional)")]
+    [Header("Subpaneles de Configuraciï¿½n (Opcional)")]
     [SerializeField] private GameObject sonidoPanel;
     [SerializeField] private GameObject sensibilidadMousePanel;
 
     // Nombre exacto de tu escena de un jugador
     private const string EscenaSinglePlayer = "mainSceneSinglePlayer";
+    private const string EscenaTutorial = "TutorialScene";
 
     // ==========================================
     // CARGA DE ESCENAS
     // ==========================================
 
-    // Opción 1: Carga directa de la escena single player (no pide escribir nada en el Inspector)
+    // Opciï¿½n 1: Carga directa de la escena single player (no pide escribir nada en el Inspector)
     public void IniciarJuegoSinglePlayer()
     {
         Time.timeScale = 1f;
         SceneManager.LoadScene(EscenaSinglePlayer);
     }
 
-    // Opción 2: Carga cualquier escena escribiendo su nombre en el recuadro del botón (como lo tenías antes)
+    public void IniciarTutorial()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(EscenaTutorial);
+    }
+
+    // Opciï¿½n 2: Carga cualquier escena escribiendo su nombre en el recuadro del botï¿½n (como lo tenï¿½as antes)
     public void IniciarJuego(string nombreEscena)
     {
         Time.timeScale = 1f;
@@ -40,35 +47,35 @@ public class MenuPrincipalAcciones : MonoBehaviour
     // CONTROL DE PANELES PRINCIPALES
     // ==========================================
 
-    // Botón "INICIAR PARTIDA"
+    // Botï¿½n "INICIAR PARTIDA"
     public void MostrarModoJuego()
     {
         OcultarTodosLosPaneles();
         if (elegirModoPanel != null) elegirModoPanel.SetActive(true);
     }
 
-    // Botón "COMO JUGAR"
+    // Botï¿½n "COMO JUGAR"
     public void MostrarComoJugar()
     {
         OcultarTodosLosPaneles();
         if (comoJugarPanel != null) comoJugarPanel.SetActive(true);
     }
 
-    // Botón "CONFIGURACIONES"
+    // Botï¿½n "CONFIGURACIONES"
     public void MostrarConfiguraciones()
     {
         OcultarTodosLosPaneles();
         if (configuracionesPanel != null) configuracionesPanel.SetActive(true);
     }
 
-    // Botón "LOGROS"
+    // Botï¿½n "LOGROS"
     public void MostrarLogros()
     {
         OcultarTodosLosPaneles();
         if (logrosPanel != null) logrosPanel.SetActive(true);
     }
 
-    // Botón "CREDITOS"
+    // Botï¿½n "CREDITOS"
     public void MostrarCreditos()
     {
         OcultarTodosLosPaneles();
@@ -93,14 +100,14 @@ public class MenuPrincipalAcciones : MonoBehaviour
         if (sonidoPanel != null) sonidoPanel.SetActive(false);
     }
 
-    // Botón "VOLVER" (vuelve al menú principal desde cualquier panel)
+    // Botï¿½n "VOLVER" (vuelve al menï¿½ principal desde cualquier panel)
     public void VolverAMenuPrincipal()
     {
         OcultarTodosLosPaneles();
         if (menuPrincipalPanel != null) menuPrincipalPanel.SetActive(true);
     }
 
-    // Botón "SALIR"
+    // Botï¿½n "SALIR"
     public void SalirDelJuego()
     {
         Debug.Log("Saliendo del juego...");
