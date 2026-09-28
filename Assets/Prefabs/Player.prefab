@@ -74783,26 +74783,12 @@ MonoBehaviour:
     TriggerNameHash: -620874749
     TransitionIndex: 3
   - IsCrossFadeExit: 0
-    Layer: 1
-    OriginatingState: -118708495
-    DestinationState: 991172327
-    TransitionDuration: 0
-    TriggerNameHash: 630406106
-    TransitionIndex: 2
-  - IsCrossFadeExit: 0
-    Layer: 1
-    OriginatingState: -720768137
+    Layer: 2
+    OriginatingState: 753088835
     DestinationState: -118708495
-    TransitionDuration: 0.1
+    TransitionDuration: 0.2
     TriggerNameHash: 630406106
     TransitionIndex: 0
-  - IsCrossFadeExit: 0
-    Layer: 1
-    OriginatingState: -391498677
-    DestinationState: -118708495
-    TransitionDuration: 0.1
-    TriggerNameHash: 630406106
-    TransitionIndex: 1
   AnimatorParameterEntries:
     ParameterEntries:
     - name: TP_Speed
@@ -75539,6 +75525,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Scripts::WeaponSwitcher
   weaponAnimator: {fileID: 4557263371411451482}
   baseController: {fileID: 9100000, guid: bbde9933e6f7ba34d8a5a24789afb1fa, type: 2}
+  thirdPersonAnimator: {fileID: 2960909616510647293}
+  tpBaseController: {fileID: 9100000, guid: 0a2f1f82b7a731147b8dd284c874facf, type: 2}
   hudController: {fileID: 3581967550607164246}
   weaponAnimationEvents: {fileID: 8289700931889536708}
   slots:
@@ -75546,6 +75534,7 @@ MonoBehaviour:
     weaponRoot: {fileID: 5261302448063880521}
     weaponComponent: {fileID: 3180206767226728580}
     overrideController: {fileID: 0}
+    tpOverrideController: {fileID: 0}
     unlockedByDefault: 1
     weaponIcon: {fileID: 21300000, guid: 5de2ff934a8b3ea4ebfe923a6f958686, type: 3}
     casingPrefab: {fileID: 1492315059354262, guid: e9e4f4e56f1f0a44f9c9d9d846229fba, type: 3}
@@ -75554,6 +75543,7 @@ MonoBehaviour:
     weaponRoot: {fileID: 6999794881086617591}
     weaponComponent: {fileID: 2410896950522157583}
     overrideController: {fileID: 22100000, guid: 2d9a07beb030cb74bb44e2708fd131a9, type: 2}
+    tpOverrideController: {fileID: 22100000, guid: 1b25dc40362c639489c0c1666cef7e4d, type: 2}
     unlockedByDefault: 0
     weaponIcon: {fileID: 21300000, guid: bcc477d9e47ffcf41acc147a6fc51cf9, type: 3}
     casingPrefab: {fileID: 1492315059354262, guid: 3ea52eaf9fe44654e880acb7e385dd7a, type: 3}
@@ -76004,31 +75994,31 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4335121968968054, guid: 191a40a97567c454dad88aa6ea16ac71, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.0794
+      value: 0.0679
       objectReference: {fileID: 0}
     - target: {fileID: 4335121968968054, guid: 191a40a97567c454dad88aa6ea16ac71, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.0562
+      value: 0.0515
       objectReference: {fileID: 0}
     - target: {fileID: 4335121968968054, guid: 191a40a97567c454dad88aa6ea16ac71, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.0243
+      value: -0.0047
       objectReference: {fileID: 0}
     - target: {fileID: 4335121968968054, guid: 191a40a97567c454dad88aa6ea16ac71, type: 3}
       propertyPath: m_LocalRotation.w
-      value: -0.48953113
+      value: -0.59314615
       objectReference: {fileID: 0}
     - target: {fileID: 4335121968968054, guid: 191a40a97567c454dad88aa6ea16ac71, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.5054631
+      value: 0.38547412
       objectReference: {fileID: 0}
     - target: {fileID: 4335121968968054, guid: 191a40a97567c454dad88aa6ea16ac71, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0.48289758
+      value: -0.58317465
       objectReference: {fileID: 0}
     - target: {fileID: 4335121968968054, guid: 191a40a97567c454dad88aa6ea16ac71, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0.52122587
+      value: 0.3993679
       objectReference: {fileID: 0}
     - target: {fileID: 4335121968968054, guid: 191a40a97567c454dad88aa6ea16ac71, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -76040,7 +76030,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4335121968968054, guid: 191a40a97567c454dad88aa6ea16ac71, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: 86.885
+      value: 112.572
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
