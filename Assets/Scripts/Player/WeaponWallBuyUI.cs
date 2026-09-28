@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using TMPro;
 using Unity.Netcode;
 
@@ -17,6 +18,7 @@ public class WeaponWallBuyUI : MonoBehaviour
     private NetworkObject playerNetworkObject;
     private PlayerScore playerScore;
     private WeaponSwitcher weaponSwitcher;
+    private PlayerControls controls;
 
     private void Awake()
     {
@@ -24,6 +26,9 @@ public class WeaponWallBuyUI : MonoBehaviour
 
         playerScore = transform.root.GetComponentInChildren<PlayerScore>(true);
         weaponSwitcher = transform.root.GetComponentInChildren<WeaponSwitcher>(true);
+
+        controls = new PlayerControls();
+        ConfiguracionesJuego.CargarRebinds(controls.asset);
 
         BuscarCamara();
         Ocultar();
@@ -107,7 +112,7 @@ public class WeaponWallBuyUI : MonoBehaviour
 
         if (interactText != null)
         {
-            interactText.text = "E para comprar " + wallBuy.WeaponId + " - " + wallBuy.Cost;
+            interactText.text = controls.Player.Interact.GetBindingDisplayString() + " para comprar " + wallBuy.WeaponId + " - " + wallBuy.Cost;
 
             bool alcanza = playerScore == null ||
                            playerScore.ScoreNetwork.Value >= wallBuy.Cost;

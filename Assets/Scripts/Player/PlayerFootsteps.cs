@@ -22,6 +22,7 @@ public class PlayerFootsteps : MonoBehaviour
     {
         audioSource = GetComponent<AudioSource>();
         controls = new PlayerControls();
+        ConfiguracionesJuego.CargarRebinds(controls.asset);
     }
 
     private void OnEnable()

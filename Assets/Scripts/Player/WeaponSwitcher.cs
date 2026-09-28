@@ -43,6 +43,7 @@ public class WeaponSwitcher : MonoBehaviour
     private void Awake()
     {
         controls = new PlayerControls();
+        ConfiguracionesJuego.CargarRebinds(controls.asset);
 
         unlocked = new bool[slots.Length];
         for (int i = 0; i < slots.Length; i++)

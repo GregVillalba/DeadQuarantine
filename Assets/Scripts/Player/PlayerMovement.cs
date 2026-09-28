@@ -142,6 +142,7 @@ public class PlayerMovement : NetworkBehaviour
 
         controls =
             new PlayerControls();
+        ConfiguracionesJuego.CargarRebinds(controls.asset);
 
         playerHealth =
             GetComponent<PlayerHealth>();

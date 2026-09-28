@@ -105,6 +105,7 @@ public class Weapon : MonoBehaviour
     private void Awake()
     {
         controls = new PlayerControls();
+        ConfiguracionesJuego.CargarRebinds(controls.asset);
         currentAmmo = maxAmmo;
 
         if (playerCamera != null)

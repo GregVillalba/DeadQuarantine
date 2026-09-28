@@ -84,6 +84,7 @@ public class NPCShopUI : MonoBehaviour
     private void Awake()
     {
         controls = new PlayerControls();
+        ConfiguracionesJuego.CargarRebinds(controls.asset);
 
         if (shopPanel != null)
             shopPanel.SetActive(false);
@@ -163,7 +164,7 @@ public class NPCShopUI : MonoBehaviour
             return;
 
         if (interactText != null)
-            interactText.text = "E para hablar con " + vendor.NombreMercader;
+            interactText.text = controls.Player.Interact.GetBindingDisplayString() + " para hablar con " + vendor.NombreMercader;
 
         interactPrompt.SetActive(true);
     }

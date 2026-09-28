@@ -27,6 +27,7 @@ public class MeleeAttack : MonoBehaviour
     private void Awake()
     {
         controls = new PlayerControls();
+        ConfiguracionesJuego.CargarRebinds(controls.asset);
 
         if (knifeObject != null)
             knifeObject.SetActive(false);
