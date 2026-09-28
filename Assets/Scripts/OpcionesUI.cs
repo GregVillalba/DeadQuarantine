@@ -50,6 +50,8 @@ public class OpcionesUI : MonoBehaviour
     private readonly List<(Button boton, TextMeshProUGUI texto, string accion, string particion)> _filas =
         new List<(Button, TextMeshProUGUI, string, string)>();
 
+    private readonly List<GameObject> _hermanosOcultos = new List<GameObject>();
+
     private CanvasGroup _grupo;
     private TextMeshProUGUI _aviso;
     private InputActionRebindingExtensions.RebindingOperation _operacion;
@@ -65,6 +67,7 @@ public class OpcionesUI : MonoBehaviour
     {
         ResolverControles();
         ConfiguracionesJuego.CargarRebinds(acciones);
+        OcultarMenuAnterior();
         _grupo.alpha = 1f;
         _grupo.blocksRaycasts = true;
         ActualizarFilas();
@@ -76,6 +79,27 @@ public class OpcionesUI : MonoBehaviour
         if (_grupo == null) return;
         _grupo.alpha = 0f;
         _grupo.blocksRaycasts = false;
+        RestaurarMenuAnterior();
+    }
+
+    private void OcultarMenuAnterior()
+    {
+        if (_hermanosOcultos.Count > 0 || transform.parent == null) return;
+        foreach (Transform hermano in transform.parent)
+        {
+            if (hermano == transform || !hermano.gameObject.activeSelf) continue;
+            hermano.gameObject.SetActive(false);
+            _hermanosOcultos.Add(hermano.gameObject);
+        }
+    }
+
+    private void RestaurarMenuAnterior()
+    {
+        foreach (var hermano in _hermanosOcultos)
+        {
+            if (hermano != null) hermano.SetActive(true);
+        }
+        _hermanosOcultos.Clear();
     }
 
     private void Awake()
