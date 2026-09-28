@@ -10,15 +10,16 @@ public class GrenadeThrow : MonoBehaviour
     [SerializeField] private WeaponSwitcher weaponSwitcher;
 
     [Header("Granada")]
-    [SerializeField] private GameObject grenadeHandModel; // mesh en la mano, solo visible durante la animación
+    [SerializeField] private GameObject grenadeHandModel;
     [SerializeField] private Transform throwPoint;
-    [SerializeField] private GameObject grenadePrefab; // debe tener NetworkObject + GrenadeProjectile
+    [SerializeField] private GameObject grenadePrefab;
     [SerializeField] private float throwForce = 12f;
     [SerializeField] private float throwUpwardArc = 3f;
     [SerializeField] private float throwCooldown = 1.2f;
 
     private PlayerControls controls;
-    private int grenadeLayerIndex = -1;
+    private int grenadeLeftLayerIndex = -1;
+    private int grenadeRightLayerIndex = -1;
     private bool isThrowing;
 
     private void Awake()
@@ -29,7 +30,10 @@ public class GrenadeThrow : MonoBehaviour
             grenadeHandModel.SetActive(false);
 
         if (weaponAnimator != null)
-            grenadeLayerIndex = weaponAnimator.GetLayerIndex("GranadeKnife");
+        {
+            grenadeLeftLayerIndex = weaponAnimator.GetLayerIndex("GranadeKnife");
+            grenadeRightLayerIndex = weaponAnimator.GetLayerIndex("GranadeKnifeRight");
+        }
     }
 
     private void OnEnable()
@@ -49,19 +53,16 @@ public class GrenadeThrow : MonoBehaviour
         if (isThrowing || weaponAnimator == null)
             return;
 
-        if (grenadeLayerIndex < 0)
+        if (grenadeLeftLayerIndex < 0 && grenadeRightLayerIndex < 0)
         {
-            Debug.LogWarning("[GrenadeThrow] No se encontró la capa 'GranadeKnife' en el Animator.");
+            Debug.LogWarning("[GrenadeThrow] No se encontraron las capas GranadeKnife / GranadeKnifeRight.");
             return;
         }
 
         Weapon currentWeapon = weaponSwitcher != null ? weaponSwitcher.CurrentWeapon : null;
 
         if (currentWeapon != null && currentWeapon.IsReloading)
-        {
-            Debug.Log("[GrenadeThrow] Bloqueado: el arma está recargando.");
             return;
-        }
 
         isThrowing = true;
 
@@ -74,12 +75,18 @@ public class GrenadeThrow : MonoBehaviour
         if (currentWeapon != null)
             currentWeapon.InputLocked = true;
 
-        weaponAnimator.CrossFade("Granade", 0.1f, grenadeLayerIndex);
+        // Brazo izquierdo: Override.
+        if (grenadeLeftLayerIndex >= 0)
+            weaponAnimator.CrossFade("Granade", 0.1f, grenadeLeftLayerIndex, 0f);
+
+        // Brazo derecho: Additive.
+        if (grenadeRightLayerIndex >= 0)
+            weaponAnimator.CrossFade("Granade", 0.1f, grenadeRightLayerIndex, 0f);
 
         Invoke(nameof(FinishThrow), throwCooldown);
     }
 
-    // Llamado por Animation Event, en el frame exacto donde se suelta la granada.
+    // Animation Event en el frame exacto de soltar la granada.
     public void OnGrenadeRelease()
     {
         if (grenadeHandModel != null)
@@ -88,7 +95,8 @@ public class GrenadeThrow : MonoBehaviour
         if (playerCamera == null || throwPoint == null)
             return;
 
-        Vector3 direction = playerCamera.transform.forward + Vector3.up * (throwUpwardArc / throwForce);
+        Vector3 direction = playerCamera.transform.forward +
+                            Vector3.up * (throwUpwardArc / Mathf.Max(0.01f, throwForce));
         Vector3 velocity = direction.normalized * throwForce;
 
         RequestThrowServerRpc(throwPoint.position, velocity);
@@ -101,11 +109,20 @@ public class GrenadeThrow : MonoBehaviour
         ServerRpcParams rpcParams = default)
     {
         GameObject instance = Instantiate(grenadePrefab, position, Quaternion.identity);
-
         instance.SetActive(true);
 
-        instance.GetComponent<NetworkObject>().Spawn(true);
-        instance.GetComponent<GrenadeProjectile>().Launch(velocity);
+        NetworkObject networkObject = instance.GetComponent<NetworkObject>();
+        GrenadeProjectile projectile = instance.GetComponent<GrenadeProjectile>();
+
+        if (networkObject == null || projectile == null)
+        {
+            Debug.LogError("[GrenadeThrow] grenadePrefab debe tener NetworkObject y GrenadeProjectile en el root.");
+            Destroy(instance);
+            return;
+        }
+
+        networkObject.Spawn(true);
+        projectile.Launch(velocity);
     }
 
     private void FinishThrow()
