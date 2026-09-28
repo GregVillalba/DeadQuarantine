@@ -185,6 +185,7 @@ public class Door : NetworkBehaviour
             {
                 localPlayerCamera =
                     cam;
+                Debug.Log("[Door] Cámara elegida: " + localPlayerCamera.name);
 
                 return;
             }
