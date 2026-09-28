@@ -66,6 +66,7 @@ public class PlayerSpectator : NetworkBehaviour
     private void Awake()
     {
         controls = new PlayerControls();
+        ConfiguracionesJuego.CargarRebinds(controls.asset);
         if (playerHealth == null)
         {
             playerHealth =

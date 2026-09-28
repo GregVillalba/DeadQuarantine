@@ -70,6 +70,7 @@ public class Door : NetworkBehaviour
     {
         controls =
             new PlayerControls();
+        ConfiguracionesJuego.CargarRebinds(controls.asset);
 
         if (doorLeaf != null)
         {

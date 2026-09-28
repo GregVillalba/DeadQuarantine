@@ -28,6 +28,7 @@ public class WeaponWallBuy : MonoBehaviour
     private void Awake()
     {
         controls = new PlayerControls();
+        ConfiguracionesJuego.CargarRebinds(controls.asset);
     }
 
     private void OnEnable()

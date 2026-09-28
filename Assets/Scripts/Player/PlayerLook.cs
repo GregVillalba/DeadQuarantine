@@ -30,6 +30,7 @@ public class PlayerLook : MonoBehaviour
     private void Awake()
     {
         controls = new PlayerControls();
+        ConfiguracionesJuego.CargarRebinds(controls.asset);
 
         mouseSensitivity = ConfiguracionesJuego.ObtenerSensibilidad();
 

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using TMPro;
 using Unity.Netcode;
 
@@ -13,11 +14,15 @@ public class DoorInteractionUI : MonoBehaviour
 
     private Camera playerCamera;
     private NetworkObject playerNetworkObject;
+    private PlayerControls controls;
 
     private void Awake()
     {
         playerNetworkObject =
             GetComponentInParent<NetworkObject>();
+
+        controls = new PlayerControls();
+        ConfiguracionesJuego.CargarRebinds(controls.asset);
 
         BuscarCamara();
 
@@ -133,10 +138,11 @@ public class DoorInteractionUI : MonoBehaviour
 
         if (interactText != null)
         {
+            string tecla = controls.Player.Interact.GetBindingDisplayString();
             interactText.text =
                 puertaAbierta
-                    ? "E para cerrar"
-                    : "E para abrir";
+                    ? tecla + " para cerrar"
+                    : tecla + " para abrir";
         }
 
         interactPrompt.SetActive(true);
