@@ -1,7 +1,14 @@
 fileFormatVersion: 2
 guid: f8bfe64acad4ebc4f9502e787a84f8a0
+AssetOrigin:
+  serializedVersion: 1
+  productId: 54947
+  packageName: Low Poly Shooter Pack v4.3
+  packageVersion: 4.3.1
+  assetPath: Assets/Infima Games/Low Poly Shooter Pack/Art/Animations/Character/_Base/A_TP_CH_Crouch_RB.fbx
+  uploadId: 556432
 ModelImporter:
-  serializedVersion: 20200
+  serializedVersion: 24501
   internalIDToNameTable:
   - first:
       74: -623603649343465320
@@ -12,16 +19,18 @@ ModelImporter:
     materialName: 0
     materialSearch: 1
     materialLocation: 1
+    searchTexturesGlobally: 1
   animations:
     legacyGenerateAnimations: 4
     bakeSimulation: 0
     resampleCurves: 0
     optimizeGameObjects: 0
+    removeConstantScaleCurves: 0
     motionNodeName: 
-    rigImportErrors: 
-    rigImportWarnings: 
     animationImportErrors: 
-    animationImportWarnings: 
+    animationImportWarnings: "\nClip 'Scene' has import animation warnings that might
+      lower retargeting quality:\nNote: Activate translation DOF on avatar to improve
+      retargeting quality.\n\t'hand_l' has translation animation that will be discarded.\n"
     animationRetargetingWarnings: 
     animationDoRetargetingWarnings: 0
     importAnimatedCustomProperties: 0
@@ -71,10 +80,12 @@ ModelImporter:
     addColliders: 0
     useSRGBMaterialColor: 1
     sortHierarchyByName: 1
+    importPhysicalCameras: 1
     importVisibility: 1
     importBlendShapes: 1
     importCameras: 1
     importLights: 1
+    nodeNameCollisionStrategy: 0
     fileIdsGeneration: 2
     swapUVChannels: 0
     generateSecondaryUV: 0
@@ -86,6 +97,12 @@ ModelImporter:
     skinWeightsMode: 0
     maxBonesPerVertex: 4
     minBoneWeight: 0.001
+    optimizeBones: 1
+    generateMeshLods: 0
+    meshLodGenerationFlags: 0
+    maximumMeshLod: -1
+    importUVs: -1
+    importVertexColors: 1
     meshOptimizationFlags: -1
     indexFormat: 0
     secondaryUVAngleDistortion: 8
@@ -96,6 +113,7 @@ ModelImporter:
     secondaryUVMinObjectScale: 1
     secondaryUVPackMargin: 4
     useFileScale: 1
+    strictVertexDataChecks: 0
   tangentSpace:
     normalSmoothAngle: 60
     normalImportMode: 0
@@ -104,6 +122,7 @@ ModelImporter:
     legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
     blendShapeNormalImportMode: 1
     normalSmoothingSource: 0
+    calculateBlendshapeNormalsDeltaFromImportedNormals: 1
   referencedClips: []
   importAnimation: 1
   humanDescription:
@@ -128,7 +147,7 @@ ModelImporter:
     - name: root
       parentName: Armature
       position: {x: -0, y: 0, z: 0}
-      rotation: {x: 0, y: -0, z: -0, w: 1}
+      rotation: {x: -0, y: -0, z: -0, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: pelvis
       parentName: root
@@ -168,8 +187,7 @@ ModelImporter:
     - name: lowerarm_twist_01_l
       parentName: lowerarm_l
       position: {x: -0.0014000016, y: -2.9802322e-10, z: -0.0000000020209698}
-      rotation: {x: -0.000000026077032, y: -0.0000000055879354, z: 0.00000002607703,
-        w: 1}
+      rotation: {x: -0.000000026077032, y: -0.0000000055879354, z: 0.00000002607703, w: 1}
       scale: {x: 1.0000001, y: 1, z: 1}
     - name: hand_l
       parentName: lowerarm_l
@@ -254,8 +272,7 @@ ModelImporter:
     - name: upperarm_twist_01_l
       parentName: upperarm_l
       position: {x: -0.000049999937, y: 4.0046869e-10, z: 1.6065314e-10}
-      rotation: {x: 0.00000008754432, y: -0.000000042724427, z: 0.00000008055941,
-        w: 1}
+      rotation: {x: 0.00000008754432, y: -0.000000042724427, z: 0.00000008055941, w: 1}
       scale: {x: 0.99999994, y: 0.99999994, z: 1}
     - name: clavicle_r
       parentName: spine_03
@@ -435,7 +452,7 @@ ModelImporter:
     - name: ik_foot_root
       parentName: root
       position: {x: -0, y: 0, z: 0}
-      rotation: {x: 0, y: -0, z: -0, w: 1}
+      rotation: {x: -0, y: -0, z: -0, w: 1}
       scale: {x: 1, y: 0.99999994, z: 1}
     - name: ik_foot_l
       parentName: ik_foot_root
@@ -450,7 +467,7 @@ ModelImporter:
     - name: ik_hand_root
       parentName: root
       position: {x: -0, y: 0, z: 0}
-      rotation: {x: 0, y: -0, z: -0, w: 1}
+      rotation: {x: -0, y: -0, z: -0, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: ik_hand_gun
       parentName: ik_hand_root
@@ -465,8 +482,7 @@ ModelImporter:
     - name: ik_hand_r
       parentName: ik_hand_gun
       position: {x: -0.0000000011059456, y: -4.5736667e-10, z: -5.2852556e-10}
-      rotation: {x: 0.000000063329935, y: -0.000000055879354, z: 0.0000000027939677,
-        w: 1}
+      rotation: {x: 0.000000063329935, y: -0.000000055879354, z: 0.0000000027939677, w: 1}
       scale: {x: 1, y: 1, z: 1}
     armTwist: 0.5
     foreArmTwist: 0.5
@@ -477,24 +493,18 @@ ModelImporter:
     feetSpacing: 0
     globalScale: 0.01
     rootMotionBoneName: root
-    hasTranslationDoF: 1
+    hasTranslationDoF: 0
     hasExtraRoot: 1
     skeletonHasParents: 1
-  lastHumanDescriptionAvatarSource: {fileID: 9000000, guid: 2c56a83c3431ae248a78a389fa783ea8,
-    type: 3}
+  lastHumanDescriptionAvatarSource: {fileID: 9000000, guid: 2c56a83c3431ae248a78a389fa783ea8, type: 3}
   autoGenerateAvatarMappingIfUnspecified: 1
   animationType: 2
   humanoidOversampling: 1
   avatarSetup: 2
   addHumanoidExtraRootOnlyWhenUsingAvatar: 1
+  importBlendShapeDeformPercent: 0
+  remapMaterialsIfMaterialImportModeIsNone: 1
   additionalBone: 0
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 54947
-  packageName: Low Poly Shooter Pack v4.3
-  packageVersion: 4.3.1
-  assetPath: Assets/Infima Games/Low Poly Shooter Pack/Art/Animations/Character/_Base/A_TP_CH_Crouch_RB.fbx
-  uploadId: 556432
