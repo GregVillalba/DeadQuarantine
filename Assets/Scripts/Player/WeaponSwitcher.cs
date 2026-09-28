@@ -12,6 +12,7 @@ public class WeaponSwitcher : MonoBehaviour
         public GameObject weaponRoot;
         public Weapon weaponComponent;
         public AnimatorOverrideController overrideController;
+        public AnimatorOverrideController tpOverrideController; // <- NUEVO: override del Animator de tercera persona
         public bool unlockedByDefault;
         public Sprite weaponIcon;
 
@@ -23,6 +24,8 @@ public class WeaponSwitcher : MonoBehaviour
     [Header("Referencias")]
     [SerializeField] private Animator weaponAnimator;
     [SerializeField] private RuntimeAnimatorController baseController;
+    [SerializeField] private Animator thirdPersonAnimator; // <- NUEVO
+    [SerializeField] private RuntimeAnimatorController tpBaseController; // <- NUEVO: controller de la pistola (base)
     [SerializeField] private HUDController hudController;
     [SerializeField] private WeaponAnimationEvents weaponAnimationEvents;
 
@@ -43,7 +46,6 @@ public class WeaponSwitcher : MonoBehaviour
     private void Awake()
     {
         controls = new PlayerControls();
-        ConfiguracionesJuego.CargarRebinds(controls.asset);
 
         unlocked = new bool[slots.Length];
         for (int i = 0; i < slots.Length; i++)
@@ -182,6 +184,13 @@ public class WeaponSwitcher : MonoBehaviour
         {
             weaponAnimator.runtimeAnimatorController =
                 slot.overrideController != null ? slot.overrideController : baseController;
+        }
+
+        // NUEVO: mismo mecanismo, aplicado al Animator de tercera persona.
+        if (thirdPersonAnimator != null)
+        {
+            thirdPersonAnimator.runtimeAnimatorController =
+                slot.tpOverrideController != null ? slot.tpOverrideController : tpBaseController;
         }
 
         slot.weaponRoot.SetActive(true);

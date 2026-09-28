@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro; // Si usas el Text clásico de UnityEngine.UI, cambia TMP_Text por Text
 
 public class MultiplayerMenuManager : MonoBehaviour
@@ -47,6 +48,7 @@ public class MultiplayerMenuManager : MonoBehaviour
 
     [Header("Navegación")]
     [SerializeField] private GameObject botonComenzarJuego; // Botón Siguiente / Comenzar
+    [SerializeField] private GameObject botonHome;           // Botón Home a deshabilitar
 
     private enum ModoSeleccionado { Ninguno, Historia, Ronda5, Infinitas }
     private ModoSeleccionado modoActual = ModoSeleccionado.Ninguno;
@@ -73,7 +75,6 @@ public class MultiplayerMenuManager : MonoBehaviour
         ApagarSelectoresModos();
         if (selectorModoHistoria != null) selectorModoHistoria.SetActive(true);
 
-        // Despliega el subcuadro derecho con imagen y dificultades
         MostrarCuadroSubmodo(cuadroSubmodoHistoria);
         ApagarTodosLosSelectoresDificultad();
         OcultarAvisoInhabilitado();
@@ -255,20 +256,17 @@ public class MultiplayerMenuManager : MonoBehaviour
     {
         if (jugador1Listo && cabanaLista)
         {
-            // Enciende el cartel de redirigiendo y lo trae al frente
             if (panelRedirigiendo != null)
             {
                 panelRedirigiendo.SetActive(true);
                 panelRedirigiendo.transform.SetAsLastSibling();
 
-                // Asegura que los hijos internos del cartel estén activos
                 foreach (Transform t in panelRedirigiendo.transform)
                 {
                     t.gameObject.SetActive(true);
                 }
             }
 
-            // Oculta el botón para evitar que sigan cliqueando
             if (botonComenzarJuego != null)
             {
                 botonComenzarJuego.SetActive(false);
@@ -337,7 +335,9 @@ public class MultiplayerMenuManager : MonoBehaviour
         if (panelEscenario != null) panelEscenario.SetActive(false);
         if (botonComenzarJuego != null) botonComenzarJuego.SetActive(false);
 
-        // Apaga el cartel de redirigiendo al volver o reiniciar
+        // Al resetear la apariencia o volver atrás, se vuelve a habilitar Home
+        SetBotonHomeHabilitado(true);
+
         if (panelRedirigiendo != null) panelRedirigiendo.SetActive(false);
 
         if (jugador1_select != null) jugador1_select.SetActive(false);
@@ -386,9 +386,30 @@ public class MultiplayerMenuManager : MonoBehaviour
 
     private void ValidarComenzar()
     {
+        bool todoSeleccionado = jugador1Listo && cabanaLista;
+
         if (botonComenzarJuego != null)
         {
-            botonComenzarJuego.SetActive(jugador1Listo && cabanaLista);
+            botonComenzarJuego.SetActive(todoSeleccionado);
+        }
+
+        // Si se eligió personaje y escenario válidos, deshabilita Home; de lo contrario queda activo
+        SetBotonHomeHabilitado(!todoSeleccionado);
+    }
+
+    private void SetBotonHomeHabilitado(bool habilitado)
+    {
+        if (botonHome != null)
+        {
+            Button btn = botonHome.GetComponent<Button>();
+            if (btn != null)
+            {
+                btn.interactable = habilitado;
+            }
+            else
+            {
+                botonHome.SetActive(habilitado);
+            }
         }
     }
 
