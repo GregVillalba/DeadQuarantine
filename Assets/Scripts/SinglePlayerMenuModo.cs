@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using TMPro;
 
 public class SingleplayerMenuManager : MonoBehaviour
@@ -47,6 +48,7 @@ public class SingleplayerMenuManager : MonoBehaviour
 
     [Header("Navegación y Carga")]
     [SerializeField] private GameObject botonComenzarJuego;
+    [SerializeField] private GameObject botonHome; // Botón Home a deshabilitar
     [SerializeField] private GameObject cartelCargandoEscenario; // Objeto/panel "Cargando Escenario..."
     [SerializeField] private string escenaJuegoSingleplayer = "MainSceneSinglePlayer";
 
@@ -310,8 +312,6 @@ public class SingleplayerMenuManager : MonoBehaviour
         {
             yield return null;
         }
-
-        // Al completarse, Unity cambia de escena automáticamente y el cartel desaparece por sí solo
     }
 
     // =========================================================
@@ -351,6 +351,9 @@ public class SingleplayerMenuManager : MonoBehaviour
         if (panelPersonaje != null) panelPersonaje.SetActive(true);
         if (panelEscenario != null) panelEscenario.SetActive(false);
         if (botonComenzarJuego != null) botonComenzarJuego.SetActive(false);
+
+        // Al resetear la apariencia o volver atrás, se vuelve a habilitar Home
+        SetBotonHomeHabilitado(true);
 
         if (cartelCargandoEscenario != null) cartelCargandoEscenario.SetActive(false);
 
@@ -400,9 +403,32 @@ public class SingleplayerMenuManager : MonoBehaviour
 
     private void ValidarComenzar()
     {
+        bool todoSeleccionado = jugador1Listo && cabanaLista;
+
         if (botonComenzarJuego != null && !cargandoPartida)
         {
-            botonComenzarJuego.SetActive(jugador1Listo && cabanaLista);
+            botonComenzarJuego.SetActive(todoSeleccionado);
+        }
+
+        // Si se eligió personaje y escenario válidos, se deshabilita Home; de lo contrario queda activo
+        SetBotonHomeHabilitado(!todoSeleccionado);
+    }
+
+    private void SetBotonHomeHabilitado(bool habilitado)
+    {
+        if (botonHome != null)
+        {
+            // Si tiene componente Button, lo vuelve no interactuable para evitar clics
+            Button btn = botonHome.GetComponent<Button>();
+            if (btn != null)
+            {
+                btn.interactable = habilitado;
+            }
+            else
+            {
+                // Si prefieres que desaparezca por completo, puedes usar SetActive(habilitado)
+                botonHome.SetActive(habilitado);
+            }
         }
     }
 
