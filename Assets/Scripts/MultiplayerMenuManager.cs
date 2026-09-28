@@ -1,6 +1,5 @@
 using UnityEngine;
-using UnityEngine.Events;
-using TMPro; // Cambia por UnityEngine.UI si usas Text tradicional
+using TMPro; // Si usas el Text clásico de UnityEngine.UI, cambia TMP_Text por Text
 
 public class MultiplayerMenuManager : MonoBehaviour
 {
@@ -9,13 +8,16 @@ public class MultiplayerMenuManager : MonoBehaviour
     [SerializeField] private GameObject aparienciaPanel;
     [SerializeField] private GameObject cartelAvisoInhabilitado;
 
+    [Header("Pantalla Redirigiendo")]
+    [SerializeField] private GameObject panelRedirigiendo; // Cartel/Panel "CARGANDO_ESCENARIO (1)"
+
     [Header("Texto Encabezado de Resumen")]
     [SerializeField] private TMP_Text textoModalidadDificultad; // "Titulo_elecciones"
 
     [Header("1. Modos - Cuadros Secundarios")]
-    [SerializeField] private GameObject cuadroSubmodoHistoria;
-    [SerializeField] private GameObject cuadroSubmodoRonda5;
-    [SerializeField] private GameObject cuadroSubmodoSupervivencia;
+    [SerializeField] private GameObject cuadroSubmodoHistoria;      // Objeto hijo modoHistoria
+    [SerializeField] private GameObject cuadroSubmodoRonda5;         // Objeto hijo modoRonda5
+    [SerializeField] private GameObject cuadroSubmodoSupervivencia;  // Objeto hijo modoSupervivencia
 
     [Header("1. Modos - Objetos 'Seleccionado'")]
     [SerializeField] private GameObject selectorModoHistoria;
@@ -43,10 +45,8 @@ public class MultiplayerMenuManager : MonoBehaviour
     [SerializeField] private GameObject vistaCiudad;
     [SerializeField] private GameObject vistaCabana;
 
-    [Header("Navegación / Acción Final")]
+    [Header("Navegación")]
     [SerializeField] private GameObject botonComenzarJuego; // Botón Siguiente / Comenzar
-    [Tooltip("Evento que se dispara al pulsar Comenzar cuando todo está validado (sin cambiar escena)")]
-    public UnityEvent onComenzarJuegoValido;
 
     private enum ModoSeleccionado { Ninguno, Historia, Ronda5, Infinitas }
     private ModoSeleccionado modoActual = ModoSeleccionado.Ninguno;
@@ -73,6 +73,7 @@ public class MultiplayerMenuManager : MonoBehaviour
         ApagarSelectoresModos();
         if (selectorModoHistoria != null) selectorModoHistoria.SetActive(true);
 
+        // Despliega el subcuadro derecho con imagen y dificultades
         MostrarCuadroSubmodo(cuadroSubmodoHistoria);
         ApagarTodosLosSelectoresDificultad();
         OcultarAvisoInhabilitado();
@@ -125,7 +126,7 @@ public class MultiplayerMenuManager : MonoBehaviour
             if (textoModalidadDificultad != null)
                 textoModalidadDificultad.text = $"{textoNombreModo} - {textoNombreDificultad}";
 
-            // Pasa a AparienciaPanel dentro de la misma escena
+            // Pasa a la pantalla de Apariencia
             if (modalidadPanel != null) modalidadPanel.SetActive(false);
             if (aparienciaPanel != null) aparienciaPanel.SetActive(true);
 
@@ -182,7 +183,6 @@ public class MultiplayerMenuManager : MonoBehaviour
 
         OcultarAvisoInhabilitado();
 
-        // Enciende el panel de escenario
         if (panelEscenario != null) panelEscenario.SetActive(true);
 
         ValidarComenzar();
@@ -195,7 +195,6 @@ public class MultiplayerMenuManager : MonoBehaviour
         if (jugador2_select != null) jugador2_select.SetActive(true);
         if (jugador1_select != null) jugador1_select.SetActive(false);
 
-        // Bloquea avance: oculta escenarios y apaga vistas
         if (panelEscenario != null) panelEscenario.SetActive(false);
         cabanaLista = false;
         OcultarVistasEscenarios();
@@ -248,8 +247,34 @@ public class MultiplayerMenuManager : MonoBehaviour
     }
 
     // =========================================================
-    // 5. NAVEGACIÓN LOCAL Y ACCIÓN FINAL
+    // 5. NAVEGACIÓN Y ACTIVACIÓN DEL CARTEL
     // =========================================================
+
+    // Asignar al botón Siguiente / Comenzar
+    public void OnClick_ComenzarAJugar()
+    {
+        if (jugador1Listo && cabanaLista)
+        {
+            // Enciende el cartel de redirigiendo y lo trae al frente
+            if (panelRedirigiendo != null)
+            {
+                panelRedirigiendo.SetActive(true);
+                panelRedirigiendo.transform.SetAsLastSibling();
+
+                // Asegura que los hijos internos del cartel estén activos
+                foreach (Transform t in panelRedirigiendo.transform)
+                {
+                    t.gameObject.SetActive(true);
+                }
+            }
+
+            // Oculta el botón para evitar que sigan cliqueando
+            if (botonComenzarJuego != null)
+            {
+                botonComenzarJuego.SetActive(false);
+            }
+        }
+    }
 
     // Asignar al botón Atrás en AparienciaPanel
     public void BotonAtrasDesdeApariencia()
@@ -262,7 +287,7 @@ public class MultiplayerMenuManager : MonoBehaviour
         OcultarAvisoInhabilitado();
     }
 
-    // Asignar a botones Home
+    // Asignar a los botones Home
     public void BotonHome()
     {
         ResetearApariencia();
@@ -272,16 +297,6 @@ public class MultiplayerMenuManager : MonoBehaviour
         if (modalidadPanel != null) modalidadPanel.SetActive(true);
 
         OcultarAvisoInhabilitado();
-    }
-
-    // Asignar al botón Comenzar / Siguiente
-    public void OnClick_ComenzarAJugar()
-    {
-        if (jugador1Listo && cabanaLista)
-        {
-            // Dispara el evento que configures en el Inspector (ej: llamar a tu NetworkManager o abrir panel siguiente)
-            onComenzarJuegoValido?.Invoke();
-        }
     }
 
     // =========================================================
@@ -321,6 +336,9 @@ public class MultiplayerMenuManager : MonoBehaviour
         if (panelPersonaje != null) panelPersonaje.SetActive(true);
         if (panelEscenario != null) panelEscenario.SetActive(false);
         if (botonComenzarJuego != null) botonComenzarJuego.SetActive(false);
+
+        // Apaga el cartel de redirigiendo al volver o reiniciar
+        if (panelRedirigiendo != null) panelRedirigiendo.SetActive(false);
 
         if (jugador1_select != null) jugador1_select.SetActive(false);
         if (jugador2_select != null) jugador2_select.SetActive(false);
