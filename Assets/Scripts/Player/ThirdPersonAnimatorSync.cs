@@ -16,6 +16,14 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
     [SerializeField] private float lookSensitivityScale = 1f / 80f; // 1 dividido el pitch máximo de PlayerLook
     [SerializeField] private bool invertLook = true;
 
+    [Header("Velocidades (igualar a PlayerMovement)")]
+    [SerializeField] private float walkSpeed = 5f;
+    [SerializeField] private float crouchSpeed = 2.5f;
+    [SerializeField] private float moveDamp = 0.1f;
+
+    private float groundedTimer, aimW, crouchW;
+    private bool aimTarget;
+
     private int currentAmmoLastFrame;
     private bool hasAmmoBaseline;
     private bool wasGrounded = true;
@@ -56,24 +64,35 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
 
     private void UpdateMovementParams()
     {
-        Vector3 localVelocity =
-            characterController.transform.InverseTransformDirection(characterController.velocity);
+        Animator a = thirdPersonAnimator;
+        Vector3 v = characterController.velocity;
+        Vector3 local = characterController.transform.InverseTransformDirection(v);
+        float horizontal = new Vector2(v.x, v.z).magnitude;
 
-        float speed = characterController.velocity.magnitude;
-        float normalizedSpeed = Mathf.Clamp01(speed / maxSpeedForNormalization);
+        bool crouching = playerMovement != null && playerMovement.IsCrouching;
+        bool sprinting = playerMovement != null && playerMovement.IsSprinting && !crouching;
+        float refSpeed = crouching ? crouchSpeed : walkSpeed;
 
-        thirdPersonAnimator.SetFloat("TP_Speed", speed);
-        thirdPersonAnimator.SetFloat("TP_MoveX", localVelocity.x);
-        thirdPersonAnimator.SetFloat("TP_MoveZ", localVelocity.z);
-        thirdPersonAnimator.SetFloat("TP_LocomotionTime", normalizedSpeed);
+        Vector2 dir = Vector2.ClampMagnitude(new Vector2(local.x, local.z) / refSpeed, 1f);
+        a.SetFloat("TP_MoveX", dir.x, moveDamp, Time.deltaTime);
+        a.SetFloat("TP_MoveZ", dir.y, moveDamp, Time.deltaTime);
+        a.SetFloat("TP_MoveAmount", dir.magnitude, moveDamp, Time.deltaTime);
+        a.SetFloat("TP_Speed", horizontal);
+        a.SetFloat("TP_VerticalSpeed", v.y);
+        a.SetBool("TP_IsSprinting", sprinting);
 
-        bool grounded = characterController.isGrounded;
-        thirdPersonAnimator.SetBool("TP_IsGrounded", grounded);
+        bool rawGrounded = characterController.isGrounded;
+        groundedTimer = rawGrounded ? 0f : groundedTimer + Time.deltaTime;
+        a.SetBool("TP_IsGrounded", groundedTimer < 0.12f);
 
-        if (!grounded && wasGrounded)
-            thirdPersonAnimator.SetTrigger("TP_Jump");
+        if (wasGrounded && !rawGrounded && v.y > 0.5f)
+            a.SetTrigger("TP_Jump");
+        wasGrounded = rawGrounded;
 
-        wasGrounded = grounded;
+        aimW = Mathf.MoveTowards(aimW, aimTarget ? 1f : 0f, Time.deltaTime * 8f);
+        crouchW = Mathf.MoveTowards(crouchW, crouching ? 1f : 0f, Time.deltaTime * 8f);
+        a.SetFloat("TP_AimWeight", aimW);
+        a.SetFloat("TP_CrouchWeight", crouchW);
 
         if (playerLook != null)
         {
