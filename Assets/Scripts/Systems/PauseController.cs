@@ -59,6 +59,7 @@ public class PauseController : NetworkBehaviour
     private bool movementWasLocked;
     private bool lookWasEnabled;
     private bool weaponWasLocked;
+    private PlayerHealth.PlayerState stateAtPause; // solo se usa en multiplayer
 
     private bool finDeRondaActivo;
     private bool pendienteAccionEsVictoria;
@@ -184,6 +185,10 @@ public class PauseController : NetworkBehaviour
 
         estaPausado = true;
 
+        stateAtPause = playerHealth != null
+            ? playerHealth.State.Value
+            : PlayerHealth.PlayerState.Alive;
+
         movementWasLocked = playerMovement != null && playerMovement.MovementLocked;
         lookWasEnabled = playerLook != null && playerLook.enabled;
 
@@ -263,6 +268,17 @@ public class PauseController : NetworkBehaviour
 
     private void RestaurarEstadoJugador()
     {
+        // En multiplayer la partida sigue corriendo con el menú abierto: si te
+        // derribaron, eliminaron o revivieron durante la pausa, la foto guardada
+        // ya no vale y PlayerHealth/PlayerSpectator ya configuraron todo para el
+        // estado nuevo. Restaurarla reactivaría PlayerLook en pleno modo espectador.
+        if (!EsSinglePlayer() &&
+            playerHealth != null &&
+            playerHealth.State.Value != stateAtPause)
+        {
+            return;
+        }
+
         if (playerMovement != null)
             playerMovement.MovementLocked = movementWasLocked;
 

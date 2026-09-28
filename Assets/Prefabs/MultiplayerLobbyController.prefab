@@ -1,0 +1,70 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &4368379448747600334
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1909578670336796217}
+  - component: {fileID: 3172225619664844787}
+  m_Layer: 0
+  m_Name: MultiplayerLobbyController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1909578670336796217
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4368379448747600334}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3172225619664844787
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4368379448747600334}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c781e4eaf41b8474d8e2318633f27494, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::MultiplayerLobbyController
+  modoMultiplayerPanel: {fileID: 0}
+  ingresarCodPanel: {fileID: 0}
+  salaEsperaPanel: {fileID: 0}
+  network: {fileID: 0}
+  codigoInputField: {fileID: 0}
+  botonCopiarCodigo: {fileID: 0}
+  labelCodigoACopiar: {fileID: 0}
+  feedbackCopiarText: {fileID: 0}
+  p1ConexionText: {fileID: 0}
+  p1EstadoText: {fileID: 0}
+  p1ConexionIcon: {fileID: 0}
+  p1EstadoIcon: {fileID: 0}
+  p2ConexionText: {fileID: 0}
+  p2EstadoText: {fileID: 0}
+  p2ConexionIcon: {fileID: 0}
+  p2EstadoIcon: {fileID: 0}
+  btnPlayMultiplayer: {fileID: 0}
+  btnPlayMultiplayerText: {fileID: 0}
+  countdownPanel: {fileID: 0}
+  countdownText: {fileID: 0}
+  nombreEscenaJuego: MainSceneMultiPlayer
+  colorRojo: {r: 1, g: 0.1, b: 0.1, a: 1}
+  iconoVerde: {fileID: 21300000, guid: 322cbf41b591f044fa4e97dc805822b8, type: 3}
+  iconoRojo: {fileID: 21300000, guid: 5beab3f5f64e4ca4790cdced6b8a0369, type: 3}

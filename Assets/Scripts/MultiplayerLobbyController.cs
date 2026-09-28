@@ -11,6 +11,10 @@ using Unity.Services.Multiplayer;
 
 public class MultiplayerLobbyController : MonoBehaviour
 {
+    public static bool AbrirDirectoEnSalaEspera = false;
+    public static bool AbrirDirectoEnIngresarCodigo = false; //
+    public static string CodigoGeneradoParaMostrar = "";
+
     [Header("--- PANELES ---")]
     [SerializeField] private GameObject modoMultiplayerPanel;
     [SerializeField] private GameObject ingresarCodPanel;
@@ -85,13 +89,45 @@ public class MultiplayerLobbyController : MonoBehaviour
 
     private void Start()
     {
-        MostrarPanel(modoMultiplayerPanel);
+        if (AbrirDirectoEnSalaEspera)
+        {
+            AbrirDirectoEnSalaEspera = false;
+            estoyEnSala = true;
+
+            MostrarPanel(salaEsperaPanel);
+
+            if (labelCodigoACopiar != null)
+            {
+                if (!string.IsNullOrEmpty(CodigoGeneradoParaMostrar))
+                {
+                    labelCodigoACopiar.text = CodigoGeneradoParaMostrar;
+                }
+                else if (network != null && !string.IsNullOrEmpty(network.CurrentJoinCode))
+                {
+                    labelCodigoACopiar.text = network.CurrentJoinCode;
+                }
+            }
+        }
+        // SI VENIMOS DESDE PANTALLAS UI PIDIENDO INGRESAR CÓDIGO:
+        else if (AbrirDirectoEnIngresarCodigo)
+        {
+            AbrirDirectoEnIngresarCodigo = false; // Reset de la bandera
+
+            if (codigoInputField != null)
+            {
+                codigoInputField.text = "";
+            }
+
+            MostrarPanel(ingresarCodPanel); // Activa el panel de ingresar código
+        }
+        else
+        {
+            MostrarPanel(modoMultiplayerPanel);
+        }
 
         if (feedbackCopiarText != null)
         {
-            feedbackCopiarText.gameObject.SetActive(
-                false
-            );
+            feedbackCopiarText.gameObject.SetActive(false);
         }
 
         if (countdownPanel != null)
@@ -106,6 +142,7 @@ public class MultiplayerLobbyController : MonoBehaviour
             jugador2Listo: false
         );
     }
+
 
     private void Update()
     {
@@ -128,29 +165,25 @@ public class MultiplayerLobbyController : MonoBehaviour
 
         if (network == null)
         {
-            Debug.LogError(
-                "[Lobby] No se encontró NetworkBootstrap."
-            );
-
+            Debug.LogError("[Lobby] No se encontró NetworkBootstrap.");
             return;
         }
 
         try
         {
-            string codigo =
-                await network.StartHost();
+            string codigo = await network.StartHost();
 
             if (string.IsNullOrEmpty(codigo))
             {
-                Debug.LogError(
-                    "[Lobby] No se pudo crear la sala."
-                );
-
+                Debug.LogError("[Lobby] No se pudo crear la sala.");
                 return;
             }
 
             estoyEnSala = true;
             tiempoCountdown = -1f;
+
+            // Guardamos el código de forma persistente
+            CodigoGeneradoParaMostrar = codigo;
 
             if (labelCodigoACopiar != null)
             {
@@ -158,24 +191,24 @@ public class MultiplayerLobbyController : MonoBehaviour
             }
 
             miReady = false;
-
             await CambiarReady(false);
-
             ActualizarBotonReady(false);
 
-            MostrarPanel(salaEsperaPanel);
+            Debug.Log("[Lobby] Sala creada. Código: " + codigo);
 
-            Debug.Log(
-                "[Lobby] Sala creada. Código: " +
-                codigo
-            );
+            if (SceneManager.GetActiveScene().name == "PantallasUI")
+            {
+                AbrirDirectoEnSalaEspera = true;
+                SceneManager.LoadScene("NetworkLobby");
+            }
+            else
+            {
+                MostrarPanel(salaEsperaPanel);
+            }
         }
         catch (Exception e)
         {
-            Debug.LogError(
-                "[Lobby] Error creando sala: " +
-                e.Message
-            );
+            Debug.LogError("[Lobby] Error creando sala: " + e.Message);
         }
     }
 
@@ -185,12 +218,21 @@ public class MultiplayerLobbyController : MonoBehaviour
 
     public void OnClick_IrAIngresarCodigo()
     {
-        if (codigoInputField != null)
+        // Si estamos en la escena "PantallasUI", cargamos "NetworkLobby"
+        if (SceneManager.GetActiveScene().name == "PantallasUI")
         {
-            codigoInputField.text = "";
+            AbrirDirectoEnIngresarCodigo = true;
+            SceneManager.LoadScene("NetworkLobby");
         }
-
-        MostrarPanel(ingresarCodPanel);
+        else
+        {
+            // Si ya estábamos dentro de NetworkLobby:
+            if (codigoInputField != null)
+            {
+                codigoInputField.text = "";
+            }
+            MostrarPanel(ingresarCodPanel);
+        }
     }
 
     public async void OnClick_ConfirmarUnirseConCodigo()

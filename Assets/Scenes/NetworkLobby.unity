@@ -2578,9 +2578,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1053037435}
-        m_TargetAssemblyTypeName: MultiplayerLobbyController, Scripts
-        m_MethodName: OnClick_IrAIngresarCodigo
+      - m_Target: {fileID: 2895553356032148958, guid: 284f824236a162d41b0da7525484bda7, type: 3}
+        m_TargetAssemblyTypeName: SceneLoader, Scripts
+        m_MethodName: IrAUnirseElegirPersonaje
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2645,8 +2645,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 225, y: 59}
-  m_SizeDelta: {x: 600, y: 100}
+  m_AnchoredPosition: {x: 400, y: 59}
+  m_SizeDelta: {x: 800, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &899472156
 GameObject:
@@ -2878,74 +2878,17 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 953590244}
   m_CullTransparentMesh: 1
---- !u!1 &1053037433
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1053037434}
-  - component: {fileID: 1053037435}
-  m_Layer: 0
-  m_Name: MultiplayerLobbyController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1053037434
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1053037433}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1053037435
+--- !u!114 &1053037435 stripped
 MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+  m_PrefabInstance: {fileID: 5981322656110301821}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1053037433}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c781e4eaf41b8474d8e2318633f27494, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Scripts::MultiplayerLobbyController
-  modoMultiplayerPanel: {fileID: 2087784073}
-  ingresarCodPanel: {fileID: 366159627}
-  salaEsperaPanel: {fileID: 1604234853}
-  network: {fileID: 2116981550}
-  codigoInputField: {fileID: 464760368}
-  botonCopiarCodigo: {fileID: 412966912}
-  labelCodigoACopiar: {fileID: 267031956}
-  feedbackCopiarText: {fileID: 1658984174}
-  p1ConexionText: {fileID: 1465075992}
-  p1EstadoText: {fileID: 1342278973}
-  p1ConexionIcon: {fileID: 2007629728}
-  p1EstadoIcon: {fileID: 899472158}
-  p2ConexionText: {fileID: 1262529729}
-  p2EstadoText: {fileID: 1533707342}
-  p2ConexionIcon: {fileID: 717106146}
-  p2EstadoIcon: {fileID: 1644071547}
-  btnPlayMultiplayer: {fileID: 1791440033}
-  btnPlayMultiplayerText: {fileID: 1676579271}
-  countdownPanel: {fileID: 300391945}
-  countdownText: {fileID: 1444433122}
-  nombreEscenaJuego: MainSceneMultiPlayer
-  colorRojo: {r: 1, g: 0.1, b: 0.1, a: 1}
-  iconoVerde: {fileID: 21300000, guid: 322cbf41b591f044fa4e97dc805822b8, type: 3}
-  iconoRojo: {fileID: 21300000, guid: 5beab3f5f64e4ca4790cdced6b8a0369, type: 3}
 --- !u!1 &1062737211
 GameObject:
   m_ObjectHideFlags: 0
@@ -3620,9 +3563,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1053037435}
-        m_TargetAssemblyTypeName: MultiplayerLobbyController, Scripts
-        m_MethodName: OnClick_CrearSala
+      - m_Target: {fileID: 2895553356032148958, guid: 284f824236a162d41b0da7525484bda7, type: 3}
+        m_TargetAssemblyTypeName: SceneLoader, Scripts
+        m_MethodName: IrACrearSalaModalidad
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -3687,8 +3630,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 225, y: -100}
-  m_SizeDelta: {x: 600, y: 100}
+  m_AnchoredPosition: {x: 400, y: -100}
+  m_SizeDelta: {x: 800, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1230625310
 GameObject:
@@ -4310,8 +4253,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 32
-  m_fontSizeBase: 32
+  m_fontSize: 64
+  m_fontSizeBase: 64
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -6362,8 +6305,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 32
-  m_fontSizeBase: 32
+  m_fontSize: 64
+  m_fontSizeBase: 64
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -7349,12 +7292,149 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &5981322656110301821
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1909578670336796217, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1909578670336796217, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1909578670336796217, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1909578670336796217, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1909578670336796217, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1909578670336796217, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1909578670336796217, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1909578670336796217, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1909578670336796217, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1909578670336796217, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: network
+      value: 
+      objectReference: {fileID: 2116981550}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: p1EstadoIcon
+      value: 
+      objectReference: {fileID: 899472158}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: p1EstadoText
+      value: 
+      objectReference: {fileID: 1342278973}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: p2EstadoIcon
+      value: 
+      objectReference: {fileID: 1644071547}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: p2EstadoText
+      value: 
+      objectReference: {fileID: 1533707342}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: countdownText
+      value: 
+      objectReference: {fileID: 1444433122}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: countdownPanel
+      value: 
+      objectReference: {fileID: 300391945}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: p1ConexionIcon
+      value: 
+      objectReference: {fileID: 2007629728}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: p1ConexionText
+      value: 
+      objectReference: {fileID: 1465075992}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: p2ConexionIcon
+      value: 
+      objectReference: {fileID: 717106146}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: p2ConexionText
+      value: 
+      objectReference: {fileID: 1262529729}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: salaEsperaPanel
+      value: 
+      objectReference: {fileID: 1604234853}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: codigoInputField
+      value: 
+      objectReference: {fileID: 464760368}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: ingresarCodPanel
+      value: 
+      objectReference: {fileID: 366159627}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: botonCopiarCodigo
+      value: 
+      objectReference: {fileID: 412966912}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: btnPlayMultiplayer
+      value: 
+      objectReference: {fileID: 1791440033}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: feedbackCopiarText
+      value: 
+      objectReference: {fileID: 1658984174}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: labelCodigoACopiar
+      value: 
+      objectReference: {fileID: 267031956}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: modoMultiplayerPanel
+      value: 
+      objectReference: {fileID: 2087784073}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: btnPlayMultiplayerText
+      value: 
+      objectReference: {fileID: 1676579271}
+    - target: {fileID: 4368379448747600334, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: m_Name
+      value: MultiplayerLobbyController
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 91202191}
-  - {fileID: 1053037434}
+  - {fileID: 5981322656110301821}
   - {fileID: 1113961086}
   - {fileID: 2116981549}
   - {fileID: 2133308618}
