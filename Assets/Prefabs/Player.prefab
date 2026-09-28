@@ -74143,10 +74143,38 @@ MonoBehaviour:
   - IsCrossFadeExit: 0
     Layer: 0
     OriginatingState: -2089788878
-    DestinationState: -392784796
-    TransitionDuration: 0.1
+    DestinationState: 316812144
+    TransitionDuration: 0.25
     TriggerNameHash: -620874749
-    TransitionIndex: 0
+    TransitionIndex: 2
+  - IsCrossFadeExit: 0
+    Layer: 0
+    OriginatingState: 1953107775
+    DestinationState: 316812144
+    TransitionDuration: 0.05
+    TriggerNameHash: -620874749
+    TransitionIndex: 2
+  - IsCrossFadeExit: 0
+    Layer: 0
+    OriginatingState: -399748991
+    DestinationState: 316812144
+    TransitionDuration: 0.25
+    TriggerNameHash: -620874749
+    TransitionIndex: 3
+  - IsCrossFadeExit: 0
+    Layer: 0
+    OriginatingState: -1508467898
+    DestinationState: 316812144
+    TransitionDuration: 0.25
+    TriggerNameHash: -620874749
+    TransitionIndex: 1
+  - IsCrossFadeExit: 0
+    Layer: 0
+    OriginatingState: 137525990
+    DestinationState: 316812144
+    TransitionDuration: 0.05
+    TriggerNameHash: -620874749
+    TransitionIndex: 3
   - IsCrossFadeExit: 0
     Layer: 1
     OriginatingState: -118708495
@@ -74156,7 +74184,7 @@ MonoBehaviour:
     TransitionIndex: 2
   - IsCrossFadeExit: 0
     Layer: 1
-    OriginatingState: -2089788878
+    OriginatingState: -720768137
     DestinationState: -118708495
     TransitionDuration: 0.1
     TriggerNameHash: 630406106
@@ -74246,6 +74274,26 @@ MonoBehaviour:
       NameHash: -1962378436
       Synchronize: 1
       ParameterType: 1
+    - name: TP_MoveAmount
+      NameHash: 1922729324
+      Synchronize: 1
+      ParameterType: 1
+    - name: TP_VerticalSpeed
+      NameHash: -1154394189
+      Synchronize: 1
+      ParameterType: 1
+    - name: TP_IsSprinting
+      NameHash: 108009877
+      Synchronize: 1
+      ParameterType: 4
+    - name: TP_AimWeight
+      NameHash: 696702936
+      Synchronize: 1
+      ParameterType: 1
+    - name: TP_CrouchWeight
+      NameHash: -164452300
+      Synchronize: 1
+      ParameterType: 1
   AnimatorParametersExpanded: 0
 --- !u!114 &981715448039301966
 MonoBehaviour:
@@ -74265,9 +74313,17 @@ MonoBehaviour:
   playerHealth: {fileID: 2373627705313556358}
   playerLook: {fileID: 4561189841502104425}
   playerMovement: {fileID: 7292988215955829792}
-  maxSpeedForNormalization: 8
+  walkSpeed: 5
+  crouchSpeed: 2.5
+  moveDamp: 0.1
+  groundedGrace: 0.12
   lookSensitivityScale: 0.0125
   invertLook: 1
+  aimBlendSpeed: 8
+  crouchBlendSpeed: 8
+  actionWeightWhileAiming: 0.35
+  layerFadeSpeed: 6
+  debugAim: 1
 --- !u!4 &2906747719805450117 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4588818751763554, guid: a28775a11e80de44baa17ef63cd37f4b, type: 3}
