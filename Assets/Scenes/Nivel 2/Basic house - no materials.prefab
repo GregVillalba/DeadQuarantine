@@ -358,7 +358,7 @@ PrefabInstance:
     - target: {fileID: 23277872924221192, guid: 2677308c562f8b94887c4f0b0a5bcfe8, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
+      objectReference: {fileID: 2100000, guid: e823cd5b5d27c0f4b8256e7c12ee3e6d, type: 2}
     - target: {fileID: 114024263972142150, guid: 2677308c562f8b94887c4f0b0a5bcfe8, type: 3}
       propertyPath: m_Enabled
       value: 0
@@ -393,11 +393,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6fceb2f5eb620ee4fac214368e01b0f6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Door
+  ShowTopMostFoldoutHeaderGroup: 1
   doorLeaf: {fileID: 5369367006050063207}
-  playerCamera: {fileID: 0}
-  interactRange: 1
   openAngle: 90
   openSpeed: 0.5
+  invertOpenDirection: 0
+  audioSource: {fileID: 0}
+  doorOpenSound: {fileID: 0}
+  doorCloseSound: {fileID: 0}
 --- !u!4 &5376672020226180513 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4970741399400872, guid: 2677308c562f8b94887c4f0b0a5bcfe8, type: 3}
@@ -499,11 +502,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6fceb2f5eb620ee4fac214368e01b0f6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Door
+  ShowTopMostFoldoutHeaderGroup: 1
   doorLeaf: {fileID: 8335265565183240294}
-  playerCamera: {fileID: 0}
-  interactRange: 1
   openAngle: 88
   openSpeed: 0.5
+  invertOpenDirection: 0
+  audioSource: {fileID: 0}
+  doorOpenSound: {fileID: 0}
+  doorCloseSound: {fileID: 0}
 --- !u!4 &8335265565183240294 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4429605065566062, guid: 2677308c562f8b94887c4f0b0a5bcfe8, type: 3}
