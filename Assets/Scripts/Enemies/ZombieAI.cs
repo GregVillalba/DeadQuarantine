@@ -281,9 +281,23 @@ public class ZombieAI : NetworkBehaviour
                         yield break;
                     }
 
-                    playerHealth.TakeDamage(
+                    /*playerHealth.TakeDamage(
                         attackDamage
-                    );
+                    );*/
+
+                    DifficultySettings settings =
+                        RoundManager.Instance != null
+                            ? RoundManager.Instance.ActiveSettings
+                            : null;
+
+                    int damage =
+                        (settings != null && settings.zombieDamage > 0)
+                            ? settings.zombieDamage
+                            : attackDamage;
+
+                    Debug.Log($"[ZombieAI] settings={(settings != null ? settings.name : "NULL")} | zombieDamage={(settings != null ? settings.zombieDamage : -1)} | prefab={attackDamage}");
+
+                    playerHealth.TakeDamage(damage);
 
                     Debug.Log(
                         "[ZombieAI] Zombie atacó a Player " +

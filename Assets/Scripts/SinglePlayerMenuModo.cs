@@ -46,9 +46,9 @@ public class SingleplayerMenuManager : MonoBehaviour
     [SerializeField] private GameObject vistaCiudad;
     [SerializeField] private GameObject vistaCabana;
 
-    [Header("Navegación y Carga")]
+    [Header("Navegaciï¿½n y Carga")]
     [SerializeField] private GameObject botonComenzarJuego;
-    [SerializeField] private GameObject botonHome; // Botón Home a deshabilitar
+    [SerializeField] private GameObject botonHome; // Botï¿½n Home a deshabilitar
     [SerializeField] private GameObject cartelCargandoEscenario; // Objeto/panel "Cargando Escenario..."
     [SerializeField] private string escenaJuegoSingleplayer = "MainSceneSinglePlayer";
 
@@ -67,7 +67,7 @@ public class SingleplayerMenuManager : MonoBehaviour
     }
 
     // =========================================================
-    // 1. MODOS Y BOTÓN ALEATORIO
+    // 1. MODOS Y BOTï¿½N ALEATORIO
     // =========================================================
 
     public void SeleccionarModoHistoria()
@@ -109,7 +109,7 @@ public class SingleplayerMenuManager : MonoBehaviour
         OcultarAvisoInhabilitado();
     }
 
-    // Asignar al botón "Elegir Aleatoriamente"
+    // Asignar al botï¿½n "Elegir Aleatoriamente"
     public void SeleccionarModalidadAleatoria()
     {
         MostrarAvisoInhabilitado();
@@ -145,13 +145,51 @@ public class SingleplayerMenuManager : MonoBehaviour
     public void SeleccionarDificultadDificil(GameObject marcoSeleccionado)
     {
         MarcarDificultadExclusiva(marcoSeleccionado);
-        MostrarAvisoInhabilitado();
+
+        if (modoActual == ModoSeleccionado.Ronda5)
+        {
+            textoNombreDificultad = "DIFICULTAD DIFICIL";
+            OcultarAvisoInhabilitado();
+
+            if (textoModalidadDificultad != null)
+                textoModalidadDificultad.text = $"{textoNombreModo} - {textoNombreDificultad}";
+
+            if (modalidadPanel != null) modalidadPanel.SetActive(false);
+            if (aparienciaPanel != null) aparienciaPanel.SetActive(true);
+
+            ResetearApariencia();
+        }
+        else
+        {
+            MostrarAvisoInhabilitado();
+        }
+       // MarcarDificultadExclusiva(marcoSeleccionado);
+       // MostrarAvisoInhabilitado();
     }
 
     public void SeleccionarDificultadPesadilla(GameObject marcoSeleccionado)
     {
         MarcarDificultadExclusiva(marcoSeleccionado);
-        MostrarAvisoInhabilitado();
+
+        if (modoActual == ModoSeleccionado.Ronda5)
+        {
+            textoNombreDificultad = "DIFICULTAD PESADILLA";
+            OcultarAvisoInhabilitado();
+
+            if (textoModalidadDificultad != null)
+                textoModalidadDificultad.text = $"{textoNombreModo} - {textoNombreDificultad}";
+
+            if (modalidadPanel != null) modalidadPanel.SetActive(false);
+            if (aparienciaPanel != null) aparienciaPanel.SetActive(true);
+
+            ResetearApariencia();
+        }
+        else
+        {
+            MostrarAvisoInhabilitado();
+        }
+        //MarcarDificultadExclusiva(marcoSeleccionado);
+        //MostrarAvisoInhabilitado();
     }
 
     // Apaga los otros selectores del modo activo y enciende solo el pulsado
@@ -237,7 +275,7 @@ public class SingleplayerMenuManager : MonoBehaviour
         ValidarComenzar();
     }
 
-    public void SeleccionarEscenario3() // Cabaña
+    public void SeleccionarEscenario3() // Cabaï¿½a
     {
         cabanaLista = true;
         OcultarVistasEscenarios();
@@ -251,7 +289,7 @@ public class SingleplayerMenuManager : MonoBehaviour
     }
 
     // =========================================================
-    // 5. NAVEGACIÓN Y RESETEOS
+    // 5. NAVEGACIï¿½N Y RESETEOS
     // =========================================================
 
     public void BotonAtrasDesdeApariencia()
@@ -280,7 +318,7 @@ public class SingleplayerMenuManager : MonoBehaviour
         OcultarAvisoInhabilitado();
     }
 
-    // Botón "Comenzar a Jugar"
+    // Botï¿½n "Comenzar a Jugar"
     public void OnClick_ComenzarAJugar()
     {
         if (jugador1Listo && cabanaLista && !cargandoPartida)
@@ -298,13 +336,13 @@ public class SingleplayerMenuManager : MonoBehaviour
             cartelCargandoEscenario.SetActive(true);
         }
 
-        // 2. Opcional: oculta el botón de comenzar para evitar múltiples clics
+        // 2. Opcional: oculta el botï¿½n de comenzar para evitar mï¿½ltiples clics
         if (botonComenzarJuego != null)
         {
             botonComenzarJuego.SetActive(false);
         }
 
-        // 3. Inicia la carga asíncrona en segundo plano
+        // 3. Inicia la carga asï¿½ncrona en segundo plano
         AsyncOperation operacion = SceneManager.LoadSceneAsync(escenaJuegoSingleplayer);
 
         // 4. Espera hasta que termine la carga de la escena
@@ -352,7 +390,7 @@ public class SingleplayerMenuManager : MonoBehaviour
         if (panelEscenario != null) panelEscenario.SetActive(false);
         if (botonComenzarJuego != null) botonComenzarJuego.SetActive(false);
 
-        // Al resetear la apariencia o volver atrás, se vuelve a habilitar Home
+        // Al resetear la apariencia o volver atrï¿½s, se vuelve a habilitar Home
         SetBotonHomeHabilitado(true);
 
         if (cartelCargandoEscenario != null) cartelCargandoEscenario.SetActive(false);
@@ -410,7 +448,7 @@ public class SingleplayerMenuManager : MonoBehaviour
             botonComenzarJuego.SetActive(todoSeleccionado);
         }
 
-        // Si se eligió personaje y escenario válidos, se deshabilita Home; de lo contrario queda activo
+        // Si se eligiï¿½ personaje y escenario vï¿½lidos, se deshabilita Home; de lo contrario queda activo
         SetBotonHomeHabilitado(!todoSeleccionado);
     }
 

@@ -236,7 +236,8 @@ public class HUDController : MonoBehaviour
         {
             ammoMaxText.text =
                 "/ " +
-                weapon.MaxAmmo;
+               // weapon.MaxAmmo;
+               weapon.EffectiveMaxAmmo;
         }
 
         if (weaponNameText != null)

@@ -158,7 +158,8 @@ public class WeaponTests
     [Test]
     public void Awake_InicializaLaMunicionActual_AlMaximo()
     {
-        Assert.AreEqual(weapon.MaxAmmo, weapon.CurrentAmmo);
+        //Assert.AreEqual(weapon.MaxAmmo, weapon.CurrentAmmo);
+        Assert.AreEqual(weapon.EffectiveMaxAmmo, weapon.CurrentAmmo);
     }
  
     [Test]
@@ -388,7 +389,8 @@ public class WeaponTests
     [Test]
     public void OnReload_ConMunicionIncompleta_IniciaLaRecargaInmediatamente()
     {
-        SetPrivateField(weapon, "currentAmmo", weapon.MaxAmmo - 2);
+      //  SetPrivateField(weapon, "currentAmmo", weapon.MaxAmmo - 2);
+      SetPrivateField(weapon, "currentAmmo", weapon.EffectiveMaxAmmo - 2);
  
         InvokePrivateMethod(weapon, "OnReload", default(InputAction.CallbackContext));
  
@@ -432,7 +434,8 @@ public class WeaponTests
  
         yield return new WaitForSeconds(reloadTime + 0.2f);
  
-        Assert.AreEqual(weapon.MaxAmmo, weapon.CurrentAmmo);
+       // Assert.AreEqual(weapon.MaxAmmo, weapon.CurrentAmmo);
+       Assert.AreEqual(weapon.EffectiveMaxAmmo, weapon.CurrentAmmo);
         bool isReloadingFinal = (bool)GetPrivateField(weapon, "isReloading");
         Assert.IsFalse(isReloadingFinal);
     }

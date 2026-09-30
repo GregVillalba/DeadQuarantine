@@ -65,7 +65,7 @@ public class Weapon : MonoBehaviour
     public bool IsAiming { get; private set; }
 
     public int CurrentAmmo => currentAmmo;
-    public int MaxAmmo => maxAmmo;
+   // public int MaxAmmo => maxAmmo;
 
     public float CurrentSpreadNormalized
     {
@@ -80,6 +80,34 @@ public class Weapon : MonoBehaviour
                 Mathf.InverseLerp(minimumSpread, maxSpread, currentSpread)
             );
         }
+    }
+    private int appliedMaxAmmo;
+
+    public int EffectiveMaxAmmo
+    {
+        get
+        {
+            DifficultySettings s =
+                RoundManager.Instance != null
+                    ? RoundManager.Instance.ActiveSettings
+                    : null;
+
+            return (s != null && s.magazineSize > 0)
+                ? s.magazineSize
+                : maxAmmo;
+        }
+    }
+
+    private void RefreshMaxAmmo()
+    {
+        int max = EffectiveMaxAmmo;
+
+        if (max == appliedMaxAmmo)
+            return;
+
+        bool wasFull = currentAmmo >= appliedMaxAmmo;
+        appliedMaxAmmo = max;
+        currentAmmo = wasFull ? max : Mathf.Min(currentAmmo, max);
     }
 
     public string WeaponName => weaponName;
@@ -106,7 +134,9 @@ public class Weapon : MonoBehaviour
     {
         controls = new PlayerControls();
         ConfiguracionesJuego.CargarRebinds(controls.asset);
-        currentAmmo = maxAmmo;
+       // currentAmmo = maxAmmo;
+       currentAmmo = maxAmmo; 
+       appliedMaxAmmo = maxAmmo;
 
         if (playerCamera != null)
             defaultWorldFOV = playerCamera.fieldOfView;
@@ -154,12 +184,14 @@ public class Weapon : MonoBehaviour
 
     public void AnimationAmmunitionFill()
     {
-        currentAmmo = maxAmmo;
+       // currentAmmo = maxAmmo;
+       currentAmmo = EffectiveMaxAmmo;
     }
 
     public void AnimationReloadFinished()
     {
-        currentAmmo = maxAmmo;
+       // currentAmmo = maxAmmo;
+         currentAmmo = EffectiveMaxAmmo;
         isReloading = false;
     }
 
@@ -170,6 +202,7 @@ public class Weapon : MonoBehaviour
 
     private void Update()
     {
+        RefreshMaxAmmo();
         if (IsAiming && playerMovement != null && playerMovement.IsSprinting)
             IsAiming = false;
 
@@ -430,7 +463,17 @@ public class Weapon : MonoBehaviour
         if (isReloading)
             return;
 
-        if (currentAmmo == maxAmmo)
+        DifficultySettings reloadSettings =
+            RoundManager.Instance != null
+                ? RoundManager.Instance.ActiveSettings
+                : null;
+
+        if (reloadSettings != null && !reloadSettings.allowReload)
+            return;
+
+
+       // if (currentAmmo == maxAmmo)
+       if (currentAmmo >= EffectiveMaxAmmo)
             return;
 
         // NO RECARGAR MIENTRAS CORRE.

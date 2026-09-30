@@ -94,6 +94,22 @@ public class PlayerHealth : NetworkBehaviour
     private float nextRegenerationTime;
 
     private Coroutine downedCoroutine;
+    private DifficultySettings ActiveDifficulty =>
+    RoundManager.Instance != null
+        ? RoundManager.Instance.ActiveSettings
+        : null;
+
+    private bool UseDifficultyRegen =>
+        ActiveDifficulty != null && ActiveDifficulty.overrideHealthRegen;
+
+    private float RegenDelay =>
+        UseDifficultyRegen ? ActiveDifficulty.healthRegenDelay : regenerationDelay;
+
+    private int RegenAmount =>
+        UseDifficultyRegen ? ActiveDifficulty.healthRegenAmount : healthRecoveredPerTick;
+
+    private float RegenInterval =>
+        UseDifficultyRegen ? ActiveDifficulty.healthRegenInterval : regenerationInterval;
 
     // =========================================================
     // NETWORK SPAWN
@@ -120,7 +136,8 @@ public class PlayerHealth : NetworkBehaviour
 
             nextRegenerationTime =
                 Time.time +
-                regenerationDelay;
+               // regenerationDelay;
+                RegenDelay;
         }
 
         CurrentHealth.OnValueChanged +=
@@ -193,7 +210,8 @@ public class PlayerHealth : NetworkBehaviour
         if (
             Time.time <
             lastDamageTime +
-            regenerationDelay
+          //  regenerationDelay
+            RegenDelay
         )
         {
             return;
@@ -210,13 +228,15 @@ public class PlayerHealth : NetworkBehaviour
         CurrentHealth.Value =
             Mathf.Min(
                 CurrentHealth.Value +
-                healthRecoveredPerTick,
+               // healthRecoveredPerTick,
+               RegenAmount,
                 maxHealth
             );
 
         nextRegenerationTime =
             Time.time +
-            regenerationInterval;
+           // regenerationInterval;
+            RegenInterval;
     }
 
     // =========================================================
@@ -254,7 +274,8 @@ public class PlayerHealth : NetworkBehaviour
 
         nextRegenerationTime =
             Time.time +
-            regenerationDelay;
+           // regenerationDelay;
+           RegenDelay;
 
         if (CurrentHealth.Value <= 0)
         {
@@ -384,7 +405,8 @@ public class PlayerHealth : NetworkBehaviour
 
         nextRegenerationTime =
             Time.time +
-            regenerationDelay;
+         //   regenerationDelay;
+         RegenDelay;
 
         State.Value =
             PlayerState.Alive;
@@ -586,7 +608,8 @@ public class PlayerHealth : NetworkBehaviour
 
         nextRegenerationTime =
             Time.time +
-            regenerationDelay;
+          //  regenerationDelay;
+          RegenDelay;
 
         DownedTimeRemaining.Value =
             0f;
