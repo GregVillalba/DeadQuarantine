@@ -65,7 +65,7 @@ public class Weapon : MonoBehaviour
     public bool IsAiming { get; private set; }
 
     public int CurrentAmmo => currentAmmo;
-   // public int MaxAmmo => maxAmmo;
+   // public int MaxAmmo => maxAmmo;        --------------> ORIGINAL
 
     public float CurrentSpreadNormalized
     {
@@ -81,8 +81,9 @@ public class Weapon : MonoBehaviour
             );
         }
     }
-    private int appliedMaxAmmo;
 
+//-------------------------------------- CAMBIO AGREGUE PARA LA DIFICULTAD ------------------------------------------------
+    private int appliedMaxAmmo;
     public int EffectiveMaxAmmo
     {
         get
@@ -97,7 +98,6 @@ public class Weapon : MonoBehaviour
                 : maxAmmo;
         }
     }
-
     private void RefreshMaxAmmo()
     {
         int max = EffectiveMaxAmmo;
@@ -109,6 +109,8 @@ public class Weapon : MonoBehaviour
         appliedMaxAmmo = max;
         currentAmmo = wasFull ? max : Mathf.Min(currentAmmo, max);
     }
+
+//---------------------------------------------------------------------------------------------------------------------------------
 
     public string WeaponName => weaponName;
     public bool IsReloading => isReloading;
@@ -134,9 +136,10 @@ public class Weapon : MonoBehaviour
     {
         controls = new PlayerControls();
         ConfiguracionesJuego.CargarRebinds(controls.asset);
-       // currentAmmo = maxAmmo;
-       currentAmmo = maxAmmo; 
-       appliedMaxAmmo = maxAmmo;
+       // currentAmmo = maxAmmo;        --------------> ORIGINAL
+       currentAmmo = maxAmmo; //-----------------> CAMBIO AGREGUE PARA LA DIFICULTAD
+       
+       appliedMaxAmmo = maxAmmo;        //-----------------> CAMBIO AGREGUE PARA LA DIFICULTAD
 
         if (playerCamera != null)
             defaultWorldFOV = playerCamera.fieldOfView;
@@ -184,14 +187,14 @@ public class Weapon : MonoBehaviour
 
     public void AnimationAmmunitionFill()
     {
-       // currentAmmo = maxAmmo;
-       currentAmmo = EffectiveMaxAmmo;
+       // currentAmmo = maxAmmo;        --------------> ORIGINAL
+       currentAmmo = EffectiveMaxAmmo;  //-----------------> CAMBIO AGREGUE PARA LA DIFICULTAD
     }
 
     public void AnimationReloadFinished()
     {
-       // currentAmmo = maxAmmo;
-         currentAmmo = EffectiveMaxAmmo;
+       // currentAmmo = maxAmmo;        --------------> ORIGINAL
+         currentAmmo = EffectiveMaxAmmo;    //-----------------> CAMBIO AGREGUE PARA LA DIFICULTAD
         isReloading = false;
     }
 
@@ -202,7 +205,7 @@ public class Weapon : MonoBehaviour
 
     private void Update()
     {
-        RefreshMaxAmmo();
+        RefreshMaxAmmo();       //-----------------> CAMBIO AGREGUE PARA LA DIFICULTAD
         if (IsAiming && playerMovement != null && playerMovement.IsSprinting)
             IsAiming = false;
 
@@ -472,8 +475,8 @@ public class Weapon : MonoBehaviour
             return;
 
 
-       // if (currentAmmo == maxAmmo)
-       if (currentAmmo >= EffectiveMaxAmmo)
+       // if (currentAmmo == maxAmmo)       --------------> ORIGINAL
+       if (currentAmmo >= EffectiveMaxAmmo)     //-----------------> CAMBIO QUE AGREGUE PARA LA DIFICULTAD
             return;
 
         // NO RECARGAR MIENTRAS CORRE.
