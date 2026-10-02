@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.EventSystems;
+using System.Collections;
 
 public class Weapon : MonoBehaviour
 {
@@ -27,6 +28,13 @@ public class Weapon : MonoBehaviour
     [SerializeField] private AudioClip reloadSound;
     [SerializeField] private AudioClip reloadEmptySound;
 
+    [Header("Audio - Recarga por partes (Escopeta/Sniper)")]
+    [SerializeField] private AudioClip reloadOpenSound;
+    [SerializeField] private AudioClip reloadInsertSound;
+    [SerializeField] private AudioClip reloadCloseSound;
+    [SerializeField] private AudioClip reloadBoltOpenSound;
+    [SerializeField] private AudioClip reloadBoltCloseSound;
+
     [Header("Pistola")]
     [SerializeField] private bool isAutomatic = false; // Tildar solo en el Rifle
     [SerializeField] private float fireRate = 0.25f;
@@ -35,6 +43,15 @@ public class Weapon : MonoBehaviour
     [SerializeField] private int damage = 25;
     [SerializeField] private int maxAmmo = 12;
     [SerializeField] private string weaponName = "Pistola";
+
+    [Header("Escopeta (perdigones)")]
+    [SerializeField] private bool firesMultiplePellets = false; // tildar solo en la Shotgun
+    [SerializeField] private int pelletsPerShot = 8;
+    [SerializeField] private float pelletSpreadAngle = 6f; // dispersión propia del perdigón, se suma a currentSpread
+
+    [Header("Cerrojo (Sniper de cerrojo manual)")]
+    [SerializeField] private bool requiresBoltActionAfterFire = false; // tildar solo en el Sniper de cerrojo
+    [SerializeField] private float boltActionDuration = 1.3f; // debe igualar la duración real del clip Reload_Bolt
 
     [Header("Aim")]
     [SerializeField] private float aimFOV = 50f;
@@ -62,10 +79,50 @@ public class Weapon : MonoBehaviour
     [Header("Impactos")]
     [SerializeField] private LayerMask bulletIgnoredLayers;
 
+    [Header("Animación de recarga (tercera persona)")]
+    [SerializeField] private bool usesMultiPartReload = false;
+    public bool UsesMultiPartReload => usesMultiPartReload;
+
+    [Header("Daño por distancia")]
+    [SerializeField] private float damageFalloffStart = 8f;
+    [SerializeField] private float damageFalloffEnd = 25f;
+    [SerializeField] private float minDamageMultiplier = 0.25f;
+
     public bool IsAiming { get; private set; }
 
     public int CurrentAmmo => currentAmmo;
-   // public int MaxAmmo => maxAmmo;        --------------> ORIGINAL
+
+    // ----- CAMBIO COMBINADO: PROPIEDADES DE DIFICULTAD (DEL COMPAÑERO) -----
+    public int MaxAmmo => EffectiveMaxAmmo; 
+    
+    private int appliedMaxAmmo;
+    public int EffectiveMaxAmmo
+    {
+        get
+        {
+            DifficultySettings s =
+                RoundManager.Instance != null
+                    ? RoundManager.Instance.ActiveSettings
+                    : null;
+
+            return (s != null && s.magazineSize > 0)
+                ? s.magazineSize
+                : maxAmmo;
+        }
+    }
+
+    private void RefreshMaxAmmo()
+    {
+        int max = EffectiveMaxAmmo;
+
+        if (max == appliedMaxAmmo)
+            return;
+
+        bool wasFull = currentAmmo >= appliedMaxAmmo;
+        appliedMaxAmmo = max;
+        currentAmmo = wasFull ? max : Mathf.Min(currentAmmo, max);
+    }
+    // ------------------------------------------------------------------------
 
     public float CurrentSpreadNormalized
     {
@@ -82,44 +139,19 @@ public class Weapon : MonoBehaviour
         }
     }
 
-//-------------------------------------- CAMBIO AGREGUE PARA LA DIFICULTAD ------------------------------------------------
-    private int appliedMaxAmmo;
-    public int EffectiveMaxAmmo
-    {
-        get
-        {
-            DifficultySettings s =
-                RoundManager.Instance != null
-                    ? RoundManager.Instance.ActiveSettings
-                    : null;
-
-            return (s != null && s.magazineSize > 0)
-                ? s.magazineSize
-                : maxAmmo;
-        }
-    }
-    private void RefreshMaxAmmo()
-    {
-        int max = EffectiveMaxAmmo;
-
-        if (max == appliedMaxAmmo)
-            return;
-
-        bool wasFull = currentAmmo >= appliedMaxAmmo;
-        appliedMaxAmmo = max;
-        currentAmmo = wasFull ? max : Mathf.Min(currentAmmo, max);
-    }
-
-//---------------------------------------------------------------------------------------------------------------------------------
-
     public string WeaponName => weaponName;
     public bool IsReloading => isReloading;
+    public bool ShellLoading => shellLoading;
+    public bool IsChambering => isChambering; 
 
     private PlayerControls controls;
 
     private int currentAmmo;
     private float nextFireTime;
     private bool isReloading;
+    private bool shellLoading; 
+    private bool isChambering; 
+    private float chamberReadyTime; 
 
     private float defaultWorldFOV;
     private float currentSpread;
@@ -136,10 +168,10 @@ public class Weapon : MonoBehaviour
     {
         controls = new PlayerControls();
         ConfiguracionesJuego.CargarRebinds(controls.asset);
-       // currentAmmo = maxAmmo;        --------------> ORIGINAL
-       currentAmmo = maxAmmo; //-----------------> CAMBIO AGREGUE PARA LA DIFICULTAD
-       
-       appliedMaxAmmo = maxAmmo;        //-----------------> CAMBIO AGREGUE PARA LA DIFICULTAD
+
+        // Inicializamos con el sistema de dificultad del compañero
+        appliedMaxAmmo = EffectiveMaxAmmo;
+        currentAmmo = EffectiveMaxAmmo; 
 
         if (playerCamera != null)
             defaultWorldFOV = playerCamera.fieldOfView;
@@ -161,8 +193,6 @@ public class Weapon : MonoBehaviour
     {
         controls.Player.Enable();
 
-        // Semiautomático: dispara una sola vez por cada apretada de botón.
-        // Automático (Rifle): el disparo se maneja en Update() mientras se mantiene el botón.
         if (!isAutomatic)
             controls.Player.Fire.performed += OnFireSemiAuto;
 
@@ -185,17 +215,89 @@ public class Weapon : MonoBehaviour
         IsAiming = false;
     }
 
+    private int ApplyDistanceFalloff(int baseDamage, float distance)
+    {
+        if (distance <= damageFalloffStart)
+            return baseDamage;
+
+        if (distance >= damageFalloffEnd)
+            return Mathf.RoundToInt(baseDamage * minDamageMultiplier);
+
+        float t = Mathf.InverseLerp(damageFalloffStart, damageFalloffEnd, distance);
+        float multiplier = Mathf.Lerp(1f, minDamageMultiplier, t);
+
+        return Mathf.RoundToInt(baseDamage * multiplier);
+    }
+
     public void AnimationAmmunitionFill()
     {
-       // currentAmmo = maxAmmo;        --------------> ORIGINAL
-       currentAmmo = EffectiveMaxAmmo;  //-----------------> CAMBIO AGREGUE PARA LA DIFICULTAD
+        currentAmmo = EffectiveMaxAmmo; // Adaptado para la dificultad
+    }
+
+    // Adaptado para usar el EffectiveMaxAmmo del compañero
+    public void AnimationInsertOneShell()
+    {
+        int max = EffectiveMaxAmmo;
+        if (currentAmmo < max)
+            currentAmmo++;
+
+        shellLoading = currentAmmo < max;
+
+        PlaySound(reloadInsertSound);
+
+        Debug.Log("[Weapon] Insertada bala. currentAmmo=" + currentAmmo + "/" + max + " | ShellLoading=" + shellLoading);
+
+        if (weaponAnimator != null)
+            weaponAnimator.SetBool("ShellLoading", shellLoading);
     }
 
     public void AnimationReloadFinished()
     {
-       // currentAmmo = maxAmmo;        --------------> ORIGINAL
-         currentAmmo = EffectiveMaxAmmo;    //-----------------> CAMBIO AGREGUE PARA LA DIFICULTAD
+        int max = EffectiveMaxAmmo; // Adaptado para la dificultad
+
+        if (!usesMultiPartReload)
+        {
+            currentAmmo = max;
+        }
+        else if (currentAmmo != max)
+        {
+            Debug.LogWarning(
+                "[Weapon] AnimationReloadFinished: el loop bala por bala terminó con " +
+                currentAmmo + "/" + max +
+                " — revisá las condiciones ShellLoading en Insert A/B, se cortó antes de tiempo."
+            );
+            currentAmmo = max; // red de seguridad para no dejar el arma rota
+        }
+
         isReloading = false;
+        shellLoading = false;
+
+        if (weaponAnimator != null)
+            weaponAnimator.SetBool("ShellLoading", false);
+    }
+
+    public void AnimationReloadOpen()
+    {
+        Debug.Log("[Weapon] AnimationReloadOpen en Time.time=" + Time.time);
+        PlaySound(reloadOpenSound);
+    }
+
+    public void AnimationReloadClose()
+    {
+        PlaySound(reloadCloseSound);
+    }
+
+    public void AnimationBoltOpen()
+    {
+        PlaySound(reloadBoltOpenSound);
+    }
+
+    public void AnimationBoltClose()
+    {
+        PlaySound(reloadBoltCloseSound);
+
+        if (isReloading)
+            AnimationReloadFinished();
     }
 
     public void ForceStopAiming()
@@ -205,9 +307,13 @@ public class Weapon : MonoBehaviour
 
     private void Update()
     {
-        RefreshMaxAmmo();       //-----------------> CAMBIO AGREGUE PARA LA DIFICULTAD
+        RefreshMaxAmmo(); // Checkeamos la lógica de munición dinámica de tu compañero
+
         if (IsAiming && playerMovement != null && playerMovement.IsSprinting)
             IsAiming = false;
+
+        if (isChambering && Time.time >= chamberReadyTime)
+            isChambering = false;
 
         UpdateAimFOV();
         UpdateSpread();
@@ -231,18 +337,9 @@ public class Weapon : MonoBehaviour
 
     private void OnAimStarted(InputAction.CallbackContext context)
     {
-        Debug.Log("[Weapon] OnAimStarted llamado. InputLocked=" + InputLocked +
-            " | isReloading=" + isReloading +
-            " | IsSprinting=" + (playerMovement != null && playerMovement.IsSprinting));
-
-        if (InputLocked)
-            return;
-
-        if (isReloading)
-            return;
-
-        if (playerMovement != null && playerMovement.IsSprinting)
-            return;
+        if (InputLocked) return;
+        if (isReloading) return;
+        if (playerMovement != null && playerMovement.IsSprinting) return;
 
         IsAiming = true;
     }
@@ -254,8 +351,7 @@ public class Weapon : MonoBehaviour
 
     private void UpdateAimFOV()
     {
-        if (playerCamera == null)
-            return;
+        if (playerCamera == null) return;
 
         float targetFOV = IsAiming ? aimFOV : defaultWorldFOV;
 
@@ -272,8 +368,7 @@ public class Weapon : MonoBehaviour
 
     private void UpdateSpread()
     {
-        if (characterController == null)
-            return;
+        if (characterController == null) return;
 
         if (IsAiming)
         {
@@ -281,8 +376,7 @@ public class Weapon : MonoBehaviour
             return;
         }
 
-        if (!characterController.isGrounded)
-            return;
+        if (!characterController.isGrounded) return;
 
         float targetSpread;
 
@@ -306,8 +400,7 @@ public class Weapon : MonoBehaviour
 
     private void UpdateJumpSpread()
     {
-        if (characterController == null)
-            return;
+        if (characterController == null) return;
 
         bool isGrounded = characterController.isGrounded;
 
@@ -322,11 +415,8 @@ public class Weapon : MonoBehaviour
 
     private bool IsMovingOnGround()
     {
-        if (characterController == null)
-            return false;
-
-        if (!characterController.isGrounded)
-            return false;
+        if (characterController == null) return false;
+        if (!characterController.isGrounded) return false;
 
         Vector3 horizontalVelocity = new Vector3(
             characterController.velocity.x,
@@ -343,10 +433,8 @@ public class Weapon : MonoBehaviour
 
     private void UpdateAnimatorParams()
     {
-        if (weaponAnimator == null || characterController == null)
-            return;
+        if (weaponAnimator == null || characterController == null) return;
 
-        // Solo velocidad horizontal — la caída (eje Y) no debe contar como "caminar".
         Vector3 horizontalVelocity = new Vector3(
             characterController.velocity.x,
             0f,
@@ -363,13 +451,10 @@ public class Weapon : MonoBehaviour
 
     private void UpdateAimingBlend()
     {
-        if (weaponAnimator == null)
-            return;
+        if (weaponAnimator == null) return;
 
         float target = IsAiming ? 1f : 0f;
-
         aimingBlend = Mathf.MoveTowards(aimingBlend, target, aimingBlendSpeed * Time.deltaTime);
-
         weaponAnimator.SetFloat("Aiming", aimingBlend);
     }
 
@@ -379,56 +464,26 @@ public class Weapon : MonoBehaviour
 
     private void OnFireSemiAuto(InputAction.CallbackContext context)
     {
-        Debug.Log("[Weapon] OnFireSemiAuto llamado. InputLocked=" + InputLocked);
         TryFire();
     }
 
     private void TryFire()
     {
-        if (InputLocked)
-        {
-            Debug.Log("[Weapon] TryFire bloqueado: InputLocked=true");
-            return;
-        }
+        if (InputLocked) return;
+        if (Time.timeScale == 0f) return;
 
-        if (Time.timeScale == 0f)
-        {
-            Debug.Log("[Weapon] TryFire bloqueado: Time.timeScale == 0");
-            return;
-        }
+        if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null) return;
 
-        if (EventSystem.current != null &&
-            EventSystem.current.currentSelectedGameObject != null)
-        {
-            Debug.Log("[Weapon] TryFire bloqueado: hay un objeto de UI seleccionado -> " +
-                EventSystem.current.currentSelectedGameObject.name);
-            return;
-        }
+        if (isReloading) return;
+        if (isChambering) return;
+        if (playerMovement != null && playerMovement.IsSprinting) return;
 
-        if (isReloading)
-        {
-            Debug.Log("[Weapon] TryFire bloqueado: isReloading=true");
-            return;
-        }
-
-        if (playerMovement != null && playerMovement.IsSprinting)
-        {
-            Debug.Log("[Weapon] TryFire bloqueado: IsSprinting=true");
-            return;
-        }
-
-        if (Time.time < nextFireTime)
-            return; // este es normal (cadencia), no hace falta loguearlo
+        if (Time.time < nextFireTime) return;
 
         if (currentAmmo <= 0)
         {
             PlaySound(emptySound);
-
-            if (weaponAnimator != null)
-                weaponAnimator.SetTrigger("FireEmpty");
-
-            // Actualizamos nextFireTime igual: si no, con el botón
-            // mantenido en un arma automática spamea el sonido de vacío cada frame.
+            if (weaponAnimator != null) weaponAnimator.SetTrigger("FireEmpty");
             nextFireTime = Time.time + fireRate;
             return;
         }
@@ -436,22 +491,26 @@ public class Weapon : MonoBehaviour
         nextFireTime = Time.time + fireRate;
         currentAmmo--;
 
-        if (playerScore != null)
-            playerScore.RegistrarDisparoServerRpc();
+        if (playerScore != null) playerScore.RegistrarDisparoServerRpc();
 
         currentSpread = Mathf.Clamp(currentSpread + spreadIncreasePerShot, 0f, maxSpread);
 
-        if (playerLook != null)
-            playerLook.AddRecoil(cameraRecoilPerShot);
+        if (playerLook != null) playerLook.AddRecoil(cameraRecoilPerShot);
 
         PlaySound(shootSound);
 
-        if (weaponAnimator != null)
-            weaponAnimator.SetTrigger("Fire");
+        if (weaponAnimator != null) weaponAnimator.SetTrigger("Fire");
 
         muzzle?.PlayEffect();
 
         Shoot();
+
+        if (requiresBoltActionAfterFire)
+        {
+            isChambering = true;
+            chamberReadyTime = Time.time + boltActionDuration;
+            if (weaponAnimator != null) weaponAnimator.SetTrigger("BoltAction");
+        }
     }
 
     // =========================================================
@@ -460,12 +519,10 @@ public class Weapon : MonoBehaviour
 
     private void OnReload(InputAction.CallbackContext context)
     {
-        if (InputLocked)
-            return;
+        if (InputLocked) return;
+        if (isReloading) return;
 
-        if (isReloading)
-            return;
-
+        // Comprobación de dificultad añadida por tu compañero
         DifficultySettings reloadSettings =
             RoundManager.Instance != null
                 ? RoundManager.Instance.ActiveSettings
@@ -474,14 +531,10 @@ public class Weapon : MonoBehaviour
         if (reloadSettings != null && !reloadSettings.allowReload)
             return;
 
-
-       // if (currentAmmo == maxAmmo)       --------------> ORIGINAL
-       if (currentAmmo >= EffectiveMaxAmmo)     //-----------------> CAMBIO QUE AGREGUE PARA LA DIFICULTAD
+        if (currentAmmo >= EffectiveMaxAmmo) // Modificado con la lógica de tu compañero
             return;
 
-        // NO RECARGAR MIENTRAS CORRE.
-        if (playerMovement != null && playerMovement.IsSprinting)
-            return;
+        if (playerMovement != null && playerMovement.IsSprinting) return;
 
         IsAiming = false;
         isReloading = true;
@@ -496,6 +549,11 @@ public class Weapon : MonoBehaviour
         if (weaponAnimator != null)
         {
             weaponAnimator.SetBool("IsEmpty", wasEmpty);
+            weaponAnimator.SetBool("MultiPartReload", usesMultiPartReload);
+
+            shellLoading = usesMultiPartReload && currentAmmo < EffectiveMaxAmmo;
+            weaponAnimator.SetBool("ShellLoading", shellLoading);
+
             weaponAnimator.SetTrigger("Reload");
         }
     }
@@ -512,9 +570,22 @@ public class Weapon : MonoBehaviour
 
     private void Shoot()
     {
+        if (firesMultiplePellets)
+        {
+            for (int i = 0; i < pelletsPerShot; i++)
+                FirePellet(currentSpread + pelletSpreadAngle);
+        }
+        else
+        {
+            FirePellet(currentSpread);
+        }
+    }
+
+    private void FirePellet(float spreadDegrees)
+    {
         Vector3 spreadDirection = ApplySpreadToDirection(
             playerCamera.transform.forward,
-            currentSpread
+            spreadDegrees
         );
 
         Ray ray = new Ray(playerCamera.transform.position, spreadDirection);
@@ -529,25 +600,14 @@ public class Weapon : MonoBehaviour
         foreach (RaycastHit hit in hits)
         {
             PlayerHealth playerHit = hit.collider.GetComponentInParent<PlayerHealth>();
+            if (playerHit != null) continue;
 
-            if (playerHit != null)
-                continue;
+            if (hit.collider.transform.root == transform.root) continue;
 
-            if (hit.collider.transform.root == transform.root)
-                continue;
-
-            if (
-                (bulletIgnoredLayers.value &
-                 (1 << hit.collider.gameObject.layer)) != 0
-            )
-            {
-                continue;
-            }
+            if ((bulletIgnoredLayers.value & (1 << hit.collider.gameObject.layer)) != 0) continue;
 
             PlayerMovement movementHit = hit.collider.GetComponentInParent<PlayerMovement>();
-
-            if (movementHit != null)
-                continue;
+            if (movementHit != null) continue;
 
             validHit = hit;
             validHitFound = true;
@@ -558,17 +618,15 @@ public class Weapon : MonoBehaviour
         {
             RaycastHit hit = validHit;
 
-            Debug.Log("Impacto en: " + hit.collider.name);
-
             Debug.DrawLine(firePoint.position, hit.point, Color.red, 1f);
-
             SpawnBulletTrail(hit.point);
 
             ZombieHealth zombieHealth = hit.collider.GetComponentInParent<ZombieHealth>();
 
             if (zombieHealth != null)
             {
-                zombieHealth.TakeDamage(damage, hit.point, hit.normal);
+                int finalDamage = ApplyDistanceFalloff(damage, hit.distance);
+                zombieHealth.TakeDamage(finalDamage, hit.point, hit.normal);
 
                 if (playerScore != null)
                     playerScore.RegistrarImpactoServerRpc();
@@ -578,19 +636,13 @@ public class Weapon : MonoBehaviour
 
             if (DecalManager.Instance != null)
             {
-                DecalManager.Instance.SpawnBulletHole(
-                    hit.point,
-                    hit.normal,
-                    hit.collider
-                );
+                DecalManager.Instance.SpawnBulletHole(hit.point, hit.normal, hit.collider);
             }
         }
         else
         {
             Vector3 missPoint = firePoint.position + spreadDirection * range;
-
             SpawnBulletTrail(missPoint);
-
             Debug.DrawRay(firePoint.position, spreadDirection * range, Color.yellow, 1f);
         }
     }
@@ -601,15 +653,10 @@ public class Weapon : MonoBehaviour
 
     private void SpawnBulletTrail(Vector3 targetPoint)
     {
-        if (bulletTrailPrefab == null || firePoint == null)
-            return;
-
+        if (bulletTrailPrefab == null || firePoint == null) return;
         GameObject trailObject = Instantiate(bulletTrailPrefab, firePoint.position, Quaternion.identity);
-
         BulletTrail trail = trailObject.GetComponent<BulletTrail>();
-
-        if (trail != null)
-            trail.Init(targetPoint);
+        if (trail != null) trail.Init(targetPoint);
     }
 
     // =========================================================
@@ -618,14 +665,10 @@ public class Weapon : MonoBehaviour
 
     private Vector3 ApplySpreadToDirection(Vector3 baseDirection, float spreadDegrees)
     {
-        if (spreadDegrees <= 0f)
-            return baseDirection;
-
+        if (spreadDegrees <= 0f) return baseDirection;
         float randomX = Random.Range(-spreadDegrees, spreadDegrees);
         float randomY = Random.Range(-spreadDegrees, spreadDegrees);
-
         Quaternion spreadRotation = Quaternion.Euler(randomY, randomX, 0f);
-
         return spreadRotation * baseDirection;
     }
 }

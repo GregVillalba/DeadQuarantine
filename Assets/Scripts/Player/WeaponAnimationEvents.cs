@@ -37,10 +37,24 @@ public class WeaponAnimationEvents : MonoBehaviour
             weapon.AnimationAmmunitionFill();
     }
 
+    // NUEVO: se llama una vez por cada vuelta del clip Reload_Insert
+    // (Shotgun_01, Sniper_01), para cargar una bala por vez.
+    public void OnInsertShell()
+    {
+        if (weapon != null)
+            weapon.AnimationInsertOneShell();
+    }
+
     public void OnAnimationEndedReload()
     {
         if (weapon != null)
             weapon.AnimationReloadFinished();
+    }
+
+    public void AnimationInsertOneShell()
+    {
+        if (weapon != null)
+            weapon.AnimationInsertOneShell();
     }
 
     public void SetWeapon(Weapon newWeapon)
@@ -60,6 +74,34 @@ public class WeaponAnimationEvents : MonoBehaviour
     {
         casingPrefab = newCasingPrefab;
         casingEjectPoint = newCasingEjectPoint;
+    }
+
+    // =========================================================
+    // RECARGA POR PARTES — SONIDOS (Escopeta / Sniper)
+    // =========================================================
+
+    public void AnimationReloadOpen()
+    {
+        if (weapon != null)
+            weapon.AnimationReloadOpen();
+    }
+
+    public void AnimationReloadClose()
+    {
+        if (weapon != null)
+            weapon.AnimationReloadClose();
+    }
+
+    public void AnimationBoltOpen()
+    {
+        if (weapon != null)
+            weapon.AnimationBoltOpen();
+    }
+
+    public void AnimationBoltClose()
+    {
+        if (weapon != null)
+            weapon.AnimationBoltClose();
     }
 
 }

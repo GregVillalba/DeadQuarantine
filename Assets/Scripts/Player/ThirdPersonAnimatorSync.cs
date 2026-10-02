@@ -41,7 +41,6 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
     private float crouchW;
     private bool wasGrounded = true;
 
-    private Weapon cachedWeapon;
     private Weapon lastWeapon;
     private int lastAmmo;
     private bool hasAmmoBaseline;
@@ -153,19 +152,10 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
     // ARMA
     // =========================================================
 
-    // Busca el arma que realmente está activa. Si la referencia del WeaponSwitcher
-    // es nula o apunta a un arma desactivada, usa la primera Weapon activa del Player.
+    // Devuelve el arma equipada actualmente, directo desde el WeaponSwitcher.
     private Weapon ResolveWeapon()
     {
-        Weapon w = weaponSwitcher != null ? weaponSwitcher.CurrentWeapon : null;
-
-        if (w != null && w.isActiveAndEnabled)
-            return w;
-
-        if (cachedWeapon == null || !cachedWeapon.isActiveAndEnabled)
-            cachedWeapon = transform.root.GetComponentInChildren<Weapon>(false);
-
-        return cachedWeapon;
+        return weaponSwitcher != null ? weaponSwitcher.CurrentWeapon : null;
     }
 
     private void UpdateWeaponParams()
@@ -191,6 +181,8 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
         a.SetFloat("TP_AimWeight", aimW);
         a.SetBool("TP_IsAiming", aiming);
         a.SetBool("TP_IsReloading", reloading);
+        // NUEVO: gatilla la rama de recarga por partes (Shotgun_01, Sniper_01).
+        a.SetBool("TP_MultiPartReload", weapon != null && weapon.UsesMultiPartReload);
 
         if (debugAim && aiming != lastAimLogged)
         {
@@ -217,6 +209,9 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
         wasReloading = reloading;
 
         a.SetBool("TP_IsEmpty", reloading ? reloadStartedEmpty : weapon.CurrentAmmo == 0);
+        // NUEVO: espejo del loop bala por bala y del ciclo de cerrojo.
+        a.SetBool("TP_ShellLoading", weapon.ShellLoading);
+        a.SetBool("TP_IsChambering", weapon.IsChambering);
 
         DetectFire(weapon);
     }
