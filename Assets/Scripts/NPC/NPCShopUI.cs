@@ -42,6 +42,8 @@ public class NPCShopUI : MonoBehaviour
     [SerializeField] private Button listoButton;
     [SerializeField] private TextMeshProUGUI listoButtonText;
     [SerializeField] private TextMeshProUGUI tiempoTiendaText;
+    [Tooltip("Texto debajo del botón Listo. Solo se ve cuando el otro jugador ya marcó Listo.")]
+    [SerializeField] private TextMeshProUGUI otroJugadorListoText;
     [SerializeField] private string textoListo = "Listo";
     [SerializeField] private string textoEsperandoListo = "Esperando...";
     [SerializeField] private string formatoMensajeBloqueado = "Se habilitará un tiempo para comerciar luego de las rondas {0}";
@@ -636,6 +638,14 @@ public class NPCShopUI : MonoBehaviour
 
         if (listoButtonText != null)
             listoButtonText.text = listoMarcado ? textoEsperandoListo : textoListo;
+
+        if (otroJugadorListoText != null)
+        {
+            bool otroListo = faseActiva && RoundManager.Instance.OtroJugadorListoFaseCompras();
+
+            if (otroJugadorListoText.gameObject.activeSelf != otroListo)
+                otroJugadorListoText.gameObject.SetActive(otroListo);
+        }
     }
 
     private void MarcarListo()
