@@ -144,8 +144,10 @@ public class RoundManager : NetworkBehaviour
 
     private int pendingNextRound;
 
-    // Jugadores que tocaron "Listo" durante la fase de compras (solo server).
-    private readonly HashSet<ulong> shopReadyClients = new HashSet<ulong>();
+    // Jugadores que tocaron "Listo" durante la fase de compras. Se sincroniza
+    // para que cada cliente sepa si el otro jugador ya está listo.
+    // (Las NetworkList se crean en Awake, antes del spawn de red.)
+    public NetworkList<ulong> ShopReadyClientsNetwork;
 
     private Coroutine spawnRoutine;
 
@@ -167,6 +169,11 @@ public class RoundManager : NetworkBehaviour
 
     private void Awake()
     {
+        ShopReadyClientsNetwork = new NetworkList<ulong>(
+            null,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server);
+
         if (
             Instance != null &&
             Instance != this
@@ -1134,7 +1141,7 @@ public class RoundManager : NetworkBehaviour
         if (!IsServer)
             yield break;
 
-        shopReadyClients.Clear();
+        ShopReadyClientsNetwork.Clear();
 
         float remaining = shopPhaseDuration;
 
@@ -1159,7 +1166,7 @@ public class RoundManager : NetworkBehaviour
 
         ShopPhaseRemainingNetwork.Value = 0;
         ShopPhaseActiveNetwork.Value = false;
-        shopReadyClients.Clear();
+        ShopReadyClientsNetwork.Clear();
 
         Debug.Log("[RoundManager] Fase de compras terminada.");
 
@@ -1174,7 +1181,27 @@ public class RoundManager : NetworkBehaviour
         if (!ShopPhaseActiveNetwork.Value)
             return;
 
-        shopReadyClients.Add(rpcParams.Receive.SenderClientId);
+        ulong clientId = rpcParams.Receive.SenderClientId;
+
+        if (!ShopReadyClientsNetwork.Contains(clientId))
+            ShopReadyClientsNetwork.Add(clientId);
+    }
+
+    // true si algún jugador distinto al local ya marcó "Listo".
+    public bool OtroJugadorListoFaseCompras()
+    {
+        if (!ShopPhaseActiveNetwork.Value || NetworkManager.Singleton == null)
+            return false;
+
+        ulong localId = NetworkManager.Singleton.LocalClientId;
+
+        foreach (ulong clientId in ShopReadyClientsNetwork)
+        {
+            if (clientId != localId)
+                return true;
+        }
+
+        return false;
     }
 
     private bool AllPlayersReadyForShopEnd()
@@ -1189,7 +1216,7 @@ public class RoundManager : NetworkBehaviour
 
         foreach (NetworkClient client in connectedClients)
         {
-            if (!shopReadyClients.Contains(client.ClientId))
+            if (!ShopReadyClientsNetwork.Contains(client.ClientId))
                 return false;
         }
 
