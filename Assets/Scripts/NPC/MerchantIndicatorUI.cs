@@ -3,7 +3,9 @@ using TMPro;
 using Unity.Netcode;
 
 // HUD (2D, no afecta al modelo 3D del jugador) que muestra a cuántos metros
-// está el mercader y una flecha que apunta hacia dónde caminar para encontrarlo.
+// está el mercader, una flecha que apunta hacia dónde caminar para encontrarlo
+// y el tiempo restante de la fase de compras.
+// Solo se muestra durante la fase de compras entre rondas.
 public class MerchantIndicatorUI : MonoBehaviour
 {
     [Header("Referencias UI")]
@@ -11,28 +13,53 @@ public class MerchantIndicatorUI : MonoBehaviour
     [SerializeField] private RectTransform flecha;
     [SerializeField] private TextMeshProUGUI distanciaText;
 
+    [Header("Tiempo de la fase de compras")]
+    [Tooltip("Texto debajo de la distancia. Se ve toda la fase, aunque estés al lado del mercader.")]
+    [SerializeField] private TextMeshProUGUI tiempoText;
+    [SerializeField] private string prefijoTiempo = "Tiempo para comprar: ";
+
     [Header("Comportamiento")]
     [SerializeField] private float distanciaParaOcultar = 3f;
 
     private Transform jugador;
     private Transform mercader;
+    private NPCShopUI shopUI;
 
     private void Start()
     {
         NetworkObject networkObject = GetComponentInParent<NetworkObject>();
         jugador = networkObject != null ? networkObject.transform : transform;
 
+        shopUI = transform.root.GetComponentInChildren<NPCShopUI>(true);
+
         BuscarMercader();
     }
 
     private void Update()
     {
+        // La flecha y el tiempo solo se muestran durante la fase de compras.
+        if (RoundManager.Instance == null || !RoundManager.Instance.IsShopPhaseActive)
+        {
+            MostrarIndicador(false, false);
+            return;
+        }
+
+        // Con la tienda abierta el tiempo ya se ve dentro del panel.
+        if (shopUI != null && shopUI.EstaAbierta)
+        {
+            MostrarIndicador(false, false);
+            return;
+        }
+
+        if (tiempoText != null)
+            tiempoText.text = prefijoTiempo + FormatearTiempo(RoundManager.Instance.ShopPhaseRemaining);
+
         if (mercader == null)
             BuscarMercader();
 
         if (mercader == null || jugador == null)
         {
-            MostrarIndicador(false);
+            MostrarIndicador(false, true);
             return;
         }
 
@@ -41,11 +68,11 @@ public class MerchantIndicatorUI : MonoBehaviour
 
         if (distancia <= distanciaParaOcultar)
         {
-            MostrarIndicador(false);
+            MostrarIndicador(false, true);
             return;
         }
 
-        MostrarIndicador(true);
+        MostrarIndicador(true, true);
 
         if (distanciaText != null)
             distanciaText.text = "Mercader a " + Mathf.RoundToInt(distancia) + " m";
@@ -66,10 +93,44 @@ public class MerchantIndicatorUI : MonoBehaviour
         }
     }
 
-    private void MostrarIndicador(bool visible)
+    // indicadorVisible: flecha + distancia. tiempoVisible: texto del tiempo restante.
+    private void MostrarIndicador(bool indicadorVisible, bool tiempoVisible)
     {
-        if (indicadorRoot != null && indicadorRoot.activeSelf != visible)
-            indicadorRoot.SetActive(visible);
+        if (tiempoText != null)
+            SetActivo(tiempoText.gameObject, tiempoVisible);
+
+        if (indicadorRoot == null)
+            return;
+
+        // Si el root es el mismo objeto que tiene este script, desactivarlo
+        // apagaría también el Update y no se volvería a mostrar nunca:
+        // en ese caso se prenden/apagan sus hijos (menos el del tiempo).
+        if (indicadorRoot == gameObject)
+        {
+            foreach (Transform hijo in transform)
+            {
+                if (tiempoText != null && hijo == tiempoText.transform)
+                    continue;
+
+                SetActivo(hijo.gameObject, indicadorVisible);
+            }
+
+            return;
+        }
+
+        SetActivo(indicadorRoot, indicadorVisible);
+    }
+
+    private static void SetActivo(GameObject objeto, bool activo)
+    {
+        if (objeto.activeSelf != activo)
+            objeto.SetActive(activo);
+    }
+
+    private static string FormatearTiempo(int segundos)
+    {
+        segundos = Mathf.Max(0, segundos);
+        return (segundos / 60).ToString("00") + ":" + (segundos % 60).ToString("00");
     }
 
     private void BuscarMercader()
