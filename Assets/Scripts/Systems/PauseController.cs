@@ -52,6 +52,12 @@ public class PauseController : NetworkBehaviour
     [SerializeField] private float duracionPanelRonda = 3f;
     [SerializeField] private TextMeshProUGUI textoRonda;
 
+    [Header("Fase de compras")]
+    [SerializeField] private GameObject panelFaseCompras;
+    [SerializeField] private float duracionPanelFaseCompras = 3f;
+    [SerializeField] private TextMeshProUGUI textoFaseCompras;
+    [SerializeField] private string mensajeFaseCompras = "Tiempo para comprar habilitado";
+
     private bool estaPausado;
 
     public bool EstaPausado => estaPausado;
@@ -64,6 +70,7 @@ public class PauseController : NetworkBehaviour
     private bool finDeRondaActivo;
     private bool pendienteAccionEsVictoria;
     private Coroutine ocultarPanelRondaCoroutine;
+    private Coroutine ocultarPanelFaseComprasCoroutine;
 
     private void Awake()
     {
@@ -104,7 +111,10 @@ public class PauseController : NetworkBehaviour
 
         if (panelRonda != null)
             panelRonda.SetActive(false);
-            
+
+        if (panelFaseCompras != null)
+            panelFaseCompras.SetActive(false);
+
         if (hud != null)
             hud.SetActive(false);
     }
@@ -535,5 +545,43 @@ if (textoCaidasVictoria != null && playerScore != null)
     {
         yield return new WaitForSeconds(segundos);
         OcultarPanelRonda();
+    }
+
+    // =========================================================
+    // FASE DE COMPRAS
+    // =========================================================
+
+    public void MostrarPanelFaseCompras()
+    {
+        if (!IsOwner)
+            return;
+
+        if (panelFaseCompras == null)
+        {
+            Debug.LogError("El panelFaseCompras no está asignado en el Inspector.");
+            return;
+        }
+
+        if (textoFaseCompras != null)
+            textoFaseCompras.text = mensajeFaseCompras;
+
+        panelFaseCompras.SetActive(true);
+
+        if (ocultarPanelFaseComprasCoroutine != null)
+            StopCoroutine(ocultarPanelFaseComprasCoroutine);
+
+        ocultarPanelFaseComprasCoroutine = StartCoroutine(OcultarPanelFaseComprasDespuesDeTiempo(duracionPanelFaseCompras));
+    }
+
+    public void OcultarPanelFaseCompras()
+    {
+        if (panelFaseCompras != null)
+            panelFaseCompras.SetActive(false);
+    }
+
+    private IEnumerator OcultarPanelFaseComprasDespuesDeTiempo(float segundos)
+    {
+        yield return new WaitForSeconds(segundos);
+        OcultarPanelFaseCompras();
     }
 }

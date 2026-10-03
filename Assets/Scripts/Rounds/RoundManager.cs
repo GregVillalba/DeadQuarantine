@@ -39,6 +39,9 @@ public class RoundManager : NetworkBehaviour
     [Header("HUD de inicio de ronda")]
     [SerializeField] private RoundStartHUD roundStartHUD;
 
+    [Header("Fase de compras (US 8.3)")]
+    [SerializeField] private float shopPhaseDuration = 90f;
+
     [Header("Espera de inicio (Multiplayer)")]
     [SerializeField] private int expectedPlayerCount = 2;
     [SerializeField] private float maxWaitForPlayersTime = 15f;
@@ -93,6 +96,19 @@ public class RoundManager : NetworkBehaviour
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server);
 
+    // Fase de compras entre rondas: mientras está activa no hay ronda en curso
+    // (no aparecen zombies) y el mercader está habilitado.
+    public NetworkVariable<bool> ShopPhaseActiveNetwork =
+        new NetworkVariable<bool>(false,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server);
+
+    // Segundos restantes de la fase de compras (se sincroniza segundo a segundo).
+    public NetworkVariable<int> ShopPhaseRemainingNetwork =
+        new NetworkVariable<int>(0,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server);
+
     // =========================================================
     // PROPIEDADES
     // =========================================================
@@ -117,10 +133,19 @@ public class RoundManager : NetworkBehaviour
     public int CountdownRemaining =>
         CountdownNetwork.Value;
 
+    public bool IsShopPhaseActive =>
+        ShopPhaseActiveNetwork.Value;
+
+    public int ShopPhaseRemaining =>
+        ShopPhaseRemainingNetwork.Value;
+
     private bool roundInProgress;
     private bool countdownInProgress;
 
     private int pendingNextRound;
+
+    // Jugadores que tocaron "Listo" durante la fase de compras (solo server).
+    private readonly HashSet<ulong> shopReadyClients = new HashSet<ulong>();
 
     private Coroutine spawnRoutine;
 
@@ -1060,7 +1085,115 @@ public class RoundManager : NetworkBehaviour
         pendingNextRound =
             CurrentRoundNetwork.Value +
             1;
+
+        if (HasShopPhaseAfterRound(CurrentRoundNetwork.Value))
+        {
+            StartCoroutine(ShopPhaseRoutine());
+            yield break;
+        }
+
         ConfirmarSiguienteRonda();
+    }
+
+    // =========================================================
+    // FASE DE COMPRAS
+    // =========================================================
+
+    // Hay fase de compras al terminar cada ronda impar, salvo la última
+    // (después de la última ronda viene la victoria).
+    public bool HasShopPhaseAfterRound(int round)
+    {
+        return round > 0 &&
+               round % 2 == 1 &&
+               round < MaxRounds;
+    }
+
+    // Texto con las rondas tras las que se habilita el mercader. Ej: "1 y 3".
+    public string GetShopRoundsDescription()
+    {
+        List<string> rondas = new List<string>();
+
+        for (int r = 1; r < MaxRounds; r++)
+        {
+            if (HasShopPhaseAfterRound(r))
+                rondas.Add(r.ToString());
+        }
+
+        if (rondas.Count == 0)
+            return string.Empty;
+
+        if (rondas.Count == 1)
+            return rondas[0];
+
+        return string.Join(", ", rondas.GetRange(0, rondas.Count - 1)) +
+               " y " + rondas[rondas.Count - 1];
+    }
+
+    private IEnumerator ShopPhaseRoutine()
+    {
+        if (!IsServer)
+            yield break;
+
+        shopReadyClients.Clear();
+
+        float remaining = shopPhaseDuration;
+
+        ShopPhaseRemainingNetwork.Value = Mathf.CeilToInt(remaining);
+        ShopPhaseActiveNetwork.Value = true;
+
+        MostrarPanelFaseComprasClientRpc();
+
+        Debug.Log("[RoundManager] Fase de compras iniciada (" + shopPhaseDuration + " s).");
+
+        // El tiempo corre normalmente (el juego no se pausa).
+        while (remaining > 0f && !AllPlayersReadyForShopEnd())
+        {
+            yield return null;
+
+            if (GameLostNetwork.Value)
+                yield break;
+
+            remaining -= Time.deltaTime;
+            ShopPhaseRemainingNetwork.Value = Mathf.Max(0, Mathf.CeilToInt(remaining));
+        }
+
+        ShopPhaseRemainingNetwork.Value = 0;
+        ShopPhaseActiveNetwork.Value = false;
+        shopReadyClients.Clear();
+
+        Debug.Log("[RoundManager] Fase de compras terminada.");
+
+        ConfirmarSiguienteRonda();
+    }
+
+    // "Listo": el jugador terminó de comprar. Cuando todos los jugadores
+    // conectados lo marcan, la fase de compras termina antes de tiempo.
+    [ServerRpc(RequireOwnership = false)]
+    public void MarcarListoFaseComprasServerRpc(ServerRpcParams rpcParams = default)
+    {
+        if (!ShopPhaseActiveNetwork.Value)
+            return;
+
+        shopReadyClients.Add(rpcParams.Receive.SenderClientId);
+    }
+
+    private bool AllPlayersReadyForShopEnd()
+    {
+        if (NetworkManager.Singleton == null)
+            return false;
+
+        var connectedClients = NetworkManager.Singleton.ConnectedClientsList;
+
+        if (connectedClients.Count == 0)
+            return false;
+
+        foreach (NetworkClient client in connectedClients)
+        {
+            if (!shopReadyClients.Contains(client.ClientId))
+                return false;
+        }
+
+        return true;
     }
 
     // =========================================================
@@ -1180,6 +1313,20 @@ public class RoundManager : NetworkBehaviour
         if (pause != null)
         {
             pause.MostrarPanelRonda(ronda, esRondaFinal);
+        }
+    }
+
+    [ClientRpc]
+    private void MostrarPanelFaseComprasClientRpc()
+    {
+        var local = NetworkManager.Singleton.LocalClient?.PlayerObject;
+        if (local == null)
+            return;
+
+        var pause = local.GetComponentInChildren<PauseController>();
+        if (pause != null)
+        {
+            pause.MostrarPanelFaseCompras();
         }
     }
 
