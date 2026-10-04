@@ -65,17 +65,17 @@ public class MultiplayerMenuManager : MonoBehaviour
 
     private bool jugador1Listo = false;
 
-    private bool cabanaLista = false;
-
+    // Laboratorio y Cabaña están disponibles.
+    // Ciudad continúa bloqueada.
+    private bool escenarioLista = false;
 
     private void Start()
     {
         BotonHome();
     }
 
-
     // =========================================================
-    // 1. MODOS
+    // MODOS DE JUEGO
     // =========================================================
 
     public void SeleccionarModoHistoria()
@@ -89,11 +89,9 @@ public class MultiplayerMenuManager : MonoBehaviour
             selectorModoHistoria.SetActive(true);
 
         MostrarCuadroSubmodo(cuadroSubmodoHistoria);
-
         ApagarTodosLosSelectoresDificultad();
         OcultarAvisoInhabilitado();
     }
-
 
     public void SeleccionarModoRonda5()
     {
@@ -106,11 +104,9 @@ public class MultiplayerMenuManager : MonoBehaviour
             selectorModoRonda5.SetActive(true);
 
         MostrarCuadroSubmodo(cuadroSubmodoRonda5);
-
         ApagarTodosLosSelectoresDificultad();
         OcultarAvisoInhabilitado();
     }
-
 
     public void SeleccionarModoSupervivencia()
     {
@@ -123,20 +119,17 @@ public class MultiplayerMenuManager : MonoBehaviour
             selectorModoSupervivencia.SetActive(true);
 
         MostrarCuadroSubmodo(cuadroSubmodoSupervivencia);
-
         ApagarTodosLosSelectoresDificultad();
         OcultarAvisoInhabilitado();
     }
-
 
     public void SeleccionarModalidadAleatoria()
     {
         MostrarAvisoInhabilitado();
     }
 
-
     // =========================================================
-    // 2. DIFICULTADES
+    // DIFICULTADES
     // =========================================================
 
     public void SeleccionarDificultadNormal(GameObject marcoSeleccionado)
@@ -146,7 +139,6 @@ public class MultiplayerMenuManager : MonoBehaviour
         if (modoActual == ModoSeleccionado.Ronda5)
         {
             textoNombreDificultad = "DIFICULTAD NORMAL";
-
             OcultarAvisoInhabilitado();
 
             if (textoModalidadDificultad != null)
@@ -169,13 +161,11 @@ public class MultiplayerMenuManager : MonoBehaviour
         }
     }
 
-
     public void SeleccionarDificultadDificil(GameObject marcoSeleccionado)
     {
         MarcarDificultadExclusiva(marcoSeleccionado);
         MostrarAvisoInhabilitado();
     }
-
 
     public void SeleccionarDificultadPesadilla(GameObject marcoSeleccionado)
     {
@@ -183,20 +173,22 @@ public class MultiplayerMenuManager : MonoBehaviour
         MostrarAvisoInhabilitado();
     }
 
-
     private void MarcarDificultadExclusiva(GameObject marcoSeleccionado)
     {
         GameObject[] grupoActual = null;
 
         if (modoActual == ModoSeleccionado.Historia)
+        {
             grupoActual = selectoresDificultadHistoria;
-
+        }
         else if (modoActual == ModoSeleccionado.Ronda5)
+        {
             grupoActual = selectoresDificultadRonda5;
-
+        }
         else if (modoActual == ModoSeleccionado.Infinitas)
+        {
             grupoActual = selectoresDificultadSupervivencia;
-
+        }
 
         if (grupoActual != null)
         {
@@ -208,9 +200,8 @@ public class MultiplayerMenuManager : MonoBehaviour
         }
     }
 
-
     // =========================================================
-    // 3. PERSONAJES
+    // PERSONAJES
     // =========================================================
 
     public void SeleccionarJugador1()
@@ -231,7 +222,6 @@ public class MultiplayerMenuManager : MonoBehaviour
         ValidarComenzar();
     }
 
-
     public void SeleccionarJugador2()
     {
         jugador1Listo = false;
@@ -245,23 +235,22 @@ public class MultiplayerMenuManager : MonoBehaviour
         if (panelEscenario != null)
             panelEscenario.SetActive(false);
 
-        cabanaLista = false;
+        escenarioLista = false;
 
         OcultarVistasEscenarios();
 
         MostrarAvisoInhabilitado();
-
         ValidarComenzar();
     }
 
-
     // =========================================================
-    // 4. ESCENARIOS
+    // ESCENARIOS
     // =========================================================
 
+    // LABORATORIO
     public void SeleccionarEscenario1()
     {
-        cabanaLista = false;
+        escenarioLista = true;
 
         OcultarVistasEscenarios();
         ApagarSelectoresEscenarios();
@@ -272,15 +261,14 @@ public class MultiplayerMenuManager : MonoBehaviour
         if (vistaLaboratorio != null)
             vistaLaboratorio.SetActive(true);
 
-        MostrarAvisoInhabilitado();
-
+        OcultarAvisoInhabilitado();
         ValidarComenzar();
     }
 
-
+    // CIUDAD - TODAVÍA NO DISPONIBLE
     public void SeleccionarEscenario2()
     {
-        cabanaLista = false;
+        escenarioLista = false;
 
         OcultarVistasEscenarios();
         ApagarSelectoresEscenarios();
@@ -292,14 +280,13 @@ public class MultiplayerMenuManager : MonoBehaviour
             vistaCiudad.SetActive(true);
 
         MostrarAvisoInhabilitado();
-
         ValidarComenzar();
     }
 
-
+    // CABAÑA
     public void SeleccionarEscenario3()
     {
-        cabanaLista = true;
+        escenarioLista = true;
 
         OcultarVistasEscenarios();
         ApagarSelectoresEscenarios();
@@ -311,25 +298,21 @@ public class MultiplayerMenuManager : MonoBehaviour
             vistaCabana.SetActive(true);
 
         OcultarAvisoInhabilitado();
-
         ValidarComenzar();
     }
 
-
     // =========================================================
-    // 5. COMENZAR PARTIDA
+    // COMENZAR PARTIDA
     // =========================================================
 
     public void OnClick_ComenzarAJugar()
     {
-        if (jugador1Listo && cabanaLista)
+        if (jugador1Listo && escenarioLista)
         {
             Debug.Log("========================================");
             Debug.Log("INICIANDO PARTIDA MULTIPLAYER");
             Debug.Log("========================================");
 
-            // NUEVO:
-            // Guardamos la configuración antes de iniciar la partida.
             GuardarConfiguracionPartida();
 
             if (ConfiguracionPartidaSeleccionada.Instancia != null)
@@ -355,7 +338,6 @@ public class MultiplayerMenuManager : MonoBehaviour
                 return;
             }
 
-
             if (panelRedirigiendo != null)
             {
                 panelRedirigiendo.SetActive(true);
@@ -372,9 +354,8 @@ public class MultiplayerMenuManager : MonoBehaviour
         }
     }
 
-
     // =========================================================
-    // 6. GUARDAR CONFIGURACIÓN DE PARTIDA
+    // GUARDAR CONFIGURACIÓN
     // =========================================================
 
     private void GuardarConfiguracionPartida()
@@ -388,10 +369,9 @@ public class MultiplayerMenuManager : MonoBehaviour
             return;
         }
 
-
-        // =====================================================
+        // -----------------------------------------------------
         // ESCENARIO
-        // =====================================================
+        // -----------------------------------------------------
 
         if (selectorEscenario1 != null && selectorEscenario1.activeSelf)
         {
@@ -417,10 +397,9 @@ public class MultiplayerMenuManager : MonoBehaviour
             return;
         }
 
-
-        // =====================================================
+        // -----------------------------------------------------
         // MODO
-        // =====================================================
+        // -----------------------------------------------------
 
         if (modoActual == ModoSeleccionado.Historia)
         {
@@ -446,10 +425,9 @@ public class MultiplayerMenuManager : MonoBehaviour
             return;
         }
 
-
-        // =====================================================
+        // -----------------------------------------------------
         // DIFICULTAD
-        // =====================================================
+        // -----------------------------------------------------
 
         if (textoNombreDificultad == "DIFICULTAD NORMAL")
         {
@@ -465,10 +443,9 @@ public class MultiplayerMenuManager : MonoBehaviour
             return;
         }
 
-
-        // =====================================================
+        // -----------------------------------------------------
         // PERSONAJE
-        // =====================================================
+        // -----------------------------------------------------
 
         if (jugador1Listo)
         {
@@ -484,10 +461,9 @@ public class MultiplayerMenuManager : MonoBehaviour
             return;
         }
 
-
-        // =====================================================
-        // DEBUG
-        // =====================================================
+        // -----------------------------------------------------
+        // LOG FINAL
+        // -----------------------------------------------------
 
         Debug.Log(
             "Configuración de partida MULTIPLAYER guardada: " +
@@ -502,9 +478,8 @@ public class MultiplayerMenuManager : MonoBehaviour
         );
     }
 
-
     // =========================================================
-    // 7. NAVEGACIÓN
+    // NAVEGACIÓN
     // =========================================================
 
     public void BotonAtrasDesdeApariencia()
@@ -520,7 +495,6 @@ public class MultiplayerMenuManager : MonoBehaviour
         OcultarAvisoInhabilitado();
     }
 
-
     public void BotonHome()
     {
         ResetearApariencia();
@@ -535,9 +509,8 @@ public class MultiplayerMenuManager : MonoBehaviour
         OcultarAvisoInhabilitado();
     }
 
-
     // =========================================================
-    // 8. AUXILIARES
+    // UTILIDADES
     // =========================================================
 
     private void MostrarCuadroSubmodo(GameObject cuadroActivo)
@@ -558,7 +531,6 @@ public class MultiplayerMenuManager : MonoBehaviour
             );
     }
 
-
     private void ResetearModalidad()
     {
         modoActual = ModoSeleccionado.Ninguno;
@@ -570,16 +542,14 @@ public class MultiplayerMenuManager : MonoBehaviour
             textoModalidadDificultad.text = "";
 
         MostrarCuadroSubmodo(null);
-
         ApagarSelectoresModos();
         ApagarTodosLosSelectoresDificultad();
     }
 
-
     private void ResetearApariencia()
     {
         jugador1Listo = false;
-        cabanaLista = false;
+        escenarioLista = false;
 
         if (panelPersonaje != null)
             panelPersonaje.SetActive(true);
@@ -605,7 +575,6 @@ public class MultiplayerMenuManager : MonoBehaviour
         OcultarVistasEscenarios();
     }
 
-
     private void ApagarSelectoresModos()
     {
         if (selectorModoHistoria != null)
@@ -618,14 +587,12 @@ public class MultiplayerMenuManager : MonoBehaviour
             selectorModoSupervivencia.SetActive(false);
     }
 
-
     private void ApagarTodosLosSelectoresDificultad()
     {
         ApagarArray(selectoresDificultadHistoria);
         ApagarArray(selectoresDificultadRonda5);
         ApagarArray(selectoresDificultadSupervivencia);
     }
-
 
     private void ApagarArray(GameObject[] arr)
     {
@@ -639,7 +606,6 @@ public class MultiplayerMenuManager : MonoBehaviour
         }
     }
 
-
     private void ApagarSelectoresEscenarios()
     {
         if (selectorEscenario1 != null)
@@ -651,7 +617,6 @@ public class MultiplayerMenuManager : MonoBehaviour
         if (selectorEscenario3 != null)
             selectorEscenario3.SetActive(false);
     }
-
 
     private void OcultarVistasEscenarios()
     {
@@ -665,19 +630,17 @@ public class MultiplayerMenuManager : MonoBehaviour
             vistaCabana.SetActive(false);
     }
 
-
     private void ValidarComenzar()
     {
         bool todoSeleccionado =
             jugador1Listo &&
-            cabanaLista;
+            escenarioLista;
 
         if (botonComenzarJuego != null)
             botonComenzarJuego.SetActive(todoSeleccionado);
 
         SetBotonHomeHabilitado(!todoSeleccionado);
     }
-
 
     private void SetBotonHomeHabilitado(bool habilitado)
     {
@@ -686,23 +649,17 @@ public class MultiplayerMenuManager : MonoBehaviour
             Button btn = botonHome.GetComponent<Button>();
 
             if (btn != null)
-            {
                 btn.interactable = habilitado;
-            }
             else
-            {
                 botonHome.SetActive(habilitado);
-            }
         }
     }
-
 
     private void MostrarAvisoInhabilitado()
     {
         if (cartelAvisoInhabilitado != null)
             cartelAvisoInhabilitado.SetActive(true);
     }
-
 
     private void OcultarAvisoInhabilitado()
     {
