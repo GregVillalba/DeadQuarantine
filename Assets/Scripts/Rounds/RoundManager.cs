@@ -150,22 +150,51 @@ public class RoundManager : NetworkBehaviour
         }
 
         if (!IsServer)
-            return;
+    return;
 
         if (roundStartHUD != null)
-        {
             roundStartHUD.Hide();
-        }
+
+        ConfigurarSpawnPointsDelEscenario();
 
         if (SceneManager.GetActiveScene().name == "MainSceneSinglePlayer")
-        {
             return;
-        }
 
-        // Multiplayer: esperamos a que TODOS estén parados en su spawn
-        // antes de arrancar la Ronda 1 (zombies, panel de ronda, etc).
         StartCoroutine(WaitForAllPlayersAtSpawnThenStart(1));
     }
+    private void ConfigurarSpawnPointsDelEscenario()
+{
+    GestorEscenariosPartida gestor =
+        FindAnyObjectByType<GestorEscenariosPartida>();
+
+    if (gestor == null)
+    {
+        Debug.LogError(
+            "[RoundManager] No se encontró GestorEscenariosPartida en la escena."
+        );
+
+        return;
+    }
+
+    Transform[] nuevosSpawnPoints =
+        gestor.ObtenerSpawnsZombies();
+
+    if (nuevosSpawnPoints == null || nuevosSpawnPoints.Length == 0)
+    {
+        Debug.LogError(
+            "[RoundManager] El escenario activo no tiene Spawn Points de zombies."
+        );
+
+        return;
+    }
+
+    spawnPoints = nuevosSpawnPoints;
+
+    Debug.Log(
+        "[RoundManager] Spawn Points del escenario configurados correctamente. " +
+        "Cantidad: " + spawnPoints.Length
+    );
+}
 
     private IEnumerator WaitForAllPlayersAtSpawnThenStart(int round)
     {

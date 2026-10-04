@@ -72652,6 +72652,54 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1371876130}
   m_CullTransparentMesh: 1
+--- !u!1 &1372698723
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1372698725}
+  - component: {fileID: 1372698724}
+  m_Layer: 0
+  m_Name: ConfiguracionPartidaSeleccionada
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1372698724
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1372698723}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dad83f986bbd547408635176daf71556, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::ConfiguracionPartidaSeleccionada
+  escenarioSeleccionado: 0
+  modoSeleccionado: 0
+  dificultadSeleccionada: 0
+  personajeSeleccionado: 0
+--- !u!4 &1372698725
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1372698723}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.93005, y: 3.48019, z: 13.56196}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1375872780
 GameObject:
   m_ObjectHideFlags: 0
@@ -113941,3 +113989,4 @@ SceneRoots:
   - {fileID: 1223398083}
   - {fileID: 7170978000318508548}
   - {fileID: 905045627}
+  - {fileID: 1372698725}
