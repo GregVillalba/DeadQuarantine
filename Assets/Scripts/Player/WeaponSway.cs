@@ -98,7 +98,7 @@ public class WeaponSway : MonoBehaviour
         // este chequeo, ese delta quedaba guardado como objetivo del resorte y
         // se notaba como la cámara/arma "deslizándose sola" un instante después
         // de despausar.
-        Vector2 mouseDelta = (Mouse.current != null && !PauseController.MouseInputBlocked)
+        Vector2 mouseDelta = (Mouse.current != null && !PlayerInputGate.MouseBlocked)
             ? Mouse.current.delta.ReadValue()
             : Vector2.zero;
 

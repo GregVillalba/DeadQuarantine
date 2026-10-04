@@ -43,6 +43,16 @@ public class PlayerFootsteps : MonoBehaviour
         if (characterController == null)
             return;
 
+        // Menú abierto (pausa / tienda) o movimiento bloqueado: sin pasos.
+        if (PlayerInputGate.ActionsBlocked ||
+            (playerMovement != null && playerMovement.MovementLocked))
+        {
+            if (audioSource.isPlaying)
+                audioSource.Stop();
+
+            return;
+        }
+
         // Si está en el aire, no hay pasos.
         if (!characterController.isGrounded)
         {

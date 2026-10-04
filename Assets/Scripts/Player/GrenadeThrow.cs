@@ -50,6 +50,9 @@ public class GrenadeThrow : MonoBehaviour
 
     private void OnGrenadeInput(InputAction.CallbackContext context)
     {
+        if (PlayerInputGate.ActionsBlocked)
+        return; 
+
         if (PauseController.LocalPlayerPaused)
             return;
 

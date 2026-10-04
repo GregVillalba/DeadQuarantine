@@ -50,6 +50,9 @@ public class MeleeAttack : MonoBehaviour
 
     private void OnMeleeInput(InputAction.CallbackContext context)
     {
+        if (PlayerInputGate.ActionsBlocked)
+        return;
+
         if (PauseController.LocalPlayerPaused)
             return;
 

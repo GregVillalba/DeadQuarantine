@@ -90,6 +90,9 @@ public class WeaponSwitcher : MonoBehaviour
 
     private void OnSwitchWeapon(InputAction.CallbackContext context)
     {
+        if (PlayerInputGate.ActionsBlocked) 
+        return; 
+
         // Con el menú de pausa abierto no se cambia de arma.
         if (PauseController.LocalPlayerPaused)
             return;

@@ -1681,8 +1681,10 @@ public class PlayerMovement : NetworkBehaviour
         }
         else
         {
-            wantsToCrouch =
-                controls.Player.Crouch.IsPressed();
+            // Con el movimiento bloqueado (pausa, tienda...) no se acepta agacharse ni pararse: se mantiene la postura.
+            wantsToCrouch = MovementLocked
+                ? IsCrouching
+                : controls.Player.Crouch.IsPressed();
         }
 
         if (

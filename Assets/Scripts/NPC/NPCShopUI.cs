@@ -71,6 +71,32 @@ public class NPCShopUI : MonoBehaviour
 
     public bool EstaAbierta => estaAbierta;
 
+    // ---------------------------------------------------------
+    // Estado de la tienda del jugador LOCAL, legible desde cualquier script de arma / movimiento.
+    // Mismo patron que PauseController.LocalPlayerPaused / MouseInputBlocked.
+    // Solo lo escribe la tienda del dueño (la de los jugadores remotos nunca se abre).
+    // ---------------------------------------------------------
+
+    /// <summary>true mientras la tienda del jugador local esta abierta.</summary>
+    public static bool LocalShopOpen { get; private set; }
+
+    private static int closeFrame = -100;
+
+    /// <summary>
+    /// true con la tienda abierta y durante los 2 frames siguientes a cerrarla. Hay que ignorar el delta
+    /// del mouse en ese lapso: al volver a bloquear el cursor el primer delta puede ser enorme.
+    /// </summary>
+    public static bool MouseInputBlocked =>
+        LocalShopOpen || Time.frameCount - closeFrame <= 2;
+
+    // Con "Enter Play Mode Options" (sin recargar dominio) los estaticos sobreviven entre partidas.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticState()
+    {
+        LocalShopOpen = false;
+        closeFrame = -100;
+    }
+
     [Header("Fila de oferta (nombres de los hijos del prefab)")]
     [SerializeField] private string nombreIcono = "Icon";
     [SerializeField] private string nombreTextoNombre = "NameText";
@@ -132,6 +158,11 @@ public class NPCShopUI : MonoBehaviour
     private void OnDisable()
     {
         controls.Player.Disable();
+
+        // Si este jugador se desactiva / destruye con la tienda abierta, no dejar el bloqueo pegado.
+        // (Solo si estaba abierta: asi un jugador remoto no pisa el estado del local.)
+        if (estaAbierta)
+            LocalShopOpen = false;
     }
 
     private void Update()
@@ -230,6 +261,7 @@ public class NPCShopUI : MonoBehaviour
 
         currentVendor = vendor;
         estaAbierta = true;
+        LocalShopOpen = true;
         ofertaSeleccionada = null;
         tiempoMantenido = 0f;
 
@@ -271,6 +303,8 @@ public class NPCShopUI : MonoBehaviour
             return;
 
         estaAbierta = false;
+        LocalShopOpen = false;
+        closeFrame = Time.frameCount;
         ofertaSeleccionada = null;
         tiempoMantenido = 0f;
 
