@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro; // Si usas el Text clásico de UnityEngine.UI, cambia TMP_Text por Text
+using TMPro;
 
 public class MultiplayerMenuManager : MonoBehaviour
 {
@@ -10,15 +10,15 @@ public class MultiplayerMenuManager : MonoBehaviour
     [SerializeField] private GameObject cartelAvisoInhabilitado;
 
     [Header("Pantalla Redirigiendo")]
-    [SerializeField] private GameObject panelRedirigiendo; // Cartel/Panel "CARGANDO_ESCENARIO (1)"
+    [SerializeField] private GameObject panelRedirigiendo;
 
     [Header("Texto Encabezado de Resumen")]
-    [SerializeField] private TMP_Text textoModalidadDificultad; // "Titulo_elecciones"
+    [SerializeField] private TMP_Text textoModalidadDificultad;
 
     [Header("1. Modos - Cuadros Secundarios")]
-    [SerializeField] private GameObject cuadroSubmodoHistoria;      // Objeto hijo modoHistoria
-    [SerializeField] private GameObject cuadroSubmodoRonda5;         // Objeto hijo modoRonda5
-    [SerializeField] private GameObject cuadroSubmodoSupervivencia;  // Objeto hijo modoSupervivencia
+    [SerializeField] private GameObject cuadroSubmodoHistoria;
+    [SerializeField] private GameObject cuadroSubmodoRonda5;
+    [SerializeField] private GameObject cuadroSubmodoSupervivencia;
 
     [Header("1. Modos - Objetos 'Seleccionado'")]
     [SerializeField] private GameObject selectorModoHistoria;
@@ -26,45 +26,56 @@ public class MultiplayerMenuManager : MonoBehaviour
     [SerializeField] private GameObject selectorModoSupervivencia;
 
     [Header("2. Dificultades - Selectores por Modo")]
-    [SerializeField] private GameObject[] selectoresDificultadHistoria;      // Normal, Dificil, Pesadilla
-    [SerializeField] private GameObject[] selectoresDificultadRonda5;        // Normal, Dificil, Pesadilla
-    [SerializeField] private GameObject[] selectoresDificultadSupervivencia; // Normal, Dificil, Pesadilla
+    [SerializeField] private GameObject[] selectoresDificultadHistoria;
+    [SerializeField] private GameObject[] selectoresDificultadRonda5;
+    [SerializeField] private GameObject[] selectoresDificultadSupervivencia;
 
     [Header("3. Personajes")]
     [SerializeField] private GameObject panelPersonaje;
     [SerializeField] private GameObject jugador1_select;
     [SerializeField] private GameObject jugador2_select;
 
-    [Header("4. Escenarios - Selectores Estéticos")]
+    [Header("4. Escenarios - Selectores EstÃ¡ticos")]
     [SerializeField] private GameObject panelEscenario;
-    [SerializeField] private GameObject selectorEscenario1; // Hijo 'Seleccionado' de Laboratorio
-    [SerializeField] private GameObject selectorEscenario2; // Hijo 'Seleccionado' de Ciudad
-    [SerializeField] private GameObject selectorEscenario3; // Hijo 'Seleccionado' de Cabaña
+    [SerializeField] private GameObject selectorEscenario1;
+    [SerializeField] private GameObject selectorEscenario2;
+    [SerializeField] private GameObject selectorEscenario3;
 
-    [Header("4. Escenarios - Vistas (Info e Imagen)")]
+    [Header("4. Escenarios - Vistas")]
     [SerializeField] private GameObject vistaLaboratorio;
     [SerializeField] private GameObject vistaCiudad;
     [SerializeField] private GameObject vistaCabana;
 
-    [Header("Navegación")]
-    [SerializeField] private GameObject botonComenzarJuego; // Botón Siguiente / Comenzar
-    [SerializeField] private GameObject botonHome;           // Botón Home a deshabilitar
+    [Header("NavegaciÃ³n")]
+    [SerializeField] private GameObject botonComenzarJuego;
+    [SerializeField] private GameObject botonHome;
 
-    private enum ModoSeleccionado { Ninguno, Historia, Ronda5, Infinitas }
+    private enum ModoSeleccionado
+    {
+        Ninguno,
+        Historia,
+        Ronda5,
+        Infinitas
+    }
+
     private ModoSeleccionado modoActual = ModoSeleccionado.Ninguno;
 
     private string textoNombreModo = "";
     private string textoNombreDificultad = "";
+
     private bool jugador1Listo = false;
+
     private bool cabanaLista = false;
+
 
     private void Start()
     {
         BotonHome();
     }
 
+
     // =========================================================
-    // 1. MODOS Y BOTÓN ALEATORIO
+    // 1. MODOS
     // =========================================================
 
     public void SeleccionarModoHistoria()
@@ -73,12 +84,16 @@ public class MultiplayerMenuManager : MonoBehaviour
         textoNombreModo = "MODALIDAD MODO HISTORIA";
 
         ApagarSelectoresModos();
-        if (selectorModoHistoria != null) selectorModoHistoria.SetActive(true);
+
+        if (selectorModoHistoria != null)
+            selectorModoHistoria.SetActive(true);
 
         MostrarCuadroSubmodo(cuadroSubmodoHistoria);
+
         ApagarTodosLosSelectoresDificultad();
         OcultarAvisoInhabilitado();
     }
+
 
     public void SeleccionarModoRonda5()
     {
@@ -86,12 +101,16 @@ public class MultiplayerMenuManager : MonoBehaviour
         textoNombreModo = "MODALIDAD RONDA 5";
 
         ApagarSelectoresModos();
-        if (selectorModoRonda5 != null) selectorModoRonda5.SetActive(true);
+
+        if (selectorModoRonda5 != null)
+            selectorModoRonda5.SetActive(true);
 
         MostrarCuadroSubmodo(cuadroSubmodoRonda5);
+
         ApagarTodosLosSelectoresDificultad();
         OcultarAvisoInhabilitado();
     }
+
 
     public void SeleccionarModoSupervivencia()
     {
@@ -99,20 +118,25 @@ public class MultiplayerMenuManager : MonoBehaviour
         textoNombreModo = "MODALIDAD RONDAS INFINITAS";
 
         ApagarSelectoresModos();
-        if (selectorModoSupervivencia != null) selectorModoSupervivencia.SetActive(true);
+
+        if (selectorModoSupervivencia != null)
+            selectorModoSupervivencia.SetActive(true);
 
         MostrarCuadroSubmodo(cuadroSubmodoSupervivencia);
+
         ApagarTodosLosSelectoresDificultad();
         OcultarAvisoInhabilitado();
     }
+
 
     public void SeleccionarModalidadAleatoria()
     {
         MostrarAvisoInhabilitado();
     }
 
+
     // =========================================================
-    // 2. DIFICULTADES CON DESMARCADO MUTUO
+    // 2. DIFICULTADES
     // =========================================================
 
     public void SeleccionarDificultadNormal(GameObject marcoSeleccionado)
@@ -122,14 +146,20 @@ public class MultiplayerMenuManager : MonoBehaviour
         if (modoActual == ModoSeleccionado.Ronda5)
         {
             textoNombreDificultad = "DIFICULTAD NORMAL";
+
             OcultarAvisoInhabilitado();
 
             if (textoModalidadDificultad != null)
-                textoModalidadDificultad.text = $"{textoNombreModo} - {textoNombreDificultad}";
+            {
+                textoModalidadDificultad.text =
+                    $"{textoNombreModo} - {textoNombreDificultad}";
+            }
 
-            // Pasa a la pantalla de Apariencia
-            if (modalidadPanel != null) modalidadPanel.SetActive(false);
-            if (aparienciaPanel != null) aparienciaPanel.SetActive(true);
+            if (modalidadPanel != null)
+                modalidadPanel.SetActive(false);
+
+            if (aparienciaPanel != null)
+                aparienciaPanel.SetActive(true);
 
             ResetearApariencia();
         }
@@ -139,11 +169,13 @@ public class MultiplayerMenuManager : MonoBehaviour
         }
     }
 
+
     public void SeleccionarDificultadDificil(GameObject marcoSeleccionado)
     {
         MarcarDificultadExclusiva(marcoSeleccionado);
         MostrarAvisoInhabilitado();
     }
+
 
     public void SeleccionarDificultadPesadilla(GameObject marcoSeleccionado)
     {
@@ -151,111 +183,179 @@ public class MultiplayerMenuManager : MonoBehaviour
         MostrarAvisoInhabilitado();
     }
 
+
     private void MarcarDificultadExclusiva(GameObject marcoSeleccionado)
     {
         GameObject[] grupoActual = null;
 
-        if (modoActual == ModoSeleccionado.Historia) grupoActual = selectoresDificultadHistoria;
-        else if (modoActual == ModoSeleccionado.Ronda5) grupoActual = selectoresDificultadRonda5;
-        else if (modoActual == ModoSeleccionado.Infinitas) grupoActual = selectoresDificultadSupervivencia;
+        if (modoActual == ModoSeleccionado.Historia)
+            grupoActual = selectoresDificultadHistoria;
+
+        else if (modoActual == ModoSeleccionado.Ronda5)
+            grupoActual = selectoresDificultadRonda5;
+
+        else if (modoActual == ModoSeleccionado.Infinitas)
+            grupoActual = selectoresDificultadSupervivencia;
+
 
         if (grupoActual != null)
         {
             foreach (var s in grupoActual)
             {
                 if (s != null)
-                {
                     s.SetActive(s == marcoSeleccionado);
-                }
             }
         }
     }
 
+
     // =========================================================
-    // 3. APARIENCIA - PERSONAJES
+    // 3. PERSONAJES
     // =========================================================
 
     public void SeleccionarJugador1()
     {
         jugador1Listo = true;
 
-        if (jugador1_select != null) jugador1_select.SetActive(true);
-        if (jugador2_select != null) jugador2_select.SetActive(false);
+        if (jugador1_select != null)
+            jugador1_select.SetActive(true);
+
+        if (jugador2_select != null)
+            jugador2_select.SetActive(false);
 
         OcultarAvisoInhabilitado();
 
-        if (panelEscenario != null) panelEscenario.SetActive(true);
+        if (panelEscenario != null)
+            panelEscenario.SetActive(true);
 
         ValidarComenzar();
     }
+
 
     public void SeleccionarJugador2()
     {
         jugador1Listo = false;
 
-        if (jugador2_select != null) jugador2_select.SetActive(true);
-        if (jugador1_select != null) jugador1_select.SetActive(false);
+        if (jugador2_select != null)
+            jugador2_select.SetActive(true);
 
-        if (panelEscenario != null) panelEscenario.SetActive(false);
+        if (jugador1_select != null)
+            jugador1_select.SetActive(false);
+
+        if (panelEscenario != null)
+            panelEscenario.SetActive(false);
+
         cabanaLista = false;
+
         OcultarVistasEscenarios();
 
         MostrarAvisoInhabilitado();
+
         ValidarComenzar();
     }
 
+
     // =========================================================
-    // 4. APARIENCIA - ESCENARIOS
+    // 4. ESCENARIOS
     // =========================================================
 
-    public void SeleccionarEscenario1() // Laboratorio
+    public void SeleccionarEscenario1()
     {
         cabanaLista = false;
+
         OcultarVistasEscenarios();
         ApagarSelectoresEscenarios();
 
-        if (selectorEscenario1 != null) selectorEscenario1.SetActive(true);
-        if (vistaLaboratorio != null) vistaLaboratorio.SetActive(true);
+        if (selectorEscenario1 != null)
+            selectorEscenario1.SetActive(true);
+
+        if (vistaLaboratorio != null)
+            vistaLaboratorio.SetActive(true);
 
         MostrarAvisoInhabilitado();
+
         ValidarComenzar();
     }
 
-    public void SeleccionarEscenario2() // Ciudad
+
+    public void SeleccionarEscenario2()
     {
         cabanaLista = false;
+
         OcultarVistasEscenarios();
         ApagarSelectoresEscenarios();
 
-        if (selectorEscenario2 != null) selectorEscenario2.SetActive(true);
-        if (vistaCiudad != null) vistaCiudad.SetActive(true);
+        if (selectorEscenario2 != null)
+            selectorEscenario2.SetActive(true);
+
+        if (vistaCiudad != null)
+            vistaCiudad.SetActive(true);
 
         MostrarAvisoInhabilitado();
+
         ValidarComenzar();
     }
 
-    public void SeleccionarEscenario3() // Cabaña
+
+    public void SeleccionarEscenario3()
     {
         cabanaLista = true;
+
         OcultarVistasEscenarios();
         ApagarSelectoresEscenarios();
 
-        if (selectorEscenario3 != null) selectorEscenario3.SetActive(true);
-        if (vistaCabana != null) vistaCabana.SetActive(true);
+        if (selectorEscenario3 != null)
+            selectorEscenario3.SetActive(true);
+
+        if (vistaCabana != null)
+            vistaCabana.SetActive(true);
 
         OcultarAvisoInhabilitado();
+
         ValidarComenzar();
     }
 
+
     // =========================================================
-    // 5. NAVEGACIÓN Y ACTIVACIÓN DEL CARTEL
+    // 5. COMENZAR PARTIDA
     // =========================================================
 
-    // Asignar al botón Siguiente / Comenzar
     public void OnClick_ComenzarAJugar()
     {
         if (jugador1Listo && cabanaLista)
         {
+            Debug.Log("========================================");
+            Debug.Log("INICIANDO PARTIDA MULTIPLAYER");
+            Debug.Log("========================================");
+
+            // NUEVO:
+            // Guardamos la configuraciÃ³n antes de iniciar la partida.
+            GuardarConfiguracionPartida();
+
+            if (ConfiguracionPartidaSeleccionada.Instancia != null)
+            {
+                Debug.Log(
+                    "ConfiguraciÃ³n MULTIPLAYER guardada correctamente: " +
+                    "Escenario = " +
+                    ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado +
+                    " | Modo = " +
+                    ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado +
+                    " | Dificultad = " +
+                    ConfiguracionPartidaSeleccionada.Instancia.dificultadSeleccionada +
+                    " | Personaje = " +
+                    ConfiguracionPartidaSeleccionada.Instancia.personajeSeleccionado
+                );
+            }
+            else
+            {
+                Debug.LogError(
+                    "MultiplayerMenuManager: NO EXISTE ConfiguracionPartidaSeleccionada."
+                );
+
+                return;
+            }
+
+
             if (panelRedirigiendo != null)
             {
                 panelRedirigiendo.SetActive(true);
@@ -268,91 +368,256 @@ public class MultiplayerMenuManager : MonoBehaviour
             }
 
             if (botonComenzarJuego != null)
-            {
                 botonComenzarJuego.SetActive(false);
-            }
         }
     }
 
-    // Asignar al botón Atrás en AparienciaPanel
+
+    // =========================================================
+    // 6. GUARDAR CONFIGURACIÃ“N DE PARTIDA
+    // =========================================================
+
+    private void GuardarConfiguracionPartida()
+    {
+        if (ConfiguracionPartidaSeleccionada.Instancia == null)
+        {
+            Debug.LogError(
+                "MultiplayerMenuManager: No existe una ConfiguracionPartidaSeleccionada."
+            );
+
+            return;
+        }
+
+
+        // =====================================================
+        // ESCENARIO
+        // =====================================================
+
+        if (selectorEscenario1 != null && selectorEscenario1.activeSelf)
+        {
+            ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado =
+                ConfiguracionPartidaSeleccionada.Escenario.Laboratorio;
+        }
+        else if (selectorEscenario2 != null && selectorEscenario2.activeSelf)
+        {
+            ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado =
+                ConfiguracionPartidaSeleccionada.Escenario.Ciudad;
+        }
+        else if (selectorEscenario3 != null && selectorEscenario3.activeSelf)
+        {
+            ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado =
+                ConfiguracionPartidaSeleccionada.Escenario.Cabana;
+        }
+        else
+        {
+            Debug.LogError(
+                "MultiplayerMenuManager: No se pudo determinar el escenario seleccionado."
+            );
+
+            return;
+        }
+
+
+        // =====================================================
+        // MODO
+        // =====================================================
+
+        if (modoActual == ModoSeleccionado.Historia)
+        {
+            ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado =
+                ConfiguracionPartidaSeleccionada.ModoJuego.Historia;
+        }
+        else if (modoActual == ModoSeleccionado.Ronda5)
+        {
+            ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado =
+                ConfiguracionPartidaSeleccionada.ModoJuego.Ronda5;
+        }
+        else if (modoActual == ModoSeleccionado.Infinitas)
+        {
+            ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado =
+                ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia;
+        }
+        else
+        {
+            Debug.LogError(
+                "MultiplayerMenuManager: No se pudo determinar el modo de juego."
+            );
+
+            return;
+        }
+
+
+        // =====================================================
+        // DIFICULTAD
+        // =====================================================
+
+        if (textoNombreDificultad == "DIFICULTAD NORMAL")
+        {
+            ConfiguracionPartidaSeleccionada.Instancia.dificultadSeleccionada =
+                ConfiguracionPartidaSeleccionada.Dificultad.Normal;
+        }
+        else
+        {
+            Debug.LogError(
+                "MultiplayerMenuManager: No se pudo determinar la dificultad."
+            );
+
+            return;
+        }
+
+
+        // =====================================================
+        // PERSONAJE
+        // =====================================================
+
+        if (jugador1Listo)
+        {
+            ConfiguracionPartidaSeleccionada.Instancia.personajeSeleccionado =
+                ConfiguracionPartidaSeleccionada.Personaje.Jugador1;
+        }
+        else
+        {
+            Debug.LogError(
+                "MultiplayerMenuManager: No se pudo determinar el personaje."
+            );
+
+            return;
+        }
+
+
+        // =====================================================
+        // DEBUG
+        // =====================================================
+
+        Debug.Log(
+            "ConfiguraciÃ³n de partida MULTIPLAYER guardada: " +
+            "Escenario = " +
+            ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado +
+            " | Modo = " +
+            ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado +
+            " | Dificultad = " +
+            ConfiguracionPartidaSeleccionada.Instancia.dificultadSeleccionada +
+            " | Personaje = " +
+            ConfiguracionPartidaSeleccionada.Instancia.personajeSeleccionado
+        );
+    }
+
+
+    // =========================================================
+    // 7. NAVEGACIÃ“N
+    // =========================================================
+
     public void BotonAtrasDesdeApariencia()
     {
         ResetearApariencia();
 
-        if (aparienciaPanel != null) aparienciaPanel.SetActive(false);
-        if (modalidadPanel != null) modalidadPanel.SetActive(true);
+        if (aparienciaPanel != null)
+            aparienciaPanel.SetActive(false);
+
+        if (modalidadPanel != null)
+            modalidadPanel.SetActive(true);
 
         OcultarAvisoInhabilitado();
     }
 
-    // Asignar a los botones Home
+
     public void BotonHome()
     {
         ResetearApariencia();
         ResetearModalidad();
 
-        if (aparienciaPanel != null) aparienciaPanel.SetActive(false);
-        if (modalidadPanel != null) modalidadPanel.SetActive(true);
+        if (aparienciaPanel != null)
+            aparienciaPanel.SetActive(false);
+
+        if (modalidadPanel != null)
+            modalidadPanel.SetActive(true);
 
         OcultarAvisoInhabilitado();
     }
 
+
     // =========================================================
-    // MÉTODOS DE LIMPIEZA INTERNA
+    // 8. AUXILIARES
     // =========================================================
 
     private void MostrarCuadroSubmodo(GameObject cuadroActivo)
     {
         if (cuadroSubmodoHistoria != null)
-            cuadroSubmodoHistoria.SetActive(cuadroSubmodoHistoria == cuadroActivo);
+            cuadroSubmodoHistoria.SetActive(
+                cuadroSubmodoHistoria == cuadroActivo
+            );
 
         if (cuadroSubmodoRonda5 != null)
-            cuadroSubmodoRonda5.SetActive(cuadroSubmodoRonda5 == cuadroActivo);
+            cuadroSubmodoRonda5.SetActive(
+                cuadroSubmodoRonda5 == cuadroActivo
+            );
 
         if (cuadroSubmodoSupervivencia != null)
-            cuadroSubmodoSupervivencia.SetActive(cuadroSubmodoSupervivencia == cuadroActivo);
+            cuadroSubmodoSupervivencia.SetActive(
+                cuadroSubmodoSupervivencia == cuadroActivo
+            );
     }
+
 
     private void ResetearModalidad()
     {
         modoActual = ModoSeleccionado.Ninguno;
+
         textoNombreModo = "";
         textoNombreDificultad = "";
 
-        if (textoModalidadDificultad != null) textoModalidadDificultad.text = "";
+        if (textoModalidadDificultad != null)
+            textoModalidadDificultad.text = "";
 
         MostrarCuadroSubmodo(null);
+
         ApagarSelectoresModos();
         ApagarTodosLosSelectoresDificultad();
     }
+
 
     private void ResetearApariencia()
     {
         jugador1Listo = false;
         cabanaLista = false;
 
-        if (panelPersonaje != null) panelPersonaje.SetActive(true);
-        if (panelEscenario != null) panelEscenario.SetActive(false);
-        if (botonComenzarJuego != null) botonComenzarJuego.SetActive(false);
+        if (panelPersonaje != null)
+            panelPersonaje.SetActive(true);
 
-        // Al resetear la apariencia o volver atrás, se vuelve a habilitar Home
+        if (panelEscenario != null)
+            panelEscenario.SetActive(false);
+
+        if (botonComenzarJuego != null)
+            botonComenzarJuego.SetActive(false);
+
         SetBotonHomeHabilitado(true);
 
-        if (panelRedirigiendo != null) panelRedirigiendo.SetActive(false);
+        if (panelRedirigiendo != null)
+            panelRedirigiendo.SetActive(false);
 
-        if (jugador1_select != null) jugador1_select.SetActive(false);
-        if (jugador2_select != null) jugador2_select.SetActive(false);
+        if (jugador1_select != null)
+            jugador1_select.SetActive(false);
+
+        if (jugador2_select != null)
+            jugador2_select.SetActive(false);
 
         ApagarSelectoresEscenarios();
         OcultarVistasEscenarios();
     }
 
+
     private void ApagarSelectoresModos()
     {
-        if (selectorModoHistoria != null) selectorModoHistoria.SetActive(false);
-        if (selectorModoRonda5 != null) selectorModoRonda5.SetActive(false);
-        if (selectorModoSupervivencia != null) selectorModoSupervivencia.SetActive(false);
+        if (selectorModoHistoria != null)
+            selectorModoHistoria.SetActive(false);
+
+        if (selectorModoRonda5 != null)
+            selectorModoRonda5.SetActive(false);
+
+        if (selectorModoSupervivencia != null)
+            selectorModoSupervivencia.SetActive(false);
     }
+
 
     private void ApagarTodosLosSelectoresDificultad()
     {
@@ -361,47 +626,65 @@ public class MultiplayerMenuManager : MonoBehaviour
         ApagarArray(selectoresDificultadSupervivencia);
     }
 
+
     private void ApagarArray(GameObject[] arr)
     {
-        if (arr == null) return;
+        if (arr == null)
+            return;
+
         foreach (var go in arr)
         {
-            if (go != null) go.SetActive(false);
+            if (go != null)
+                go.SetActive(false);
         }
     }
+
 
     private void ApagarSelectoresEscenarios()
     {
-        if (selectorEscenario1 != null) selectorEscenario1.SetActive(false);
-        if (selectorEscenario2 != null) selectorEscenario2.SetActive(false);
-        if (selectorEscenario3 != null) selectorEscenario3.SetActive(false);
+        if (selectorEscenario1 != null)
+            selectorEscenario1.SetActive(false);
+
+        if (selectorEscenario2 != null)
+            selectorEscenario2.SetActive(false);
+
+        if (selectorEscenario3 != null)
+            selectorEscenario3.SetActive(false);
     }
+
 
     private void OcultarVistasEscenarios()
     {
-        if (vistaLaboratorio != null) vistaLaboratorio.SetActive(false);
-        if (vistaCiudad != null) vistaCiudad.SetActive(false);
-        if (vistaCabana != null) vistaCabana.SetActive(false);
+        if (vistaLaboratorio != null)
+            vistaLaboratorio.SetActive(false);
+
+        if (vistaCiudad != null)
+            vistaCiudad.SetActive(false);
+
+        if (vistaCabana != null)
+            vistaCabana.SetActive(false);
     }
+
 
     private void ValidarComenzar()
     {
-        bool todoSeleccionado = jugador1Listo && cabanaLista;
+        bool todoSeleccionado =
+            jugador1Listo &&
+            cabanaLista;
 
         if (botonComenzarJuego != null)
-        {
             botonComenzarJuego.SetActive(todoSeleccionado);
-        }
 
-        // Si se eligió personaje y escenario válidos, deshabilita Home; de lo contrario queda activo
         SetBotonHomeHabilitado(!todoSeleccionado);
     }
+
 
     private void SetBotonHomeHabilitado(bool habilitado)
     {
         if (botonHome != null)
         {
             Button btn = botonHome.GetComponent<Button>();
+
             if (btn != null)
             {
                 btn.interactable = habilitado;
@@ -413,13 +696,17 @@ public class MultiplayerMenuManager : MonoBehaviour
         }
     }
 
+
     private void MostrarAvisoInhabilitado()
     {
-        if (cartelAvisoInhabilitado != null) cartelAvisoInhabilitado.SetActive(true);
+        if (cartelAvisoInhabilitado != null)
+            cartelAvisoInhabilitado.SetActive(true);
     }
+
 
     private void OcultarAvisoInhabilitado()
     {
-        if (cartelAvisoInhabilitado != null) cartelAvisoInhabilitado.SetActive(false);
+        if (cartelAvisoInhabilitado != null)
+            cartelAvisoInhabilitado.SetActive(false);
     }
 }
