@@ -42,6 +42,15 @@ public class DifficultySettings : ScriptableObject
     [Tooltip("Si está apagado, el jugador no puede recargar: al gastar las balas no consigue más.")]
     public bool allowReload = true;
 
+    [Header("Jugador: munición de reserva")]
+    [Tooltip("Apagado = recargas ilimitadas (Normal). Encendido = cada arma tiene una reserva limitada: " +
+             "cada bala que se pasa al cargador se descuenta de la reserva.")]
+    public bool limitedReserveAmmo = false;
+
+    [Tooltip("Multiplica la reserva de cada arma (la reserva base se configura en el propio arma: " +
+             "rifle 120, pistola 100...). 1 = tal cual, 0.5 = la mitad. Solo se usa con 'Limited Reserve Ammo' activado.")]
+    [Min(0f)] public float reserveAmmoMultiplier = 1f;
+
     [Header("Jugador: regeneración de vida")]
     [Tooltip("Si está apagado, se usan los valores que ya tiene PlayerHealth en el Inspector.")]
     public bool overrideHealthRegen = false;

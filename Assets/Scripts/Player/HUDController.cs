@@ -234,10 +234,11 @@ public class HUDController : MonoBehaviour
 
         if (ammoMaxText != null)
         {
-            ammoMaxText.text =
-                "/ " +
-               // weapon.MaxAmmo;
-               weapon.EffectiveMaxAmmo;
+            // Reserva limitada (Difícil): "12  / 108" = cargador / reserva.
+            // Con recargas ilimitadas queda como antes.
+            ammoMaxText.text = weapon.UsesLimitedReserve
+                ? "/ " + weapon.ReserveAmmo
+                : "/ " + weapon.EffectiveMaxAmmo;
         }
 
         if (weaponNameText != null)

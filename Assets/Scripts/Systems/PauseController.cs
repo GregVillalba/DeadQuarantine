@@ -62,6 +62,33 @@ public class PauseController : NetworkBehaviour
 
     public bool EstaPausado => estaPausado;
 
+    // ---------------------------------------------------------
+    // Estado de pausa del jugador LOCAL, legible desde cualquier script de movimiento / arma / cámara.
+    // Solo lo escribe el PauseController del dueño (los de los otros jugadores están deshabilitados),
+    // así que en multiplayer refleja únicamente TU pausa.
+    // ---------------------------------------------------------
+
+    /// <summary>true mientras el menú de pausa del jugador local está abierto.</summary>
+    public static bool LocalPlayerPaused { get; private set; }
+
+    private static int resumeFrame = -100;
+
+    /// <summary>
+    /// true en pausa y durante los 2 frames siguientes a reanudar. Hay que ignorar el delta del mouse
+    /// en ese lapso: al volver a bloquear el cursor el primer delta puede ser enorme y haría saltar
+    /// la cámara y el arma.
+    /// </summary>
+    public static bool MouseInputBlocked =>
+        LocalPlayerPaused || Time.frameCount - resumeFrame <= 2;
+
+    // Con "Enter Play Mode Options" (sin recargar dominio) los estáticos sobreviven entre partidas.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticState()
+    {
+        LocalPlayerPaused = false;
+        resumeFrame = -100;
+    }
+
     private bool movementWasLocked;
     private bool lookWasEnabled;
     private bool weaponWasLocked;
@@ -194,6 +221,7 @@ public class PauseController : NetworkBehaviour
             return;
 
         estaPausado = true;
+        LocalPlayerPaused = true;
 
         stateAtPause = playerHealth != null
             ? playerHealth.State.Value
@@ -228,6 +256,8 @@ public class PauseController : NetworkBehaviour
             return;
 
         estaPausado = false;
+        LocalPlayerPaused = false;
+        resumeFrame = Time.frameCount;
 
         if (popupMenuHome != null)
             popupMenuHome.SetActive(false);
@@ -376,6 +406,11 @@ public class PauseController : NetworkBehaviour
 
     private void OnDestroy()
     {
+        // Solo si ESTA instancia era la que estaba en pausa: el PauseController de otro jugador
+        // que se va de la partida no debe cancelar tu pausa.
+        if (estaPausado)
+            LocalPlayerPaused = false;
+
         if (EsSinglePlayer())
         {
             Time.timeScale = 1f;

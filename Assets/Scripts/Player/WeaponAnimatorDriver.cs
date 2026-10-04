@@ -134,7 +134,8 @@ public class WeaponAnimatorDriver : MonoBehaviour
         {
             float turning = 0f;
 
-            if (maxTurning > 0f && Mouse.current != null)
+            // En pausa el cursor se mueve libre por el menú: no debe girar el arma.
+            if (maxTurning > 0f && Mouse.current != null && !PauseController.MouseInputBlocked)
             {
                 float mouseX = Mathf.Abs(Mouse.current.delta.ReadValue().x);
                 turning = Mathf.Clamp01(mouseX / Mathf.Max(turningFullScaleMouseDelta, 0.01f)) * maxTurning;

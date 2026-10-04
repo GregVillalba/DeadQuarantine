@@ -111,7 +111,9 @@ public class PlayerMovement : NetworkBehaviour
     public bool IsSprinting { get; private set; }
     public bool IsCrouching { get; private set; }
     public bool MovementLocked { get; set; }
-    public Vector2 MoveInput => moveInput; // <- NUEVO: para que WeaponSway lea hacia dónde te movés
+    // Bloqueado (pausa, historia...) devuelve 0: así el sway y la animación del arma no reaccionan a las teclas.
+    public Vector2 MoveInput =>
+        (MovementLocked || PauseController.LocalPlayerPaused) ? Vector2.zero : moveInput; // <- NUEVO: para que WeaponSway lea hacia dónde te movés
 
     private CharacterController characterController;
     private PlayerControls controls;
@@ -285,7 +287,7 @@ public class PlayerMovement : NetworkBehaviour
         if (!IsOwner)
         return;
 
-        if (MovementLocked) 
+        if (MovementLocked || PauseController.LocalPlayerPaused)
             return;
 
         if (isParkouring)
@@ -1666,6 +1668,10 @@ public class PlayerMovement : NetworkBehaviour
         if (!IsOwner)
             return;
 
+        // En pausa el estado de agachado queda congelado; al reanudar se vuelve a leer la tecla.
+        if (PauseController.LocalPlayerPaused)
+            return;
+
         bool wantsToCrouch;
 
         if (forceCrouchForParkour)
@@ -1813,6 +1819,8 @@ public class PlayerMovement : NetworkBehaviour
 
         bool wantsToSprint =
             controls.Player.Sprint.IsPressed() &&
+            !MovementLocked &&
+            !PauseController.LocalPlayerPaused &&
             moveInput.magnitude > 0.1f &&
             !isExhausted &&
             !IsCrouching &&

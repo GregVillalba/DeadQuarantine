@@ -46,6 +46,9 @@ public class Weapon : MonoBehaviour
     [SerializeField] private float range = 100f;
     [SerializeField] private int damage = 25;
     [SerializeField] private int maxAmmo = 12;
+    [Tooltip("Balas de reserva de ESTA arma cuando la dificultad limita la reserva (ej.: rifle 120, pistola 100). " +
+             "La dificultad la puede multiplicar (Reserve Ammo Multiplier). En Normal (recargas ilimitadas) no se usa.")]
+    [SerializeField] private int reserveAmmoCapacity = 120;
     [SerializeField] private string weaponName = "Pistola";
 
     [Header("Escopeta (perdigones)")] // <- NUEVO
@@ -212,9 +215,115 @@ public class Weapon : MonoBehaviour
         return Mathf.RoundToInt(baseDamage * multiplier);
     }
 
+    // =========================================================
+    // MUNICIÓN DE RESERVA
+    // =========================================================
+
+    private int reserveAmmo;
+    private bool reserveInitialized;
+
+    // Misma fuente que usa PlayerHealth: en multiplayer los clientes ven la dificultad del host.
+    private DifficultySettings ActiveDifficulty =>
+        RoundManager.Instance != null ? RoundManager.Instance.ActiveSettings : null;
+
+    /// <summary>true = en esta dificultad recargar gasta la reserva (Difícil). false = recargas ilimitadas.</summary>
+    public bool UsesLimitedReserve => ActiveDifficulty != null && ActiveDifficulty.limitedReserveAmmo;
+
+    /// <summary>Reserva máxima de esta arma con la dificultad actual.</summary>
+    public int ReserveCapacity
+    {
+        get
+        {
+            float multiplier = ActiveDifficulty != null ? ActiveDifficulty.reserveAmmoMultiplier : 1f;
+            return Mathf.Max(0, Mathf.RoundToInt(reserveAmmoCapacity * multiplier));
+        }
+    }
+
+    /// <summary>Balas que quedan en la reserva. Solo es relevante si UsesLimitedReserve es true.</summary>
+    public int ReserveAmmo
+    {
+        get
+        {
+            EnsureReserveInitialized();
+            return reserveAmmo;
+        }
+    }
+
+    /// <summary>
+    /// Suma balas a la reserva (para tienda, cajas de munición...). No pasa de la capacidad.
+    /// Con reserva ilimitada no hace nada.
+    /// </summary>
+    public void AddReserveAmmo(int amount)
+    {
+        if (!UsesLimitedReserve || amount <= 0)
+            return;
+
+        EnsureReserveInitialized();
+        reserveAmmo = Mathf.Min(reserveAmmo + amount, ReserveCapacity);
+    }
+
+    /// <summary>Deja la reserva llena (por ejemplo al comprar munición completa).</summary>
+    public void RefillReserveAmmo()
+    {
+        if (!UsesLimitedReserve)
+            return;
+
+        reserveAmmo = ReserveCapacity;
+        reserveInitialized = true;
+    }
+
+    // Se inicializa al primer uso y no en Awake: las armas sin comprar nunca se activan, y en un cliente
+    // la dificultad del host puede llegar unos frames después de que nace el jugador.
+    private void EnsureReserveInitialized()
+    {
+        if (reserveInitialized || !UsesLimitedReserve)
+            return;
+
+        reserveAmmo = ReserveCapacity;
+        reserveInitialized = true;
+    }
+
+    // Saca 'amount' balas de la reserva. Con reserva ilimitada siempre se puede.
+    private bool TryConsumeReserve(int amount)
+    {
+        if (!UsesLimitedReserve)
+            return true;
+
+        EnsureReserveInitialized();
+
+        if (reserveAmmo < amount)
+            return false;
+
+        reserveAmmo -= amount;
+        return true;
+    }
+
+    // Pasa balas de la reserva al cargador hasta llenarlo (o hasta quedarse sin reserva).
+    // Se puede llamar más de una vez por recarga: la segunda vez el cargador ya está lleno
+    // (o la reserva vacía) y no mueve nada, así que no descuenta de más.
+    private void FillMagazine()
+    {
+        int needed = maxAmmo - currentAmmo;
+
+        if (needed <= 0)
+            return;
+
+        if (!UsesLimitedReserve)
+        {
+            currentAmmo = maxAmmo;
+            return;
+        }
+
+        EnsureReserveInitialized();
+
+        int loaded = Mathf.Min(needed, reserveAmmo);
+        currentAmmo += loaded;
+        reserveAmmo -= loaded;
+    }
+
     public void AnimationAmmunitionFill()
     {
-        currentAmmo = maxAmmo;
+        FillMagazine();
     }
 
     // NUEVO: la llama un Animation Event en cada vuelta del clip Reload_Insert.
@@ -222,10 +331,12 @@ public class Weapon : MonoBehaviour
     // vuelva a reproducir el mismo clip (loop bala por bala).
     public void AnimationInsertOneShell()
     {
-        if (currentAmmo < maxAmmo)
+        // Cada bala insertada sale de la reserva (con reserva ilimitada siempre hay).
+        if (currentAmmo < maxAmmo && TryConsumeReserve(1))
             currentAmmo++;
 
-        shellLoading = currentAmmo < maxAmmo;
+        // Si se acaba la reserva el loop termina aunque el cargador no esté lleno.
+        shellLoading = currentAmmo < maxAmmo && (!UsesLimitedReserve || reserveAmmo > 0);
 
         PlaySound(reloadInsertSound); // <- nuevo
 
@@ -239,16 +350,16 @@ public class Weapon : MonoBehaviour
     {
         if (!usesMultiPartReload)
         {
-            currentAmmo = maxAmmo;
+            FillMagazine();
         }
-        else if (currentAmmo != maxAmmo)
+        else if (currentAmmo != maxAmmo && (!UsesLimitedReserve || ReserveAmmo > 0))
         {
             Debug.LogWarning(
                 "[Weapon] AnimationReloadFinished: el loop bala por bala terminó con " +
                 currentAmmo + "/" + maxAmmo +
                 " — revisá las condiciones ShellLoading en Insert A/B, se cortó antes de tiempo."
             );
-            currentAmmo = maxAmmo; // red de seguridad para no dejar el arma rota
+            FillMagazine(); // red de seguridad para no dejar el arma rota
         }
 
         isReloading = false;
@@ -327,6 +438,9 @@ public class Weapon : MonoBehaviour
         Debug.Log("[Weapon] OnAimStarted llamado. InputLocked=" + InputLocked +
             " | isReloading=" + isReloading +
             " | IsSprinting=" + (playerMovement != null && playerMovement.IsSprinting));
+
+        if (PauseController.LocalPlayerPaused)
+            return;
 
         if (InputLocked)
             return;
@@ -555,6 +669,9 @@ public class Weapon : MonoBehaviour
 
     private void TryFire()
     {
+        if (PauseController.LocalPlayerPaused)
+            return;
+
         if (InputLocked)
         {
             Debug.Log("[Weapon] TryFire bloqueado: InputLocked=true");
@@ -650,6 +767,9 @@ public class Weapon : MonoBehaviour
 
     private void OnReload(InputAction.CallbackContext context)
     {
+        if (PauseController.LocalPlayerPaused)
+            return;
+
         if (InputLocked)
             return;
 
@@ -657,6 +777,10 @@ public class Weapon : MonoBehaviour
             return;
 
         if (currentAmmo == maxAmmo)
+            return;
+
+        // Reserva limitada (Difícil): sin balas de reserva no hay nada que recargar.
+        if (UsesLimitedReserve && ReserveAmmo <= 0)
             return;
 
         // NO RECARGAR MIENTRAS CORRE.

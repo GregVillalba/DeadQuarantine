@@ -61,6 +61,8 @@ public class WeaponSway : MonoBehaviour
     /// </summary>
     private bool InputBlocked()
     {
+        if (PauseController.MouseInputBlocked)
+            return true;
         if (Time.timeScale == 0f)
             return true;
 
