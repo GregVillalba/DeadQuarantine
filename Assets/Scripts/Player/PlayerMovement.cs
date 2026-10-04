@@ -14,8 +14,14 @@ public class PlayerMovement : NetworkBehaviour
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float sprintSpeed = 8f;
     [SerializeField] private float downedMoveSpeed = 2f;
-    [SerializeField] private float jumpForce = 6f;
-    [SerializeField] private float gravity = -15f;
+    [Tooltip("Altura del salto en metros (aprox.). Antes se pasaba 6 a una fórmula que espera metros: por eso casi volabas.")]
+    [SerializeField] private float jumpHeight = 1.1f;
+    [Tooltip("Gravedad (m/s²) mientras subís. Más alta = salto más seco y corto.")]
+    [SerializeField] private float ascentGravity = 24f;
+    [Tooltip("Gravedad (m/s²) mientras caés. Más alta que la de subida = caída con peso.")]
+    [SerializeField] private float fallGravity = 36f;
+    [Tooltip("Velocidad máxima de caída (m/s).")]
+    [SerializeField] private float maxFallSpeed = 25f;
     [SerializeField] private float groundedVelocity = -2f;
     [SerializeField] private WeaponSwitcher weaponSwitcher;
 
@@ -105,6 +111,9 @@ public class PlayerMovement : NetworkBehaviour
     public bool IsSprinting { get; private set; }
     public bool IsCrouching { get; private set; }
     public bool MovementLocked { get; set; }
+    // Bloqueado (pausa, historia...) devuelve 0: así el sway y la animación del arma no reaccionan a las teclas.
+    public Vector2 MoveInput =>
+        (MovementLocked || PauseController.LocalPlayerPaused) ? Vector2.zero : moveInput; // <- NUEVO: para que WeaponSway lea hacia dónde te movés
 
     private CharacterController characterController;
     private PlayerControls controls;
@@ -278,7 +287,7 @@ public class PlayerMovement : NetworkBehaviour
         if (!IsOwner)
         return;
 
-        if (MovementLocked) 
+        if (MovementLocked || PauseController.LocalPlayerPaused)
             return;
 
         if (isParkouring)
@@ -307,8 +316,11 @@ public class PlayerMovement : NetworkBehaviour
 
         if (characterController.isGrounded)
         {
+            // Fórmula física: v = sqrt(2 * altura * gravedad). jumpHeight es la
+            // altura en METROS y ascentGravity la misma que usa ApplyGravity()
+            // al subir, así que el salto llega a ~jumpHeight (antes: 6 m).
             velocityY =
-                jumpForce;
+                Mathf.Sqrt(2f * jumpHeight * ascentGravity);
         }
     }
 
@@ -378,7 +390,13 @@ public class PlayerMovement : NetworkBehaviour
             horizontalMovement * currentSpeed +
             Vector3.up * velocityY;
 
-        characterController.Move(fullMovement * Time.deltaTime);
+        CollisionFlags moveFlags =
+            characterController.Move(fullMovement * Time.deltaTime);
+
+        // Si pegás la cabeza contra un techo, se corta la subida (sin esto
+        // quedás "pegado" al techo hasta que se agote la velocidad).
+        if ((moveFlags & CollisionFlags.Above) != 0 && velocityY > 0f)
+            velocityY = 0f;
 
         // ============ BLOQUE 2 (nuevo): corrección posterior ============
         ResolveZombieOverlap();
@@ -1650,6 +1668,10 @@ public class PlayerMovement : NetworkBehaviour
         if (!IsOwner)
             return;
 
+        // En pausa el estado de agachado queda congelado; al reanudar se vuelve a leer la tecla.
+        if (PauseController.LocalPlayerPaused)
+            return;
+
         bool wantsToCrouch;
 
         if (forceCrouchForParkour)
@@ -1797,6 +1819,8 @@ public class PlayerMovement : NetworkBehaviour
 
         bool wantsToSprint =
             controls.Player.Sprint.IsPressed() &&
+            !MovementLocked &&
+            !PauseController.LocalPlayerPaused &&
             moveInput.magnitude > 0.1f &&
             !isExhausted &&
             !IsCrouching &&
@@ -1878,9 +1902,17 @@ public class PlayerMovement : NetworkBehaviour
         }
         else
         {
-            velocityY +=
-                gravity *
+            // Gravedad asimétrica: al subir pesa menos (ascentGravity), al caer
+            // pesa más (fallGravity) — el salto se siente con peso y no flotante.
+            float currentGravity =
+                velocityY > 0f ? ascentGravity : fallGravity;
+
+            velocityY -=
+                currentGravity *
                 Time.deltaTime;
+
+            velocityY =
+                Mathf.Max(velocityY, -maxFallSpeed);
         }
     }
 

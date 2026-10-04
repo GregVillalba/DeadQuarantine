@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ba2ca3febd670249a63cb25e60ecc12, type: 3}
+  m_Name: Mode_Supervivencia
+  m_EditorClassIdentifier: Scripts::GameModeConfig
+  modeId: Supervivencia
+  displayName: Supervivencia
+  maxRounds: 5
+  startingZombies: 6
+  zombiesPerRound: 4
+  shotsIncreasePerRound: 2
+  bossRound: 5
+  bossHealthMultiplier: 15
+  round1MinSpawnInterval: 2
+  round1MaxSpawnInterval: 4
+  finalRoundMinSpawnInterval: 0.8
+  finalRoundMaxSpawnInterval: 1.6
+  infiniteRounds: 1
+  bossEveryNRounds: 10
+  bossesAccumulate: 1
+  maxZombiesPerRound: 80
+  maxAliveAtOnce: 24
+  roundsToMinSpawnInterval: 20
+  baseZombieHealth: 50
+  runChanceStepPerRound: 0.05
+  difficultyScaling:
+  - level: 0
+    zombieHealthPerRound: 10
+    runChanceCap: 0.5
+  - level: 1
+    zombieHealthPerRound: 25
+    runChanceCap: 0.7
+  - level: 2
+    zombieHealthPerRound: 50
+    runChanceCap: 0.9
+  zombieSpeedIncreasePerRound: 0.02
+  maxZombieSpeedMultiplier: 1.5
+  shopFirstRound: 3
+  shopEveryNRounds: 2

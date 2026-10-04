@@ -19,6 +19,9 @@ public class ZombieAI : NetworkBehaviour
 
     public bool IsRunning { get; private set; }
 
+    // Multiplicador de velocidad por ronda (modo Supervivencia). 1 = sin cambios.
+    private float speedMultiplier = 1f;     //
+
     private NavMeshAgent agent;
     private Animator animator;
     private ZombieHealth zombieHealth;
@@ -69,10 +72,28 @@ public class ZombieAI : NetworkBehaviour
 
         if (agent != null)
         {
-            agent.speed =
+            /*agent.speed =
                 isRunning
                     ? runSpeed
-                    : walkSpeed;
+                    : walkSpeed;*/
+
+            agent.speed =
+                (isRunning
+                    ? runSpeed
+                    : walkSpeed) * speedMultiplier;
+        }
+    }
+
+    public void SetSpeedMultiplier(float multiplier)            //
+    {
+        speedMultiplier = Mathf.Max(0.1f, multiplier);
+
+        if (agent != null)
+        {
+            agent.speed =
+                (IsRunning
+                    ? runSpeed
+                    : walkSpeed) * speedMultiplier;
         }
     }
 
@@ -281,9 +302,23 @@ public class ZombieAI : NetworkBehaviour
                         yield break;
                     }
 
-                    playerHealth.TakeDamage(
+                    /*playerHealth.TakeDamage(
                         attackDamage
-                    );
+                    );*/
+
+                    DifficultySettings settings =
+                        RoundManager.Instance != null
+                            ? RoundManager.Instance.ActiveSettings
+                            : null;
+
+                    int damage =
+                        (settings != null && settings.zombieDamage > 0)
+                            ? settings.zombieDamage
+                            : attackDamage;
+
+                    Debug.Log($"[ZombieAI] settings={(settings != null ? settings.name : "NULL")} | zombieDamage={(settings != null ? settings.zombieDamage : -1)} | prefab={attackDamage}");
+
+                    playerHealth.TakeDamage(damage);
 
                     Debug.Log(
                         "[ZombieAI] Zombie atacó a Player " +

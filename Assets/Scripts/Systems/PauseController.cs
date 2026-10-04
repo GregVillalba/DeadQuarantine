@@ -52,9 +52,42 @@ public class PauseController : NetworkBehaviour
     [SerializeField] private float duracionPanelRonda = 3f;
     [SerializeField] private TextMeshProUGUI textoRonda;
 
+    [Header("Fase de compras")]
+    [SerializeField] private GameObject panelFaseCompras;
+    [SerializeField] private float duracionPanelFaseCompras = 3f;
+    [SerializeField] private TextMeshProUGUI textoFaseCompras;
+    [SerializeField] private string mensajeFaseCompras = "Tiempo para comprar habilitado";
+
     private bool estaPausado;
 
     public bool EstaPausado => estaPausado;
+
+    // ---------------------------------------------------------
+    // Estado de pausa del jugador LOCAL, legible desde cualquier script de movimiento / arma / cámara.
+    // Solo lo escribe el PauseController del dueño (los de los otros jugadores están deshabilitados),
+    // así que en multiplayer refleja únicamente TU pausa.
+    // ---------------------------------------------------------
+
+    /// <summary>true mientras el menú de pausa del jugador local está abierto.</summary>
+    public static bool LocalPlayerPaused { get; private set; }
+
+    private static int resumeFrame = -100;
+
+    /// <summary>
+    /// true en pausa y durante los 2 frames siguientes a reanudar. Hay que ignorar el delta del mouse
+    /// en ese lapso: al volver a bloquear el cursor el primer delta puede ser enorme y haría saltar
+    /// la cámara y el arma.
+    /// </summary>
+    public static bool MouseInputBlocked =>
+        LocalPlayerPaused || Time.frameCount - resumeFrame <= 2;
+
+    // Con "Enter Play Mode Options" (sin recargar dominio) los estáticos sobreviven entre partidas.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticState()
+    {
+        LocalPlayerPaused = false;
+        resumeFrame = -100;
+    }
 
     private bool movementWasLocked;
     private bool lookWasEnabled;
@@ -64,6 +97,7 @@ public class PauseController : NetworkBehaviour
     private bool finDeRondaActivo;
     private bool pendienteAccionEsVictoria;
     private Coroutine ocultarPanelRondaCoroutine;
+    private Coroutine ocultarPanelFaseComprasCoroutine;
 
     private void Awake()
     {
@@ -104,7 +138,10 @@ public class PauseController : NetworkBehaviour
 
         if (panelRonda != null)
             panelRonda.SetActive(false);
-            
+
+        if (panelFaseCompras != null)
+            panelFaseCompras.SetActive(false);
+
         if (hud != null)
             hud.SetActive(false);
     }
@@ -184,6 +221,7 @@ public class PauseController : NetworkBehaviour
             return;
 
         estaPausado = true;
+        LocalPlayerPaused = true;
 
         stateAtPause = playerHealth != null
             ? playerHealth.State.Value
@@ -218,6 +256,8 @@ public class PauseController : NetworkBehaviour
             return;
 
         estaPausado = false;
+        LocalPlayerPaused = false;
+        resumeFrame = Time.frameCount;
 
         if (popupMenuHome != null)
             popupMenuHome.SetActive(false);
@@ -366,6 +406,11 @@ public class PauseController : NetworkBehaviour
 
     private void OnDestroy()
     {
+        // Solo si ESTA instancia era la que estaba en pausa: el PauseController de otro jugador
+        // que se va de la partida no debe cancelar tu pausa.
+        if (estaPausado)
+            LocalPlayerPaused = false;
+
         if (EsSinglePlayer())
         {
             Time.timeScale = 1f;
@@ -437,8 +482,14 @@ if (textoCaidasVictoria != null && playerScore != null)
         if (textoPrecisionDerrota != null && playerScore != null)
             textoPrecisionDerrota.text = playerScore.PrecisionPorcentaje.ToString() + "%";
 
+       /* if (textoRondaDerrota != null && playerScore != null)
+            textoRondaDerrota.text = RoundManager.Instance.CurrentRound + " / " + RoundManager.Instance.MaxRounds;*/
+
         if (textoRondaDerrota != null && playerScore != null)
-            textoRondaDerrota.text = RoundManager.Instance.CurrentRound + " / " + RoundManager.Instance.MaxRounds;
+            textoRondaDerrota.text =
+                RoundManager.Instance.IsInfiniteMode
+                    ? RoundManager.Instance.CurrentRound.ToString()
+                    : RoundManager.Instance.CurrentRound + " / " + RoundManager.Instance.MaxRounds;
 
         if (textoCaidasDerrota != null && playerScore != null)
         textoCaidasDerrota.text = playerScore.CaidasNetwork.Value.ToString();
@@ -535,5 +586,43 @@ if (textoCaidasVictoria != null && playerScore != null)
     {
         yield return new WaitForSeconds(segundos);
         OcultarPanelRonda();
+    }
+
+    // =========================================================
+    // FASE DE COMPRAS
+    // =========================================================
+
+    public void MostrarPanelFaseCompras()
+    {
+        if (!IsOwner)
+            return;
+
+        if (panelFaseCompras == null)
+        {
+            Debug.LogError("El panelFaseCompras no está asignado en el Inspector.");
+            return;
+        }
+
+        if (textoFaseCompras != null)
+            textoFaseCompras.text = mensajeFaseCompras;
+
+        panelFaseCompras.SetActive(true);
+
+        if (ocultarPanelFaseComprasCoroutine != null)
+            StopCoroutine(ocultarPanelFaseComprasCoroutine);
+
+        ocultarPanelFaseComprasCoroutine = StartCoroutine(OcultarPanelFaseComprasDespuesDeTiempo(duracionPanelFaseCompras));
+    }
+
+    public void OcultarPanelFaseCompras()
+    {
+        if (panelFaseCompras != null)
+            panelFaseCompras.SetActive(false);
+    }
+
+    private IEnumerator OcultarPanelFaseComprasDespuesDeTiempo(float segundos)
+    {
+        yield return new WaitForSeconds(segundos);
+        OcultarPanelFaseCompras();
     }
 }

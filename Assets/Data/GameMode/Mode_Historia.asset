@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ba2ca3febd670249a63cb25e60ecc12, type: 3}
+  m_Name: Mode_Historia
+  m_EditorClassIdentifier: Scripts::GameModeConfig
+  modeId: clasico
+  displayName: "Cl\xE1sico"
+  maxRounds: 5
+  startingZombies: 6
+  zombiesPerRound: 6
+  shotsIncreasePerRound: 2
+  bossRound: 5
+  bossHealthMultiplier: 10
+  round1MinSpawnInterval: 2
+  round1MaxSpawnInterval: 4
+  finalRoundMinSpawnInterval: 0.8
+  finalRoundMaxSpawnInterval: 1.6

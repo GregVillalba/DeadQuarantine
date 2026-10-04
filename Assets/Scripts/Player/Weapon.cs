@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.EventSystems;
+using System.Collections;
 
 public class Weapon : MonoBehaviour
 {
@@ -15,8 +16,12 @@ public class Weapon : MonoBehaviour
     [SerializeField] private GameObject bulletTrailPrefab;
 
     [Header("Recoil de cámara")]
-    [SerializeField] private PlayerLook playerLook;
-    [SerializeField] private float cameraRecoilPerShot = 0.4f;
+    [SerializeField] private CameraRecoil cameraRecoil;
+    [SerializeField] private WeaponRecoil weaponRecoil;
+    [SerializeField] private float recoilIntensityMultiplier = 1f; // <- subir en la escopeta
+    [Tooltip("Qué curvas de recoil del original usa esta arma: AR (rifles), SMG (subfusiles) o Handgun (pistolas, casi sin recoil). " +
+             "Al apuntar, el arma baja a 35% y la cámara queda igual: lo maneja cada script con los valores del original.")]
+    [SerializeField] private RecoilPreset recoilPreset = RecoilPreset.SMG;
 
     private HUDController hudController;
 
@@ -27,6 +32,13 @@ public class Weapon : MonoBehaviour
     [SerializeField] private AudioClip reloadSound;
     [SerializeField] private AudioClip reloadEmptySound;
 
+    [Header("Audio - Recarga por partes (Escopeta/Sniper)")]
+    [SerializeField] private AudioClip reloadOpenSound;
+    [SerializeField] private AudioClip reloadInsertSound;
+    [SerializeField] private AudioClip reloadCloseSound;
+    [SerializeField] private AudioClip reloadBoltOpenSound;
+    [SerializeField] private AudioClip reloadBoltCloseSound;
+
     [Header("Pistola")]
     [SerializeField] private bool isAutomatic = false; // Tildar solo en el Rifle
     [SerializeField] private float fireRate = 0.25f;
@@ -34,7 +46,19 @@ public class Weapon : MonoBehaviour
     [SerializeField] private float range = 100f;
     [SerializeField] private int damage = 25;
     [SerializeField] private int maxAmmo = 12;
+    [Tooltip("Balas de reserva de ESTA arma cuando la dificultad limita la reserva (ej.: rifle 120, pistola 100). " +
+             "La dificultad la puede multiplicar (Reserve Ammo Multiplier). En Normal (recargas ilimitadas) no se usa.")]
+    [SerializeField] private int reserveAmmoCapacity = 120;
     [SerializeField] private string weaponName = "Pistola";
+
+    [Header("Escopeta (perdigones)")] // <- NUEVO
+    [SerializeField] private bool firesMultiplePellets = false; // <- NUEVO: tildar solo en la Shotgun
+    [SerializeField] private int pelletsPerShot = 8; // <- NUEVO
+    [SerializeField] private float pelletSpreadAngle = 6f; // <- NUEVO: dispersión propia del perdigón, se suma a currentSpread
+
+    [Header("Cerrojo (Sniper de cerrojo manual)")] // <- NUEVO
+    [SerializeField] private bool requiresBoltActionAfterFire = false; // <- NUEVO: tildar solo en el Sniper de cerrojo
+    [SerializeField] private float boltActionDuration = 1.3f; // <- NUEVO: debe igualar la duración real del clip Reload_Bolt
 
     [Header("Aim")]
     [SerializeField] private float aimFOV = 50f;
@@ -62,10 +86,23 @@ public class Weapon : MonoBehaviour
     [Header("Impactos")]
     [SerializeField] private LayerMask bulletIgnoredLayers;
 
+    [Header("Animación de recarga (tercera persona)")]
+    [SerializeField] private bool usesMultiPartReload = false;
+    public bool UsesMultiPartReload => usesMultiPartReload;
+
+    [Header("Daño por distancia")]
+    [SerializeField] private float damageFalloffStart = 8f;
+    [SerializeField] private float damageFalloffEnd = 25f;
+    [SerializeField] private float minDamageMultiplier = 0.25f;
+
     public bool IsAiming { get; private set; }
 
     public int CurrentAmmo => currentAmmo;
-    public int MaxAmmo => maxAmmo;
+    // ----- CAMBIO COMBINADO: PROPIEDADES DE DIFICULTAD (DEL COMPAÑERO) -----
+    public int MaxAmmo => EffectiveMaxAmmo; 
+    
+    private int appliedMaxAmmo;
+    public int EffectiveMaxAmmo;
 
     public float CurrentSpreadNormalized
     {
@@ -84,12 +121,17 @@ public class Weapon : MonoBehaviour
 
     public string WeaponName => weaponName;
     public bool IsReloading => isReloading;
+    public bool ShellLoading => shellLoading; // <- NUEVO
+    public bool IsChambering => isChambering; // <- NUEVO: true durante el ciclo de cerrojo post-disparo
 
     private PlayerControls controls;
 
     private int currentAmmo;
     private float nextFireTime;
     private bool isReloading;
+    private bool shellLoading; // <- NUEVO
+    private bool isChambering; // <- NUEVO
+    private float chamberReadyTime; // <- NUEVO
 
     private float defaultWorldFOV;
     private float currentSpread;
@@ -112,6 +154,13 @@ public class Weapon : MonoBehaviour
             defaultWorldFOV = playerCamera.fieldOfView;
 
         currentSpread = spreadIdle;
+
+        // Si faltan en el Inspector, se buscan: sin playerMovement IsSprinting siempre daba false.
+        if (playerMovement == null)
+            playerMovement = GetComponentInParent<PlayerMovement>();
+
+        if (characterController == null)
+            characterController = GetComponentInParent<CharacterController>();
 
         hudController = GetComponentInParent<HUDController>();
 
@@ -152,15 +201,202 @@ public class Weapon : MonoBehaviour
         IsAiming = false;
     }
 
+    private int ApplyDistanceFalloff(int baseDamage, float distance)
+    {
+        if (distance <= damageFalloffStart)
+            return baseDamage;
+
+        if (distance >= damageFalloffEnd)
+            return Mathf.RoundToInt(baseDamage * minDamageMultiplier);
+
+        float t = Mathf.InverseLerp(damageFalloffStart, damageFalloffEnd, distance);
+        float multiplier = Mathf.Lerp(1f, minDamageMultiplier, t);
+
+        return Mathf.RoundToInt(baseDamage * multiplier);
+    }
+
+    // =========================================================
+    // MUNICIÓN DE RESERVA
+    // =========================================================
+
+    private int reserveAmmo;
+    private bool reserveInitialized;
+
+    // Misma fuente que usa PlayerHealth: en multiplayer los clientes ven la dificultad del host.
+    private DifficultySettings ActiveDifficulty =>
+        RoundManager.Instance != null ? RoundManager.Instance.ActiveSettings : null;
+
+    /// <summary>true = en esta dificultad recargar gasta la reserva (Difícil). false = recargas ilimitadas.</summary>
+    public bool UsesLimitedReserve => ActiveDifficulty != null && ActiveDifficulty.limitedReserveAmmo;
+
+    /// <summary>Reserva máxima de esta arma con la dificultad actual.</summary>
+    public int ReserveCapacity
+    {
+        get
+        {
+            float multiplier = ActiveDifficulty != null ? ActiveDifficulty.reserveAmmoMultiplier : 1f;
+            return Mathf.Max(0, Mathf.RoundToInt(reserveAmmoCapacity * multiplier));
+        }
+    }
+
+    /// <summary>Balas que quedan en la reserva. Solo es relevante si UsesLimitedReserve es true.</summary>
+    public int ReserveAmmo
+    {
+        get
+        {
+            EnsureReserveInitialized();
+            return reserveAmmo;
+        }
+    }
+
+    /// <summary>
+    /// Suma balas a la reserva (para tienda, cajas de munición...). No pasa de la capacidad.
+    /// Con reserva ilimitada no hace nada.
+    /// </summary>
+    public void AddReserveAmmo(int amount)
+    {
+        if (!UsesLimitedReserve || amount <= 0)
+            return;
+
+        EnsureReserveInitialized();
+        reserveAmmo = Mathf.Min(reserveAmmo + amount, ReserveCapacity);
+    }
+
+    /// <summary>Deja la reserva llena (por ejemplo al comprar munición completa).</summary>
+    public void RefillReserveAmmo()
+    {
+        if (!UsesLimitedReserve)
+            return;
+
+        reserveAmmo = ReserveCapacity;
+        reserveInitialized = true;
+    }
+
+    // Se inicializa al primer uso y no en Awake: las armas sin comprar nunca se activan, y en un cliente
+    // la dificultad del host puede llegar unos frames después de que nace el jugador.
+    private void EnsureReserveInitialized()
+    {
+        if (reserveInitialized || !UsesLimitedReserve)
+            return;
+
+        reserveAmmo = ReserveCapacity;
+        reserveInitialized = true;
+    }
+
+    // Saca 'amount' balas de la reserva. Con reserva ilimitada siempre se puede.
+    private bool TryConsumeReserve(int amount)
+    {
+        if (!UsesLimitedReserve)
+            return true;
+
+        EnsureReserveInitialized();
+
+        if (reserveAmmo < amount)
+            return false;
+
+        reserveAmmo -= amount;
+        return true;
+    }
+
+    // Pasa balas de la reserva al cargador hasta llenarlo (o hasta quedarse sin reserva).
+    // Se puede llamar más de una vez por recarga: la segunda vez el cargador ya está lleno
+    // (o la reserva vacía) y no mueve nada, así que no descuenta de más.
+    private void FillMagazine()
+    {
+        int needed = maxAmmo - currentAmmo;
+
+        if (needed <= 0)
+            return;
+
+        if (!UsesLimitedReserve)
+        {
+            currentAmmo = maxAmmo;
+            return;
+        }
+
+        EnsureReserveInitialized();
+
+        int loaded = Mathf.Min(needed, reserveAmmo);
+        currentAmmo += loaded;
+        reserveAmmo -= loaded;
+    }
+
     public void AnimationAmmunitionFill()
     {
-        currentAmmo = maxAmmo;
+        FillMagazine();
+    }
+
+    // NUEVO: la llama un Animation Event en cada vuelta del clip Reload_Insert.
+    // Mientras falten balas, deja ShellLoading en true para que el Animator
+    // vuelva a reproducir el mismo clip (loop bala por bala).
+    public void AnimationInsertOneShell()
+    {
+        // Cada bala insertada sale de la reserva (con reserva ilimitada siempre hay).
+        if (currentAmmo < maxAmmo && TryConsumeReserve(1))
+            currentAmmo++;
+
+        // Si se acaba la reserva el loop termina aunque el cargador no esté lleno.
+        shellLoading = currentAmmo < maxAmmo && (!UsesLimitedReserve || reserveAmmo > 0);
+
+        PlaySound(reloadInsertSound); // <- nuevo
+
+        Debug.Log("[Weapon] Insertada bala. currentAmmo=" + currentAmmo + "/" + maxAmmo + " | ShellLoading=" + shellLoading);
+
+        if (weaponAnimator != null)
+            weaponAnimator.SetBool("ShellLoading", shellLoading);
     }
 
     public void AnimationReloadFinished()
     {
-        currentAmmo = maxAmmo;
+        if (!usesMultiPartReload)
+        {
+            FillMagazine();
+        }
+        else if (currentAmmo != maxAmmo && (!UsesLimitedReserve || ReserveAmmo > 0))
+        {
+            Debug.LogWarning(
+                "[Weapon] AnimationReloadFinished: el loop bala por bala terminó con " +
+                currentAmmo + "/" + maxAmmo +
+                " — revisá las condiciones ShellLoading en Insert A/B, se cortó antes de tiempo."
+            );
+            FillMagazine(); // red de seguridad para no dejar el arma rota
+        }
+
         isReloading = false;
+        shellLoading = false;
+
+        if (weaponAnimator != null)
+            weaponAnimator.SetBool("ShellLoading", false);
+    }
+
+    // Llamado por Animation Event, al abrir la recámara/tubo al empezar a recargar.
+    public void AnimationReloadOpen()
+    {
+        PlaySound(reloadOpenSound);
+    }
+
+    // Llamado por Animation Event, al cerrar después de insertar todas las balas.
+    public void AnimationReloadClose()
+    {
+        PlaySound(reloadCloseSound);
+    }
+
+    // Llamado por Animation Event, en el tirón hacia atrás del bombeo
+    // (tanto después de disparar como al final de la recarga).
+    public void AnimationBoltOpen()
+    {
+        PlaySound(reloadBoltOpenSound);
+    }
+
+    // Llamado por Animation Event, en el golpe hacia adelante del bombeo.
+    // Si este bombeo es el último paso de la recarga, acá es donde
+    // realmente termina — por eso cierra isReloading.
+    public void AnimationBoltClose()
+    {
+        PlaySound(reloadBoltCloseSound);
+
+        if (isReloading)
+            AnimationReloadFinished();
     }
 
     public void ForceStopAiming()
@@ -172,6 +408,10 @@ public class Weapon : MonoBehaviour
     {
         if (IsAiming && playerMovement != null && playerMovement.IsSprinting)
             IsAiming = false;
+
+        // NUEVO: libera el disparo cuando termina el ciclo de cerrojo.
+        if (isChambering && Time.time >= chamberReadyTime)
+            isChambering = false;
 
         UpdateAimFOV();
         UpdateSpread();
@@ -198,6 +438,9 @@ public class Weapon : MonoBehaviour
         Debug.Log("[Weapon] OnAimStarted llamado. InputLocked=" + InputLocked +
             " | isReloading=" + isReloading +
             " | IsSprinting=" + (playerMovement != null && playerMovement.IsSprinting));
+
+        if (PauseController.LocalPlayerPaused)
+            return;
 
         if (InputLocked)
             return;
@@ -305,6 +548,56 @@ public class Weapon : MonoBehaviour
     // ANIMATOR
     // =========================================================
 
+    private readonly AirTracker airTracker = new AirTracker();
+
+    private static readonly int RunningHash = Animator.StringToHash("Running");
+    private RuntimeAnimatorController runningParamCheckedFor;
+    private bool hasRunningParam;
+    private float nextRunningParamCheck;
+    private bool lastLoggedSprint;
+
+    [Header("Diagnóstico")]
+    [Tooltip("Escribe en la consola qué controller está usando el arma, si tiene el parámetro Running y cuándo cambia IsSprinting.")]
+    [SerializeField] private bool debugRunning = false;
+
+    // Mira si el controller actual tiene el bool "Running". Un resultado positivo se guarda;
+    // uno negativo se vuelve a comprobar cada 0.5 s, porque justo después de cambiar de arma
+    // el Animator puede no estar listo todavía y devolver una lista de parámetros vacía.
+    private bool AnimatorHasRunningParam()
+    {
+        RuntimeAnimatorController controller = weaponAnimator.runtimeAnimatorController;
+
+        if (hasRunningParam && controller == runningParamCheckedFor)
+            return true;
+
+        if (controller == runningParamCheckedFor && Time.unscaledTime < nextRunningParamCheck)
+            return false;
+
+        runningParamCheckedFor = controller;
+        nextRunningParamCheck = Time.unscaledTime + 0.5f;
+        hasRunningParam = false;
+
+        if (controller != null && weaponAnimator.isInitialized)
+        {
+            foreach (AnimatorControllerParameter p in weaponAnimator.parameters)
+            {
+                if (p.nameHash == RunningHash && p.type == AnimatorControllerParameterType.Bool)
+                {
+                    hasRunningParam = true;
+                    break;
+                }
+            }
+
+            if (debugRunning)
+            {
+                Debug.Log("[Weapon] Controller del arma: '" + controller.name + "' | parámetro Running (bool): " +
+                          (hasRunningParam ? "SÍ" : "NO, este no es el controller modificado"));
+            }
+        }
+
+        return hasRunningParam;
+    }
+
     private void UpdateAnimatorParams()
     {
         if (weaponAnimator == null || characterController == null)
@@ -318,6 +611,33 @@ public class Weapon : MonoBehaviour
         );
 
         float speed = horizontalVelocity.magnitude;
+
+        // El Animator ahora tiene un bool "Running" (igual que el original de Infima):
+        // la pose de correr depende de que estés corriendo (IsSprinting), ya no de
+        // Speed > 7. Así saltar no te saca de Running y aterrizar no obliga a esperar
+        // 0.5 s para volver. Si el controller no tiene el parámetro, todo queda como antes.
+        airTracker.Tick(characterController, Time.deltaTime);
+
+        if (AnimatorHasRunningParam())
+        {
+            weaponAnimator.SetBool(RunningHash, playerMovement != null && playerMovement.IsSprinting);
+
+            if (debugRunning)
+            {
+                bool sprintNow = playerMovement != null && playerMovement.IsSprinting;
+
+                if (sprintNow != lastLoggedSprint)
+                {
+                    lastLoggedSprint = sprintNow;
+                    Debug.Log("[Weapon] IsSprinting=" + sprintNow + " | Running en el Animator=" + weaponAnimator.GetBool(RunningHash));
+                }
+            }
+
+            // En el aire, caminar vuelve suave a idle (sin balanceo de caminata flotando).
+            // OJO: corriendo NO se pone en 0, si no la pose de correr se corta al saltar.
+            if (airTracker.IsAirborne && !(playerMovement != null && playerMovement.IsSprinting))
+                speed = 0f;
+        }
 
         weaponAnimator.SetFloat("Speed", speed, 0.15f, Time.deltaTime);
         weaponAnimator.SetBool("IsAiming", IsAiming);
@@ -349,6 +669,9 @@ public class Weapon : MonoBehaviour
 
     private void TryFire()
     {
+        if (PauseController.LocalPlayerPaused)
+            return;
+
         if (InputLocked)
         {
             Debug.Log("[Weapon] TryFire bloqueado: InputLocked=true");
@@ -372,6 +695,13 @@ public class Weapon : MonoBehaviour
         if (isReloading)
         {
             Debug.Log("[Weapon] TryFire bloqueado: isReloading=true");
+            return;
+        }
+
+        // NUEVO: mientras se acciona el cerrojo tras el disparo anterior, no se puede volver a disparar.
+        if (isChambering)
+        {
+            Debug.Log("[Weapon] TryFire bloqueado: isChambering=true");
             return;
         }
 
@@ -405,8 +735,11 @@ public class Weapon : MonoBehaviour
 
         currentSpread = Mathf.Clamp(currentSpread + spreadIncreasePerShot, 0f, maxSpread);
 
-        if (playerLook != null)
-            playerLook.AddRecoil(cameraRecoilPerShot);
+        if (cameraRecoil != null)
+            cameraRecoil.Fire(recoilPreset, IsAiming, recoilIntensityMultiplier);
+
+        if (weaponRecoil != null)
+            weaponRecoil.Fire(recoilPreset, IsAiming, recoilIntensityMultiplier);
 
         PlaySound(shootSound);
 
@@ -416,6 +749,16 @@ public class Weapon : MonoBehaviour
         muzzle?.PlayEffect();
 
         Shoot();
+
+        // NUEVO: arma de cerrojo manual (Sniper) — hay que accionarlo antes de volver a disparar.
+        if (requiresBoltActionAfterFire)
+        {
+            isChambering = true;
+            chamberReadyTime = Time.time + boltActionDuration;
+
+            if (weaponAnimator != null)
+                weaponAnimator.SetTrigger("BoltAction");
+        }
     }
 
     // =========================================================
@@ -424,6 +767,9 @@ public class Weapon : MonoBehaviour
 
     private void OnReload(InputAction.CallbackContext context)
     {
+        if (PauseController.LocalPlayerPaused)
+            return;
+
         if (InputLocked)
             return;
 
@@ -431,6 +777,10 @@ public class Weapon : MonoBehaviour
             return;
 
         if (currentAmmo == maxAmmo)
+            return;
+
+        // Reserva limitada (Difícil): sin balas de reserva no hay nada que recargar.
+        if (UsesLimitedReserve && ReserveAmmo <= 0)
             return;
 
         // NO RECARGAR MIENTRAS CORRE.
@@ -450,6 +800,11 @@ public class Weapon : MonoBehaviour
         if (weaponAnimator != null)
         {
             weaponAnimator.SetBool("IsEmpty", wasEmpty);
+            weaponAnimator.SetBool("MultiPartReload", usesMultiPartReload);
+
+            shellLoading = usesMultiPartReload && currentAmmo < maxAmmo;
+            weaponAnimator.SetBool("ShellLoading", shellLoading);
+
             weaponAnimator.SetTrigger("Reload");
         }
     }
@@ -466,9 +821,25 @@ public class Weapon : MonoBehaviour
 
     private void Shoot()
     {
+        // NUEVO: la escopeta dispara varios perdigones por vez, cada uno con
+        // su propia dispersión aleatoria. El resto de las armas siguen
+        // disparando un solo proyectil, como antes.
+        if (firesMultiplePellets)
+        {
+            for (int i = 0; i < pelletsPerShot; i++)
+                FirePellet(currentSpread + pelletSpreadAngle);
+        }
+        else
+        {
+            FirePellet(currentSpread);
+        }
+    }
+
+    private void FirePellet(float spreadDegrees)
+    {
         Vector3 spreadDirection = ApplySpreadToDirection(
             playerCamera.transform.forward,
-            currentSpread
+            spreadDegrees
         );
 
         Ray ray = new Ray(playerCamera.transform.position, spreadDirection);
@@ -522,7 +893,8 @@ public class Weapon : MonoBehaviour
 
             if (zombieHealth != null)
             {
-                zombieHealth.TakeDamage(damage, hit.point, hit.normal);
+                int finalDamage = ApplyDistanceFalloff(damage, hit.distance);
+                zombieHealth.TakeDamage(finalDamage, hit.point, hit.normal);
 
                 if (playerScore != null)
                     playerScore.RegistrarImpactoServerRpc();

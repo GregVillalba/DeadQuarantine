@@ -3,7 +3,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Unity.Netcode;
-using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
 
 public class NPCShopUI : MonoBehaviour
@@ -38,6 +37,17 @@ public class NPCShopUI : MonoBehaviour
     [Header("Comprar manteniendo ESPACIO")]
     [SerializeField] private Image progresoCompraFill;
     [SerializeField] private float tiempoMantenerParaComprar = 2f;
+
+    [Header("Fase de compras")]
+    [SerializeField] private Button listoButton;
+    [SerializeField] private TextMeshProUGUI listoButtonText;
+    [SerializeField] private TextMeshProUGUI tiempoTiendaText;
+    [Tooltip("Texto debajo del botón Listo. Solo se ve cuando el otro jugador ya marcó Listo.")]
+    [SerializeField] private TextMeshProUGUI otroJugadorListoText;
+    [SerializeField] private string textoListo = "Listo";
+    [SerializeField] private string textoEsperandoListo = "Esperando...";
+    [SerializeField] private string formatoMensajeBloqueado = "Se habilitará un tiempo para comerciar luego de las rondas {0}";
+    [SerializeField] private float duracionMensajeBloqueado = 3f;
 
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
@@ -81,6 +91,11 @@ public class NPCShopUI : MonoBehaviour
     private WeaponOffer ofertaSeleccionada;
     private float tiempoMantenido;
 
+    private NetworkObject networkObject;
+    private bool faseComprasAnterior;
+    private bool listoMarcado;
+    private float mensajeBloqueadoHasta;
+
     private void Awake()
     {
         controls = new PlayerControls();
@@ -92,8 +107,16 @@ public class NPCShopUI : MonoBehaviour
         if (closeButton != null)
             closeButton.onClick.AddListener(CerrarTienda);
 
+        if (listoButton != null)
+            listoButton.onClick.AddListener(MarcarListo);
+
+        if (listoButtonText == null && listoButton != null)
+            listoButtonText = listoButton.GetComponentInChildren<TextMeshProUGUI>(true);
+
         if (audioSource != null)
             audioSource.ignoreListenerPause = true;
+
+        networkObject = GetComponentInParent<NetworkObject>();
 
         BuscarCamara();
         CachearReferenciasJugador();
@@ -113,8 +136,21 @@ public class NPCShopUI : MonoBehaviour
 
     private void Update()
     {
+        // En multiplayer, la copia del jugador remoto no maneja UI.
+        if (networkObject != null && networkObject.IsSpawned && !networkObject.IsOwner)
+            return;
+
+        ActualizarFaseCompras();
+
         if (estaAbierta)
         {
+            // Al llegar el temporizador a 0:00 (o si todos marcaron Listo) la tienda se cierra.
+            if (!TiendaHabilitada())
+            {
+                CerrarTienda();
+                return;
+            }
+
             ActualizarCompraMantenida();
             return;
         }
@@ -146,11 +182,19 @@ public class NPCShopUI : MonoBehaviour
 
             if (vendor != null)
             {
-                MostrarPrompt(vendor);
-
                 if (controls.Player.Interact.triggered)
-                    AbrirTienda(vendor);
+                {
+                    if (TiendaHabilitada())
+                    {
+                        AbrirTienda(vendor);
+                        return;
+                    }
 
+                    // Fuera de la fase de compras el mercader no comercia.
+                    mensajeBloqueadoHasta = Time.unscaledTime + duracionMensajeBloqueado;
+                }
+
+                MostrarPrompt(vendor);
                 return;
             }
         }
@@ -164,7 +208,11 @@ public class NPCShopUI : MonoBehaviour
             return;
 
         if (interactText != null)
-            interactText.text = controls.Player.Interact.GetBindingDisplayString() + " para hablar con " + vendor.NombreMercader;
+        {
+            interactText.text = Time.unscaledTime < mensajeBloqueadoHasta
+                ? ConstruirMensajeBloqueado()
+                : controls.Player.Interact.GetBindingDisplayString() + " para hablar con " + vendor.NombreMercader;
+        }
 
         interactPrompt.SetActive(true);
     }
@@ -210,14 +258,11 @@ public class NPCShopUI : MonoBehaviour
 
         BloquearJugador();
 
+        // El juego NO se pausa: el temporizador de la fase de compras sigue corriendo.
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
 
-        if (EsSinglePlayer())
-        {
-            Time.timeScale = 0f;
-            AudioListener.pause = true;
-        }
+        ActualizarUIFaseCompras();
     }
 
     public void CerrarTienda()
@@ -248,13 +293,9 @@ public class NPCShopUI : MonoBehaviour
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
-        if (EsSinglePlayer())
-        {
-            Time.timeScale = 1f;
-            AudioListener.pause = false;
-        }
-
         currentVendor = null;
+
+        ActualizarUIFaseCompras();
     }
 
     private void CrearFilas()
@@ -538,17 +579,89 @@ public class NPCShopUI : MonoBehaviour
         playerHealth = root.GetComponentInChildren<PlayerHealth>(true);
     }
 
-    private bool EsSinglePlayer()
+    // =========================================================
+    // FASE DE COMPRAS
+    // =========================================================
+
+    // Sin RoundManager (ej. escenas de prueba) el mercader queda siempre habilitado.
+    private bool TiendaHabilitada()
     {
-        return SceneManager.GetActiveScene().name == "MainSceneSinglePlayer";
+        return RoundManager.Instance == null || RoundManager.Instance.IsShopPhaseActive;
     }
 
-    private void OnDestroy()
+    private string ConstruirMensajeBloqueado()
     {
-        if (EsSinglePlayer())
+        string rondas = RoundManager.Instance != null
+            ? RoundManager.Instance.GetShopRoundsDescription()
+            : string.Empty;
+
+        return string.Format(formatoMensajeBloqueado, rondas);
+    }
+
+    private void ActualizarFaseCompras()
+    {
+        bool faseActiva = RoundManager.Instance != null && RoundManager.Instance.IsShopPhaseActive;
+
+        // Cada fase de compras nueva arranca sin "Listo" marcado.
+        if (faseActiva && !faseComprasAnterior)
         {
-            Time.timeScale = 1f;
-            AudioListener.pause = false;
+            listoMarcado = false;
+            mensajeBloqueadoHasta = 0f;
         }
+
+        faseComprasAnterior = faseActiva;
+
+        ActualizarUIFaseCompras();
+    }
+
+    private void ActualizarUIFaseCompras()
+    {
+        bool faseActiva = RoundManager.Instance != null && RoundManager.Instance.IsShopPhaseActive;
+        string tiempo = faseActiva ? FormatearTiempo(RoundManager.Instance.ShopPhaseRemaining) : string.Empty;
+
+        if (tiempoTiendaText != null)
+        {
+            if (tiempoTiendaText.gameObject.activeSelf != faseActiva)
+                tiempoTiendaText.gameObject.SetActive(faseActiva);
+
+            if (faseActiva)
+                tiempoTiendaText.text = "Tiempo restante: " + tiempo;
+        }
+
+        if (listoButton != null)
+        {
+            if (listoButton.gameObject.activeSelf != faseActiva)
+                listoButton.gameObject.SetActive(faseActiva);
+
+            listoButton.interactable = !listoMarcado;
+        }
+
+        if (listoButtonText != null)
+            listoButtonText.text = listoMarcado ? textoEsperandoListo : textoListo;
+
+        if (otroJugadorListoText != null)
+        {
+            bool otroListo = faseActiva && RoundManager.Instance.OtroJugadorListoFaseCompras();
+
+            if (otroJugadorListoText.gameObject.activeSelf != otroListo)
+                otroJugadorListoText.gameObject.SetActive(otroListo);
+        }
+    }
+
+    private void MarcarListo()
+    {
+        if (listoMarcado || RoundManager.Instance == null || !RoundManager.Instance.IsShopPhaseActive)
+            return;
+
+        listoMarcado = true;
+        RoundManager.Instance.MarcarListoFaseComprasServerRpc();
+
+        ActualizarUIFaseCompras();
+    }
+
+    private static string FormatearTiempo(int segundos)
+    {
+        segundos = Mathf.Max(0, segundos);
+        return (segundos / 60).ToString("00") + ":" + (segundos % 60).ToString("00");
     }
 }
