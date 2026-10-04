@@ -1,144 +1,195 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-/// <summary>
-/// Sway del arma al MIRAR y al MOVERSE: port de SwayMotion del original, con los
-/// SwayData reales (SO_SD_Default / SO_SD_Aiming, SO_ST_Look, SO_ST_Movement, ...).
-///
-///  - Input de mirada: delta del mouse (limitado a magnitud 1) evalúa las curvas
-///    "Look" (horizontal con X, vertical con Y).
-///  - Input de movimiento (strafe / adelante-atrás, magnitud 1) evalúa las curvas "Movement".
-///  - Al apuntar se usa el SwayData de apuntado (el sway baja a 10%).
-///  - Un resorte (damping 12 / stiffness 165, o 16 / 165 apuntando) persigue el resultado.
-///
-/// El bob al caminar se QUITÓ: lo hace la animación del arma (el original tampoco
-/// tiene bob por código).
-///
-/// Es una fuente más para WeaponMotionApplier (no escribe el Transform). Los valores
-/// salen en los ejes del original; el Applier los convierte a los de FPS_Arms.
-/// </summary>
+// Sway por mirar/moverse + bobbing al caminar. Nada de recoil ni de salto
+// acá — eso vive en WeaponRecoil.cs y WeaponJumpMotion.cs, cada uno con su
+// propia responsabilidad. WeaponMotionApplier suma los tres resultados y
+// escribe el Transform una sola vez por frame.
 public class WeaponSway : MonoBehaviour
 {
     [Header("Referencias")]
+    [SerializeField] private CharacterController characterController;
     [SerializeField] private PlayerMovement playerMovement;
-    [SerializeField] private Weapon weapon; // para saber si está apuntando (lo asigna WeaponSwitcher)
+    [SerializeField] private Weapon weapon; // solo para saber si está apuntando (reduce el sway)
 
-    [Header("Sway del original")]
-    [SerializeField] private SwayData swayDefault = MotionData.SwayDefault();
-    [SerializeField] private SwayData swayAiming = MotionData.SwayAiming();
+    [Header("Sway por mouse (look)")]
+    [SerializeField] private float lookSwayAmount = 0.003f;        // bajado de nuevo — se sentía exagerado
+    [SerializeField] private float maxLookSwayAmount = 0.012f;
+    [SerializeField] private float lookRotationSwayAmount = 0.6f;  // bajado de nuevo
+    [SerializeField] private float maxLookRotationSway = 1.5f;
 
-    [Header("Input de mirada")]
-    [Tooltip("El delta del mouse (píxeles por frame) se multiplica por esto y se limita a magnitud 1, " +
-             "como el original. Más alto = el sway llega al máximo con movimientos más lentos del mouse.")]
-    [SerializeField] private float lookInputScale = 0.1f;
+    [Header("Sway por movimiento (strafe/adelante-atrás)")]
+    [SerializeField] private Vector2 moveSwayAmount = new Vector2(0.01f, 0.006f);
+    [SerializeField] private float moveRotationSwayAmount = 2.5f;
 
-    private PlayerLook playerLook;
-    private PauseController pauseController;
+    [Header("Reduce el sway al apuntar")]
+    [SerializeField, Range(0f, 1f)] private float aimingSwayMultiplier = 0.35f;
 
-    private readonly SpringVector3 locationSpring = new SpringVector3();
-    private readonly SpringVector3 rotationSpring = new SpringVector3();
+    [Header("Bobbing al caminar")]
+    [SerializeField] private float bobFrequency = 8f;
+    [SerializeField] private float bobAmount = 0.012f;
+    [SerializeField] private float bobFrequencySprintMultiplier = 1.5f;
+    [Tooltip("0 = sin bob por código (el balanceo al caminar lo hacen los clips del Animator, como en el original). " +
+             "Subilo solo si algún arma no tiene balanceo propio en su animación.")]
+    [SerializeField, Range(0f, 1f)] private float proceduralBobScale = 0f;
+    [Tooltip("Segundos que tarda el bob en apagarse al despegar o al frenar (fundido, no corte).")]
+    [SerializeField] private float bobFadeOutTime = 0.15f;
+    [Tooltip("Segundos que tarda el bob en volver al aterrizar o al arrancar a caminar.")]
+    [SerializeField] private float bobFadeInTime = 0.20f;
 
+    [Header("Resortes")]
+    [SerializeField] private SpringVector3 positionSpring = new SpringVector3 { stiffness = 120f, damping = 18f, mass = 1f };
+    [SerializeField] private SpringVector3 rotationSpring = new SpringVector3 { stiffness = 120f, damping = 18f, mass = 1f };
+
+    private float bobTimer;
+    private float bobWeight;
+    private readonly AirTracker air = new AirTracker();
+
+    // Se recalcula una sola vez por frame, la primera vez que lo pide
+    // TickPosition() o TickRotation() (no importa cuál llamen primero).
     private int lastComputedFrame = -1;
+    private Vector3 cachedTargetPosition;
+    private Vector3 cachedTargetRotation;
 
-    /// <summary>Lo lee WeaponMotionApplier / otros scripts.</summary>
+    /// <summary>Lo lee WeaponMotionApplier para escalar la pose de salto.</summary>
     public bool IsAiming => weapon != null && weapon.IsAiming;
     public bool IsSprinting => playerMovement != null && playerMovement.IsSprinting;
 
-    private void Awake()
-    {
-        if (playerMovement == null)
-            playerMovement = GetComponentInParent<PlayerMovement>();
-
-        playerLook = GetComponentInParent<PlayerLook>(true);
-
-        // Misma búsqueda que usa PlayerSpectator.
-        pauseController = GetComponentInParent<PauseController>();
-    }
-
-    /// <summary>
-    /// true cuando el personaje no debe reaccionar al input: pausa, o PlayerLook /
-    /// PlayerMovement desactivados (el modo pausa los apaga).
-    /// </summary>
-    private bool InputBlocked()
-    {
-        if (PauseController.MouseInputBlocked)
-            return true;
-        if (Time.timeScale == 0f)
-            return true;
-
-        if (pauseController != null && pauseController.EstaPausado)
-            return true;
-
-        if (playerLook != null && !playerLook.enabled)
-            return true;
-
-        if (playerMovement != null && !playerMovement.enabled)
-            return true;
-
-        return false;
-    }
-
-    [ContextMenu("Restaurar valores del original")]
-    private void RestoreOriginal()
-    {
-        swayDefault = MotionData.SwayDefault();
-        swayAiming = MotionData.SwayAiming();
-        lookInputScale = 0.1f;
-    }
-
-    private void ComputeIfNeeded()
+    private void ComputeTargetsIfNeeded()
     {
         if (lastComputedFrame == Time.frameCount)
             return;
 
         lastComputedFrame = Time.frameCount;
 
-        SwayData data = IsAiming ? swayAiming : swayDefault;
+        float aimMultiplier = (weapon != null && weapon.IsAiming) ? aimingSwayMultiplier : 1f;
 
-        // En pausa no se lee el mouse ni el movimiento: el arma se asienta en vez de seguir al cursor.
-        bool blocked = InputBlocked();
+        Vector3 lookPos = CalculateLookSway(out Vector3 lookRot);
+        Vector3 movePos = CalculateMoveSway(out Vector3 moveRot);
+        Vector3 bobPos = CalculateWalkBob();
 
-        Vector2 mouseDelta = (!blocked && Mouse.current != null) ? Mouse.current.delta.ReadValue() : Vector2.zero;
-        Vector2 inputLook = Vector2.ClampMagnitude(mouseDelta * lookInputScale, 1f);
-        Vector2 movement = (!blocked && playerMovement != null) ? Vector2.ClampMagnitude(playerMovement.MoveInput, 1f) : Vector2.zero;
+        cachedTargetPosition = (lookPos + movePos + bobPos) * aimMultiplier;
+        cachedTargetRotation = (lookRot + moveRot) * aimMultiplier;
 
-        // Horizontal (X del input)
-        Vector3 horizontalLocation =
-            data.look.horizontal.EvaluateLocation(inputLook.x) * data.look.horizontal.locationMultiplier +
-            data.movement.horizontal.EvaluateLocation(movement.x) * data.movement.horizontal.locationMultiplier;
-
-        Vector3 horizontalRotation =
-            data.look.horizontal.EvaluateRotation(inputLook.x) * data.look.horizontal.rotationMultiplier +
-            data.movement.horizontal.EvaluateRotation(movement.x) * data.movement.horizontal.rotationMultiplier;
-
-        // Vertical (Y del input)
-        Vector3 verticalLocation =
-            data.look.vertical.EvaluateLocation(inputLook.y) * data.look.vertical.locationMultiplier +
-            data.movement.vertical.EvaluateLocation(movement.y) * data.movement.vertical.locationMultiplier;
-
-        Vector3 verticalRotation =
-            data.look.vertical.EvaluateRotation(inputLook.y) * data.look.vertical.rotationMultiplier +
-            data.movement.vertical.EvaluateRotation(movement.y) * data.movement.vertical.rotationMultiplier;
-
-        locationSpring.Apply(data.spring);
-        rotationSpring.Apply(data.spring);
-        locationSpring.SetTarget(horizontalLocation + verticalLocation);
-        rotationSpring.SetTarget(horizontalRotation + verticalRotation);
+        positionSpring.SetTarget(cachedTargetPosition);
+        rotationSpring.SetTarget(cachedTargetRotation);
     }
 
     public Vector3 TickPosition()
     {
-        ComputeIfNeeded();
-        return locationSpring.Evaluate(Time.deltaTime);
+        ComputeTargetsIfNeeded();
+        return positionSpring.Evaluate(Time.deltaTime);
     }
 
     public Vector3 TickRotation()
     {
-        ComputeIfNeeded();
+        ComputeTargetsIfNeeded();
         return rotationSpring.Evaluate(Time.deltaTime);
     }
 
-    // Llamado por WeaponSwitcher al cambiar de arma.
+    // =========================================================
+    // SWAY POR MOUSE (look)
+    // =========================================================
+
+    private Vector3 CalculateLookSway(out Vector3 rotationOffset)
+    {
+        // NUEVO: en pausa (y los 2 frames siguientes a reanudar) el cursor está
+        // desbloqueado y se mueve para clickear botones — eso NO es mirar. Sin
+        // este chequeo, ese delta quedaba guardado como objetivo del resorte y
+        // se notaba como la cámara/arma "deslizándose sola" un instante después
+        // de despausar.
+        Vector2 mouseDelta = (Mouse.current != null && !PauseController.MouseInputBlocked)
+            ? Mouse.current.delta.ReadValue()
+            : Vector2.zero;
+
+        float swayX = Mathf.Clamp(-mouseDelta.x * lookSwayAmount * 0.01f, -maxLookSwayAmount, maxLookSwayAmount);
+        float swayY = Mathf.Clamp(-mouseDelta.y * lookSwayAmount * 0.01f, -maxLookSwayAmount, maxLookSwayAmount);
+
+        float rotY = Mathf.Clamp(mouseDelta.x * lookRotationSwayAmount * 0.01f, -maxLookRotationSway, maxLookRotationSway);
+        float rotX = Mathf.Clamp(-mouseDelta.y * lookRotationSwayAmount * 0.01f, -maxLookRotationSway, maxLookRotationSway);
+
+        rotationOffset = new Vector3(rotX, rotY, 0f);
+        return new Vector3(swayX, swayY, 0f);
+    }
+
+    // =========================================================
+    // SWAY POR MOVIMIENTO (strafe / adelante-atrás)
+    // =========================================================
+
+    private Vector3 CalculateMoveSway(out Vector3 rotationOffset)
+    {
+        if (playerMovement == null)
+        {
+            rotationOffset = Vector3.zero;
+            return Vector3.zero;
+        }
+
+        Vector2 move = playerMovement.MoveInput;
+
+        float posX = -move.x * moveSwayAmount.x;
+        float posY = -Mathf.Abs(move.y) * moveSwayAmount.y * 0.5f;
+
+        // Al strafear, el arma se "atrasa" un toque en el roll, como si pesara.
+        float rollZ = move.x * moveRotationSwayAmount;
+
+        rotationOffset = new Vector3(0f, 0f, -rollZ);
+        return new Vector3(posX, posY, 0f);
+    }
+
+    // =========================================================
+    // BOBBING AL CAMINAR — con fundido, nunca un corte
+    // =========================================================
+
+    private Vector3 CalculateWalkBob()
+    {
+        float dt = Time.deltaTime;
+
+        if (proceduralBobScale <= 0f)
+        {
+            bobWeight = 0f;
+            bobTimer = 0f;
+            return Vector3.zero;
+        }
+
+        // AirTracker ignora el parpadeo de isGrounded (escalones, rampas).
+        air.Tick(characterController, dt);
+
+        bool walking = false;
+
+        if (characterController != null && !air.IsAirborne)
+        {
+            Vector3 horizontalVelocity = new Vector3(characterController.velocity.x, 0f, characterController.velocity.z);
+            walking = horizontalVelocity.magnitude > 0.1f;
+        }
+
+        // El peso del bob sube/baja gradualmente. En el aire baja a 0 mientras la
+        // pose de WeaponJumpMotion sube a 1: el arma CAMBIA de pose en vez de
+        // simplemente dejar de balancearse.
+        float targetWeight = walking ? 1f : 0f;
+        float fadeTime = walking ? bobFadeInTime : bobFadeOutTime;
+        bobWeight = Mathf.MoveTowards(bobWeight, targetWeight, dt / Mathf.Max(fadeTime, 0.01f));
+
+        if (bobWeight <= 0.0001f)
+        {
+            bobTimer = 0f;
+            return Vector3.zero;
+        }
+
+        // La fase solo avanza mientras camina; durante el fundido de salida queda
+        // congelada, así el arma se "asienta" en vez de seguir oscilando en el aire.
+        if (walking)
+        {
+            float freq = bobFrequency * (IsSprinting ? bobFrequencySprintMultiplier : 1f);
+            bobTimer += dt * freq;
+        }
+
+        float vertical = Mathf.Sin(bobTimer) * bobAmount;
+        float horizontal = Mathf.Cos(bobTimer * 0.5f) * bobAmount * 0.5f;
+
+        return new Vector3(horizontal, vertical, 0f) * (bobWeight * proceduralBobScale);
+    }
+
+    // Llamado por WeaponSwitcher al cambiar de arma (igual que HUDController/WeaponAnimationEvents).
     public void SetWeapon(Weapon newWeapon)
     {
         weapon = newWeapon;

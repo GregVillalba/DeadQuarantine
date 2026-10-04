@@ -75,6 +75,12 @@ public class CameraRecoil : MonoBehaviour
     private float shakeAmount;
     private float seedX, seedY, seedZ;
 
+    // Solo para el modo de emergencia (sin motionRoot): lo último que escribimos en la cámara,
+    // para no acumular el offset frame a frame.
+    private bool emergencyApplied;
+    private Quaternion emergencyLastWritten = Quaternion.identity;
+    private Quaternion emergencyLastOffset = Quaternion.identity;
+
     private void Awake()
     {
         cam = GetComponent<Camera>();
@@ -130,6 +136,11 @@ public class CameraRecoil : MonoBehaviour
             motionRoot.localPosition = rootBasePosition;
             motionRoot.localRotation = rootBaseRotation;
         }
+
+        if (emergencyApplied && Quaternion.Angle(transform.localRotation, emergencyLastWritten) < 0.0005f)
+            transform.localRotation = transform.localRotation * Quaternion.Inverse(emergencyLastOffset);
+
+        emergencyApplied = false;
     }
 
     /// <summary>Lo llama Weapon.cs en cada disparo.</summary>
@@ -176,6 +187,12 @@ public class CameraRecoil : MonoBehaviour
     {
         // Jugadores remotos: su cámara está apagada, no hay nada que mover.
         if (cam != null && !cam.enabled)
+            return;
+
+        // Pausa en singleplayer (PauseController pone Time.timeScale = 0 y desactiva PlayerLook).
+        // Con el juego congelado no se simula ni se escribe nada: la cámara se queda EXACTAMENTE en la
+        // última pose, pase lo que pase dentro de los resortes / curvas de salto. Al reanudar sigue sola.
+        if (Time.timeScale <= 0f)
             return;
 
         float dt = Mathf.Min(Time.deltaTime, 0.05f);
@@ -247,7 +264,20 @@ public class CameraRecoil : MonoBehaviour
         else
         {
             // Sin objeto padre disponible: modo de emergencia (solo rotación, sobre la propia cámara).
-            transform.localRotation *= q;
+            // Antes: "localRotation *= q" en cada frame. Si PlayerLook no reescribía la rotación (pausa,
+            // fin de ronda, historia...) el offset se acumulaba y la cámara giraba sola. Ahora, si la
+            // rotación sigue siendo la que dejamos nosotros, se le saca el offset anterior antes de poner el nuevo.
+            Quaternion current = transform.localRotation;
+            Quaternion baseRotation = current;
+
+            if (emergencyApplied && Quaternion.Angle(current, emergencyLastWritten) < 0.0005f)
+                baseRotation = current * Quaternion.Inverse(emergencyLastOffset);
+
+            transform.localRotation = baseRotation * q;
+
+            emergencyLastWritten = transform.localRotation;
+            emergencyLastOffset = q;
+            emergencyApplied = true;
         }
     }
 }
