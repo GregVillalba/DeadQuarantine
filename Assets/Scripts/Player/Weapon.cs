@@ -16,8 +16,12 @@ public class Weapon : MonoBehaviour
     [SerializeField] private GameObject bulletTrailPrefab;
 
     [Header("Recoil de cámara")]
-    [SerializeField] private PlayerLook playerLook;
-    [SerializeField] private float cameraRecoilPerShot = 0.4f;
+    [SerializeField] private CameraRecoil cameraRecoil;
+    [SerializeField] private WeaponRecoil weaponRecoil;
+    [SerializeField] private float recoilIntensityMultiplier = 1f; // <- subir en la escopeta
+    [Tooltip("Qué curvas de recoil del original usa esta arma: AR (rifles), SMG (subfusiles) o Handgun (pistolas, casi sin recoil). " +
+             "Al apuntar, el arma baja a 35% y la cámara queda igual: lo maneja cada script con los valores del original.")]
+    [SerializeField] private RecoilPreset recoilPreset = RecoilPreset.SMG;
 
     private HUDController hudController;
 
@@ -44,14 +48,14 @@ public class Weapon : MonoBehaviour
     [SerializeField] private int maxAmmo = 12;
     [SerializeField] private string weaponName = "Pistola";
 
-    [Header("Escopeta (perdigones)")]
-    [SerializeField] private bool firesMultiplePellets = false; // tildar solo en la Shotgun
-    [SerializeField] private int pelletsPerShot = 8;
-    [SerializeField] private float pelletSpreadAngle = 6f; // dispersión propia del perdigón, se suma a currentSpread
+    [Header("Escopeta (perdigones)")] // <- NUEVO
+    [SerializeField] private bool firesMultiplePellets = false; // <- NUEVO: tildar solo en la Shotgun
+    [SerializeField] private int pelletsPerShot = 8; // <- NUEVO
+    [SerializeField] private float pelletSpreadAngle = 6f; // <- NUEVO: dispersión propia del perdigón, se suma a currentSpread
 
-    [Header("Cerrojo (Sniper de cerrojo manual)")]
-    [SerializeField] private bool requiresBoltActionAfterFire = false; // tildar solo en el Sniper de cerrojo
-    [SerializeField] private float boltActionDuration = 1.3f; // debe igualar la duración real del clip Reload_Bolt
+    [Header("Cerrojo (Sniper de cerrojo manual)")] // <- NUEVO
+    [SerializeField] private bool requiresBoltActionAfterFire = false; // <- NUEVO: tildar solo en el Sniper de cerrojo
+    [SerializeField] private float boltActionDuration = 1.3f; // <- NUEVO: debe igualar la duración real del clip Reload_Bolt
 
     [Header("Aim")]
     [SerializeField] private float aimFOV = 50f;
@@ -91,38 +95,11 @@ public class Weapon : MonoBehaviour
     public bool IsAiming { get; private set; }
 
     public int CurrentAmmo => currentAmmo;
-
     // ----- CAMBIO COMBINADO: PROPIEDADES DE DIFICULTAD (DEL COMPAÑERO) -----
     public int MaxAmmo => EffectiveMaxAmmo; 
     
     private int appliedMaxAmmo;
-    public int EffectiveMaxAmmo
-    {
-        get
-        {
-            DifficultySettings s =
-                RoundManager.Instance != null
-                    ? RoundManager.Instance.ActiveSettings
-                    : null;
-
-            return (s != null && s.magazineSize > 0)
-                ? s.magazineSize
-                : maxAmmo;
-        }
-    }
-
-    private void RefreshMaxAmmo()
-    {
-        int max = EffectiveMaxAmmo;
-
-        if (max == appliedMaxAmmo)
-            return;
-
-        bool wasFull = currentAmmo >= appliedMaxAmmo;
-        appliedMaxAmmo = max;
-        currentAmmo = wasFull ? max : Mathf.Min(currentAmmo, max);
-    }
-    // ------------------------------------------------------------------------
+    public int EffectiveMaxAmmo;
 
     public float CurrentSpreadNormalized
     {
@@ -141,17 +118,17 @@ public class Weapon : MonoBehaviour
 
     public string WeaponName => weaponName;
     public bool IsReloading => isReloading;
-    public bool ShellLoading => shellLoading;
-    public bool IsChambering => isChambering; 
+    public bool ShellLoading => shellLoading; // <- NUEVO
+    public bool IsChambering => isChambering; // <- NUEVO: true durante el ciclo de cerrojo post-disparo
 
     private PlayerControls controls;
 
     private int currentAmmo;
     private float nextFireTime;
     private bool isReloading;
-    private bool shellLoading; 
-    private bool isChambering; 
-    private float chamberReadyTime; 
+    private bool shellLoading; // <- NUEVO
+    private bool isChambering; // <- NUEVO
+    private float chamberReadyTime; // <- NUEVO
 
     private float defaultWorldFOV;
     private float currentSpread;
@@ -168,15 +145,19 @@ public class Weapon : MonoBehaviour
     {
         controls = new PlayerControls();
         ConfiguracionesJuego.CargarRebinds(controls.asset);
-
-        // Inicializamos con el sistema de dificultad del compañero
-        appliedMaxAmmo = EffectiveMaxAmmo;
-        currentAmmo = EffectiveMaxAmmo; 
+        currentAmmo = maxAmmo;
 
         if (playerCamera != null)
             defaultWorldFOV = playerCamera.fieldOfView;
 
         currentSpread = spreadIdle;
+
+        // Si faltan en el Inspector, se buscan: sin playerMovement IsSprinting siempre daba false.
+        if (playerMovement == null)
+            playerMovement = GetComponentInParent<PlayerMovement>();
+
+        if (characterController == null)
+            characterController = GetComponentInParent<CharacterController>();
 
         hudController = GetComponentInParent<HUDController>();
 
@@ -193,6 +174,8 @@ public class Weapon : MonoBehaviour
     {
         controls.Player.Enable();
 
+        // Semiautomático: dispara una sola vez por cada apretada de botón.
+        // Automático (Rifle): el disparo se maneja en Update() mientras se mantiene el botón.
         if (!isAutomatic)
             controls.Player.Fire.performed += OnFireSemiAuto;
 
@@ -231,21 +214,22 @@ public class Weapon : MonoBehaviour
 
     public void AnimationAmmunitionFill()
     {
-        currentAmmo = EffectiveMaxAmmo; // Adaptado para la dificultad
+        currentAmmo = maxAmmo;
     }
 
-    // Adaptado para usar el EffectiveMaxAmmo del compañero
+    // NUEVO: la llama un Animation Event en cada vuelta del clip Reload_Insert.
+    // Mientras falten balas, deja ShellLoading en true para que el Animator
+    // vuelva a reproducir el mismo clip (loop bala por bala).
     public void AnimationInsertOneShell()
     {
-        int max = EffectiveMaxAmmo;
-        if (currentAmmo < max)
+        if (currentAmmo < maxAmmo)
             currentAmmo++;
 
-        shellLoading = currentAmmo < max;
+        shellLoading = currentAmmo < maxAmmo;
 
-        PlaySound(reloadInsertSound);
+        PlaySound(reloadInsertSound); // <- nuevo
 
-        Debug.Log("[Weapon] Insertada bala. currentAmmo=" + currentAmmo + "/" + max + " | ShellLoading=" + shellLoading);
+        Debug.Log("[Weapon] Insertada bala. currentAmmo=" + currentAmmo + "/" + maxAmmo + " | ShellLoading=" + shellLoading);
 
         if (weaponAnimator != null)
             weaponAnimator.SetBool("ShellLoading", shellLoading);
@@ -253,20 +237,18 @@ public class Weapon : MonoBehaviour
 
     public void AnimationReloadFinished()
     {
-        int max = EffectiveMaxAmmo; // Adaptado para la dificultad
-
         if (!usesMultiPartReload)
         {
-            currentAmmo = max;
+            currentAmmo = maxAmmo;
         }
-        else if (currentAmmo != max)
+        else if (currentAmmo != maxAmmo)
         {
             Debug.LogWarning(
                 "[Weapon] AnimationReloadFinished: el loop bala por bala terminó con " +
-                currentAmmo + "/" + max +
+                currentAmmo + "/" + maxAmmo +
                 " — revisá las condiciones ShellLoading en Insert A/B, se cortó antes de tiempo."
             );
-            currentAmmo = max; // red de seguridad para no dejar el arma rota
+            currentAmmo = maxAmmo; // red de seguridad para no dejar el arma rota
         }
 
         isReloading = false;
@@ -276,22 +258,28 @@ public class Weapon : MonoBehaviour
             weaponAnimator.SetBool("ShellLoading", false);
     }
 
+    // Llamado por Animation Event, al abrir la recámara/tubo al empezar a recargar.
     public void AnimationReloadOpen()
     {
-        Debug.Log("[Weapon] AnimationReloadOpen en Time.time=" + Time.time);
         PlaySound(reloadOpenSound);
     }
 
+    // Llamado por Animation Event, al cerrar después de insertar todas las balas.
     public void AnimationReloadClose()
     {
         PlaySound(reloadCloseSound);
     }
 
+    // Llamado por Animation Event, en el tirón hacia atrás del bombeo
+    // (tanto después de disparar como al final de la recarga).
     public void AnimationBoltOpen()
     {
         PlaySound(reloadBoltOpenSound);
     }
 
+    // Llamado por Animation Event, en el golpe hacia adelante del bombeo.
+    // Si este bombeo es el último paso de la recarga, acá es donde
+    // realmente termina — por eso cierra isReloading.
     public void AnimationBoltClose()
     {
         PlaySound(reloadBoltCloseSound);
@@ -307,11 +295,10 @@ public class Weapon : MonoBehaviour
 
     private void Update()
     {
-        RefreshMaxAmmo(); // Checkeamos la lógica de munición dinámica de tu compañero
-
         if (IsAiming && playerMovement != null && playerMovement.IsSprinting)
             IsAiming = false;
 
+        // NUEVO: libera el disparo cuando termina el ciclo de cerrojo.
         if (isChambering && Time.time >= chamberReadyTime)
             isChambering = false;
 
@@ -337,9 +324,18 @@ public class Weapon : MonoBehaviour
 
     private void OnAimStarted(InputAction.CallbackContext context)
     {
-        if (InputLocked) return;
-        if (isReloading) return;
-        if (playerMovement != null && playerMovement.IsSprinting) return;
+        Debug.Log("[Weapon] OnAimStarted llamado. InputLocked=" + InputLocked +
+            " | isReloading=" + isReloading +
+            " | IsSprinting=" + (playerMovement != null && playerMovement.IsSprinting));
+
+        if (InputLocked)
+            return;
+
+        if (isReloading)
+            return;
+
+        if (playerMovement != null && playerMovement.IsSprinting)
+            return;
 
         IsAiming = true;
     }
@@ -351,7 +347,8 @@ public class Weapon : MonoBehaviour
 
     private void UpdateAimFOV()
     {
-        if (playerCamera == null) return;
+        if (playerCamera == null)
+            return;
 
         float targetFOV = IsAiming ? aimFOV : defaultWorldFOV;
 
@@ -368,7 +365,8 @@ public class Weapon : MonoBehaviour
 
     private void UpdateSpread()
     {
-        if (characterController == null) return;
+        if (characterController == null)
+            return;
 
         if (IsAiming)
         {
@@ -376,7 +374,8 @@ public class Weapon : MonoBehaviour
             return;
         }
 
-        if (!characterController.isGrounded) return;
+        if (!characterController.isGrounded)
+            return;
 
         float targetSpread;
 
@@ -400,7 +399,8 @@ public class Weapon : MonoBehaviour
 
     private void UpdateJumpSpread()
     {
-        if (characterController == null) return;
+        if (characterController == null)
+            return;
 
         bool isGrounded = characterController.isGrounded;
 
@@ -415,8 +415,11 @@ public class Weapon : MonoBehaviour
 
     private bool IsMovingOnGround()
     {
-        if (characterController == null) return false;
-        if (!characterController.isGrounded) return false;
+        if (characterController == null)
+            return false;
+
+        if (!characterController.isGrounded)
+            return false;
 
         Vector3 horizontalVelocity = new Vector3(
             characterController.velocity.x,
@@ -431,10 +434,62 @@ public class Weapon : MonoBehaviour
     // ANIMATOR
     // =========================================================
 
+    private readonly AirTracker airTracker = new AirTracker();
+
+    private static readonly int RunningHash = Animator.StringToHash("Running");
+    private RuntimeAnimatorController runningParamCheckedFor;
+    private bool hasRunningParam;
+    private float nextRunningParamCheck;
+    private bool lastLoggedSprint;
+
+    [Header("Diagnóstico")]
+    [Tooltip("Escribe en la consola qué controller está usando el arma, si tiene el parámetro Running y cuándo cambia IsSprinting.")]
+    [SerializeField] private bool debugRunning = false;
+
+    // Mira si el controller actual tiene el bool "Running". Un resultado positivo se guarda;
+    // uno negativo se vuelve a comprobar cada 0.5 s, porque justo después de cambiar de arma
+    // el Animator puede no estar listo todavía y devolver una lista de parámetros vacía.
+    private bool AnimatorHasRunningParam()
+    {
+        RuntimeAnimatorController controller = weaponAnimator.runtimeAnimatorController;
+
+        if (hasRunningParam && controller == runningParamCheckedFor)
+            return true;
+
+        if (controller == runningParamCheckedFor && Time.unscaledTime < nextRunningParamCheck)
+            return false;
+
+        runningParamCheckedFor = controller;
+        nextRunningParamCheck = Time.unscaledTime + 0.5f;
+        hasRunningParam = false;
+
+        if (controller != null && weaponAnimator.isInitialized)
+        {
+            foreach (AnimatorControllerParameter p in weaponAnimator.parameters)
+            {
+                if (p.nameHash == RunningHash && p.type == AnimatorControllerParameterType.Bool)
+                {
+                    hasRunningParam = true;
+                    break;
+                }
+            }
+
+            if (debugRunning)
+            {
+                Debug.Log("[Weapon] Controller del arma: '" + controller.name + "' | parámetro Running (bool): " +
+                          (hasRunningParam ? "SÍ" : "NO, este no es el controller modificado"));
+            }
+        }
+
+        return hasRunningParam;
+    }
+
     private void UpdateAnimatorParams()
     {
-        if (weaponAnimator == null || characterController == null) return;
+        if (weaponAnimator == null || characterController == null)
+            return;
 
+        // Solo velocidad horizontal — la caída (eje Y) no debe contar como "caminar".
         Vector3 horizontalVelocity = new Vector3(
             characterController.velocity.x,
             0f,
@@ -442,6 +497,33 @@ public class Weapon : MonoBehaviour
         );
 
         float speed = horizontalVelocity.magnitude;
+
+        // El Animator ahora tiene un bool "Running" (igual que el original de Infima):
+        // la pose de correr depende de que estés corriendo (IsSprinting), ya no de
+        // Speed > 7. Así saltar no te saca de Running y aterrizar no obliga a esperar
+        // 0.5 s para volver. Si el controller no tiene el parámetro, todo queda como antes.
+        airTracker.Tick(characterController, Time.deltaTime);
+
+        if (AnimatorHasRunningParam())
+        {
+            weaponAnimator.SetBool(RunningHash, playerMovement != null && playerMovement.IsSprinting);
+
+            if (debugRunning)
+            {
+                bool sprintNow = playerMovement != null && playerMovement.IsSprinting;
+
+                if (sprintNow != lastLoggedSprint)
+                {
+                    lastLoggedSprint = sprintNow;
+                    Debug.Log("[Weapon] IsSprinting=" + sprintNow + " | Running en el Animator=" + weaponAnimator.GetBool(RunningHash));
+                }
+            }
+
+            // En el aire, caminar vuelve suave a idle (sin balanceo de caminata flotando).
+            // OJO: corriendo NO se pone en 0, si no la pose de correr se corta al saltar.
+            if (airTracker.IsAirborne && !(playerMovement != null && playerMovement.IsSprinting))
+                speed = 0f;
+        }
 
         weaponAnimator.SetFloat("Speed", speed, 0.15f, Time.deltaTime);
         weaponAnimator.SetBool("IsAiming", IsAiming);
@@ -451,10 +533,13 @@ public class Weapon : MonoBehaviour
 
     private void UpdateAimingBlend()
     {
-        if (weaponAnimator == null) return;
+        if (weaponAnimator == null)
+            return;
 
         float target = IsAiming ? 1f : 0f;
+
         aimingBlend = Mathf.MoveTowards(aimingBlend, target, aimingBlendSpeed * Time.deltaTime);
+
         weaponAnimator.SetFloat("Aiming", aimingBlend);
     }
 
@@ -464,26 +549,63 @@ public class Weapon : MonoBehaviour
 
     private void OnFireSemiAuto(InputAction.CallbackContext context)
     {
+        Debug.Log("[Weapon] OnFireSemiAuto llamado. InputLocked=" + InputLocked);
         TryFire();
     }
 
     private void TryFire()
     {
-        if (InputLocked) return;
-        if (Time.timeScale == 0f) return;
+        if (InputLocked)
+        {
+            Debug.Log("[Weapon] TryFire bloqueado: InputLocked=true");
+            return;
+        }
 
-        if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null) return;
+        if (Time.timeScale == 0f)
+        {
+            Debug.Log("[Weapon] TryFire bloqueado: Time.timeScale == 0");
+            return;
+        }
 
-        if (isReloading) return;
-        if (isChambering) return;
-        if (playerMovement != null && playerMovement.IsSprinting) return;
+        if (EventSystem.current != null &&
+            EventSystem.current.currentSelectedGameObject != null)
+        {
+            Debug.Log("[Weapon] TryFire bloqueado: hay un objeto de UI seleccionado -> " +
+                EventSystem.current.currentSelectedGameObject.name);
+            return;
+        }
 
-        if (Time.time < nextFireTime) return;
+        if (isReloading)
+        {
+            Debug.Log("[Weapon] TryFire bloqueado: isReloading=true");
+            return;
+        }
+
+        // NUEVO: mientras se acciona el cerrojo tras el disparo anterior, no se puede volver a disparar.
+        if (isChambering)
+        {
+            Debug.Log("[Weapon] TryFire bloqueado: isChambering=true");
+            return;
+        }
+
+        if (playerMovement != null && playerMovement.IsSprinting)
+        {
+            Debug.Log("[Weapon] TryFire bloqueado: IsSprinting=true");
+            return;
+        }
+
+        if (Time.time < nextFireTime)
+            return; // este es normal (cadencia), no hace falta loguearlo
 
         if (currentAmmo <= 0)
         {
             PlaySound(emptySound);
-            if (weaponAnimator != null) weaponAnimator.SetTrigger("FireEmpty");
+
+            if (weaponAnimator != null)
+                weaponAnimator.SetTrigger("FireEmpty");
+
+            // Actualizamos nextFireTime igual: si no, con el botón
+            // mantenido en un arma automática spamea el sonido de vacío cada frame.
             nextFireTime = Time.time + fireRate;
             return;
         }
@@ -491,25 +613,34 @@ public class Weapon : MonoBehaviour
         nextFireTime = Time.time + fireRate;
         currentAmmo--;
 
-        if (playerScore != null) playerScore.RegistrarDisparoServerRpc();
+        if (playerScore != null)
+            playerScore.RegistrarDisparoServerRpc();
 
         currentSpread = Mathf.Clamp(currentSpread + spreadIncreasePerShot, 0f, maxSpread);
 
-        if (playerLook != null) playerLook.AddRecoil(cameraRecoilPerShot);
+        if (cameraRecoil != null)
+            cameraRecoil.Fire(recoilPreset, IsAiming, recoilIntensityMultiplier);
+
+        if (weaponRecoil != null)
+            weaponRecoil.Fire(recoilPreset, IsAiming, recoilIntensityMultiplier);
 
         PlaySound(shootSound);
 
-        if (weaponAnimator != null) weaponAnimator.SetTrigger("Fire");
+        if (weaponAnimator != null)
+            weaponAnimator.SetTrigger("Fire");
 
         muzzle?.PlayEffect();
 
         Shoot();
 
+        // NUEVO: arma de cerrojo manual (Sniper) — hay que accionarlo antes de volver a disparar.
         if (requiresBoltActionAfterFire)
         {
             isChambering = true;
             chamberReadyTime = Time.time + boltActionDuration;
-            if (weaponAnimator != null) weaponAnimator.SetTrigger("BoltAction");
+
+            if (weaponAnimator != null)
+                weaponAnimator.SetTrigger("BoltAction");
         }
     }
 
@@ -519,22 +650,18 @@ public class Weapon : MonoBehaviour
 
     private void OnReload(InputAction.CallbackContext context)
     {
-        if (InputLocked) return;
-        if (isReloading) return;
-
-        // Comprobación de dificultad añadida por tu compañero
-        DifficultySettings reloadSettings =
-            RoundManager.Instance != null
-                ? RoundManager.Instance.ActiveSettings
-                : null;
-
-        if (reloadSettings != null && !reloadSettings.allowReload)
+        if (InputLocked)
             return;
 
-        if (currentAmmo >= EffectiveMaxAmmo) // Modificado con la lógica de tu compañero
+        if (isReloading)
             return;
 
-        if (playerMovement != null && playerMovement.IsSprinting) return;
+        if (currentAmmo == maxAmmo)
+            return;
+
+        // NO RECARGAR MIENTRAS CORRE.
+        if (playerMovement != null && playerMovement.IsSprinting)
+            return;
 
         IsAiming = false;
         isReloading = true;
@@ -551,7 +678,7 @@ public class Weapon : MonoBehaviour
             weaponAnimator.SetBool("IsEmpty", wasEmpty);
             weaponAnimator.SetBool("MultiPartReload", usesMultiPartReload);
 
-            shellLoading = usesMultiPartReload && currentAmmo < EffectiveMaxAmmo;
+            shellLoading = usesMultiPartReload && currentAmmo < maxAmmo;
             weaponAnimator.SetBool("ShellLoading", shellLoading);
 
             weaponAnimator.SetTrigger("Reload");
@@ -570,6 +697,9 @@ public class Weapon : MonoBehaviour
 
     private void Shoot()
     {
+        // NUEVO: la escopeta dispara varios perdigones por vez, cada uno con
+        // su propia dispersión aleatoria. El resto de las armas siguen
+        // disparando un solo proyectil, como antes.
         if (firesMultiplePellets)
         {
             for (int i = 0; i < pelletsPerShot; i++)
@@ -600,14 +730,25 @@ public class Weapon : MonoBehaviour
         foreach (RaycastHit hit in hits)
         {
             PlayerHealth playerHit = hit.collider.GetComponentInParent<PlayerHealth>();
-            if (playerHit != null) continue;
 
-            if (hit.collider.transform.root == transform.root) continue;
+            if (playerHit != null)
+                continue;
 
-            if ((bulletIgnoredLayers.value & (1 << hit.collider.gameObject.layer)) != 0) continue;
+            if (hit.collider.transform.root == transform.root)
+                continue;
+
+            if (
+                (bulletIgnoredLayers.value &
+                 (1 << hit.collider.gameObject.layer)) != 0
+            )
+            {
+                continue;
+            }
 
             PlayerMovement movementHit = hit.collider.GetComponentInParent<PlayerMovement>();
-            if (movementHit != null) continue;
+
+            if (movementHit != null)
+                continue;
 
             validHit = hit;
             validHitFound = true;
@@ -618,7 +759,10 @@ public class Weapon : MonoBehaviour
         {
             RaycastHit hit = validHit;
 
+            Debug.Log("Impacto en: " + hit.collider.name);
+
             Debug.DrawLine(firePoint.position, hit.point, Color.red, 1f);
+
             SpawnBulletTrail(hit.point);
 
             ZombieHealth zombieHealth = hit.collider.GetComponentInParent<ZombieHealth>();
@@ -636,13 +780,19 @@ public class Weapon : MonoBehaviour
 
             if (DecalManager.Instance != null)
             {
-                DecalManager.Instance.SpawnBulletHole(hit.point, hit.normal, hit.collider);
+                DecalManager.Instance.SpawnBulletHole(
+                    hit.point,
+                    hit.normal,
+                    hit.collider
+                );
             }
         }
         else
         {
             Vector3 missPoint = firePoint.position + spreadDirection * range;
+
             SpawnBulletTrail(missPoint);
+
             Debug.DrawRay(firePoint.position, spreadDirection * range, Color.yellow, 1f);
         }
     }
@@ -653,10 +803,15 @@ public class Weapon : MonoBehaviour
 
     private void SpawnBulletTrail(Vector3 targetPoint)
     {
-        if (bulletTrailPrefab == null || firePoint == null) return;
+        if (bulletTrailPrefab == null || firePoint == null)
+            return;
+
         GameObject trailObject = Instantiate(bulletTrailPrefab, firePoint.position, Quaternion.identity);
+
         BulletTrail trail = trailObject.GetComponent<BulletTrail>();
-        if (trail != null) trail.Init(targetPoint);
+
+        if (trail != null)
+            trail.Init(targetPoint);
     }
 
     // =========================================================
@@ -665,10 +820,14 @@ public class Weapon : MonoBehaviour
 
     private Vector3 ApplySpreadToDirection(Vector3 baseDirection, float spreadDegrees)
     {
-        if (spreadDegrees <= 0f) return baseDirection;
+        if (spreadDegrees <= 0f)
+            return baseDirection;
+
         float randomX = Random.Range(-spreadDegrees, spreadDegrees);
         float randomY = Random.Range(-spreadDegrees, spreadDegrees);
+
         Quaternion spreadRotation = Quaternion.Euler(randomY, randomX, 0f);
+
         return spreadRotation * baseDirection;
     }
 }

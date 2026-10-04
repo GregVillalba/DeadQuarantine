@@ -28,6 +28,7 @@ public class WeaponSwitcher : MonoBehaviour
     [SerializeField] private RuntimeAnimatorController tpBaseController; // <- NUEVO: controller de la pistola (base)
     [SerializeField] private HUDController hudController;
     [SerializeField] private WeaponAnimationEvents weaponAnimationEvents;
+    [SerializeField] private WeaponSway weaponSway; // <- NUEVO: para que el sway sepa si el arma actual está apuntando
 
     [Header("Armas")]
     [SerializeField] private WeaponSlot[] slots;
@@ -206,6 +207,9 @@ public class WeaponSwitcher : MonoBehaviour
             weaponAnimationEvents.SetWeapon(slot.weaponComponent);
             weaponAnimationEvents.SetCasingData(slot.casingPrefab, slot.casingEjectPoint); // <- NUEVO
         }
+
+        if (weaponSway != null) // <- NUEVO
+            weaponSway.SetWeapon(slot.weaponComponent);
     }
 
     public void NotifyUnholsterFinished()

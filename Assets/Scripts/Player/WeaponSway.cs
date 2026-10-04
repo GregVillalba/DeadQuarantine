@@ -1,137 +1,144 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// <summary>
+/// Sway del arma al MIRAR y al MOVERSE: port de SwayMotion del original, con los
+/// SwayData reales (SO_SD_Default / SO_SD_Aiming, SO_ST_Look, SO_ST_Movement, ...).
+///
+///  - Input de mirada: delta del mouse (limitado a magnitud 1) evalúa las curvas
+///    "Look" (horizontal con X, vertical con Y).
+///  - Input de movimiento (strafe / adelante-atrás, magnitud 1) evalúa las curvas "Movement".
+///  - Al apuntar se usa el SwayData de apuntado (el sway baja a 10%).
+///  - Un resorte (damping 12 / stiffness 165, o 16 / 165 apuntando) persigue el resultado.
+///
+/// El bob al caminar se QUITÓ: lo hace la animación del arma (el original tampoco
+/// tiene bob por código).
+///
+/// Es una fuente más para WeaponMotionApplier (no escribe el Transform). Los valores
+/// salen en los ejes del original; el Applier los convierte a los de FPS_Arms.
+/// </summary>
 public class WeaponSway : MonoBehaviour
 {
     [Header("Referencias")]
-    [SerializeField] private CharacterController characterController;
-    [SerializeField] private Weapon weapon; // el arma actualmente activa (usa SetWeapon como HUDController)
+    [SerializeField] private PlayerMovement playerMovement;
+    [SerializeField] private Weapon weapon; // para saber si está apuntando (lo asigna WeaponSwitcher)
 
-    [Header("Sway por mouse")]
-    [SerializeField] private float swayAmount = 0.015f;
-    [SerializeField] private float maxSwayAmount = 0.05f;
-    [SerializeField] private float rotationSwayAmount = 3f;
-    [SerializeField] private float maxRotationSway = 5f;
-    [SerializeField] private float swaySmooth = 8f;
+    [Header("Sway del original")]
+    [SerializeField] private SwayData swayDefault = MotionData.SwayDefault();
+    [SerializeField] private SwayData swayAiming = MotionData.SwayAiming();
 
-    [Header("Bobbing al caminar")]
-    [SerializeField] private float bobFrequency = 8f;
-    [SerializeField] private float bobAmount = 0.012f;
+    [Header("Input de mirada")]
+    [Tooltip("El delta del mouse (píxeles por frame) se multiplica por esto y se limita a magnitud 1, " +
+             "como el original. Más alto = el sway llega al máximo con movimientos más lentos del mouse.")]
+    [SerializeField] private float lookInputScale = 0.1f;
 
-    [Header("Recoil")]
-    [SerializeField] private float recoilKickBack = 0.04f;   // el arma retrocede en Z
-    [SerializeField] private float recoilKickUp = 2.5f;      // el arma "levanta la boca" en X (grados)
-    [SerializeField] private float recoilRandomSide = 1f;    // pequeño giro random en Y (grados)
-    [SerializeField] private float recoilRecoverySpeed = 10f;
+    private PlayerLook playerLook;
+    private PauseController pauseController;
 
-    private Vector3 initialLocalPosition;
-    private Quaternion initialLocalRotation;
+    private readonly SpringVector3 locationSpring = new SpringVector3();
+    private readonly SpringVector3 rotationSpring = new SpringVector3();
 
-    private float bobTimer;
+    private int lastComputedFrame = -1;
 
-    private Vector3 recoilPositionOffset;
-    private Vector3 recoilRotationOffset;
-
-    private int lastKnownAmmo = -1;
+    /// <summary>Lo lee WeaponMotionApplier / otros scripts.</summary>
+    public bool IsAiming => weapon != null && weapon.IsAiming;
+    public bool IsSprinting => playerMovement != null && playerMovement.IsSprinting;
 
     private void Awake()
     {
-        initialLocalPosition = transform.localPosition;
-        initialLocalRotation = transform.localRotation;
+        if (playerMovement == null)
+            playerMovement = GetComponentInParent<PlayerMovement>();
+
+        playerLook = GetComponentInParent<PlayerLook>(true);
+
+        // Misma búsqueda que usa PlayerSpectator.
+        pauseController = GetComponentInParent<PauseController>();
     }
 
-    private void Update()
+    /// <summary>
+    /// true cuando el personaje no debe reaccionar al input: pausa, o PlayerLook /
+    /// PlayerMovement desactivados (el modo pausa los apaga).
+    /// </summary>
+    private bool InputBlocked()
     {
-        DetectShotForRecoil();
+        if (Time.timeScale == 0f)
+            return true;
 
-        Vector3 swayOffset = CalculateMouseSway(out Vector3 rotSway);
-        Vector3 bobOffset = CalculateWalkBob();
+        if (pauseController != null && pauseController.EstaPausado)
+            return true;
 
-        // Recupera el recoil hacia 0 con el tiempo.
-        recoilPositionOffset = Vector3.Lerp(recoilPositionOffset, Vector3.zero, recoilRecoverySpeed * Time.deltaTime);
-        recoilRotationOffset = Vector3.Lerp(recoilRotationOffset, Vector3.zero, recoilRecoverySpeed * Time.deltaTime);
+        if (playerLook != null && !playerLook.enabled)
+            return true;
 
-        Vector3 targetPosition = initialLocalPosition + swayOffset + bobOffset + recoilPositionOffset;
-        Quaternion targetRotation = initialLocalRotation * Quaternion.Euler(rotSway + recoilRotationOffset);
+        if (playerMovement != null && !playerMovement.enabled)
+            return true;
 
-        transform.localPosition = Vector3.Lerp(transform.localPosition, targetPosition, swaySmooth * Time.deltaTime);
-        transform.localRotation = Quaternion.Slerp(transform.localRotation, targetRotation, swaySmooth * Time.deltaTime);
+        return false;
     }
 
-    // =========================================================
-    // SWAY POR MOUSE
-    // =========================================================
-
-    private Vector3 CalculateMouseSway(out Vector3 rotationOffset)
+    [ContextMenu("Restaurar valores del original")]
+    private void RestoreOriginal()
     {
-        Vector2 mouseDelta = Mouse.current != null ? Mouse.current.delta.ReadValue() : Vector2.zero;
-
-        float swayX = Mathf.Clamp(-mouseDelta.x * swayAmount * 0.01f, -maxSwayAmount, maxSwayAmount);
-        float swayY = Mathf.Clamp(-mouseDelta.y * swayAmount * 0.01f, -maxSwayAmount, maxSwayAmount);
-
-        float rotY = Mathf.Clamp(mouseDelta.x * rotationSwayAmount * 0.01f, -maxRotationSway, maxRotationSway);
-        float rotX = Mathf.Clamp(-mouseDelta.y * rotationSwayAmount * 0.01f, -maxRotationSway, maxRotationSway);
-
-        rotationOffset = new Vector3(rotX, rotY, 0f);
-
-        return new Vector3(swayX, swayY, 0f);
+        swayDefault = MotionData.SwayDefault();
+        swayAiming = MotionData.SwayAiming();
+        lookInputScale = 0.1f;
     }
 
-    // =========================================================
-    // BOBBING AL CAMINAR
-    // =========================================================
-
-    private Vector3 CalculateWalkBob()
+    private void ComputeIfNeeded()
     {
-        if (characterController == null)
-            return Vector3.zero;
-
-        Vector3 horizontalVelocity = new Vector3(characterController.velocity.x, 0f, characterController.velocity.z);
-
-        if (characterController.isGrounded && horizontalVelocity.magnitude > 0.1f)
-        {
-            bobTimer += Time.deltaTime * bobFrequency;
-            float offset = Mathf.Sin(bobTimer) * bobAmount;
-            return new Vector3(0f, offset, 0f);
-        }
-
-        bobTimer = 0f;
-        return Vector3.zero;
-    }
-
-    // =========================================================
-    // RECOIL (detecta disparo comparando munición)
-    // =========================================================
-
-    private void DetectShotForRecoil()
-    {
-        if (weapon == null)
+        if (lastComputedFrame == Time.frameCount)
             return;
 
-        if (lastKnownAmmo == -1)
-        {
-            lastKnownAmmo = weapon.CurrentAmmo;
-            return;
-        }
+        lastComputedFrame = Time.frameCount;
 
-        if (weapon.CurrentAmmo < lastKnownAmmo)
-            ApplyRecoilKick();
+        SwayData data = IsAiming ? swayAiming : swayDefault;
 
-        lastKnownAmmo = weapon.CurrentAmmo;
+        // En pausa no se lee el mouse ni el movimiento: el arma se asienta en vez de seguir al cursor.
+        bool blocked = InputBlocked();
+
+        Vector2 mouseDelta = (!blocked && Mouse.current != null) ? Mouse.current.delta.ReadValue() : Vector2.zero;
+        Vector2 inputLook = Vector2.ClampMagnitude(mouseDelta * lookInputScale, 1f);
+        Vector2 movement = (!blocked && playerMovement != null) ? Vector2.ClampMagnitude(playerMovement.MoveInput, 1f) : Vector2.zero;
+
+        // Horizontal (X del input)
+        Vector3 horizontalLocation =
+            data.look.horizontal.EvaluateLocation(inputLook.x) * data.look.horizontal.locationMultiplier +
+            data.movement.horizontal.EvaluateLocation(movement.x) * data.movement.horizontal.locationMultiplier;
+
+        Vector3 horizontalRotation =
+            data.look.horizontal.EvaluateRotation(inputLook.x) * data.look.horizontal.rotationMultiplier +
+            data.movement.horizontal.EvaluateRotation(movement.x) * data.movement.horizontal.rotationMultiplier;
+
+        // Vertical (Y del input)
+        Vector3 verticalLocation =
+            data.look.vertical.EvaluateLocation(inputLook.y) * data.look.vertical.locationMultiplier +
+            data.movement.vertical.EvaluateLocation(movement.y) * data.movement.vertical.locationMultiplier;
+
+        Vector3 verticalRotation =
+            data.look.vertical.EvaluateRotation(inputLook.y) * data.look.vertical.rotationMultiplier +
+            data.movement.vertical.EvaluateRotation(movement.y) * data.movement.vertical.rotationMultiplier;
+
+        locationSpring.Apply(data.spring);
+        rotationSpring.Apply(data.spring);
+        locationSpring.SetTarget(horizontalLocation + verticalLocation);
+        rotationSpring.SetTarget(horizontalRotation + verticalRotation);
     }
 
-    private void ApplyRecoilKick()
+    public Vector3 TickPosition()
     {
-        recoilPositionOffset += new Vector3(0f, 0f, -recoilKickBack);
-
-        float randomSide = Random.Range(-recoilRandomSide, recoilRandomSide);
-        recoilRotationOffset += new Vector3(-recoilKickUp, randomSide, 0f);
+        ComputeIfNeeded();
+        return locationSpring.Evaluate(Time.deltaTime);
     }
 
-    // Llamado por WeaponSwitcher al cambiar de arma (igual que HUDController/WeaponAnimationEvents).
+    public Vector3 TickRotation()
+    {
+        ComputeIfNeeded();
+        return rotationSpring.Evaluate(Time.deltaTime);
+    }
+
+    // Llamado por WeaponSwitcher al cambiar de arma.
     public void SetWeapon(Weapon newWeapon)
     {
         weapon = newWeapon;
-        lastKnownAmmo = newWeapon != null ? newWeapon.CurrentAmmo : -1;
     }
 }

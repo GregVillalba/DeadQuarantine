@@ -15,16 +15,12 @@ public class PlayerLook : MonoBehaviour
     [SerializeField] private float minPitch = -80f;
     [SerializeField] private float maxPitch = 80f;
 
-    [Header("Recoil")]
-    [SerializeField] private float recoilRecoverySpeed = 4f;
-
     private PlayerControls controls;
 
     private NetworkObject networkObject;
     private Transform playerTransform;
 
     private float pitch = 0f;
-    private float recoilPitch = 0f; // Se acumula con AddRecoil(), no viene del mouse.
     public float Pitch => pitch;
 
     private void Awake()
@@ -88,23 +84,10 @@ public class PlayerLook : MonoBehaviour
         pitch -= lookInput.y * mouseSensitivity;
         pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
 
-        // =====================================================
-        // RECOIL (independiente del mouse, decae solo)
-        // =====================================================
+        cameraTransform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
 
-        recoilPitch = Mathf.Lerp(recoilPitch, 0f, recoilRecoverySpeed * Time.deltaTime);
-
-        float finalPitch = Mathf.Clamp(pitch - recoilPitch, minPitch, maxPitch);
-
-        cameraTransform.localRotation = Quaternion.Euler(finalPitch, 0f, 0f);
-    }
-
-    /// <summary>
-    /// Suma recoil vertical (en grados). Positivo = la cámara sube.
-    /// Llamado por Weapon.cs en cada disparo.
-    /// </summary>
-    public void AddRecoil(float amount)
-    {
-        recoilPitch += amount;
+        // El recoil de cámara (patada al disparar + shake) ya no se calcula
+        // acá — lo maneja CameraRecoil.cs, que corre en LateUpdate sobre
+        // este mismo cameraTransform y se suma encima de este valor base.
     }
 }
