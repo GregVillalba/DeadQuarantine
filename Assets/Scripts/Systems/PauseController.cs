@@ -447,8 +447,14 @@ if (textoCaidasVictoria != null && playerScore != null)
         if (textoPrecisionDerrota != null && playerScore != null)
             textoPrecisionDerrota.text = playerScore.PrecisionPorcentaje.ToString() + "%";
 
+       /* if (textoRondaDerrota != null && playerScore != null)
+            textoRondaDerrota.text = RoundManager.Instance.CurrentRound + " / " + RoundManager.Instance.MaxRounds;*/
+
         if (textoRondaDerrota != null && playerScore != null)
-            textoRondaDerrota.text = RoundManager.Instance.CurrentRound + " / " + RoundManager.Instance.MaxRounds;
+            textoRondaDerrota.text =
+                RoundManager.Instance.IsInfiniteMode
+                    ? RoundManager.Instance.CurrentRound.ToString()
+                    : RoundManager.Instance.CurrentRound + " / " + RoundManager.Instance.MaxRounds;
 
         if (textoCaidasDerrota != null && playerScore != null)
         textoCaidasDerrota.text = playerScore.CaidasNetwork.Value.ToString();

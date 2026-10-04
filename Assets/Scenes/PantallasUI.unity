@@ -1603,12 +1603,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Scripts::DifficultyManager
   difficulties:
-  - {fileID: 11400000, guid: 9191f395ef8aa6b4baa6aa7897baa766, type: 2}
   - {fileID: 11400000, guid: 1740f372a919b71458fed8ca481dceae, type: 2}
+  - {fileID: 11400000, guid: 9191f395ef8aa6b4baa6aa7897baa766, type: 2}
   modes:
+  - {fileID: 0}
   - {fileID: 11400000, guid: 3a3fd0788b8fe0748aad92a0a324a1e8, type: 2}
+  - {fileID: 11400000, guid: d785a1a09483a83459fb63aa71526cfb, type: 2}
   defaultDifficulty: 0
-  defaultModeIndex: 0
+  defaultModeIndex: 1
 --- !u!4 &28482999
 Transform:
   m_ObjectHideFlags: 0
@@ -2280,6 +2282,18 @@ MonoBehaviour:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 28482998}
+        m_TargetAssemblyTypeName: DifficultyManager, Scripts
+        m_MethodName: SetModeIndex
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 2
           m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 0
@@ -14088,7 +14102,7 @@ MonoBehaviour:
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 1
+          m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 0
@@ -23216,7 +23230,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &479778371
 RectTransform:
   m_ObjectHideFlags: 0
@@ -67841,7 +67855,7 @@ MonoBehaviour:
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 2
+          m_IntArgument: 1
           m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 0
@@ -69979,6 +69993,18 @@ MonoBehaviour:
         m_Arguments:
           m_ObjectArgument: {fileID: 1510584227}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 28482998}
+        m_TargetAssemblyTypeName: DifficultyManager, Scripts
+        m_MethodName: SetDifficultyIndex
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
@@ -80157,6 +80183,18 @@ MonoBehaviour:
           m_ObjectArgument: {fileID: 410240917}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.GameObject, UnityEngine
           m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 28482998}
+        m_TargetAssemblyTypeName: DifficultyManager, Scripts
+        m_MethodName: SetDifficultyIndex
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 1
           m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 0

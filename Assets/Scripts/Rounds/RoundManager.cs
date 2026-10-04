@@ -46,6 +46,9 @@ public class RoundManager : NetworkBehaviour
     [SerializeField] private int expectedPlayerCount = 2;
     [SerializeField] private float maxWaitForPlayersTime = 15f;
 
+    [Header("Pruebas (dejar en 1 para jugar normal)")]
+    [SerializeField] private int debugStartRound = 10;
+
 
     // =========================================================
     // VARIABLES DE RED
@@ -121,6 +124,8 @@ public class RoundManager : NetworkBehaviour
 
     public int MaxRounds => MaxRoundsNetwork.Value;
 
+    public bool IsInfiniteMode => MaxRoundsNetwork.Value == 0;
+
     public int AliveZombies =>
         AliveZombiesNetwork.Value;
 
@@ -157,6 +162,20 @@ public class RoundManager : NetworkBehaviour
     private float runChanceBonus = 0f;
 
     private float runChanceRampMultiplier = 1f;
+
+    private GameModeConfig activeMode;
+    private bool infiniteMode;
+    private DifficultyLevel activeDifficulty = DifficultyLevel.Normal;
+
+    private int zombiesSpawnedThisRound;
+    private int zombiesKilledThisRound;
+
+    private GameModeConfig RulesMode =>
+        activeMode != null
+            ? activeMode
+            : (DifficultyManager.Instance != null
+                ? DifficultyManager.Instance.CurrentMode
+                : null);
 
     public DifficultySettings ActiveSettings =>
     DifficultyManager.Instance != null
@@ -341,6 +360,9 @@ public class RoundManager : NetworkBehaviour
         if (!IsServer)
             return;
 
+        if (infiniteMode && round == 1 && debugStartRound > 1)
+            round = debugStartRound;
+
         CurrentRoundNetwork.Value = round;
 
         RespawnSpectatingPlayers();
@@ -360,11 +382,29 @@ public class RoundManager : NetworkBehaviour
             (round - 1) *
             zombiesPerRound;*/
 
-        int zombiesThisRound = Mathf.RoundToInt((startingZombies + (round - 1) * zombiesPerRound) * countMultiplier);
+      /*  int zombiesThisRound = Mathf.RoundToInt((startingZombies + (round - 1) * zombiesPerRound) * countMultiplier);
         
         bool spawnBoss =
             round == bossRound &&
-            HasBossPrefab();
+            HasBossPrefab();*/
+
+        int zombiesThisRound = infiniteMode
+            ? Mathf.RoundToInt(activeMode.GetBaseZombieCount(round) * countMultiplier)
+            : Mathf.RoundToInt((startingZombies + (round - 1) * zombiesPerRound) * countMultiplier);
+
+        int bossCount = 0;
+
+        if (HasBossPrefab())
+        {
+            bossCount = infiniteMode
+                ? activeMode.GetBossCount(round)
+                : (round == bossRound ? 1 : 0);
+        }
+
+        zombiesThisRound = Mathf.Max(zombiesThisRound, bossCount);
+
+        zombiesSpawnedThisRound = 0;
+        zombiesKilledThisRound = 0;
 
         ZombiesThisRoundNetwork.Value =
             zombiesThisRound;
@@ -382,7 +422,8 @@ public class RoundManager : NetworkBehaviour
             roundStartHUD.Hide();
         }
 
-        bool esRondaFinal = round >= maxRounds;
+       /* bool esRondaFinal = round >= maxRounds;*/
+        bool esRondaFinal = !infiniteMode && round >= maxRounds;
         MostrarPanelRondaClientRpc(round, esRondaFinal);
 
         if (spawnRoutine != null)
@@ -396,7 +437,8 @@ public class RoundManager : NetworkBehaviour
             StartCoroutine(
                 SpawnZombiesRoutine(
                     zombiesThisRound,
-                    spawnBoss
+                   // spawnBoss
+                   bossCount
                 )
             );
 
@@ -406,7 +448,8 @@ public class RoundManager : NetworkBehaviour
             " iniciada. Zombies: " +
             ZombiesThisRoundNetwork.Value +
             " | Boss: " +
-            (spawnBoss ? "Sí" : "No")
+          //  (spawnBoss ? "Sí" : "No")
+          (bossCount > 0 ? "Sí (" + bossCount + ")" : "No")
         );
     }
 
@@ -450,6 +493,13 @@ public class RoundManager : NetworkBehaviour
         int round
     )
     {
+        if (infiniteMode)
+        {
+            activeMode.GetSpawnIntervalRange(round, out float infMin, out float infMax);
+
+            return Random.Range(infMin, infMax) * spawnIntervalMultiplier;
+        }
+
         if (maxRounds <= 1)
         {
             return Random.Range(
@@ -490,7 +540,8 @@ public class RoundManager : NetworkBehaviour
 
     private IEnumerator SpawnZombiesRoutine(
         int amount,
-        bool spawnBoss
+        //bool spawnBoss
+        int bossCount
     )
     {
         if (!IsServer)
@@ -550,6 +601,19 @@ public class RoundManager : NetworkBehaviour
             )
             : Mathf.Clamp01(runChanceBonus);
 
+        float speedMultiplier = 1f;
+
+        if (infiniteMode)
+        {
+            zombieHealthThisRound =
+                activeMode.GetZombieHealth(round, activeDifficulty);
+
+            runChance =
+                activeMode.GetRunChance(round, activeDifficulty);
+
+            speedMultiplier =
+                activeMode.GetZombieSpeedMultiplier(round);
+        }
 
         Debug.Log(
             "[RoundManager] Ronda " +
@@ -615,7 +679,7 @@ public class RoundManager : NetworkBehaviour
         // BOSS
         // =====================================================
 
-        if (spawnBoss)
+       /* if (spawnBoss)
         {
             GameObject bossPrefab =
                 GetRandomBossPrefab();
@@ -669,6 +733,41 @@ public class RoundManager : NetworkBehaviour
                     }
                 }
             }
+        }*/
+
+        if (bossCount > 0)
+        {
+            for (int b = 0; b < bossCount; b++)
+            {
+                GameObject bossPrefab = GetRandomBossPrefab();
+
+                if (bossPrefab == null)
+                    break;
+
+                Transform bossSpawnPoint =
+                    shuffledSpawnPoints[Random.Range(0, shuffledSpawnPoints.Count)];
+
+                int bossHealth = zombieHealthThisRound * bossHealthMultiplier;
+
+                bool bossSpawned =
+                    SpawnZombie(bossPrefab, bossSpawnPoint, bossHealth, true);
+
+                if (!bossSpawned)
+                    continue;
+
+                zombiesSpawnedThisRound++;
+                normalZombiesToSpawn--;
+
+                Debug.Log("[RoundManager] Boss " + (b + 1) + "/" + bossCount +
+                          " creado. Vida: " + bossHealth);
+
+                if (normalZombiesToSpawn > 0 || b < bossCount - 1)
+                {
+                    float wait = GetRandomSpawnInterval(round);
+
+                    yield return new WaitForSeconds(wait);
+                }
+            }
         }
 
         // =====================================================
@@ -681,6 +780,22 @@ public class RoundManager : NetworkBehaviour
             i++
         )
         {
+            if (infiniteMode && activeMode.maxAliveAtOnce > 0)
+            {
+                while (
+                    roundInProgress &&
+                    !GameLostNetwork.Value &&
+                    zombiesSpawnedThisRound - zombiesKilledThisRound >=
+                        activeMode.maxAliveAtOnce
+                )
+                {
+                    yield return null;
+                }
+
+                if (!roundInProgress || GameLostNetwork.Value)
+                    yield break;
+            }
+
             Transform spawnPoint =
                 shuffledSpawnPoints[
                     i % shuffledSpawnPoints.Count
@@ -690,12 +805,17 @@ public class RoundManager : NetworkBehaviour
                 Random.value <
                 runChance;
 
-            SpawnZombie(
+           /* SpawnZombie(
                 zombiePrefab,
                 spawnPoint,
                 zombieHealthThisRound,
                 willRun
-            );
+            );*/
+
+            if (SpawnZombie(zombiePrefab, spawnPoint, zombieHealthThisRound, willRun, speedMultiplier))
+            {
+                zombiesSpawnedThisRound++;
+            }
 
             if (
                 i <
@@ -755,7 +875,8 @@ public class RoundManager : NetworkBehaviour
         GameObject prefab,
         Transform spawnPoint,
         int health,
-        bool willRun
+        bool willRun,
+        float speedMultiplier = 1f
     )
     {
         if (
@@ -828,6 +949,7 @@ public class RoundManager : NetworkBehaviour
             zombieAIComponent != null
         )
         {
+            zombieAIComponent.SetSpeedMultiplier(speedMultiplier);
             zombieAIComponent.SetRunning(
                 willRun
             );
@@ -916,6 +1038,7 @@ public class RoundManager : NetworkBehaviour
             return;
 
         AliveZombiesNetwork.Value--;
+        zombiesKilledThisRound++;
 
         if (
             AliveZombiesNetwork.Value <
@@ -1068,9 +1191,13 @@ public class RoundManager : NetworkBehaviour
             delayAntesDePanel
         );
 
-        bool esRondaFinal =
+       /* bool esRondaFinal =
             CurrentRoundNetwork.Value >=
-            maxRounds;
+            maxRounds;*/
+
+        bool esRondaFinal =
+            !infiniteMode &&
+            CurrentRoundNetwork.Value >= maxRounds;
 
         if (esRondaFinal)
         {
@@ -1110,6 +1237,15 @@ public class RoundManager : NetworkBehaviour
     // (después de la última ronda viene la victoria).
     public bool HasShopPhaseAfterRound(int round)
     {
+        if (IsInfiniteMode)
+        {
+            GameModeConfig rules = RulesMode;
+
+            return round > 0 &&
+                   rules != null &&
+                   rules.HasShopAfterRound(round);
+        }
+
         return round > 0 &&
                round % 2 == 1 &&
                round < MaxRounds;
@@ -1118,6 +1254,21 @@ public class RoundManager : NetworkBehaviour
     // Texto con las rondas tras las que se habilita el mercader. Ej: "1 y 3".
     public string GetShopRoundsDescription()
     {
+        if (IsInfiniteMode)
+        {
+            List<string> primeras = new List<string>();
+
+            for (int r = 1; r < 1000 && primeras.Count < 3; r++)
+            {
+                if (HasShopPhaseAfterRound(r))
+                    primeras.Add(r.ToString());
+            }
+
+            return primeras.Count == 0
+                ? string.Empty
+                : string.Join(", ", primeras) + "...";
+        }
+
         List<string> rondas = new List<string>();
 
         for (int r = 1; r < MaxRounds; r++)
@@ -1366,6 +1517,9 @@ public class RoundManager : NetworkBehaviour
             GameModeConfig mode = dm.CurrentMode;
             if (mode != null)
             {
+                activeMode = mode;
+                infiniteMode = mode != null && mode.infiniteRounds;
+                activeDifficulty = dm.CurrentDifficulty;
                 maxRounds = mode.maxRounds;
                 startingZombies = mode.startingZombies;
                 zombiesPerRound = mode.zombiesPerRound;
@@ -1390,7 +1544,8 @@ public class RoundManager : NetworkBehaviour
            
         }
 
-        MaxRoundsNetwork.Value = maxRounds;
+       // MaxRoundsNetwork.Value = maxRounds;
+        MaxRoundsNetwork.Value = infiniteMode ? 0 : maxRounds;
         if (dm != null)
         {
             DifficultyNetwork.Value = (int)dm.CurrentDifficulty;

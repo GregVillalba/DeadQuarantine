@@ -19,6 +19,9 @@ public class ZombieAI : NetworkBehaviour
 
     public bool IsRunning { get; private set; }
 
+    // Multiplicador de velocidad por ronda (modo Supervivencia). 1 = sin cambios.
+    private float speedMultiplier = 1f;     //
+
     private NavMeshAgent agent;
     private Animator animator;
     private ZombieHealth zombieHealth;
@@ -69,10 +72,28 @@ public class ZombieAI : NetworkBehaviour
 
         if (agent != null)
         {
-            agent.speed =
+            /*agent.speed =
                 isRunning
                     ? runSpeed
-                    : walkSpeed;
+                    : walkSpeed;*/
+
+            agent.speed =
+                (isRunning
+                    ? runSpeed
+                    : walkSpeed) * speedMultiplier;
+        }
+    }
+
+    public void SetSpeedMultiplier(float multiplier)            //
+    {
+        speedMultiplier = Mathf.Max(0.1f, multiplier);
+
+        if (agent != null)
+        {
+            agent.speed =
+                (IsRunning
+                    ? runSpeed
+                    : walkSpeed) * speedMultiplier;
         }
     }
 

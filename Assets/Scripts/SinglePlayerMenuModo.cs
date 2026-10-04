@@ -123,7 +123,8 @@ public class SingleplayerMenuManager : MonoBehaviour
     {
         MarcarDificultadExclusiva(marcoSeleccionado);
 
-        if (modoActual == ModoSeleccionado.Ronda5)
+       // if (modoActual == ModoSeleccionado.Ronda5)
+         if (ModoHabilitado())
         {
             textoNombreDificultad = "DIFICULTAD NORMAL";
             OcultarAvisoInhabilitado();
@@ -146,7 +147,8 @@ public class SingleplayerMenuManager : MonoBehaviour
     {
         MarcarDificultadExclusiva(marcoSeleccionado);
 
-        if (modoActual == ModoSeleccionado.Ronda5)
+       // if (modoActual == ModoSeleccionado.Ronda5)
+         if (ModoHabilitado())
         {
             textoNombreDificultad = "DIFICULTAD DIFICIL";
             OcultarAvisoInhabilitado();
@@ -171,7 +173,8 @@ public class SingleplayerMenuManager : MonoBehaviour
     {
         MarcarDificultadExclusiva(marcoSeleccionado);
 
-        if (modoActual == ModoSeleccionado.Ronda5)
+    //    if (modoActual == ModoSeleccionado.Ronda5)
+        if (ModoHabilitado())
         {
             textoNombreDificultad = "DIFICULTAD PESADILLA";
             OcultarAvisoInhabilitado();
@@ -211,6 +214,12 @@ public class SingleplayerMenuManager : MonoBehaviour
                 }
             }
         }
+    }
+
+    private bool ModoHabilitado()
+    {
+        return modoActual == ModoSeleccionado.Ronda5 ||
+               modoActual == ModoSeleccionado.Infinitas;
     }
 
     // =========================================================

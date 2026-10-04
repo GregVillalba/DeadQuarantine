@@ -256,13 +256,30 @@ public class HUDController : MonoBehaviour
         if (roundManager == null)
             return;
 
-        if (roundsText != null)
+       /* if (roundsText != null)
         {
             roundsText.text =
                 "RONDAS   " +
                 roundManager.CurrentRound +
                 "/" +
                 roundManager.MaxRounds;
+        }*/
+
+        if (roundsText != null)
+        {
+            // MaxRounds = 0 significa rondas infinitas (Supervivencia).
+           /* roundsText.text =
+                roundManager.IsInfiniteMode
+                    ? "RONDA   " + roundManager.CurrentRound
+                    : "RONDAS   " +
+                      roundManager.CurrentRound +
+                      "/" +
+                      roundManager.MaxRounds;*/
+
+            roundsText.text =
+                roundManager.IsInfiniteMode
+                    ? roundManager.CurrentRound.ToString()
+                    : roundManager.CurrentRound + "/" + roundManager.MaxRounds;
         }
 
         if (zombiesText != null)
