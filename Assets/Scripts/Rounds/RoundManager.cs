@@ -1540,6 +1540,8 @@ public class RoundManager : NetworkBehaviour
     private void ApplyModeAndDifficulty()
     {
         DifficultyManager dm = DifficultyManager.Instance;
+        if (dm != null)
+            dm.SincronizarConSeleccion();
 
         if (dm != null)
         {
@@ -1574,6 +1576,13 @@ public class RoundManager : NetworkBehaviour
         }
 
        // MaxRoundsNetwork.Value = maxRounds;
+       Debug.Log(
+            "[RoundManager] Config aplicada | Modo=" +
+            (dm != null && dm.CurrentMode != null ? dm.CurrentMode.name : "NULL") +
+            " | Infinito=" + infiniteMode +
+            " | Dificultad=" + (dm != null ? dm.CurrentDifficulty.ToString() : "NULL")
+        );
+        
         MaxRoundsNetwork.Value = infiniteMode ? 0 : maxRounds;
         if (dm != null)
         {

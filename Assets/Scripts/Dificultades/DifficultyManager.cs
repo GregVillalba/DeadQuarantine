@@ -110,5 +110,45 @@ public class DifficultyManager : MonoBehaviour
 
         CurrentMode = modes[Mathf.Clamp(index, 0, modes.Length - 1)];
     }
+
+    // Toma el modo y la dificultad guardados en ConfiguracionPartidaSeleccionada.
+    // Si no hay nada elegido, deja lo que ya habia.
+    public void SincronizarConSeleccion()
+    {
+        ConfiguracionPartidaSeleccionada config = ConfiguracionPartidaSeleccionada.Instancia;
+
+        if (config == null)
+            return;
+
+        switch (config.modoSeleccionado)
+        {
+            case ConfiguracionPartidaSeleccionada.ModoJuego.Historia:
+                SetModeIndex(0);   // todavia sin asset
+                break;
+
+            case ConfiguracionPartidaSeleccionada.ModoJuego.Ronda5:
+                SetModeIndex(1);
+                break;
+
+            case ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia:
+                SetModeIndex(2);
+                break;
+        }
+
+        switch (config.dificultadSeleccionada)
+        {
+            case ConfiguracionPartidaSeleccionada.Dificultad.Normal:
+                SetDifficulty(DifficultyLevel.Normal);
+                break;
+
+            case ConfiguracionPartidaSeleccionada.Dificultad.Dificil:
+                SetDifficulty(DifficultyLevel.Dificil);
+                break;
+
+            case ConfiguracionPartidaSeleccionada.Dificultad.Pesadilla:
+                SetDifficulty(DifficultyLevel.Pesadilla);
+                break;
+        }
+    }
 }
 

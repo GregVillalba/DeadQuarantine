@@ -64,6 +64,16 @@ public class SingleplayerMenuManager : MonoBehaviour
     private string textoNombreModo = "";
     private string textoNombreDificultad = "";
 
+    private ConfiguracionPartidaSeleccionada.Dificultad dificultadActual =
+        ConfiguracionPartidaSeleccionada.Dificultad.Ninguna;
+
+    // Modos que ya se pueden jugar (Historia todavia no).
+    private bool ModoHabilitado()
+    {
+        return modoActual == ModoSeleccionado.Ronda5 ||
+               modoActual == ModoSeleccionado.Infinitas;
+    }
+
     private bool jugador1Listo = false;
 
     private bool escenarioSeleccionado = false;
@@ -139,7 +149,7 @@ public class SingleplayerMenuManager : MonoBehaviour
     // 2. DIFICULTADES
     // =========================================================
 
-    public void SeleccionarDificultadNormal(GameObject marcoSeleccionado)
+   /* public void SeleccionarDificultadNormal(GameObject marcoSeleccionado)
     {
         MarcarDificultadExclusiva(marcoSeleccionado);
 
@@ -180,6 +190,66 @@ public class SingleplayerMenuManager : MonoBehaviour
     {
         MarcarDificultadExclusiva(marcoSeleccionado);
         MostrarAvisoInhabilitado();
+    }*/
+
+    private void ElegirDificultad(
+        GameObject marcoSeleccionado,
+        string nombreDificultad,
+        ConfiguracionPartidaSeleccionada.Dificultad dificultad
+    )
+    {
+        MarcarDificultadExclusiva(marcoSeleccionado);
+
+        if (!ModoHabilitado())
+        {
+            MostrarAvisoInhabilitado();
+            return;
+        }
+
+        dificultadActual = dificultad;
+        textoNombreDificultad = nombreDificultad;
+        OcultarAvisoInhabilitado();
+
+        if (textoModalidadDificultad != null)
+        {
+            textoModalidadDificultad.text =
+                $"{textoNombreModo} - {textoNombreDificultad}";
+        }
+
+        if (modalidadPanel != null)
+            modalidadPanel.SetActive(false);
+
+        if (aparienciaPanel != null)
+            aparienciaPanel.SetActive(true);
+
+        ResetearApariencia();
+    }
+
+    public void SeleccionarDificultadNormal(GameObject marcoSeleccionado)
+    {
+        ElegirDificultad(
+            marcoSeleccionado,
+            "DIFICULTAD NORMAL",
+            ConfiguracionPartidaSeleccionada.Dificultad.Normal
+        );
+    }
+
+    public void SeleccionarDificultadDificil(GameObject marcoSeleccionado)
+    {
+        ElegirDificultad(
+            marcoSeleccionado,
+            "DIFICULTAD DIFICIL",
+            ConfiguracionPartidaSeleccionada.Dificultad.Dificil
+        );
+    }
+
+    public void SeleccionarDificultadPesadilla(GameObject marcoSeleccionado)
+    {
+        ElegirDificultad(
+            marcoSeleccionado,
+            "DIFICULTAD PESADILLA",
+            ConfiguracionPartidaSeleccionada.Dificultad.Pesadilla
+        );
     }
 
 
@@ -434,6 +504,8 @@ public void OnClick_ComenzarAJugar()
         textoNombreModo = "";
         textoNombreDificultad = "";
 
+        dificultadActual = ConfiguracionPartidaSeleccionada.Dificultad.Ninguna;
+
         if (textoModalidadDificultad != null)
             textoModalidadDificultad.text = "";
 
@@ -580,7 +652,7 @@ public void OnClick_ComenzarAJugar()
     }
 
     private void GuardarConfiguracionPartida()
-{
+    {
     if (ConfiguracionPartidaSeleccionada.Instancia == null)
     {
         Debug.LogError(
@@ -645,10 +717,16 @@ public void OnClick_ComenzarAJugar()
     // DIFICULTAD
     // =========================================================
 
-    if (textoNombreDificultad == "DIFICULTAD NORMAL")
+    /*if (textoNombreDificultad == "DIFICULTAD NORMAL")
     {
         ConfiguracionPartidaSeleccionada.Instancia.dificultadSeleccionada =
             ConfiguracionPartidaSeleccionada.Dificultad.Normal;
+    }*/
+
+    if (dificultadActual != ConfiguracionPartidaSeleccionada.Dificultad.Ninguna)
+    {
+        ConfiguracionPartidaSeleccionada.Instancia.dificultadSeleccionada =
+            dificultadActual;
     }
 
 
