@@ -59,6 +59,9 @@ public class Weapon : MonoBehaviour
     [Header("Cerrojo (Sniper de cerrojo manual)")] // <- NUEVO
     [SerializeField] private bool requiresBoltActionAfterFire = false; // <- NUEVO: tildar solo en el Sniper de cerrojo
     [SerializeField] private float boltActionDuration = 1.3f; // <- NUEVO: debe igualar la duración real del clip Reload_Bolt
+    [SerializeField] private float boltActionDelay = 0.12f;
+
+    private bool boltActionActive = false;
 
     [Header("Aim")]
     [SerializeField] private float aimFOV = 50f;
@@ -94,6 +97,19 @@ public class Weapon : MonoBehaviour
     [SerializeField] private float damageFalloffStart = 8f;
     [SerializeField] private float damageFalloffEnd = 25f;
     [SerializeField] private float minDamageMultiplier = 0.25f;
+
+    [SerializeField] private Animator partsAnimator;   // vacío = usa el Animator de este mismo objeto
+
+    private Animator Parts
+    {
+        get
+        {
+            if (partsAnimator == null) partsAnimator = GetComponent<Animator>();
+            return (partsAnimator != null && partsAnimator.runtimeAnimatorController != null) ? partsAnimator : null;
+        }
+    }
+    private void PartsTrigger(string n) { if (Parts != null) Parts.SetTrigger(n); }
+    private void PartsBool(string n, bool v) { if (Parts != null) Parts.SetBool(n, v); }
 
     public bool IsAiming { get; private set; }
 
@@ -411,7 +427,14 @@ public class Weapon : MonoBehaviour
 
         // NUEVO: libera el disparo cuando termina el ciclo de cerrojo.
         if (isChambering && Time.time >= chamberReadyTime)
+        {
             isChambering = false;
+
+            boltActionActive = false;
+
+            if (weaponAnimator != null)
+                weaponAnimator.SetBool("BoltAction", false);
+        }
 
         UpdateAimFOV();
         UpdateSpread();
@@ -600,7 +623,17 @@ public class Weapon : MonoBehaviour
 
     private void UpdateAnimatorParams()
     {
-        if (weaponAnimator == null || characterController == null)
+        if (weaponAnimator == null)
+            return;
+
+        // IsEmpty refleja SIEMPRE si el cargador está vacío, no solo al apretar recargar.
+        // Antes solo se escribía en OnReload, así que la capa NoAmmoADD (Slide_Back) nunca se
+        // activaba al gastar la última bala. Además, al cambiar de arma el Animator resetea sus
+        // parámetros, y esto lo vuelve a poner bien en el siguiente frame.
+        // Cuando AnimationAmmunitionFill carga el cargador, pasa a false y la corredera vuelve sola.
+        weaponAnimator.SetBool("IsEmpty", currentAmmo <= 0);
+
+        if (characterController == null)
             return;
 
         // Solo velocidad horizontal — la caída (eje Y) no debe contar como "caminar".
@@ -756,8 +789,21 @@ public class Weapon : MonoBehaviour
             isChambering = true;
             chamberReadyTime = Time.time + boltActionDuration;
 
+            boltActionActive = true;
+
             if (weaponAnimator != null)
-                weaponAnimator.SetTrigger("BoltAction");
+                weaponAnimator.SetBool("BoltAction", true);
+        }
+    }
+
+    private IEnumerator PlayBoltActionAfterFire()
+    {
+        yield return new WaitForSeconds(boltActionDelay);
+
+        if (weaponAnimator != null)
+        {
+            Debug.Log("[Weapon] Enviando BoltAction después de " + boltActionDelay + " segundos.");
+            weaponAnimator.SetTrigger("BoltAction");
         }
     }
 
