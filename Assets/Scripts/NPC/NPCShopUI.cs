@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -18,6 +19,30 @@ public class NPCShopUI : MonoBehaviour
     [SerializeField] private GameObject rowPrefab;
     [SerializeField] private Button closeButton;
     [SerializeField] private TextMeshProUGUI scoreText;
+    [Tooltip("{0} se reemplaza por los puntos del jugador.")]
+    [SerializeField] private string formatoPuntos = "Tus puntos: {0}";
+
+    [Header("Secciones (pestañas de la izquierda)")]
+    [Tooltip("Un elemento por pestaña: su categoría y el botón que la abre. Las ofertas se filtran por WeaponOffer.categoria.")]
+    [SerializeField] private List<SeccionTienda> secciones = new List<SeccionTienda>();
+    [SerializeField] private CategoriaTienda seccionInicial = CategoriaTienda.Armas;
+    [SerializeField] private Color colorSeccionNormal = new Color(1f, 1f, 1f, 0.08f);
+    [SerializeField] private Color colorSeccionSeleccionada = new Color(0.4f, 0.9f, 1f, 0.35f);
+    [SerializeField] private Color colorMarcoNormal = new Color(1f, 1f, 1f, 0.35f);
+    [SerializeField] private Color colorMarcoSeleccionado = new Color(0.45f, 0.95f, 1f, 1f);
+    [Tooltip("Opcional. Se activa cuando la sección elegida no tiene ofertas (ej: un texto \"Próximamente\").")]
+    [SerializeField] private GameObject avisoSeccionVacia;
+
+    [Serializable]
+    private class SeccionTienda
+    {
+        public CategoriaTienda categoria;
+        public Button boton;
+        [Tooltip("Opcional. Imagen que se tiñe al seleccionar la sección. Si queda vacío se usa la imagen del botón.")]
+        public Image fondo;
+        [Tooltip("Opcional. Borde de la pestaña: se tiñe con Color Marco Normal / Seleccionado.")]
+        public Image marco;
+    }
 
     [Header("Colores")]
     [SerializeField] private Color colorAlcanza = new Color(0f, 1f, 0f, 1f);
@@ -26,15 +51,51 @@ public class NPCShopUI : MonoBehaviour
     [SerializeField] private Color colorNoDisponible = new Color(0.6f, 0.6f, 0.6f, 1f);
     [SerializeField] private Color colorFilaNormal = new Color(1f, 1f, 1f, 0.08f);
     [SerializeField] private Color colorFilaSeleccionada = new Color(1f, 0.85f, 0.2f, 0.35f);
+    [Tooltip("Color fijo del nombre en la tarjeta. El estado (alcanza / no alcanza / comprada) se indica solo con el color del precio.")]
+    [SerializeField] private Color colorNombreTarjeta = Color.white;
 
     [Header("Panel de detalle (derecha)")]
+    [Tooltip("Opcional. Se muestra solo mientras hay un objeto seleccionado.")]
+    [SerializeField] private GameObject panelDetalle;
     [SerializeField] private Image iconoDetalle;
     [SerializeField] private TextMeshProUGUI nombreDetalleText;
     [SerializeField] private TextMeshProUGUI descripcionDetalleText;
+    [Tooltip("Opcional. Todas las estadísticas en un solo texto (formato viejo). Si usás las filas de abajo podés dejarlo vacío.")]
     [SerializeField] private TextMeshProUGUI statsDetalleText;
-    [SerializeField] private string textoSinSeleccion = "Seleccioná un arma de la lista para ver su descripción y estadísticas.";
+    [SerializeField] private string textoSinSeleccion = "Seleccioná un objeto de la lista para ver su descripción y estadísticas.";
+
+    [Header("Estadísticas (filas con barra)")]
+    [SerializeField] private FilaEstadistica filaDano;
+    [SerializeField] private FilaEstadistica filaCadencia;
+    [SerializeField] private FilaEstadistica filaAlcance;
+    [SerializeField] private FilaEstadistica filaCargador;
+    [Tooltip("Daño que llena la barra entera.")]
+    [SerializeField] private float danoMaximo = 200f;
+    [Tooltip("Disparos por minuto que llenan la barra entera (cadencia = segundos entre disparos).")]
+    [SerializeField] private float disparosPorMinutoMaximo = 600f;
+    [Tooltip("Alcance (m) que llena la barra entera.")]
+    [SerializeField] private float alcanceMaximo = 150f;
+    [Tooltip("Balas de cargador que llenan la barra entera.")]
+    [SerializeField] private float cargadorMaximo = 30f;
+
+    [Serializable]
+    private class FilaEstadistica
+    {
+        [Tooltip("La fila entera: se oculta cuando la estadística no aplica (ej: cargador en granadas).")]
+        public GameObject fila;
+        public TextMeshProUGUI valor;
+        [Tooltip("Opcional. Image en modo Filled.")]
+        public Image barra;
+    }
 
     [Header("Comprar manteniendo ESPACIO")]
+    [Tooltip("Opcional. Bloque de compra (abajo a la derecha). Se muestra solo mientras hay un objeto seleccionado.")]
+    [SerializeField] private GameObject panelCompra;
+    [SerializeField] private TextMeshProUGUI textoCompra;
+    [Tooltip("{0} se reemplaza por el costo.")]
+    [SerializeField] private string formatoComprar = "COMPRAR - {0} pts";
+    [SerializeField] private string textoYaComprado = "COMPRADO";
+    [SerializeField] private string textoNoDisponibleCompra = "PRÓXIMAMENTE";
     [SerializeField] private Image progresoCompraFill;
     [SerializeField] private float tiempoMantenerParaComprar = 2f;
 
@@ -97,7 +158,7 @@ public class NPCShopUI : MonoBehaviour
         closeFrame = -100;
     }
 
-    [Header("Fila de oferta (nombres de los hijos del prefab)")]
+    [Header("Tarjeta de oferta (nombres de los hijos del prefab)")]
     [SerializeField] private string nombreIcono = "Icon";
     [SerializeField] private string nombreTextoNombre = "NameText";
     [SerializeField] private string nombreTextoCosto = "CostText";
@@ -116,6 +177,7 @@ public class NPCShopUI : MonoBehaviour
 
     private WeaponOffer ofertaSeleccionada;
     private float tiempoMantenido;
+    private CategoriaTienda seccionActual;
 
     private NetworkObject networkObject;
     private bool faseComprasAnterior;
@@ -135,6 +197,15 @@ public class NPCShopUI : MonoBehaviour
 
         if (listoButton != null)
             listoButton.onClick.AddListener(MarcarListo);
+
+        foreach (SeccionTienda seccion in secciones)
+        {
+            if (seccion == null || seccion.boton == null)
+                continue;
+
+            CategoriaTienda captura = seccion.categoria;
+            seccion.boton.onClick.AddListener(() => SeleccionarSeccion(captura));
+        }
 
         if (listoButtonText == null && listoButton != null)
             listoButtonText = listoButton.GetComponentInChildren<TextMeshProUGUI>(true);
@@ -264,11 +335,13 @@ public class NPCShopUI : MonoBehaviour
         LocalShopOpen = true;
         ofertaSeleccionada = null;
         tiempoMantenido = 0f;
+        seccionActual = seccionInicial;
 
         OcultarPrompt();
         CrearFilas();
         ActualizarFilas();
         ActualizarPanelDetalle();
+        ActualizarSecciones();
 
         if (shopPanel != null)
             shopPanel.SetActive(true);
@@ -342,6 +415,9 @@ public class NPCShopUI : MonoBehaviour
 
         foreach (WeaponOffer oferta in currentVendor.Offers)
         {
+            if (oferta.categoria != seccionActual)
+                continue;
+
             GameObject fila = Instantiate(rowPrefab, rowsContainer);
             fila.name = "Oferta_" + oferta.weaponId;
             fila.SetActive(true);
@@ -401,14 +477,64 @@ public class NPCShopUI : MonoBehaviour
         ActualizarPanelDetalle();
     }
 
+    private void SeleccionarSeccion(CategoriaTienda categoria)
+    {
+        if (!estaAbierta || categoria == seccionActual)
+            return;
+
+        seccionActual = categoria;
+        ofertaSeleccionada = null;
+        tiempoMantenido = 0f;
+
+        DestruirFilas();
+        CrearFilas();
+        ActualizarFilas();
+        ActualizarPanelDetalle();
+        ActualizarSecciones();
+    }
+
+    private void ActualizarSecciones()
+    {
+        foreach (SeccionTienda seccion in secciones)
+        {
+            if (seccion == null)
+                continue;
+
+            Image fondo = seccion.fondo != null
+                ? seccion.fondo
+                : seccion.boton != null ? seccion.boton.image : null;
+
+            bool seleccionada = seccion.categoria == seccionActual;
+
+            if (fondo != null)
+                fondo.color = seleccionada ? colorSeccionSeleccionada : colorSeccionNormal;
+
+            if (seccion.marco != null)
+                seccion.marco.color = seleccionada ? colorMarcoSeleccionado : colorMarcoNormal;
+        }
+
+        if (avisoSeccionVacia != null)
+            avisoSeccionVacia.SetActive(filas.Count == 0);
+    }
+
     private void ActualizarPanelDetalle()
     {
         bool haySeleccion = ofertaSeleccionada != null;
 
+        if (panelDetalle != null && panelDetalle.activeSelf != haySeleccion)
+            panelDetalle.SetActive(haySeleccion);
+
+        if (panelCompra != null && panelCompra.activeSelf != haySeleccion)
+            panelCompra.SetActive(haySeleccion);
+
         if (iconoDetalle != null)
         {
-            iconoDetalle.sprite = haySeleccion ? ofertaSeleccionada.weaponIcon : null;
-            iconoDetalle.enabled = haySeleccion && ofertaSeleccionada.weaponIcon != null;
+            Sprite imagen = haySeleccion
+                ? (ofertaSeleccionada.imagenTarjeta != null ? ofertaSeleccionada.imagenTarjeta : ofertaSeleccionada.weaponIcon)
+                : null;
+
+            iconoDetalle.sprite = imagen;
+            iconoDetalle.enabled = imagen != null;
         }
 
         if (nombreDetalleText != null)
@@ -420,12 +546,84 @@ public class NPCShopUI : MonoBehaviour
         if (statsDetalleText != null)
             statsDetalleText.text = haySeleccion ? ConstruirTextoStats(ofertaSeleccionada) : string.Empty;
 
+        ActualizarFilasEstadisticas();
+        ActualizarTextoCompra();
+
         if (progresoCompraFill != null)
             progresoCompraFill.fillAmount = 0f;
     }
 
+    private void ActualizarFilasEstadisticas()
+    {
+        WeaponOffer oferta = ofertaSeleccionada;
+        bool conStats = oferta != null &&
+                        oferta.categoria != CategoriaTienda.Consumibles &&
+                        oferta.categoria != CategoriaTienda.Equipamiento;
+        bool conCargador = conStats && !oferta.esArrojadiza;
+
+        if (!conStats)
+        {
+            MostrarEstadistica(filaDano, false, string.Empty, 0f);
+            MostrarEstadistica(filaCadencia, false, string.Empty, 0f);
+            MostrarEstadistica(filaAlcance, false, string.Empty, 0f);
+            MostrarEstadistica(filaCargador, false, string.Empty, 0f);
+            return;
+        }
+
+        // cadencia = segundos entre disparos -> disparos por minuto.
+        int disparosPorMinuto = oferta.cadencia > 0f ? Mathf.RoundToInt(60f / oferta.cadencia) : 0;
+
+        MostrarEstadistica(filaDano, true, oferta.dano.ToString(), oferta.dano / danoMaximo);
+        MostrarEstadistica(filaAlcance, true, oferta.alcance + " m", oferta.alcance / alcanceMaximo);
+        MostrarEstadistica(filaCadencia, conCargador, disparosPorMinuto + " disp/min", disparosPorMinuto / disparosPorMinutoMaximo);
+        MostrarEstadistica(filaCargador, conCargador, oferta.capacidadCargador + " balas", oferta.capacidadCargador / cargadorMaximo);
+    }
+
+    private static void MostrarEstadistica(FilaEstadistica fila, bool visible, string valor, float proporcion)
+    {
+        if (fila == null)
+            return;
+
+        if (fila.fila != null && fila.fila.activeSelf != visible)
+            fila.fila.SetActive(visible);
+
+        if (fila.valor != null)
+            fila.valor.text = valor;
+
+        if (fila.barra != null)
+            fila.barra.fillAmount = Mathf.Clamp01(proporcion);
+    }
+
+    private void ActualizarTextoCompra()
+    {
+        if (textoCompra == null || ofertaSeleccionada == null)
+            return;
+
+        if (!ofertaSeleccionada.disponible)
+        {
+            textoCompra.text = textoNoDisponibleCompra;
+            textoCompra.color = colorNoDisponible;
+        }
+        else if (weaponSwitcher != null && weaponSwitcher.IsUnlocked(ofertaSeleccionada.weaponId))
+        {
+            textoCompra.text = textoYaComprado;
+            textoCompra.color = colorComprado;
+        }
+        else
+        {
+            bool alcanza = playerScore != null && playerScore.ScoreNetwork.Value >= ofertaSeleccionada.cost;
+            textoCompra.text = string.Format(formatoComprar, ofertaSeleccionada.cost);
+            textoCompra.color = alcanza ? colorAlcanza : colorNoAlcanza;
+        }
+    }
+
     private string ConstruirTextoStats(WeaponOffer oferta)
     {
+        // Daño/alcance/cargador solo tienen sentido en armas y utilidades arrojadizas;
+        // consumibles y equipamiento se describen con el texto de descripción.
+        if (oferta.categoria == CategoriaTienda.Consumibles || oferta.categoria == CategoriaTienda.Equipamiento)
+            return string.Empty;
+
         string texto = "Daño: " + oferta.dano + "\nAlcance: " + oferta.alcance + " m";
 
         if (!oferta.esArrojadiza)
@@ -495,7 +693,7 @@ public class NPCShopUI : MonoBehaviour
     private void ActualizarFilas()
     {
         if (playerScore != null && scoreText != null)
-            scoreText.text = "Tus puntos: " + playerScore.ScoreNetwork.Value;
+            scoreText.text = string.Format(formatoPuntos, playerScore.ScoreNetwork.Value);
 
         foreach (OfertaFila fila in filas)
         {
@@ -509,8 +707,9 @@ public class NPCShopUI : MonoBehaviour
 
             if (fila.icono != null)
             {
-                fila.icono.sprite = fila.oferta.weaponIcon;
-                fila.icono.enabled = fila.oferta.weaponIcon != null;
+                Sprite imagen = fila.oferta.imagenTarjeta != null ? fila.oferta.imagenTarjeta : fila.oferta.weaponIcon;
+                fila.icono.sprite = imagen;
+                fila.icono.enabled = imagen != null;
             }
 
             if (fila.etiquetaNombre != null)
@@ -541,7 +740,7 @@ public class NPCShopUI : MonoBehaviour
             }
 
             if (fila.etiquetaNombre != null)
-                fila.etiquetaNombre.color = colorFila;
+                fila.etiquetaNombre.color = colorNombreTarjeta;
 
             if (fila.etiquetaCosto != null)
                 fila.etiquetaCosto.color = colorFila;
@@ -549,6 +748,9 @@ public class NPCShopUI : MonoBehaviour
             if (fila.fondo != null)
                 fila.fondo.color = fila.oferta == ofertaSeleccionada ? colorFilaSeleccionada : colorFilaNormal;
         }
+
+        // Los puntos o la compra cambiaron: el bloque de compra también.
+        ActualizarTextoCompra();
     }
 
     private void BloquearJugador()
