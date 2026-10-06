@@ -81,6 +81,12 @@ public class PlayerHealth : NetworkBehaviour
         State.Value ==
         PlayerState.Dead;
 
+    // Solo se cura estando de pie y sin la vida llena.
+    public bool PuedeCurarse =>
+        IsAlive &&
+        CurrentHealth.Value > 0 &&
+        CurrentHealth.Value < maxHealth;
+
     public event Action<int, int>
         OnHealthChanged;
 
@@ -288,6 +294,26 @@ public class PlayerHealth : NetworkBehaviour
                 EliminatePlayer();
             }
         }
+    }
+
+    // =========================================================
+    // CURACIÓN
+    // =========================================================
+
+    public void Heal(int amount)
+    {
+        if (!IsServer)
+            return;
+
+        if (amount <= 0 || !PuedeCurarse)
+            return;
+
+        CurrentHealth.Value =
+            Mathf.Min(
+                CurrentHealth.Value +
+                amount,
+                maxHealth
+            );
     }
 
     // =========================================================

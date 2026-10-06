@@ -482,16 +482,16 @@ public class NPCShopUITests
     }
 
     [Test]
-    public void ActualizarFilasEstadisticas_ConArma_MuestraCadenciaEnDisparosPorMinuto()
+    public void ActualizarFilasEstadisticas_ConArma_MuestraCadenciaEnBalasPorSegundo()
     {
         var cadencia = CablearFilaEstadistica("filaCadencia");
-        SetPrivateField("disparosPorMinutoMaximo", 600f);
+        SetPrivateField("balasPorSegundoMaximo", 10f);
         SetPrivateField("ofertaSeleccionada", new WeaponOffer { categoria = CategoriaTienda.Armas, cadencia = 0.1f });
 
         InvokePrivateMethod("ActualizarFilasEstadisticas");
 
         Assert.IsTrue(cadencia.fila.activeSelf);
-        Assert.AreEqual("600 disp/min", cadencia.valor.text);
+        Assert.AreEqual("10 balas/segundo", cadencia.valor.text);
         Assert.AreEqual(1f, cadencia.barra.fillAmount, 0.001f);
     }
 
@@ -507,6 +507,36 @@ public class NPCShopUITests
         Assert.IsTrue(dano.fila.activeSelf);
         Assert.AreEqual("200", dano.valor.text);
         Assert.IsFalse(cargador.fila.activeSelf);
+    }
+
+    [Test]
+    public void ActualizarFilasEstadisticas_ConCuracion_MuestraSoloLaVidaQueCura()
+    {
+        var dano = CablearFilaEstadistica("filaDano");
+        var curacion = CablearFilaEstadistica("filaCuracion");
+        SetPrivateField("curacionMaxima", 100f);
+        SetPrivateField("ofertaSeleccionada", new WeaponOffer { categoria = CategoriaTienda.Consumibles, esConsumible = true, puntosDeSalud = 25 });
+
+        InvokePrivateMethod("ActualizarFilasEstadisticas");
+
+        Assert.IsFalse(dano.fila.activeSelf);
+        Assert.IsTrue(curacion.fila.activeSelf);
+        Assert.AreEqual("+25 de vida", curacion.valor.text);
+        Assert.AreEqual(0.25f, curacion.barra.fillAmount, 0.001f);
+    }
+
+    [Test]
+    public void ActualizarFilasEstadisticas_ConArmadura_MuestraLaArmadura()
+    {
+        var curacion = CablearFilaEstadistica("filaCuracion");
+        var armadura = CablearFilaEstadistica("filaArmadura");
+        SetPrivateField("ofertaSeleccionada", new WeaponOffer { categoria = CategoriaTienda.Equipamiento, armadura = 5 });
+
+        InvokePrivateMethod("ActualizarFilasEstadisticas");
+
+        Assert.IsFalse(curacion.fila.activeSelf);
+        Assert.IsTrue(armadura.fila.activeSelf);
+        Assert.AreEqual("+5", armadura.valor.text);
     }
 
     // --- ActualizarCompraMantenida / Update ---

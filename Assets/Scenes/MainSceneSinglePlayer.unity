@@ -88675,8 +88675,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.size
-      value: 4
+      value: 12
       objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: purchaseDeniedSound
+      value: 
+      objectReference: {fileID: 8300000, guid: 3a0bb452de8298a4692e50e90fc5192f, type: 3}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[0].cost
       value: 5000
@@ -88714,8 +88718,52 @@ PrefabInstance:
       value: 2000
       objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[4].dano
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[5].cost
       value: 2000
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[5].dano
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[6].cost
+      value: 5000
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[6].dano
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[7].cost
+      value: 10000
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[8].cost
+      value: 2000
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[9].cost
+      value: 5000
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[9].dano
+      value: 200
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[10].cost
+      value: 2000
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[10].dano
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[11].cost
+      value: 5000
       objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[0].alcance
@@ -88734,12 +88782,32 @@ PrefabInstance:
       value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[4].alcance
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[5].alcance
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[6].alcance
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[9].alcance
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[0].cadencia
       value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[0].weaponId
       value: Revolver
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[10].alcance
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[1].cadencia
@@ -88763,15 +88831,75 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[4].weaponId
-      value: Granadas
+      value: Granada Cegadora
       objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[5].weaponId
-      value: Granadas
+      value: Granada de Humo
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[6].weaponId
+      value: "Frasco de vida peque\xF1o"
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[7].weaponId
+      value: Frasco de vida grande
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[8].weaponId
+      value: "Caja de munici\xF3n"
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[9].esBarril
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[9].weaponId
+      value: Barril explosivo
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[10].armadura
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[10].weaponId
+      value: Casco
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[11].armadura
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[11].weaponId
+      value: Espacio Extra
       objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[3].categoria
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[4].categoria
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[5].categoria
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[6].categoria
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[7].categoria
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[8].categoria
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[9].categoria
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[0].disponible
@@ -88784,6 +88912,14 @@ PrefabInstance:
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[0].weaponName
       value: Revolver
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[10].categoria
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[11].categoria
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[1].disponible
@@ -88810,6 +88946,10 @@ PrefabInstance:
       value: Escopeta
       objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[3].disponible
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[3].weaponIcon
       value: 
       objectReference: {fileID: 0}
@@ -88818,28 +88958,84 @@ PrefabInstance:
       value: Granadas
       objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[4].disponible
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[4].weaponIcon
       value: 
-      objectReference: {fileID: 21300000, guid: c44f35d0755157b4a958f40a5a8ffb7e, type: 3}
+      objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[4].weaponName
-      value: Granadas
+      value: Granada Cegadora
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[5].disponible
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[5].weaponIcon
       value: 
-      objectReference: {fileID: 21300000, guid: c44f35d0755157b4a958f40a5a8ffb7e, type: 3}
+      objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[5].weaponName
-      value: Granadas
+      value: Granada de Humo
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[6].disponible
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[6].weaponIcon
       value: 
-      objectReference: {fileID: 21300000, guid: c44f35d0755157b4a958f40a5a8ffb7e, type: 3}
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[6].weaponName
+      value: "Frasco de vida peque\xF1o"
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[7].disponible
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[7].weaponName
+      value: Frasco de vida grande
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[8].disponible
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[8].esMunicion
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[8].weaponName
+      value: "Caja de munici\xF3n"
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[9].disponible
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[9].weaponName
+      value: Barril explosivo
+      objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[0].descripcion
       value: 'Arma de mayor potencia pero con menos carencia que la pistola inicial.  '
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[10].disponible
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[10].weaponName
+      value: Casco
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[11].weaponName
+      value: Slot extra en el inventario
       objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[1].descripcion
@@ -88857,7 +89053,62 @@ PrefabInstance:
         Su alto da\xF1o te dar\xE1 tiempo para huir."
       objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[4].descripcion
+      value: "Una poderosa granada que no hace mucho da\xF1o pero es muy util para
+        huir cegando a tus enemigos."
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[5].descripcion
+      value: Es una granada de humo que no tiene mucha utilidad en un apocalipsis
+        zombie.
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[6].descripcion
+      value: Cura 50 puntos de salud al instante.
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[7].descripcion
+      value: Cura 100 puntos de salud al instante.
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[8].descripcion
+      value: "Reestablece la munici\xF3n completa del arma seleccionada"
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[9].descripcion
+      value: "Disparale a estos barriles para crear una explosi\xF3n en \xE1rea que
+        da\xF1a a enemigos cercanos"
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[10].descripcion
+      value: "Reduce el da\xF1o recibido."
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[11].descripcion
+      value: Agrega un espacio en el inventario.
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[3].esArrojadiza
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[4].esArrojadiza
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[5].esArrojadiza
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[6].esArrojadiza
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[6].esConsumible
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[7].esConsumible
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
@@ -88876,6 +89127,54 @@ PrefabInstance:
       propertyPath: offers.Array.data[3].imagenTarjeta
       value: 
       objectReference: {fileID: 21300000, guid: 3c84896e27573b346976e1e5ef2e6786, type: 3}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[4].imagenTarjeta
+      value: 
+      objectReference: {fileID: 21300000, guid: dbd606b50b0b7c44e86e530380c8c08c, type: 3}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[5].imagenTarjeta
+      value: 
+      objectReference: {fileID: 21300000, guid: 91716cc282564b84ab6d3f1ab72467b5, type: 3}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[6].imagenTarjeta
+      value: 
+      objectReference: {fileID: 21300000, guid: 9a1ea11fd03ec4f4092f48c83098eff5, type: 3}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[6].puntosDeSalud
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[7].imagenTarjeta
+      value: 
+      objectReference: {fileID: 21300000, guid: 4ae9fe43e4db9b74cbde7af67e1e338f, type: 3}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[7].puntosDeSalud
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[8].imagenTarjeta
+      value: 
+      objectReference: {fileID: 21300000, guid: 263468d88e9d19b46be3d858627afdb6, type: 3}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[9].imagenTarjeta
+      value: 
+      objectReference: {fileID: 21300000, guid: 3163183364f11ba4d830c6131d76cd09, type: 3}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[10].imagenTarjeta
+      value: 
+      objectReference: {fileID: 21300000, guid: 4e71f11c64ca270409eafc2e326e2158, type: 3}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[11].imagenTarjeta
+      value: 
+      objectReference: {fileID: 21300000, guid: 6d2e502912815dc4abe61690644554af, type: 3}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[10].esEquipamiento
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
+      propertyPath: offers.Array.data[11].esEquipamiento
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4830471509429453657, guid: a34b9d38f1e195c4497a29fc74416899, type: 3}
       propertyPath: offers.Array.data[0].capacidadCargador
       value: 7

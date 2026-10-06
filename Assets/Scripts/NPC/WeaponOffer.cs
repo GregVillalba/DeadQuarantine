@@ -38,4 +38,22 @@ public class WeaponOffer
 
     public int capacidadCargador;
     public float cadencia;
+
+    [Tooltip("Marcalo para objetos de un solo uso (frascos de vida, munición, etc). Se pueden comprar varias veces.")]
+    public bool esConsumible;
+
+    [Tooltip("Vida que recupera al comprarlo. Si es mayor a 0, la compra cura al jugador en vez de desbloquear un arma.")]
+    public int puntosDeSalud;
+
+    public bool esMunicion;
+    
+    public int armadura;
+    public bool esEquipamiento;
+
+    
+
+    public bool esBarril;
+
+    /// <summary>La compra cura al jugador en vez de desbloquear un arma.</summary>
+    public bool EsCuracion => puntosDeSalud > 0;
 }
