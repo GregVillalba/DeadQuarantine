@@ -10,10 +10,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 001a895aa74c0a541ac8854337156cd5, type: 3}
-  m_Name: ACH_Zombies100
+  m_Name: MeDueleLaCabeza
   m_EditorClassIdentifier: Scripts::AchievementDefinition
   id: 1
-  titulo: Exterminador Novato
-  descripcion: 'Elimina 100 zombies. '
-  objetivo: 100
+  titulo: Me duele la cabeza
+  descripcion: Completar todos los niveles de disparos a la cabeza
+  categoria: 1
+  modalidad: 0
+  tieneRangos: 1
+  rangos:
+  - rango: 1
+    objetivo: 50
+    descripcion: Consigue 50 disparos a la cabeza.
+  - rango: 2
+    objetivo: 100
+    descripcion: Consigue 100 disparos a la cabeza.
+  - rango: 3
+    objetivo: 300
+    descripcion: Consigue 300 disparos a la cabeza.
   icono: {fileID: 0}
