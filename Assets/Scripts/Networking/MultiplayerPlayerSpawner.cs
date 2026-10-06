@@ -48,7 +48,7 @@ public class MultiplayerPlayerSpawner : NetworkBehaviour
             OnClientConnected;
 
         // El Host ya está conectado cuando se registra el callback.
-        if (NetworkManager.Singleton.ConnectedClients.TryGetValue(
+       /* if (NetworkManager.Singleton.ConnectedClients.TryGetValue(
             NetworkManager.ServerClientId,
             out NetworkClient hostClient))
         {
@@ -56,6 +56,12 @@ public class MultiplayerPlayerSpawner : NetworkBehaviour
                 NetworkManager.ServerClientId,
                 hostClient
             );
+        }*/
+
+        // Asigna lugar a todos los que ya estan conectados (host e invitados).
+        foreach (NetworkClient conectado in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            AsignarSpawnIndex(conectado.ClientId, conectado);
         }
     }
 
@@ -117,6 +123,17 @@ public class MultiplayerPlayerSpawner : NetworkBehaviour
 
     public Transform GetSpawnPoint(int index)
     {
+        // En el cliente el escenario no se guarda al arrancar (solo en el servidor),
+        // asi que se pide al gestor de escenarios cuando hace falta.
+        if (escenarioActivo == null)
+        {
+            GestorEscenariosPartida gestor =
+                FindAnyObjectByType<GestorEscenariosPartida>();
+
+            if (gestor != null)
+                escenarioActivo = gestor.ObtenerEscenarioActivo();
+        }
+
         // =====================================================
         // USAR LOS SPAWNS DEL ESCENARIO ACTIVO
         // =====================================================
@@ -155,5 +172,23 @@ public class MultiplayerPlayerSpawner : NetworkBehaviour
         }
 
         base.OnDestroy();
+    }
+
+    private void Update()
+    {
+        if (!IsServer || !IsSpawned || NetworkManager.Singleton == null)
+            return;
+
+        foreach (NetworkClient c in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            if (c.PlayerObject == null)
+                continue;
+
+            MultiplayerPlayerSpawnAssigner assigner =
+                c.PlayerObject.GetComponent<MultiplayerPlayerSpawnAssigner>();
+
+            if (assigner != null && assigner.AssignedSpawnIndex.Value == -1)
+                AsignarSpawnIndex(c.ClientId, c);
+        }
     }
 }

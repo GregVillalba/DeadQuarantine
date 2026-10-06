@@ -11,12 +11,20 @@ public class GameStartCurtain : MonoBehaviour
 
     private bool curtainHidden;
 
+    private float proximoLog;
+
+    private float inicioEspera;
+
     private void Awake()
     {
+        Debug.Log("[GameStartCurtain] Awake");
+
         if (curtainCanvas != null)
             curtainCanvas.SetActive(true);
 
         BloquearJugadorLocalInmediatamente();
+
+         inicioEspera = Time.unscaledTime;
     }
 
     private void BloquearJugadorLocalInmediatamente()
@@ -53,7 +61,11 @@ public class GameStartCurtain : MonoBehaviour
             return;
 
         if (!TodosListos())
+           // return;
+           if (Time.unscaledTime - inicioEspera < 20f)
             return;
+
+            Debug.LogWarning("[GameStartCurtain] Tiempo agotado: se abre la cortina aunque no todos esten ubicados.");
 
         OcultarCortina();
     }
@@ -64,7 +76,7 @@ public class GameStartCurtain : MonoBehaviour
         // porque cada Player es un NetworkObject spawneado y visible
         // localmente en todas las máquinas — a diferencia de
         // ConnectedClientsList, que solo está completa en el servidor.
-        MultiplayerPlayerSpawnAssigner[] assigners =
+       /* MultiplayerPlayerSpawnAssigner[] assigners =
             FindObjectsByType<MultiplayerPlayerSpawnAssigner>(FindObjectsSortMode.None);
 
         if (assigners.Length < expectedPlayerCount)
@@ -76,7 +88,53 @@ public class GameStartCurtain : MonoBehaviour
                 return false;
         }
 
+        if (Time.time >= proximoLog)
+        {
+            proximoLog = Time.time + 2f;
+
+            string estados = "";
+
+            foreach (MultiplayerPlayerSpawnAssigner a in assigners)
+                estados += a.IsAtSpawn.Value + " ";
+
+            Debug.Log(
+                "[Curtain] Jugadores: " + assigners.Length + "/" + expectedPlayerCount +
+                " | IsAtSpawn: " + estados
+            );
+
+        }*/
+
+        MultiplayerPlayerSpawnAssigner[] assigners =
+            FindObjectsByType<MultiplayerPlayerSpawnAssigner>(FindObjectsSortMode.None);
+
+        // Log de diagnostico: va ANTES de los return para verse siempre.
+        if (Time.unscaledTime >= proximoLog)
+        {
+            proximoLog = Time.unscaledTime + 2f;
+
+            string estados = "";
+
+            foreach (MultiplayerPlayerSpawnAssigner a in assigners)
+                estados += a.IsAtSpawn.Value + " ";
+
+            Debug.Log(
+                "[Curtain] Jugadores: " + assigners.Length + "/" + expectedPlayerCount +
+                " | IsAtSpawn: " + estados
+            );
+        }
+
+        if (assigners.Length < expectedPlayerCount)
+            return false;
+
+        foreach (MultiplayerPlayerSpawnAssigner assigner in assigners)
+        {
+            if (!assigner.IsAtSpawn.Value)
+                return false;
+        }
+
         return true;
+
+       // return true;
     }
 
     private void OcultarCortina()

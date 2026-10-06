@@ -15,8 +15,42 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
         NetworkVariableWritePermission.Owner
     );
 
+    private float proximoReintento;
+
+    private void Update()
+    {
+        // Si soy el dueño y todavia no me ubique, reintento cada medio segundo.
+        if (!IsSpawned || !IsOwner || IsAtSpawn.Value)
+            return;
+
+        if (AssignedSpawnIndex.Value < 0)
+            return;
+
+        if (Time.unscaledTime < proximoReintento)
+            return;
+
+        proximoReintento = Time.unscaledTime + 0.5f;
+
+        MoveToAssignedSpawn(AssignedSpawnIndex.Value);
+    }
+
     public override void OnNetworkSpawn()
     {
+
+       /* Debug.Log(
+            "[SpawnAssigner] OnNetworkSpawn | IsOwner=" + IsOwner +
+            " | IsServer=" + IsServer +
+            " | Index=" + AssignedSpawnIndex.Value +
+            " | Escena=" + gameObject.scene.name
+        );*/
+
+        Debug.Log(
+            "[SpawnAssigner] OnNetworkSpawn | IsOwner=" + IsOwner +
+            " | IsServer=" + IsServer +
+            " | Index=" + AssignedSpawnIndex.Value
+        );
+
+
         AssignedSpawnIndex.OnValueChanged +=
             OnSpawnIndexChanged;
 
@@ -36,6 +70,16 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
         int newValue
     )
     {
+       /* Debug.Log(
+            "[SpawnAssigner] Indice cambio " + previousValue + " -> " + newValue +
+            " | IsOwner=" + IsOwner
+        );*/
+
+        Debug.Log(
+            "[SpawnAssigner] Indice cambio " + previousValue + " -> " + newValue +
+            " | IsOwner=" + IsOwner
+        );
+        
         if (!IsOwner)
             return;
 
