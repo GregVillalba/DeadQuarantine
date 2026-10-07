@@ -250,12 +250,18 @@ public class AchievementsManager : MonoBehaviour
         if (definicion == null)
             return;
 
-        logro.progreso += cantidad;
+
+        // ========================================================
+        // LOGRO SIN RANGOS
+        // ========================================================
 
         if (!definicion.tieneRangos)
         {
+            // Si ya está completado, no seguimos acumulando.
             if (logro.desbloqueado)
                 return;
+
+            logro.progreso += cantidad;
 
             AchievementTierDefinition unico =
                 ObtenerPrimerRango(definicion);
@@ -265,9 +271,16 @@ public class AchievementsManager : MonoBehaviour
 
             if (logro.progreso >= unico.objetivo)
             {
-                logro.progreso = unico.objetivo;
+                logro.progreso =
+                    unico.objetivo;
 
-                logro.desbloqueado = true;
+                logro.desbloqueado =
+                    true;
+
+                Debug.Log(
+                    "[ACHIEVEMENTS] LOGRO COMPLETADO: " +
+                    id
+                );
 
                 MostrarLogroEnHUD(
                     id,
@@ -279,6 +292,13 @@ public class AchievementsManager : MonoBehaviour
 
             return;
         }
+
+
+        // ========================================================
+        // LOGRO CON RANGOS
+        // ========================================================
+
+        logro.progreso += cantidad;
 
         ActualizarRangoDesdeProgreso(
             id
@@ -305,19 +325,50 @@ public class AchievementsManager : MonoBehaviour
         if (logro == null || definicion == null)
             return;
 
+
         AchievementRank nuevoRango =
             DeterminarRango(
                 definicion,
                 logro.progreso
             );
 
-        if (nuevoRango <= logro.rangoActual)
-            return;
 
-        logro.rangoActual = nuevoRango;
+        // ========================================================
+        // CORREGIR ESTADO DE COMPLETADO
+        // ========================================================
+        //
+        // Un logro con rangos solamente está COMPLETADO
+        // cuando llega a ORO.
+        //
+
+        if (nuevoRango <= logro.rangoActual)
+        {
+            logro.desbloqueado =
+                nuevoRango == AchievementRank.Oro;
+
+            return;
+        }
+
+
+        // ========================================================
+        // ACTUALIZAR RANGO
+        // ========================================================
+
+        logro.rangoActual =
+            nuevoRango;
+
+
+        // ========================================================
+        // COMPLETADO SOLO EN ORO
+        // ========================================================
 
         logro.desbloqueado =
-            nuevoRango != AchievementRank.Ninguno;
+            nuevoRango == AchievementRank.Oro;
+
+
+        // ========================================================
+        // ASEGURAR PROGRESO MÍNIMO DEL RANGO
+        // ========================================================
 
         AchievementTierDefinition tier =
             definicion.ObtenerRango(
@@ -333,12 +384,31 @@ public class AchievementsManager : MonoBehaviour
                 );
         }
 
+
+        // ========================================================
+        // DEBUG
+        // ========================================================
+
         Debug.Log(
             "[ACHIEVEMENTS] RANGO DESBLOQUEADO: " +
             id +
             " -> " +
             nuevoRango
         );
+
+
+        if (nuevoRango == AchievementRank.Oro)
+        {
+            Debug.Log(
+                "[ACHIEVEMENTS] LOGRO COMPLETADO: " +
+                id
+            );
+        }
+
+
+        // ========================================================
+        // HUD
+        // ========================================================
 
         MostrarLogroEnHUD(
             id,
@@ -369,14 +439,17 @@ public class AchievementsManager : MonoBehaviour
         foreach (AchievementRank rango in rangos)
         {
             AchievementTierDefinition tier =
-                definicion.ObtenerRango(rango);
+                definicion.ObtenerRango(
+                    rango
+                );
 
             if (tier == null)
                 continue;
 
             if (progreso >= tier.objetivo)
             {
-                rangoActual = rango;
+                rangoActual =
+                    rango;
             }
         }
 
@@ -396,6 +469,7 @@ public class AchievementsManager : MonoBehaviour
         if (rango == AchievementRank.Ninguno)
             return;
 
+
         AchievementData logro =
             ObtenerLogro(id);
 
@@ -405,20 +479,50 @@ public class AchievementsManager : MonoBehaviour
         if (logro == null || definicion == null)
             return;
 
+
+        // ========================================================
+        // LOGRO SIN RANGOS
+        // ========================================================
+
         if (!definicion.tieneRangos)
         {
             Desbloquear(id);
             return;
         }
 
+
+        // ========================================================
+        // SI YA TENEMOS ESE RANGO O UNO SUPERIOR
+        // ========================================================
+
         if (rango <= logro.rangoActual)
             return;
 
-        logro.rangoActual = rango;
-        logro.desbloqueado = true;
+
+        // ========================================================
+        // ACTUALIZAR RANGO
+        // ========================================================
+
+        logro.rangoActual =
+            rango;
+
+
+        // ========================================================
+        // COMPLETADO SOLO EN ORO
+        // ========================================================
+
+        logro.desbloqueado =
+            rango == AchievementRank.Oro;
+
+
+        // ========================================================
+        // ACTUALIZAR PROGRESO
+        // ========================================================
 
         AchievementTierDefinition tier =
-            definicion.ObtenerRango(rango);
+            definicion.ObtenerRango(
+                rango
+            );
 
         if (tier != null)
         {
@@ -429,6 +533,11 @@ public class AchievementsManager : MonoBehaviour
                 );
         }
 
+
+        // ========================================================
+        // DEBUG
+        // ========================================================
+
         Debug.Log(
             "[ACHIEVEMENTS] RANGO DESBLOQUEADO: " +
             id +
@@ -436,17 +545,32 @@ public class AchievementsManager : MonoBehaviour
             rango
         );
 
+
+        if (rango == AchievementRank.Oro)
+        {
+            Debug.Log(
+                "[ACHIEVEMENTS] LOGRO COMPLETADO: " +
+                id
+            );
+        }
+
+
+        // ========================================================
+        // HUD
+        // ========================================================
+
         MostrarLogroEnHUD(
             id,
             rango
         );
+
 
         GuardarProgreso();
     }
 
 
     // ============================================================
-    // DESBLOQUEAR LOGRO ÚNICO
+    // DESBLOQUEAR LOGRO
     // ============================================================
 
     public void Desbloquear(
@@ -462,48 +586,128 @@ public class AchievementsManager : MonoBehaviour
         if (logro == null || definicion == null)
             return;
 
-        if (logro.desbloqueado)
-            return;
 
-        logro.desbloqueado = true;
+        // ========================================================
+        // LOGRO SIN RANGOS
+        // ========================================================
 
-        if (definicion.tieneRangos)
+        if (!definicion.tieneRangos)
         {
-            AchievementRank rango =
-                DeterminarRango(
-                    definicion,
-                    logro.progreso
-                );
+            if (logro.desbloqueado)
+                return;
 
-            if (rango != AchievementRank.Ninguno)
-            {
-                logro.rangoActual = rango;
+            logro.desbloqueado =
+                true;
 
-                AchievementTierDefinition tier =
-                    definicion.ObtenerRango(rango);
+            Debug.Log(
+                "[ACHIEVEMENTS] LOGRO COMPLETADO: " +
+                id
+            );
 
-                if (tier != null)
-                {
-                    logro.progreso =
-                        Mathf.Max(
-                            logro.progreso,
-                            tier.objetivo
-                        );
-                }
-
-                MostrarLogroEnHUD(
-                    id,
-                    rango
-                );
-            }
-        }
-        else
-        {
             MostrarLogroEnHUD(
                 id,
                 AchievementRank.Ninguno
             );
+
+            GuardarProgreso();
+
+            return;
         }
+
+
+        // ========================================================
+        // LOGRO CON RANGOS
+        // ========================================================
+
+        AchievementRank rango =
+            DeterminarRango(
+                definicion,
+                logro.progreso
+            );
+
+
+        if (rango == AchievementRank.Ninguno)
+            return;
+
+
+        if (rango <= logro.rangoActual)
+        {
+            // Aseguramos que el estado coincida
+            // con el rango actual.
+            logro.desbloqueado =
+                rango == AchievementRank.Oro;
+
+            GuardarProgreso();
+
+            return;
+        }
+
+
+        // ========================================================
+        // ACTUALIZAR RANGO
+        // ========================================================
+
+        logro.rangoActual =
+            rango;
+
+
+        // ========================================================
+        // COMPLETADO SOLO EN ORO
+        // ========================================================
+
+        logro.desbloqueado =
+            rango == AchievementRank.Oro;
+
+
+        // ========================================================
+        // ACTUALIZAR PROGRESO
+        // ========================================================
+
+        AchievementTierDefinition tier =
+            definicion.ObtenerRango(
+                rango
+            );
+
+        if (tier != null)
+        {
+            logro.progreso =
+                Mathf.Max(
+                    logro.progreso,
+                    tier.objetivo
+                );
+        }
+
+
+        // ========================================================
+        // DEBUG
+        // ========================================================
+
+        Debug.Log(
+            "[ACHIEVEMENTS] RANGO DESBLOQUEADO: " +
+            id +
+            " -> " +
+            rango
+        );
+
+
+        if (rango == AchievementRank.Oro)
+        {
+            Debug.Log(
+                "[ACHIEVEMENTS] LOGRO COMPLETADO: " +
+                id
+            );
+        }
+
+
+        // ========================================================
+        // HUD
+        // ========================================================
+
+        MostrarLogroEnHUD(
+            id,
+            rango
+        );
+
 
         GuardarProgreso();
     }
@@ -527,6 +731,18 @@ public class AchievementsManager : MonoBehaviour
         }
 
         return achievementDatabase.Obtener(id);
+    }
+
+
+    // ============================================================
+    // OBTENER DEFINICIÓN PARA LA UI
+    // ============================================================
+
+    public AchievementDefinition ObtenerDefinicionParaUI(
+        AchievementId id
+    )
+    {
+        return ObtenerDefinicion(id);
     }
 
 
@@ -641,6 +857,7 @@ public class AchievementsManager : MonoBehaviour
         if (definicion == null)
             return null;
 
+
         AchievementTierDefinition bronce =
             definicion.ObtenerRango(
                 AchievementRank.Bronce
@@ -649,6 +866,7 @@ public class AchievementsManager : MonoBehaviour
         if (bronce != null)
             return bronce;
 
+
         AchievementTierDefinition plata =
             definicion.ObtenerRango(
                 AchievementRank.Plata
@@ -656,6 +874,7 @@ public class AchievementsManager : MonoBehaviour
 
         if (plata != null)
             return plata;
+
 
         return definicion.ObtenerRango(
             AchievementRank.Oro
@@ -693,7 +912,8 @@ public class AchievementsManager : MonoBehaviour
     {
         if (!File.Exists(rutaArchivo))
         {
-            datos = new AchievementsData();
+            datos =
+                new AchievementsData();
 
             Debug.Log(
                 "[ACHIEVEMENTS] No existe archivo. " +
@@ -703,24 +923,29 @@ public class AchievementsManager : MonoBehaviour
             return;
         }
 
+
         string json =
             File.ReadAllText(
                 rutaArchivo
             );
+
 
         datos =
             JsonUtility.FromJson<AchievementsData>(
                 json
             );
 
+
         if (datos == null)
         {
-            datos = new AchievementsData();
+            datos =
+                new AchievementsData();
 
             Debug.LogWarning(
                 "[ACHIEVEMENTS] Archivo inválido."
             );
         }
+
 
         if (datos.logros == null)
         {
@@ -753,11 +978,14 @@ public class AchievementsManager : MonoBehaviour
         if (achievementDatabase == null)
             return 0;
 
+
         IReadOnlyList<AchievementDefinition> definiciones =
             achievementDatabase.ObtenerTodos();
 
+
         if (definiciones == null)
             return 0;
+
 
         return definiciones.Count;
     }
@@ -772,12 +1000,15 @@ public class AchievementsManager : MonoBehaviour
         if (datos == null || datos.logros == null)
             return 0;
 
+
         int total = 0;
+
 
         foreach (AchievementData logro in datos.logros)
         {
             if (logro == null)
                 continue;
+
 
             switch (logro.rangoActual)
             {
@@ -794,6 +1025,7 @@ public class AchievementsManager : MonoBehaviour
                     break;
             }
         }
+
 
         return total;
     }

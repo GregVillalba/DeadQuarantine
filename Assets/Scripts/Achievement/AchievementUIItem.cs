@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 public class AchievementUIItem : MonoBehaviour
 {
@@ -35,20 +36,91 @@ public class AchievementUIItem : MonoBehaviour
     [SerializeField]
     private TextMeshProUGUI rangoActualText;
 
+    [Header("Opacidad de rangos")]
+    [SerializeField]
+    [Range(0f, 1f)]
+    private float opacidadBloqueado = 0.30f;
+
+    [SerializeField]
+    [Range(0f, 1f)]
+    private float opacidadDesbloqueado = 1f;
+
+
+    // ============================================================
+    // COLORES ORIGINALES DE LAS COPITAS
+    // ============================================================
+
+    private Color colorOriginalBronce;
+    private Color colorOriginalPlata;
+    private Color colorOriginalOro;
+
+    private bool coloresGuardados = false;
+
+
+    // ============================================================
+    // AWAKE
+    // ============================================================
 
     private void Awake()
     {
         BuscarEstadosAutomaticamente();
 
-        if (database == null)
-        {
-            database =
-                FindAnyObjectByType<AchievementsManager>() != null
-                    ? null
-                    : database;
-        }
+        GuardarColoresOriginales();
     }
 
+
+    // ============================================================
+    // GUARDAR COLORES ORIGINALES
+    // ============================================================
+
+    private void GuardarColoresOriginales()
+    {
+        if (coloresGuardados)
+            return;
+
+
+        RawImage bronce =
+            rangoBronce != null
+                ? rangoBronce.GetComponentInChildren<RawImage>(true)
+                : null;
+
+        RawImage plata =
+            rangoPlata != null
+                ? rangoPlata.GetComponentInChildren<RawImage>(true)
+                : null;
+
+        RawImage oro =
+            rangoOro != null
+                ? rangoOro.GetComponentInChildren<RawImage>(true)
+                : null;
+
+
+        if (bronce != null)
+        {
+            colorOriginalBronce =
+                bronce.color;
+        }
+
+        if (plata != null)
+        {
+            colorOriginalPlata =
+                plata.color;
+        }
+
+        if (oro != null)
+        {
+            colorOriginalOro =
+                oro.color;
+        }
+
+
+        coloresGuardados = true;
+    }
+
+
+    // ============================================================
+    // BUSCAR ESTADOS AUTOMATICAMENTE
+    // ============================================================
 
     private void BuscarEstadosAutomaticamente()
     {
@@ -58,11 +130,13 @@ public class AchievementUIItem : MonoBehaviour
         if (estado == null)
             return;
 
+
         Transform logrado =
             estado.Find("logrado");
 
         Transform noLogrado =
             estado.Find("no_logrado");
+
 
         if (logrado != null &&
             estadoLogrado == null)
@@ -70,6 +144,7 @@ public class AchievementUIItem : MonoBehaviour
             estadoLogrado =
                 logrado.gameObject;
         }
+
 
         if (noLogrado != null &&
             estadoNoLogrado == null)
@@ -80,10 +155,19 @@ public class AchievementUIItem : MonoBehaviour
     }
 
 
+    // ============================================================
+    // ACTUALIZAR ESTADO
+    // ============================================================
+
     public void ActualizarEstado()
     {
         if (AchievementsManager.Instance == null)
             return;
+
+
+        // Aseguramos que los colores originales estén guardados.
+        GuardarColoresOriginales();
+
 
         AchievementRank rango =
             AchievementsManager.Instance
@@ -91,29 +175,87 @@ public class AchievementUIItem : MonoBehaviour
                     achievementId
                 );
 
-        bool desbloqueado =
-            rango != AchievementRank.Ninguno;
+
+        // ========================================================
+        // ESTADO GENERAL
+        // ========================================================
+
+        // El logro solamente está completamente desbloqueado
+        // cuando llegó a ORO.
+
+        bool desbloqueadoCompletamente =
+            rango == AchievementRank.Oro;
+
 
         if (estadoLogrado != null)
-            estadoLogrado.SetActive(desbloqueado);
+        {
+            estadoLogrado.SetActive(
+                desbloqueadoCompletamente
+            );
+        }
+
 
         if (estadoNoLogrado != null)
-            estadoNoLogrado.SetActive(!desbloqueado);
+        {
+            estadoNoLogrado.SetActive(
+                !desbloqueadoCompletamente
+            );
+        }
+
+
+        // ========================================================
+        // RANGOS
+        // ========================================================
+
+        bool bronceDesbloqueado =
+            rango >= AchievementRank.Bronce;
+
+        bool plataDesbloqueada =
+            rango >= AchievementRank.Plata;
+
+        bool oroDesbloqueado =
+            rango >= AchievementRank.Oro;
+
+
+        // Las tres copitas permanecen visibles.
+        // Lo que cambia es su color y opacidad.
 
         if (rangoBronce != null)
-            rangoBronce.SetActive(
-                rango >= AchievementRank.Bronce
+        {
+            rangoBronce.SetActive(true);
+
+            AplicarOpacidad(
+                rangoBronce,
+                bronceDesbloqueado
             );
+        }
+
 
         if (rangoPlata != null)
-            rangoPlata.SetActive(
-                rango >= AchievementRank.Plata
+        {
+            rangoPlata.SetActive(true);
+
+            AplicarOpacidad(
+                rangoPlata,
+                plataDesbloqueada
             );
+        }
+
 
         if (rangoOro != null)
-            rangoOro.SetActive(
-                rango >= AchievementRank.Oro
+        {
+            rangoOro.SetActive(true);
+
+            AplicarOpacidad(
+                rangoOro,
+                oroDesbloqueado
             );
+        }
+
+
+        // ========================================================
+        // PROGRESO
+        // ========================================================
 
         int progreso =
             AchievementsManager.Instance
@@ -121,10 +263,12 @@ public class AchievementUIItem : MonoBehaviour
                     achievementId
                 );
 
+
         AchievementDefinition definicion =
             database != null
                 ? database.Obtener(achievementId)
                 : null;
+
 
         if (progresoText != null)
         {
@@ -135,6 +279,7 @@ public class AchievementUIItem : MonoBehaviour
                     definicion.ObtenerRango(
                         AchievementRank.Oro
                     );
+
 
                 if (oro != null)
                 {
@@ -150,11 +295,16 @@ public class AchievementUIItem : MonoBehaviour
             else
             {
                 progresoText.text =
-                    desbloqueado
+                    desbloqueadoCompletamente
                         ? "COMPLETADO"
                         : "PENDIENTE";
             }
         }
+
+
+        // ========================================================
+        // TEXTO DEL RANGO
+        // ========================================================
 
         if (rangoActualText != null)
         {
@@ -164,10 +314,97 @@ public class AchievementUIItem : MonoBehaviour
     }
 
 
+    // ============================================================
+    // APLICAR COLOR Y OPACIDAD
+    // ============================================================
+
+    private void AplicarOpacidad(
+        GameObject objeto,
+        bool desbloqueado
+    )
+    {
+        if (objeto == null)
+            return;
+
+
+        RawImage rawImage =
+            objeto.GetComponentInChildren<RawImage>(true);
+
+
+        if (rawImage == null)
+            return;
+
+
+        // ========================================================
+        // OBTENER COLOR ORIGINAL
+        // ========================================================
+
+        Color colorOriginal;
+
+
+        if (objeto == rangoBronce)
+        {
+            colorOriginal =
+                colorOriginalBronce;
+        }
+        else if (objeto == rangoPlata)
+        {
+            colorOriginal =
+                colorOriginalPlata;
+        }
+        else if (objeto == rangoOro)
+        {
+            colorOriginal =
+                colorOriginalOro;
+        }
+        else
+        {
+            colorOriginal =
+                Color.white;
+        }
+
+
+        // ========================================================
+        // DESBLOQUEADO
+        // ========================================================
+
+        if (desbloqueado)
+        {
+            rawImage.color =
+                new Color(
+                    colorOriginal.r,
+                    colorOriginal.g,
+                    colorOriginal.b,
+                    opacidadDesbloqueado
+                );
+
+            return;
+        }
+
+
+        // ========================================================
+        // BLOQUEADO
+        // ========================================================
+
+        rawImage.color =
+            new Color(
+                colorOriginal.r * 0.5f,
+                colorOriginal.g * 0.5f,
+                colorOriginal.b * 0.5f,
+                opacidadBloqueado
+            );
+    }
+
+
+    // ============================================================
+    // ¿ESTÁ COMPLETAMENTE DESBLOQUEADO?
+    // ============================================================
+
     public bool EstaDesbloqueado()
     {
         if (AchievementsManager.Instance == null)
             return false;
+
 
         return AchievementsManager.Instance
             .EstaDesbloqueado(
@@ -175,6 +412,10 @@ public class AchievementUIItem : MonoBehaviour
             );
     }
 
+
+    // ============================================================
+    // TEXTO DEL RANGO
+    // ============================================================
 
     private string ObtenerTextoRango(
         AchievementRank rango
