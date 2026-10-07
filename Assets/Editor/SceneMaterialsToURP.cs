@@ -7,9 +7,13 @@ using System.IO;
 
 public class SceneMaterialsToURP : EditorWindow
 {
-    private const string MaterialsFolder = "Assets/Materials/URP_Converted";
+    private bool convertOnlyNonURP = true;
+    private bool copyStandardProperties = true;
+    private bool copyAllTextureProperties = true;
 
-    [MenuItem("Tools/Convertir materiales de la escena a URP Lit")]
+    private const string OUTPUT_ROOT = "Assets/Materials/Scene_URP";
+
+    [MenuItem("Tools/Materials/Convertir escena a URP Lit")]
     public static void ShowWindow()
     {
         GetWindow<SceneMaterialsToURP>(
@@ -22,203 +26,161 @@ public class SceneMaterialsToURP : EditorWindow
         GUILayout.Space(10);
 
         EditorGUILayout.LabelField(
-            "Convertir materiales de la escena",
+            "Conversor de materiales de la escena",
             EditorStyles.boldLabel
         );
 
+        GUILayout.Space(5);
+
         EditorGUILayout.HelpBox(
-            "Convierte únicamente los materiales utilizados por los objetos " +
-            "de la escena actualmente abierta.\n\n" +
-            "Los materiales originales no se modifican. Se crean copias " +
-            "dentro de Assets/Materials/URP_Converted.",
+            "Convierte únicamente los materiales utilizados por la escena activa. " +
+            "Los materiales originales y sus texturas NO se modifican.",
             MessageType.Info
         );
 
         GUILayout.Space(10);
 
+        convertOnlyNonURP = EditorGUILayout.Toggle(
+            "Solo materiales que NO sean URP",
+            convertOnlyNonURP
+        );
+
+        copyStandardProperties = EditorGUILayout.Toggle(
+            "Copiar propiedades Standard",
+            copyStandardProperties
+        );
+
+        copyAllTextureProperties = EditorGUILayout.Toggle(
+            "Copiar todas las texturas",
+            copyAllTextureProperties
+        );
+
+        GUILayout.Space(15);
+
         if (GUILayout.Button(
-            "CONVERTIR MATERIALES DE LA ESCENA",
-            GUILayout.Height(40)))
+            "CONVERTIR ESCENA",
+            GUILayout.Height(40)
+        ))
         {
-            ConvertSceneMaterials();
+            ConvertActiveScene();
+        }
+
+        GUILayout.Space(5);
+
+        if (GUILayout.Button(
+            "REPARAR TEXTURAS DE LA ESCENA",
+            GUILayout.Height(35)
+        ))
+        {
+            RepairActiveSceneTextures();
         }
 
         GUILayout.Space(10);
 
-        if (GUILayout.Button(
-            "ABRIR CARPETA DE MATERIALES"))
+        if (GUILayout.Button("ABRIR CARPETA DE MATERIALES"))
         {
             OpenMaterialsFolder();
         }
     }
 
-    private static void ConvertSceneMaterials()
+    // ============================================================
+    // CONVERTIR ESCENA
+    // ============================================================
+
+    private void ConvertActiveScene()
     {
         Scene scene = SceneManager.GetActiveScene();
 
         if (!scene.IsValid())
         {
-            EditorUtility.DisplayDialog(
-                "Error",
-                "No hay una escena válida abierta.",
-                "Aceptar"
+            Debug.LogError(
+                "[SceneMaterialsToURP] La escena activa no es válida."
             );
 
             return;
         }
 
-        if (!scene.isLoaded)
+        if (string.IsNullOrEmpty(scene.path))
         {
-            EditorUtility.DisplayDialog(
-                "Error",
-                "La escena no está cargada.",
-                "Aceptar"
+            Debug.LogError(
+                "[SceneMaterialsToURP] La escena debe estar guardada."
             );
 
             return;
         }
 
-        EnsureMaterialsFolder();
+        string outputFolder = GetSceneFolder();
 
-        GameObject[] rootObjects = scene.GetRootGameObjects();
+        Renderer[] renderers =
+            GetSceneRenderers(scene);
 
-        List<Renderer> renderers = new List<Renderer>();
+        int materialsConverted = 0;
+        int materialsSkipped = 0;
+        int objectsProcessed = 0;
 
-        foreach (GameObject root in rootObjects)
-        {
-            Renderer[] rootRenderers =
-                root.GetComponentsInChildren<Renderer>(true);
-
-            renderers.AddRange(rootRenderers);
-        }
-
-        if (renderers.Count == 0)
-        {
-            EditorUtility.DisplayDialog(
-                "Sin materiales",
-                "No se encontraron Renderer en la escena.",
-                "Aceptar"
-            );
-
-            return;
-        }
-
-        Shader urpLit =
-            Shader.Find("Universal Render Pipeline/Lit");
-
-        if (urpLit == null)
-        {
-            EditorUtility.DisplayDialog(
-                "Error",
-                "No se encontró el shader:\n\n" +
-                "Universal Render Pipeline/Lit\n\n" +
-                "Verificá que el proyecto esté configurado con URP.",
-                "Aceptar"
-            );
-
-            return;
-        }
-
-        int convertedMaterials = 0;
-        int alreadyURP = 0;
-        int objectsModified = 0;
-
-        // Evita crear varias copias del mismo material.
-        Dictionary<Material, Material> convertedMaterialsMap =
+        Dictionary<Material, Material> convertedMaterials =
             new Dictionary<Material, Material>();
 
-        try
+        foreach (Renderer renderer in renderers)
         {
-            AssetDatabase.StartAssetEditing();
+            if (renderer == null)
+                continue;
 
-            foreach (Renderer renderer in renderers)
+            bool rendererChanged = false;
+
+            Material[] materials = renderer.sharedMaterials;
+
+            for (int i = 0; i < materials.Length; i++)
             {
-                if (renderer == null)
+                Material originalMaterial = materials[i];
+
+                if (originalMaterial == null)
                     continue;
 
-                Material[] materials = renderer.sharedMaterials;
+                if (convertOnlyNonURP &&
+                    IsURPMaterial(originalMaterial))
+                {
+                    materialsSkipped++;
+                    continue;
+                }
 
-                if (materials == null || materials.Length == 0)
+                Material convertedMaterial;
+
+                if (convertedMaterials.TryGetValue(
+                    originalMaterial,
+                    out convertedMaterial))
+                {
+                    materials[i] = convertedMaterial;
+                    rendererChanged = true;
+                    continue;
+                }
+
+                convertedMaterial =
+                    CreateURPMaterial(
+                        originalMaterial,
+                        outputFolder
+                    );
+
+                if (convertedMaterial == null)
                     continue;
 
-                bool rendererModified = false;
+                convertedMaterials.Add(
+                    originalMaterial,
+                    convertedMaterial
+                );
 
-                for (int i = 0; i < materials.Length; i++)
-                {
-                    Material originalMaterial = materials[i];
+                materials[i] = convertedMaterial;
 
-                    if (originalMaterial == null)
-                        continue;
-
-                    // Ya es URP Lit.
-                    if (originalMaterial.shader == urpLit)
-                    {
-                        alreadyURP++;
-                        continue;
-                    }
-
-                    // Si ya convertimos este material durante esta ejecución,
-                    // reutilizamos la copia.
-                    if (convertedMaterialsMap.TryGetValue(
-                        originalMaterial,
-                        out Material existingConverted))
-                    {
-                        materials[i] = existingConverted;
-                        rendererModified = true;
-                        continue;
-                    }
-
-                    Material newMaterial =
-                        new Material(originalMaterial);
-
-                    newMaterial.name =
-                        originalMaterial.name + "_URP";
-
-                    CopyMaterialProperties(
-                        originalMaterial,
-                        newMaterial
-                    );
-
-                    newMaterial.shader = urpLit;
-
-                    string safeName =
-                        MakeSafeFileName(newMaterial.name);
-
-                    string assetPath =
-                        AssetDatabase.GenerateUniqueAssetPath(
-                            MaterialsFolder +
-                            "/" +
-                            safeName +
-                            ".mat"
-                        );
-
-                    AssetDatabase.CreateAsset(
-                        newMaterial,
-                        assetPath
-                    );
-
-                    convertedMaterialsMap.Add(
-                        originalMaterial,
-                        newMaterial
-                    );
-
-                    materials[i] = newMaterial;
-
-                    convertedMaterials++;
-                    rendererModified = true;
-                }
-
-                if (rendererModified)
-                {
-                    renderer.sharedMaterials = materials;
-                    EditorUtility.SetDirty(renderer);
-                    objectsModified++;
-                }
+                rendererChanged = true;
+                materialsConverted++;
             }
-        }
-        finally
-        {
-            AssetDatabase.StopAssetEditing();
+
+            if (rendererChanged)
+            {
+                renderer.sharedMaterials = materials;
+                objectsProcessed++;
+                EditorUtility.SetDirty(renderer);
+            }
         }
 
         AssetDatabase.SaveAssets();
@@ -226,196 +188,679 @@ public class SceneMaterialsToURP : EditorWindow
 
         EditorSceneManager.MarkSceneDirty(scene);
 
-        string message =
-            "Conversión terminada.\n\n" +
-            "Escena: " + scene.name + "\n\n" +
-            "Materiales convertidos: " + convertedMaterials + "\n" +
-            "Objetos modificados: " + objectsModified + "\n" +
-            "Materiales que ya eran URP Lit: " + alreadyURP + "\n\n" +
-            "Los materiales originales no fueron modificados.";
-
-        EditorUtility.DisplayDialog(
-            "Conversión completada",
-            message,
-            "Aceptar"
+        Debug.Log(
+            "[SceneMaterialsToURP] Conversión terminada.\n" +
+            "Escena: " + scene.name + "\n" +
+            "Objetos procesados: " + objectsProcessed + "\n" +
+            "Materiales convertidos: " + materialsConverted + "\n" +
+            "Materiales omitidos: " + materialsSkipped + "\n" +
+            "Carpeta: " + outputFolder
         );
 
-        Debug.Log(
-            "[SceneMaterialsToURP] " +
-            message
+        EditorUtility.DisplayDialog(
+            "Conversión terminada",
+            "La escena fue convertida correctamente.\n\n" +
+            "Materiales convertidos: " +
+            materialsConverted +
+            "\n\n" +
+            "Los materiales originales no fueron modificados.",
+            "OK"
         );
     }
 
-    private static void CopyMaterialProperties(
-        Material source,
-        Material destination)
-    {
-        /*
-         * Intentamos conservar las propiedades más habituales
-         * de materiales Standard.
-         */
+    // ============================================================
+    // CREAR MATERIAL URP
+    // ============================================================
 
-        // Albedo
-        if (source.HasProperty("_Color") &&
-            destination.HasProperty("_BaseColor"))
+    private Material CreateURPMaterial(
+        Material original,
+        string outputFolder
+    )
+    {
+        if (original == null)
+            return null;
+
+        Shader urpShader = Shader.Find(
+            "Universal Render Pipeline/Lit"
+        );
+
+        if (urpShader == null)
         {
-            destination.SetColor(
-                "_BaseColor",
-                source.GetColor("_Color")
+            Debug.LogError(
+                "[SceneMaterialsToURP] No se encontró " +
+                "Universal Render Pipeline/Lit."
+            );
+
+            return null;
+        }
+
+        string safeName =
+            MakeSafeFileName(original.name);
+
+        string path =
+            outputFolder +
+            "/" +
+            safeName +
+            "_URP.mat";
+
+        // Si ya existe, reutilizamos el material.
+        Material existing =
+            AssetDatabase.LoadAssetAtPath<Material>(path);
+
+        Material converted;
+
+        if (existing != null)
+        {
+            converted = existing;
+        }
+        else
+        {
+            converted = new Material(urpShader);
+
+            AssetDatabase.CreateAsset(
+                converted,
+                path
             );
         }
 
-        // Albedo / Main Texture
-        if (source.HasProperty("_MainTex") &&
-            destination.HasProperty("_BaseMap"))
+        converted.shader = urpShader;
+
+        if (copyStandardProperties)
         {
-            destination.SetTexture(
-                "_BaseMap",
-                source.GetTexture("_MainTex")
+            CopyStandardProperties(
+                original,
+                converted
             );
+        }
 
-            destination.SetTextureOffset(
-                "_BaseMap",
-                source.GetTextureOffset("_MainTex")
+        if (copyAllTextureProperties)
+        {
+            CopyTextureProperties(
+                original,
+                converted
             );
+        }
 
-            destination.SetTextureScale(
-                "_BaseMap",
-                source.GetTextureScale("_MainTex")
+        EditorUtility.SetDirty(converted);
+
+        return converted;
+    }
+
+    // ============================================================
+    // PROPIEDADES STANDARD
+    // ============================================================
+
+    private void CopyStandardProperties(
+        Material original,
+        Material converted
+    )
+    {
+        // Color principal
+
+        if (original.HasProperty("_Color") &&
+            converted.HasProperty("_BaseColor"))
+        {
+            converted.SetColor(
+                "_BaseColor",
+                original.GetColor("_Color")
             );
         }
 
         // Metallic
-        if (source.HasProperty("_Metallic") &&
-            destination.HasProperty("_Metallic"))
+
+        if (original.HasProperty("_Metallic") &&
+            converted.HasProperty("_Metallic"))
         {
-            destination.SetFloat(
+            converted.SetFloat(
                 "_Metallic",
-                source.GetFloat("_Metallic")
+                original.GetFloat("_Metallic")
             );
         }
 
         // Smoothness
-        if (source.HasProperty("_Glossiness") &&
-            destination.HasProperty("_Smoothness"))
+
+        if (original.HasProperty("_Glossiness") &&
+            converted.HasProperty("_Smoothness"))
         {
-            destination.SetFloat(
+            converted.SetFloat(
                 "_Smoothness",
-                source.GetFloat("_Glossiness")
+                original.GetFloat("_Glossiness")
             );
         }
 
-        // Normal Map
-        if (source.HasProperty("_BumpMap") &&
-            destination.HasProperty("_BumpMap"))
+        // Algunas versiones usan _GlossMapScale
+
+        if (original.HasProperty("_GlossMapScale") &&
+            converted.HasProperty("_Smoothness"))
         {
-            Texture normal =
-                source.GetTexture("_BumpMap");
-
-            if (normal != null)
-            {
-                destination.SetTexture(
-                    "_BumpMap",
-                    normal
-                );
-
-                if (source.HasProperty("_BumpScale") &&
-                    destination.HasProperty("_BumpScale"))
-                {
-                    destination.SetFloat(
-                        "_BumpScale",
-                        source.GetFloat("_BumpScale")
-                    );
-                }
-            }
-        }
-
-        // Occlusion
-        if (source.HasProperty("_OcclusionMap") &&
-            destination.HasProperty("_OcclusionMap"))
-        {
-            destination.SetTexture(
-                "_OcclusionMap",
-                source.GetTexture("_OcclusionMap")
+            converted.SetFloat(
+                "_Smoothness",
+                original.GetFloat("_GlossMapScale")
             );
-
-            if (source.HasProperty("_OcclusionStrength") &&
-                destination.HasProperty("_OcclusionStrength"))
-            {
-                destination.SetFloat(
-                    "_OcclusionStrength",
-                    source.GetFloat("_OcclusionStrength")
-                );
-            }
         }
 
-        // Emission
-        if (source.HasProperty("_EmissionColor") &&
-            destination.HasProperty("_EmissionColor"))
-        {
-            Color emission =
-                source.GetColor("_EmissionColor");
+        // Emission Color
 
-            destination.SetColor(
+        if (original.HasProperty("_EmissionColor") &&
+            converted.HasProperty("_EmissionColor"))
+        {
+            converted.SetColor(
                 "_EmissionColor",
-                emission
-            );
-        }
-
-        if (source.HasProperty("_EmissionMap") &&
-            destination.HasProperty("_EmissionMap"))
-        {
-            destination.SetTexture(
-                "_EmissionMap",
-                source.GetTexture("_EmissionMap")
+                original.GetColor("_EmissionColor")
             );
         }
     }
 
-    private static void EnsureMaterialsFolder()
+    // ============================================================
+    // TEXTURAS
+    // ============================================================
+
+    private void CopyTextureProperties(
+        Material original,
+        Material converted
+    )
     {
-        if (!AssetDatabase.IsValidFolder("Assets/Materials"))
+        // --------------------------------------------------------
+        // ALBEDO / BASE MAP
+        // --------------------------------------------------------
+
+        CopyTexture(
+            original,
+            "_MainTex",
+            converted,
+            "_BaseMap"
+        );
+
+        // --------------------------------------------------------
+        // NORMAL MAP
+        // --------------------------------------------------------
+
+        CopyTexture(
+            original,
+            "_BumpMap",
+            converted,
+            "_BumpMap"
+        );
+
+        // --------------------------------------------------------
+        // METALLIC
+        // --------------------------------------------------------
+
+        CopyTexture(
+            original,
+            "_MetallicGlossMap",
+            converted,
+            "_MetallicGlossMap"
+        );
+
+        // --------------------------------------------------------
+        // OCCLUSION
+        // --------------------------------------------------------
+
+        CopyTexture(
+            original,
+            "_OcclusionMap",
+            converted,
+            "_OcclusionMap"
+        );
+
+        // --------------------------------------------------------
+        // EMISSION
+        // --------------------------------------------------------
+
+        CopyTexture(
+            original,
+            "_EmissionMap",
+            converted,
+            "_EmissionMap"
+        );
+
+        // --------------------------------------------------------
+        // HEIGHT
+        // --------------------------------------------------------
+
+        CopyTexture(
+            original,
+            "_ParallaxMap",
+            converted,
+            "_ParallaxMap"
+        );
+
+        // --------------------------------------------------------
+        // TILING Y OFFSET
+        // --------------------------------------------------------
+
+        if (original.HasProperty("_MainTex") &&
+            converted.HasProperty("_BaseMap"))
         {
-            AssetDatabase.CreateFolder(
-                "Assets",
-                "Materials"
+            converted.SetTextureScale(
+                "_BaseMap",
+                original.GetTextureScale("_MainTex")
+            );
+
+            converted.SetTextureOffset(
+                "_BaseMap",
+                original.GetTextureOffset("_MainTex")
             );
         }
 
-        if (!AssetDatabase.IsValidFolder(
-            MaterialsFolder))
+        if (original.HasProperty("_BumpMap") &&
+            converted.HasProperty("_BumpMap"))
         {
-            AssetDatabase.CreateFolder(
-                "Assets/Materials",
-                "URP_Converted"
+            converted.SetTextureScale(
+                "_BumpMap",
+                original.GetTextureScale("_BumpMap")
+            );
+
+            converted.SetTextureOffset(
+                "_BumpMap",
+                original.GetTextureOffset("_BumpMap")
+            );
+        }
+
+        if (original.HasProperty("_MetallicGlossMap") &&
+            converted.HasProperty("_MetallicGlossMap"))
+        {
+            converted.SetTextureScale(
+                "_MetallicGlossMap",
+                original.GetTextureScale("_MetallicGlossMap")
+            );
+
+            converted.SetTextureOffset(
+                "_MetallicGlossMap",
+                original.GetTextureOffset("_MetallicGlossMap")
+            );
+        }
+
+        if (original.HasProperty("_OcclusionMap") &&
+            converted.HasProperty("_OcclusionMap"))
+        {
+            converted.SetTextureScale(
+                "_OcclusionMap",
+                original.GetTextureScale("_OcclusionMap")
+            );
+
+            converted.SetTextureOffset(
+                "_OcclusionMap",
+                original.GetTextureOffset("_OcclusionMap")
+            );
+        }
+
+        if (original.HasProperty("_EmissionMap") &&
+            converted.HasProperty("_EmissionMap"))
+        {
+            converted.SetTextureScale(
+                "_EmissionMap",
+                original.GetTextureScale("_EmissionMap")
+            );
+
+            converted.SetTextureOffset(
+                "_EmissionMap",
+                original.GetTextureOffset("_EmissionMap")
             );
         }
     }
+
+    // ============================================================
+    // COPIAR UNA TEXTURA
+    // ============================================================
+
+    private void CopyTexture(
+        Material original,
+        string originalProperty,
+        Material converted,
+        string convertedProperty
+    )
+    {
+        if (!original.HasProperty(originalProperty))
+            return;
+
+        if (!converted.HasProperty(convertedProperty))
+            return;
+
+        Texture texture =
+            original.GetTexture(originalProperty);
+
+        if (texture == null)
+            return;
+
+        /*
+         * IMPORTANTE:
+         *
+         * No buscamos la textura en ninguna carpeta.
+         *
+         * Unity ya conoce exactamente dónde está.
+         *
+         * Esto permite que funcione aunque esté en:
+         *
+         * Assets/SciFi Office Lit/Textures/
+         *
+         * Assets/SciFi Office Lit/Materials/
+         *
+         * Assets/OtraCarpeta/
+         *
+         * etc.
+         */
+
+        converted.SetTexture(
+            convertedProperty,
+            texture
+        );
+    }
+
+    // ============================================================
+    // REPARAR TEXTURAS
+    // ============================================================
+
+    private void RepairActiveSceneTextures()
+    {
+        Scene scene = SceneManager.GetActiveScene();
+
+        if (!scene.IsValid())
+        {
+            Debug.LogError(
+                "[SceneMaterialsToURP] Escena inválida."
+            );
+
+            return;
+        }
+
+        Renderer[] renderers =
+            GetSceneRenderers(scene);
+
+        int repaired = 0;
+
+        foreach (Renderer renderer in renderers)
+        {
+            if (renderer == null)
+                continue;
+
+            Material[] materials =
+                renderer.sharedMaterials;
+
+            bool changed = false;
+
+            for (int i = 0; i < materials.Length; i++)
+            {
+                Material material = materials[i];
+
+                if (material == null)
+                    continue;
+
+                if (!IsURPMaterial(material))
+                    continue;
+
+                string originalName =
+                    material.name;
+
+                if (originalName.EndsWith("_URP"))
+                {
+                    originalName =
+                        originalName.Substring(
+                            0,
+                            originalName.Length - 4
+                        );
+                }
+
+                Material original =
+                    FindOriginalMaterial(
+                        originalName
+                    );
+
+                if (original == null)
+                {
+                    Debug.LogWarning(
+                        "[SceneMaterialsToURP] " +
+                        "No se encontró material original para: " +
+                        material.name
+                    );
+
+                    continue;
+                }
+
+                CopyStandardProperties(
+                    original,
+                    material
+                );
+
+                CopyTextureProperties(
+                    original,
+                    material
+                );
+
+                EditorUtility.SetDirty(material);
+
+                changed = true;
+                repaired++;
+            }
+
+            if (changed)
+            {
+                renderer.sharedMaterials =
+                    materials;
+
+                EditorUtility.SetDirty(renderer);
+            }
+        }
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+
+        EditorSceneManager.MarkSceneDirty(scene);
+
+        Debug.Log(
+            "[SceneMaterialsToURP] Reparación terminada. " +
+            "Materiales reparados: " +
+            repaired
+        );
+
+        EditorUtility.DisplayDialog(
+            "Reparación terminada",
+            "Se repararon " +
+            repaired +
+            " materiales de la escena.",
+            "OK"
+        );
+    }
+
+    // ============================================================
+    // BUSCAR MATERIAL ORIGINAL
+    // ============================================================
+
+    private Material FindOriginalMaterial(
+        string materialName
+    )
+    {
+        string[] guids =
+            AssetDatabase.FindAssets(
+                "t:Material " +
+                materialName
+            );
+
+        foreach (string guid in guids)
+        {
+            string path =
+                AssetDatabase.GUIDToAssetPath(
+                    guid
+                );
+
+            Material material =
+                AssetDatabase.LoadAssetAtPath<Material>(
+                    path
+                );
+
+            if (material == null)
+                continue;
+
+            if (material.name != materialName)
+                continue;
+
+            // Evitar recuperar uno de nuestros materiales URP.
+
+            if (path.Contains(
+                "/Scene_URP/"
+            ))
+            {
+                continue;
+            }
+
+            return material;
+        }
+
+        return null;
+    }
+
+    // ============================================================
+    // DETECTAR URP
+    // ============================================================
+
+    private bool IsURPMaterial(
+        Material material
+    )
+    {
+        if (material == null)
+            return false;
+
+        if (material.shader == null)
+            return false;
+
+        return material.shader.name ==
+            "Universal Render Pipeline/Lit";
+    }
+
+    // ============================================================
+    // OBTENER RENDERERS DE LA ESCENA
+    // ============================================================
+
+    private Renderer[] GetSceneRenderers(
+        Scene scene
+    )
+    {
+        List<Renderer> renderers =
+            new List<Renderer>();
+
+        foreach (GameObject root in scene.GetRootGameObjects())
+        {
+            Renderer[] rootRenderers =
+                root.GetComponentsInChildren<Renderer>(
+                    true
+                );
+
+            renderers.AddRange(
+                rootRenderers
+            );
+        }
+
+        return renderers.ToArray();
+    }
+
+    // ============================================================
+    // CARPETA DE LA ESCENA
+    // ============================================================
+
+    private string GetSceneFolder()
+    {
+        string sceneName =
+            SceneManager.GetActiveScene().name;
+
+        if (string.IsNullOrEmpty(sceneName))
+        {
+            sceneName = "Scene";
+        }
+
+        sceneName =
+            MakeSafeFileName(sceneName);
+
+        string folder =
+            OUTPUT_ROOT +
+            "/" +
+            sceneName;
+
+        EnsureFolder("Assets/Materials");
+        EnsureFolder(OUTPUT_ROOT);
+        EnsureFolder(folder);
+
+        return folder;
+    }
+
+    // ============================================================
+    // CREAR CARPETAS
+    // ============================================================
+
+    private void EnsureFolder(
+        string folder
+    )
+    {
+        if (AssetDatabase.IsValidFolder(folder))
+            return;
+
+        string parent =
+            Path.GetDirectoryName(folder)?
+                .Replace("\\", "/");
+
+        string folderName =
+            Path.GetFileName(folder);
+
+        if (!string.IsNullOrEmpty(parent) &&
+            !AssetDatabase.IsValidFolder(parent))
+        {
+            EnsureFolder(parent);
+        }
+
+        if (!string.IsNullOrEmpty(parent) &&
+            !string.IsNullOrEmpty(folderName))
+        {
+            AssetDatabase.CreateFolder(
+                parent,
+                folderName
+            );
+        }
+    }
+
+    // ============================================================
+    // NOMBRE SEGURO
+    // ============================================================
 
     private static string MakeSafeFileName(
-        string fileName)
+        string fileName
+    )
     {
-        foreach (char c in Path.GetInvalidFileNameChars())
+        foreach (
+            char c in Path.GetInvalidFileNameChars()
+        )
         {
-            fileName = fileName.Replace(c, '_');
+            fileName =
+                fileName.Replace(
+                    c.ToString(),
+                    "_"
+                );
         }
 
         return fileName;
     }
 
-    private static void OpenMaterialsFolder()
+    // ============================================================
+    // ABRIR CARPETA
+    // ============================================================
+
+    private void OpenMaterialsFolder()
     {
-        EnsureMaterialsFolder();
+        string folder =
+            GetSceneFolder();
 
-        Object folder =
-            AssetDatabase.LoadAssetAtPath<Object>(
-                MaterialsFolder
-            );
+        UnityEngine.Object folderObject =
+            AssetDatabase.LoadAssetAtPath<
+                UnityEngine.Object
+            >(folder);
 
-        if (folder != null)
+        if (folderObject != null)
         {
-            Selection.activeObject = folder;
-            EditorGUIUtility.PingObject(folder);
+            Selection.activeObject =
+                folderObject;
+
+            EditorGUIUtility.PingObject(
+                folderObject
+            );
         }
     }
 }
