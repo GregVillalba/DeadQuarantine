@@ -17,6 +17,9 @@ public class AchievementHUD : MonoBehaviour
     [SerializeField]
     private TextMeshProUGUI achievementDescriptionText;
 
+    [SerializeField]
+    private TextMeshProUGUI achievementRankText;
+
     [Header("Icono")]
     [SerializeField]
     private Image achievementIcon;
@@ -25,11 +28,32 @@ public class AchievementHUD : MonoBehaviour
     [SerializeField]
     private float maxVisibleTime = 5f;
 
-    private readonly Queue<AchievementId> colaLogros =
-        new Queue<AchievementId>();
+
+    private struct AchievementNotification
+    {
+        public AchievementId id;
+        public AchievementRank rango;
+
+        public AchievementNotification(
+            AchievementId id,
+            AchievementRank rango
+        )
+        {
+            this.id = id;
+            this.rango = rango;
+        }
+    }
+
+
+    private readonly Queue<AchievementNotification> colaLogros =
+        new Queue<AchievementNotification>();
 
     private Coroutine mostrarColasCoroutine;
 
+
+    // ============================================================
+    // AWAKE
+    // ============================================================
 
     private void Awake()
     {
@@ -42,9 +66,32 @@ public class AchievementHUD : MonoBehaviour
     }
 
 
-    public void Show(AchievementId id)
+    // ============================================================
+    // SHOW
+    // ============================================================
+
+    public void Show(
+        AchievementId id
+    )
     {
-        colaLogros.Enqueue(id);
+        Show(
+            id,
+            AchievementRank.Ninguno
+        );
+    }
+
+
+    public void Show(
+        AchievementId id,
+        AchievementRank rango
+    )
+    {
+        colaLogros.Enqueue(
+            new AchievementNotification(
+                id,
+                rango
+            )
+        );
 
         if (!gameObject.activeSelf)
         {
@@ -54,18 +101,28 @@ public class AchievementHUD : MonoBehaviour
         if (mostrarColasCoroutine == null)
         {
             mostrarColasCoroutine =
-                StartCoroutine(MostrarColaDeLogros());
+                StartCoroutine(
+                    MostrarColaDeLogros()
+                );
         }
     }
 
+
+    // ============================================================
+    // COLA
+    // ============================================================
 
     private IEnumerator MostrarColaDeLogros()
     {
         while (colaLogros.Count > 0)
         {
-            AchievementId id = colaLogros.Dequeue();
+            AchievementNotification notificacion =
+                colaLogros.Dequeue();
 
-            MostrarInformacion(id);
+            MostrarInformacion(
+                notificacion.id,
+                notificacion.rango
+            );
 
             yield return new WaitForSeconds(
                 maxVisibleTime
@@ -81,7 +138,14 @@ public class AchievementHUD : MonoBehaviour
     }
 
 
-    private void MostrarInformacion(AchievementId id)
+    // ============================================================
+    // MOSTRAR INFORMACIÓN
+    // ============================================================
+
+    private void MostrarInformacion(
+        AchievementId id,
+        AchievementRank rango
+    )
     {
         if (database == null)
         {
@@ -96,9 +160,12 @@ public class AchievementHUD : MonoBehaviour
             database.Obtener(id);
 
         if (logro == null)
-        {
             return;
-        }
+
+
+        // --------------------------------------------------------
+        // TITULO
+        // --------------------------------------------------------
 
         if (achievementTitleText != null)
         {
@@ -106,11 +173,47 @@ public class AchievementHUD : MonoBehaviour
                 logro.titulo;
         }
 
+
+        // --------------------------------------------------------
+        // DESCRIPCIÓN
+        // --------------------------------------------------------
+
         if (achievementDescriptionText != null)
         {
-            achievementDescriptionText.text =
-                logro.descripcion;
+            if (rango != AchievementRank.Ninguno)
+            {
+                achievementDescriptionText.text =
+                    logro.ObtenerDescripcion(rango);
+            }
+            else
+            {
+                achievementDescriptionText.text =
+                    logro.descripcion;
+            }
         }
+
+
+        // --------------------------------------------------------
+        // RANGO
+        // --------------------------------------------------------
+
+        if (achievementRankText != null)
+        {
+            if (rango == AchievementRank.Ninguno)
+            {
+                achievementRankText.text = "";
+            }
+            else
+            {
+                achievementRankText.text =
+                    ObtenerTextoRango(rango);
+            }
+        }
+
+
+        // --------------------------------------------------------
+        // ICONO
+        // --------------------------------------------------------
 
         if (achievementIcon != null)
         {
@@ -123,11 +226,42 @@ public class AchievementHUD : MonoBehaviour
     }
 
 
+    // ============================================================
+    // TEXTO RANGO
+    // ============================================================
+
+    private string ObtenerTextoRango(
+        AchievementRank rango
+    )
+    {
+        switch (rango)
+        {
+            case AchievementRank.Bronce:
+                return "BRONCE";
+
+            case AchievementRank.Plata:
+                return "PLATA";
+
+            case AchievementRank.Oro:
+                return "ORO";
+
+            default:
+                return "";
+        }
+    }
+
+
+    // ============================================================
+    // HIDE
+    // ============================================================
+
     public void Hide()
     {
         if (mostrarColasCoroutine != null)
         {
-            StopCoroutine(mostrarColasCoroutine);
+            StopCoroutine(
+                mostrarColasCoroutine
+            );
 
             mostrarColasCoroutine = null;
         }

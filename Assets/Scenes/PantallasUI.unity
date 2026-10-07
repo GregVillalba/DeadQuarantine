@@ -5570,7 +5570,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
-  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -6626,10 +6626,10 @@ RectTransform:
   - {fileID: 763613992}
   m_Father: {fileID: 1375235334}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 400, y: -250}
-  m_SizeDelta: {x: 800, y: 500}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 500}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &132960300
 MonoBehaviour:
@@ -6681,7 +6681,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Scripts::AchievementUIItem
-  achievementId: 17
+  database: {fileID: 11400000, guid: aee82f342d507f84a89470267979563e, type: 2}
+  achievementId: 0
+  estadoLogrado: {fileID: 77031117}
+  estadoNoLogrado: {fileID: 1062257877}
+  rangoBronce: {fileID: 705711008}
+  rangoPlata: {fileID: 199891460}
+  rangoOro: {fileID: 1571699738}
+  progresoText: {fileID: 0}
+  rangoActualText: {fileID: 0}
+  opacidadBloqueado: 0.3
+  opacidadDesbloqueado: 1
 --- !u!1 &133668420
 GameObject:
   m_ObjectHideFlags: 0
@@ -8309,7 +8319,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
-  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -8625,7 +8635,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &210487671
 RectTransform:
   m_ObjectHideFlags: 0
@@ -8756,7 +8766,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
-  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -10029,7 +10039,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
-  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -13105,7 +13115,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
-  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -15995,10 +16005,10 @@ RectTransform:
   - {fileID: 173480645}
   m_Father: {fileID: 1162768531}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 400, y: -1290}
-  m_SizeDelta: {x: 800, y: 500}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 500}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &339492526
 MonoBehaviour:
@@ -16012,7 +16022,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Scripts::AchievementUIItem
-  achievementId: 17
+  database: {fileID: 11400000, guid: aee82f342d507f84a89470267979563e, type: 2}
+  achievementId: 5
+  estadoLogrado: {fileID: 0}
+  estadoNoLogrado: {fileID: 0}
+  rangoBronce: {fileID: 688157659}
+  rangoPlata: {fileID: 1450978691}
+  rangoOro: {fileID: 687749328}
+  progresoText: {fileID: 0}
+  rangoActualText: {fileID: 0}
+  opacidadBloqueado: 0.3
+  opacidadDesbloqueado: 1
 --- !u!114 &339492527
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18349,10 +18369,10 @@ RectTransform:
   - {fileID: 357776142}
   m_Father: {fileID: 1375235334}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 400, y: -1190}
-  m_SizeDelta: {x: 800, y: 300}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &393576749
 MonoBehaviour:
@@ -18404,7 +18424,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Scripts::AchievementUIItem
-  achievementId: 19
+  database: {fileID: 11400000, guid: aee82f342d507f84a89470267979563e, type: 2}
+  achievementId: 4
+  estadoLogrado: {fileID: 0}
+  estadoNoLogrado: {fileID: 0}
+  rangoBronce: {fileID: 0}
+  rangoPlata: {fileID: 0}
+  rangoOro: {fileID: 0}
+  progresoText: {fileID: 0}
+  rangoActualText: {fileID: 0}
+  opacidadBloqueado: 0.3
+  opacidadDesbloqueado: 1
 --- !u!114 &393576752
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18507,10 +18537,10 @@ RectTransform:
   - {fileID: 1903427250}
   m_Father: {fileID: 1162768531}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 400, y: -770}
-  m_SizeDelta: {x: 800, y: 500}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 500}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &399789805
 MonoBehaviour:
@@ -18524,7 +18554,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Scripts::AchievementUIItem
-  achievementId: 17
+  database: {fileID: 11400000, guid: aee82f342d507f84a89470267979563e, type: 2}
+  achievementId: 3
+  estadoLogrado: {fileID: 0}
+  estadoNoLogrado: {fileID: 0}
+  rangoBronce: {fileID: 278876706}
+  rangoPlata: {fileID: 736976028}
+  rangoOro: {fileID: 211648056}
+  progresoText: {fileID: 0}
+  rangoActualText: {fileID: 0}
+  opacidadBloqueado: 0.3
+  opacidadDesbloqueado: 1
 --- !u!114 &399789806
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -32707,7 +32747,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
-  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -32779,7 +32819,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
-  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -34052,7 +34092,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
-  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -35894,7 +35934,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
-  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -40138,7 +40178,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
-  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -40501,7 +40541,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
-  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -42477,8 +42517,8 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 131672902}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.68446577}
-  m_AnchorMax: {x: 1, y: 0.99999976}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -43081,10 +43121,10 @@ RectTransform:
   - {fileID: 714437835}
   m_Father: {fileID: 1375235334}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 400, y: -770}
-  m_SizeDelta: {x: 800, y: 500}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 500}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &856104049
 MonoBehaviour:
@@ -43098,7 +43138,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Scripts::AchievementUIItem
-  achievementId: 17
+  database: {fileID: 11400000, guid: aee82f342d507f84a89470267979563e, type: 2}
+  achievementId: 1
+  estadoLogrado: {fileID: 0}
+  estadoNoLogrado: {fileID: 0}
+  rangoBronce: {fileID: 1719705559}
+  rangoPlata: {fileID: 232637953}
+  rangoOro: {fileID: 1198184787}
+  progresoText: {fileID: 0}
+  rangoActualText: {fileID: 0}
+  opacidadBloqueado: 0.3
+  opacidadDesbloqueado: 1
 --- !u!114 &856104050
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -44115,7 +44165,7 @@ RectTransform:
   m_Father: {fileID: 1214608292}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 10, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -45868,7 +45918,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f62e3ef72e6b8242970ce04178c2df5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Scripts::AchievementsManager
-  achievementDatabase: {fileID: 11400000, guid: 98adc11452bb3bb4793eeaeb39a9703e, type: 2}
+  achievementDatabase: {fileID: 11400000, guid: aee82f342d507f84a89470267979563e, type: 2}
 --- !u!4 &905045627
 Transform:
   m_ObjectHideFlags: 0
@@ -49705,7 +49755,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
-  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -57755,10 +57805,10 @@ RectTransform:
   - {fileID: 1436674192}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1341.5, y: -1030}
-  m_SizeDelta: {x: 800, y: 2060}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 800, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1162768532
 MonoBehaviour:
@@ -59784,7 +59834,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
-  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -64993,7 +65043,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
-  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -67109,7 +67159,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0.0005717947}
-  m_SizeDelta: {x: 0, y: 2060}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1333339246
 MonoBehaviour:
@@ -68563,10 +68613,10 @@ RectTransform:
   - {fileID: 393576748}
   m_Father: {fileID: 1333339245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 400, y: -1030}
-  m_SizeDelta: {x: 800, y: 2060}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 800, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1375235335
 MonoBehaviour:
@@ -72664,10 +72714,10 @@ RectTransform:
   - {fileID: 1432545760}
   m_Father: {fileID: 1162768531}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 400, y: -1810}
-  m_SizeDelta: {x: 800, y: 500}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 500}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1436674193
 MonoBehaviour:
@@ -72681,7 +72731,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Scripts::AchievementUIItem
-  achievementId: 17
+  database: {fileID: 11400000, guid: aee82f342d507f84a89470267979563e, type: 2}
+  achievementId: 6
+  estadoLogrado: {fileID: 0}
+  estadoNoLogrado: {fileID: 0}
+  rangoBronce: {fileID: 115092817}
+  rangoPlata: {fileID: 820323376}
+  rangoOro: {fileID: 1284989755}
+  progresoText: {fileID: 0}
+  rangoActualText: {fileID: 0}
+  opacidadBloqueado: 0.3
+  opacidadDesbloqueado: 1
 --- !u!114 &1436674194
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -73540,7 +73600,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
-  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -79326,7 +79386,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
-  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -82862,7 +82922,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
-  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -86665,7 +86725,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
   m_Material: {fileID: 0}
-  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -94386,7 +94446,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Completar el modo Historia en todas las dificultades
+  m_text: Completar el modo rondas en todas las dificultades
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -97025,10 +97085,10 @@ RectTransform:
   - {fileID: 1106972245}
   m_Father: {fileID: 1162768531}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 400, y: -250}
-  m_SizeDelta: {x: 800, y: 500}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 500}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1947082222
 MonoBehaviour:
@@ -97042,7 +97102,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 485cfe6f4d695834fa0242e53b9e838b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Scripts::AchievementUIItem
-  achievementId: 17
+  database: {fileID: 11400000, guid: aee82f342d507f84a89470267979563e, type: 2}
+  achievementId: 2
+  estadoLogrado: {fileID: 0}
+  estadoNoLogrado: {fileID: 0}
+  rangoBronce: {fileID: 810967804}
+  rangoPlata: {fileID: 991762608}
+  rangoOro: {fileID: 1631265637}
+  progresoText: {fileID: 0}
+  rangoActualText: {fileID: 0}
+  opacidadBloqueado: 0.3
+  opacidadDesbloqueado: 1
 --- !u!114 &1947082223
 MonoBehaviour:
   m_ObjectHideFlags: 0

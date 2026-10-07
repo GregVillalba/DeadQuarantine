@@ -14,6 +14,11 @@ public class AchievementDatabase : ScriptableObject
     private Dictionary<AchievementId, AchievementDefinition>
         diccionario;
 
+
+    // ============================================================
+    // INICIALIZAR
+    // ============================================================
+
     public void Inicializar()
     {
         diccionario =
@@ -33,11 +38,21 @@ public class AchievementDatabase : ScriptableObject
                 continue;
             }
 
-            diccionario.Add(logro.id, logro);
+            diccionario.Add(
+                logro.id,
+                logro
+            );
         }
     }
 
-    public AchievementDefinition Obtener(AchievementId id)
+
+    // ============================================================
+    // OBTENER
+    // ============================================================
+
+    public AchievementDefinition Obtener(
+        AchievementId id
+    )
     {
         if (diccionario == null)
         {
@@ -58,6 +73,11 @@ public class AchievementDatabase : ScriptableObject
 
         return null;
     }
+
+
+    // ============================================================
+    // OBTENER TODOS
+    // ============================================================
 
     public IReadOnlyList<AchievementDefinition> ObtenerTodos()
     {

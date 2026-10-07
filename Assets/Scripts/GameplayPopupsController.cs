@@ -22,6 +22,10 @@ public class GameplayPopupsController : MonoBehaviour
     public static GameplayPopupsController Instance { get; private set; }
 
 
+    // ============================================================
+    // AWAKE
+    // ============================================================
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -51,6 +55,10 @@ public class GameplayPopupsController : MonoBehaviour
     }
 
 
+    // ============================================================
+    // MENU
+    // ============================================================
+
     public void VolverAlMenuPrincipal()
     {
         Time.timeScale = 1f;
@@ -62,6 +70,10 @@ public class GameplayPopupsController : MonoBehaviour
         );
     }
 
+
+    // ============================================================
+    // PANEL RONDA
+    // ============================================================
 
     public void MostrarPanelRonda()
     {
@@ -87,15 +99,13 @@ public class GameplayPopupsController : MonoBehaviour
     }
 
 
+    // ============================================================
+    // PANEL LOGRO
+    // ============================================================
+
     public void MostrarPanelLogro()
     {
-        if (achievementHUD == null)
-        {
-            achievementHUD =
-                FindAnyObjectByType<AchievementHUD>(
-                    FindObjectsInactive.Include
-                );
-        }
+        BuscarAchievementHUD();
 
         if (achievementHUD == null)
         {
@@ -110,15 +120,27 @@ public class GameplayPopupsController : MonoBehaviour
     }
 
 
-    public void MostrarPanelLogro(AchievementId id)
+    // ============================================================
+    // MOSTRAR LOGRO
+    // ============================================================
+
+    public void MostrarPanelLogro(
+        AchievementId id
+    )
     {
-        if (achievementHUD == null)
-        {
-            achievementHUD =
-                FindAnyObjectByType<AchievementHUD>(
-                    FindObjectsInactive.Include
-                );
-        }
+        MostrarPanelLogro(
+            id,
+            AchievementRank.Ninguno
+        );
+    }
+
+
+    public void MostrarPanelLogro(
+        AchievementId id,
+        AchievementRank rango
+    )
+    {
+        BuscarAchievementHUD();
 
         if (achievementHUD == null)
         {
@@ -129,21 +151,58 @@ public class GameplayPopupsController : MonoBehaviour
             return;
         }
 
-        achievementHUD.Show(id);
+        achievementHUD.Show(
+            id,
+            rango
+        );
     }
 
 
-    public void MostrarLogro(AchievementId id)
+    public void MostrarLogro(
+        AchievementId id
+    )
     {
         MostrarPanelLogro(id);
     }
 
+
+    public void MostrarLogro(
+        AchievementId id,
+        AchievementRank rango
+    )
+    {
+        MostrarPanelLogro(
+            id,
+            rango
+        );
+    }
+
+
+    // ============================================================
+    // OCULTAR LOGRO
+    // ============================================================
 
     public void OcultarPanelLogro()
     {
         if (achievementHUD != null)
         {
             achievementHUD.Hide();
+        }
+    }
+
+
+    // ============================================================
+    // BUSCAR HUD
+    // ============================================================
+
+    private void BuscarAchievementHUD()
+    {
+        if (achievementHUD == null)
+        {
+            achievementHUD =
+                FindAnyObjectByType<AchievementHUD>(
+                    FindObjectsInactive.Include
+                );
         }
     }
 }
