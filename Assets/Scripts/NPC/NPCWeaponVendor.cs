@@ -8,6 +8,11 @@ public class NPCWeaponVendor : MonoBehaviour
     [Header("Ofertas")]
     [SerializeField] private List<WeaponOffer> offers = new List<WeaponOffer>();
 
+    [Header("Blindaje (chaleco / casco)")]
+    [Tooltip("Costo de reparar una pieza, como fracción de su costo de compra (0.25 = 25%).")]
+    [Range(0f, 1f)]
+    [SerializeField] private float porcentajeReparacion = 0.25f;
+
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip purchaseSuccessSound;
@@ -15,6 +20,7 @@ public class NPCWeaponVendor : MonoBehaviour
 
     private WeaponSwitcher pendingSwitcher;
     private GrenadeThrow pendingGrenadeThrow;
+    private Weapon pendingWeapon;
     private PlayerScore pendingScore;
     private string pendingWeaponId;
 
@@ -22,6 +28,11 @@ public class NPCWeaponVendor : MonoBehaviour
 
     public IReadOnlyList<WeaponOffer> Offers => offers;
     public string NombreMercader => gameObject.name;
+
+    public int CostoReparacion(WeaponOffer oferta)
+    {
+        return Mathf.CeilToInt(oferta.cost * porcentajeReparacion);
+    }
 
     private void Awake()
     {
@@ -38,7 +49,7 @@ public class NPCWeaponVendor : MonoBehaviour
             return;
         }
 
-        if (!oferta.disponible)
+        if (!oferta.disponible || !DisponibilidadTienda.SeMuestraEnPartidaActual(oferta))
             return;
 
         Camera camara = BuscarCamaraJugadorLocal();
@@ -66,6 +77,56 @@ public class NPCWeaponVendor : MonoBehaviour
 
             playerScore.OnPurchaseResult += OnPurchaseResultInterno;
             playerScore.ComprarCuracionServerRpc(weaponId, oferta.cost, oferta.puntosDeSalud);
+            return;
+        }
+
+        if (oferta.esEspacioInventario)
+        {
+            pendingSwitcher = null;
+            pendingGrenadeThrow = null;
+            pendingWeapon = null;
+            pendingScore = playerScore;
+            pendingWeaponId = weaponId;
+
+            playerScore.OnPurchaseResult += OnPurchaseResultInterno;
+            playerScore.ComprarEspacioExtraServerRpc(weaponId, oferta.cost);
+            return;
+        }
+
+        if (oferta.EsBlindaje)
+        {
+            // El servidor decide si es compra o reparación según el estado de la pieza.
+            pendingSwitcher = null;
+            pendingGrenadeThrow = null;
+            pendingWeapon = null;
+            pendingScore = playerScore;
+            pendingWeaponId = weaponId;
+
+            playerScore.OnPurchaseResult += OnPurchaseResultInterno;
+            playerScore.ComprarBlindajeServerRpc(weaponId, oferta.piezaBlindaje, oferta.cost, CostoReparacion(oferta), oferta.armadura);
+            return;
+        }
+
+        if (oferta.esMunicion)
+        {
+            // Restaura el arma que se tiene en la mano. Si ya está llena no se cobra.
+            Weapon arma = switcher.CurrentWeapon;
+
+            if (arma == null || arma.MunicionCompleta)
+            {
+                PlaySound(purchaseDeniedSound);
+                OnPurchaseResult?.Invoke(weaponId, false);
+                return;
+            }
+
+            pendingSwitcher = null;
+            pendingGrenadeThrow = null;
+            pendingWeapon = arma;
+            pendingScore = playerScore;
+            pendingWeaponId = weaponId;
+
+            playerScore.OnPurchaseResult += OnPurchaseResultInterno;
+            playerScore.ComprarArmaServerRpc(weaponId, oferta.cost);
             return;
         }
 
@@ -121,8 +182,12 @@ public class NPCWeaponVendor : MonoBehaviour
         if (exito && pendingGrenadeThrow != null)
             pendingGrenadeThrow.EquiparTipo(weaponId);
 
+        if (exito && pendingWeapon != null)
+            pendingWeapon.RestaurarMunicion();
+
         pendingSwitcher = null;
         pendingGrenadeThrow = null;
+        pendingWeapon = null;
         pendingScore = null;
         pendingWeaponId = null;
 

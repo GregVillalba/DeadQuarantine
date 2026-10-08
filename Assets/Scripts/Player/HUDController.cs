@@ -28,10 +28,23 @@ public class HUDController : MonoBehaviour
     [Tooltip("Número que baja junto con la barra (0-100).")]
     [SerializeField] private TextMeshProUGUI staminaValueText;
 
-    [Header("Chaleco")]
+    [Header("Escudo (chaleco + casco)")]
     [SerializeField] private Image armorFill;
-    [Tooltip("Número que acompaña a la barra de chaleco (0-50).")]
+    [Tooltip("Número que acompaña a la barra de escudo (0 a Max Armor de PlayerHealth).")]
     [SerializeField] private TextMeshProUGUI armorValueText;
+    [Tooltip("Color del relleno de la barra de escudo.")]
+    [SerializeField] private Color armorColor = new Color(0.35f, 0.8f, 1f, 1f);
+
+    [Header("Inventario (slots al lado de la munición)")]
+    [Tooltip("Slot 1: curas. Si queda vacío se busca el objeto llamado Slot01.")]
+    [SerializeField] private Image slotCuras;
+    [Tooltip("Slot 2: granada equipada. Si queda vacío se busca el objeto llamado Slot02.")]
+    [SerializeField] private Image slotGranada;
+    [Tooltip("Margen entre el marco del slot y el icono.")]
+    [SerializeField] private float margenIconoSlot = 14f;
+    [SerializeField] private float tamanoTextoSlot = 22f;
+    [Tooltip("Opacidad del texto de la tecla cuando el slot está vacío.")]
+    [Range(0f, 1f)] [SerializeField] private float alfaTeclaSlotVacio = 0.35f;
 
     [Header("Munición")]
     [SerializeField] private TextMeshProUGUI ammoText;
@@ -211,6 +224,190 @@ public class HUDController : MonoBehaviour
         UpdateRounds();
         UpdateCrosshair();
         UpdateLivesUI();
+        UpdateInventarioCuras();
+    }
+
+    // =========================================================
+    // INVENTARIO (slot 1: curas, slot 2: granada equipada)
+    // =========================================================
+
+    private class SlotHud
+    {
+        public Image icono;
+        public TextMeshProUGUI cantidad;
+        public TextMeshProUGUI tecla;
+    }
+
+    private SlotHud hudCura;
+    private SlotHud hudGranada;
+    private bool slotsCreados;
+    private GrenadeThrow grenadeThrow;
+
+    private readonly System.Collections.Generic.Dictionary<string, Sprite> iconosOfertas =
+        new System.Collections.Generic.Dictionary<string, Sprite>();
+
+    private void UpdateInventarioCuras()
+    {
+        if (!slotsCreados)
+            CrearSlotsHud();
+
+        UpdateSlotCura();
+        UpdateSlotGranada();
+    }
+
+    private void UpdateSlotCura()
+    {
+        if (hudCura == null || playerHealth == null || playerHealth.SlotsCuras == null)
+            return;
+
+        SlotCura slot = playerHealth.GetSlotCura(0);
+        bool lleno = !slot.Vacio;
+
+        MostrarIcono(hudCura, lleno ? IconoDeOferta(slot.itemId.ToString()) : null);
+
+        // La cantidad solo aporta algo cuando en el slot entra más de una cura (Slot extra comprado).
+        hudCura.cantidad.text = lleno && playerHealth.CapacidadPorSlot > 1
+            ? slot.cantidad + "/" + playerHealth.CapacidadPorSlot
+            : string.Empty;
+
+        hudCura.tecla.text = playerHealth.TeclaSlotCura;
+        hudCura.tecla.alpha = lleno ? 1f : alfaTeclaSlotVacio;
+    }
+
+    // Las granadas son infinitas: el slot muestra el tipo que se tira ahora (el último comprado).
+    private void UpdateSlotGranada()
+    {
+        if (hudGranada == null || grenadeThrow == null)
+            return;
+
+        string tipo = grenadeThrow.TipoActualId;
+        Sprite icono = string.IsNullOrEmpty(tipo) ? null : IconoDeOferta(tipo);
+
+        MostrarIcono(hudGranada, icono);
+        hudGranada.tecla.text = grenadeThrow.TeclaGranada;
+        hudGranada.tecla.alpha = icono != null ? 1f : alfaTeclaSlotVacio;
+    }
+
+    private static void MostrarIcono(SlotHud hud, Sprite icono)
+    {
+        hud.icono.sprite = icono;
+        hud.icono.enabled = icono != null;
+    }
+
+    private void CrearSlotsHud()
+    {
+        slotsCreados = true;
+
+        if (slotCuras == null)
+            slotCuras = BuscarImagenPorNombre("Slot01");
+
+        if (slotGranada == null)
+            slotGranada = BuscarImagenPorNombre("Slot02");
+
+        grenadeThrow = transform.root.GetComponentInChildren<GrenadeThrow>(true);
+
+        hudCura = CrearSlotHud(slotCuras);
+        hudGranada = CrearSlotHud(slotGranada);
+    }
+
+    private SlotHud CrearSlotHud(Image marco)
+    {
+        // Slot sin marco en el HUD: se ignora.
+        if (marco == null)
+            return null;
+
+        return new SlotHud
+        {
+            icono = CrearIcono(marco.transform),
+            cantidad = CrearTexto(marco.transform, "Cantidad", TextAlignmentOptions.BottomRight),
+            tecla = CrearTexto(marco.transform, "Tecla", TextAlignmentOptions.TopLeft)
+        };
+    }
+
+    private Image BuscarImagenPorNombre(string nombre)
+    {
+        foreach (Image imagen in transform.root.GetComponentsInChildren<Image>(true))
+        {
+            if (imagen.name == nombre)
+                return imagen;
+        }
+
+        return null;
+    }
+
+    private Image CrearIcono(Transform marco)
+    {
+        GameObject go = new GameObject("Icono", typeof(RectTransform), typeof(Image));
+        go.layer = marco.gameObject.layer;
+        go.transform.SetParent(marco, false);
+
+        RectTransform rt = (RectTransform)go.transform;
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = new Vector2(margenIconoSlot, margenIconoSlot);
+        rt.offsetMax = new Vector2(-margenIconoSlot, -margenIconoSlot);
+
+        Image imagen = go.GetComponent<Image>();
+        imagen.preserveAspect = true;
+        imagen.raycastTarget = false;
+        imagen.enabled = false;
+        return imagen;
+    }
+
+    private TextMeshProUGUI CrearTexto(Transform marco, string nombre, TextAlignmentOptions alineacion)
+    {
+        GameObject go = new GameObject(nombre, typeof(RectTransform), typeof(TextMeshProUGUI));
+        go.layer = marco.gameObject.layer;
+        go.transform.SetParent(marco, false);
+
+        RectTransform rt = (RectTransform)go.transform;
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = new Vector2(6f, 4f);
+        rt.offsetMax = new Vector2(-6f, -4f);
+
+        TextMeshProUGUI texto = go.GetComponent<TextMeshProUGUI>();
+        texto.alignment = alineacion;
+        texto.fontSize = tamanoTextoSlot;
+        texto.fontStyle = FontStyles.Bold;
+        texto.raycastTarget = false;
+        texto.text = string.Empty;
+
+        // Misma fuente que el texto de munición, para que combine con el HUD.
+        if (ammoText != null)
+            texto.font = ammoText.font;
+
+        return texto;
+    }
+
+    // El icono sale de la oferta del mercader con ese id (imagen de tarjeta o, si no hay, el icono).
+    private Sprite IconoDeOferta(string itemId)
+    {
+        if (iconosOfertas.TryGetValue(itemId, out Sprite cacheado))
+            return cacheado;
+
+        Sprite icono = null;
+
+        foreach (NPCWeaponVendor vendor in FindObjectsByType<NPCWeaponVendor>(FindObjectsSortMode.None))
+        {
+            foreach (WeaponOffer oferta in vendor.Offers)
+            {
+                if (oferta.weaponId == itemId)
+                {
+                    icono = oferta.imagenTarjeta != null ? oferta.imagenTarjeta : oferta.weaponIcon;
+                    break;
+                }
+            }
+
+            if (icono != null)
+                break;
+        }
+
+        // Solo se cachea si se encontró: el mercader puede aparecer más tarde.
+        if (icono != null)
+            iconosOfertas[itemId] = icono;
+
+        return icono;
     }
 
     // =========================================================
@@ -292,7 +489,10 @@ public class HUDController : MonoBehaviour
         int max = Mathf.Max(playerHealth.MaxArmor, 1);
 
         if (armorFill != null)
+        {
             armorFill.fillAmount = Mathf.Clamp01((float)current / max);
+            armorFill.color = armorColor;
+        }
 
         if (armorValueText != null)
             armorValueText.text = current.ToString();

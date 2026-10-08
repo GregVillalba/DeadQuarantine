@@ -3184,39 +3184,246 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Scripts::NPCWeaponVendor
   offers:
-  - weaponId: Rifle
-    weaponName: Rifle de asalto
-    cost: 1500
-    weaponIcon: {fileID: 21300000, guid: cf8eabf114d4a044b91137d3fad06f26, type: 3}
-    disponible: 1
-  - weaponId:
-    weaponName:
-    cost: 0
-    weaponIcon: {fileID: 21300000, guid: 72df9454bbf9a6a46931033e8f709d98, type: 3}
-    disponible: 0
-  - weaponId:
-    weaponName:
-    cost: 0
-    weaponIcon: {fileID: 21300000, guid: 18636b9bd6f78314aaa665b13fa8aa00, type: 3}
-    disponible: 0
   - weaponId: Revolver
     weaponName: Revolver
     cost: 5000
     weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: b7df9d66b732fcf4784802357ad58254, type: 3}
+    categoria: 0
     disponible: 0
+    descripcion: 'Arma de mayor potencia pero con menos carencia que la pistola inicial.  '
+    dano: 50
+    alcance: 150
+    esArrojadiza: 0
+    capacidadCargador: 7
+    cadencia: 0.5
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    esBarril: 0
+  - weaponId: Rifle
+    weaponName: Rifle de asalto
+    cost: 15000
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: 08790bb9eb8727f49b4c60d3e1d68fd8, type: 3}
+    categoria: 0
+    disponible: 1
+    descripcion: "Con este rifle de asalto puedes mantener alejados a tus enemigos
+      por su mayor da\xF1o y su amplio alcance."
+    dano: 50
+    alcance: 120
+    esArrojadiza: 0
+    capacidadCargador: 30
+    cadencia: 0.1
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    esBarril: 0
   - weaponId: Escopeta
     weaponName: Escopeta
     cost: 15000
     weaponIcon: {fileID: 0}
-    disponible: 0
+    imagenTarjeta: {fileID: 21300000, guid: dfe504abb9ea09c428b5c44fa38cdadf, type: 3}
+    categoria: 0
+    disponible: 1
+    descripcion: "Nada mejor que una buena escopeta para aguantar una extensa oleada.
+      Adquiere esta hermosa arma  y tus enemigos caer\xE1n frente a ti."
+    dano: 200
+    alcance: 25
+    esArrojadiza: 0
+    capacidadCargador: 10
+    cadencia: 1
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    esBarril: 0
   - weaponId: Granadas
     weaponName: Granadas
     cost: 2000
     weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: 3c84896e27573b346976e1e5ef2e6786, type: 3}
+    categoria: 1
+    disponible: 1
+    descripcion: "Usa esta granada si te encuentras acorralado por un gran grupo
+      de enemigos. Su alto da\xF1o te dar\xE1 tiempo para huir."
+    dano: 200
+    alcance: 20
+    esArrojadiza: 1
+    capacidadCargador: 0
+    cadencia: 0
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    esBarril: 0
+  - weaponId: Granada Cegadora
+    weaponName: Granada Cegadora
+    cost: 2000
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: dbd606b50b0b7c44e86e530380c8c08c, type: 3}
+    categoria: 1
+    disponible: 1
+    descripcion: "Una poderosa granada que no hace mucho da\xF1o pero es muy util
+      para huir cegando a tus enemigos."
+    dano: 10
+    alcance: 20
+    esArrojadiza: 1
+    capacidadCargador: 0
+    cadencia: 0
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    esBarril: 0
+  - weaponId: Granada de Humo
+    weaponName: Granada de Humo
+    cost: 2000
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: 91716cc282564b84ab6d3f1ab72467b5, type: 3}
+    categoria: 1
+    disponible: 1
+    descripcion: Es una granada de humo que no tiene mucha utilidad en un apocalipsis
+      zombie.
+    dano: 10
+    alcance: 20
+    esArrojadiza: 1
+    capacidadCargador: 0
+    cadencia: 0
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    esBarril: 0
+  - weaponId: "Frasco de vida peque\xF1o"
+    weaponName: "Frasco de vida peque\xF1o"
+    cost: 5000
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: 9a1ea11fd03ec4f4092f48c83098eff5, type: 3}
+    categoria: 2
+    disponible: 1
+    dificultades: 6
+    descripcion: Cura 50 puntos de salud al instante.
+    dano: 0
+    alcance: 0
+    esArrojadiza: 0
+    capacidadCargador: 0
+    cadencia: 0
+    esConsumible: 1
+    puntosDeSalud: 50
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    esBarril: 0
+  - weaponId: Frasco de vida grande
+    weaponName: Frasco de vida grande
+    cost: 10000
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: 4ae9fe43e4db9b74cbde7af67e1e338f, type: 3}
+    categoria: 2
+    disponible: 1
+    dificultades: 6
+    descripcion: Cura 100 puntos de salud al instante.
+    dano: 0
+    alcance: 0
+    esArrojadiza: 0
+    capacidadCargador: 0
+    cadencia: 0
+    esConsumible: 1
+    puntosDeSalud: 100
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    esBarril: 0
+  - weaponId: "Caja de munici\xF3n"
+    weaponName: "Caja de munici\xF3n"
+    cost: 2000
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: 263468d88e9d19b46be3d858627afdb6, type: 3}
+    categoria: 2
+    disponible: 1
+    dificultades: 6
+    descripcion: "Reestablece la munici\xF3n completa del arma seleccionada"
+    dano: 0
+    alcance: 0
+    esArrojadiza: 0
+    capacidadCargador: 0
+    cadencia: 0
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 1
+    armadura: 0
+    esEquipamiento: 0
+    esBarril: 0
+  - weaponId: Barril explosivo
+    weaponName: Barril explosivo
+    cost: 5000
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: 3163183364f11ba4d830c6131d76cd09, type: 3}
+    categoria: 2
     disponible: 0
+    descripcion: "Disparale a estos barriles para crear una explosi\xF3n en \xE1rea
+      que da\xF1a a enemigos cercanos"
+    dano: 200
+    alcance: 20
+    esArrojadiza: 0
+    capacidadCargador: 0
+    cadencia: 0
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    esBarril: 1
+  - weaponId: Casco
+    weaponName: Casco
+    cost: 2000
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: 4e71f11c64ca270409eafc2e326e2158, type: 3}
+    categoria: 3
+    disponible: 0
+    descripcion: "Reduce el da\xF1o recibido."
+    dano: 0
+    alcance: 0
+    esArrojadiza: 0
+    capacidadCargador: 0
+    cadencia: 0
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 0
+    armadura: 5
+    esEquipamiento: 1
+    esBarril: 0
+  - weaponId: Espacio Extra
+    weaponName: Slot extra en el inventario
+    cost: 5000
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: 6d2e502912815dc4abe61690644554af, type: 3}
+    categoria: 3
+    disponible: 0
+    descripcion: Agrega un espacio en el inventario.
+    dano: 0
+    alcance: 0
+    esArrojadiza: 0
+    capacidadCargador: 0
+    cadencia: 0
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    esBarril: 0
   audioSource: {fileID: 0}
   purchaseSuccessSound: {fileID: 8300000, guid: 487c0b5596520c2498ec1af8b8abc0a0, type: 3}
-  purchaseDeniedSound: {fileID: 0}
+  purchaseDeniedSound: {fileID: 8300000, guid: 3a0bb452de8298a4692e50e90fc5192f, type: 3}
 --- !u!1 &4090663820659906789
 GameObject:
   m_ObjectHideFlags: 0
@@ -4006,6 +4213,260 @@ Transform:
   m_Children: []
   m_Father: {fileID: 4508941390767788258}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &5001234567890123401
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5001234567890123402}
+  - component: {fileID: 5001234567890123403}
+  - component: {fileID: 5001234567890123404}
+  - component: {fileID: 5001234567890123405}
+  - component: {fileID: 5001234567890123406}
+  m_Layer: 0
+  m_Name: NameCanvas
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &5001234567890123402
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5001234567890123401}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.01, y: 0.01, z: 0.01}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 5001234567890123408}
+  m_Father: {fileID: 1521601950827864487}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 200, y: 50}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!223 &5001234567890123403
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5001234567890123401}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 2
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 0
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
+  m_AdditionalShaderChannelsFlag: 0
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 0
+  m_TargetDisplay: 0
+--- !u!114 &5001234567890123404
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5001234567890123401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
+  m_UiScaleMode: 0
+  m_ReferencePixelsPerUnit: 100
+  m_ScaleFactor: 1
+  m_ReferenceResolution: {x: 800, y: 600}
+  m_ScreenMatchMode: 0
+  m_MatchWidthOrHeight: 0
+  m_PhysicalUnit: 3
+  m_FallbackScreenDPI: 96
+  m_DefaultSpriteDPI: 96
+  m_DynamicPixelsPerUnit: 1
+  m_PresetInfoIsWorld: 1
+--- !u!114 &5001234567890123405
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5001234567890123401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
+  m_IgnoreReversedGraphics: 1
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &5001234567890123406
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5001234567890123401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a2c9e41f6b8443481d0c9e3f5a7b1d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::Billboard
+  bloquearEjeVertical: 1
+--- !u!1 &5001234567890123407
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5001234567890123408}
+  - component: {fileID: 5001234567890123409}
+  - component: {fileID: 5001234567890123410}
+  m_Layer: 0
+  m_Name: NombreText
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &5001234567890123408
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5001234567890123407}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5001234567890123402}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &5001234567890123409
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5001234567890123407}
+  m_CullTransparentMesh: 1
+--- !u!114 &5001234567890123410
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5001234567890123407}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_text: Mercante
+  m_isRightToLeft: 0
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontSharedMaterials: []
+  m_fontMaterial: {fileID: 0}
+  m_fontMaterials: []
+  m_fontColor32:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+  m_enableVertexGradient: 0
+  m_colorMode: 3
+  m_fontColorGradient:
+    topLeft: {r: 1, g: 1, b: 1, a: 1}
+    topRight: {r: 1, g: 1, b: 1, a: 1}
+    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
+    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColorGradientPreset: {fileID: 0}
+  m_spriteAsset: {fileID: 0}
+  m_tintAllSprites: 0
+  m_StyleSheet: {fileID: 0}
+  m_TextStyleHashCode: -1183493901
+  m_overrideHtmlColors: 0
+  m_faceColor:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontSize: 28
+  m_fontSizeBase: 28
+  m_fontWeight: 700
+  m_enableAutoSizing: 0
+  m_fontSizeMin: 18
+  m_fontSizeMax: 72
+  m_fontStyle: 0
+  m_HorizontalAlignment: 2
+  m_VerticalAlignment: 512
+  m_textAlignment: 65535
+  m_characterSpacing: 0
+  m_characterHorizontalScale: 1
+  m_wordSpacing: 0
+  m_lineSpacing: 0
+  m_lineSpacingMax: 0
+  m_paragraphSpacing: 0
+  m_charWidthMaxAdj: 0
+  m_TextWrappingMode: 1
+  m_wordWrappingRatios: 0.4
+  m_overflowMode: 0
+  m_linkedTextComponent: {fileID: 0}
+  parentLinkedComponent: {fileID: 0}
+  m_enableKerning: 0
+  m_ActiveFontFeatures: 6e72656b
+  m_enableExtraPadding: 1
+  checkPaddingRequired: 0
+  m_isRichText: 1
+  m_EmojiFallbackSupport: 1
+  m_parseCtrlCharacters: 1
+  m_isOrthographic: 1
+  m_isCullingEnabled: 0
+  m_horizontalMapping: 0
+  m_verticalMapping: 0
+  m_uvLineOffset: 0
+  m_geometrySortingOrder: 0
+  m_IsTextObjectScaleStatic: 0
+  m_VertexBufferAutoSizeReduction: 0
+  m_useMaxVisibleDescender: 1
+  m_pageToDisplay: 1
+  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_isUsingLegacyAnimationComponent: 0
+  m_isVolumetricText: 0
+  m_hasFontAssetChanged: 0
+  m_baseMaterial: {fileID: 0}
+  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &5066409048126995763
 GameObject:
   m_ObjectHideFlags: 0
@@ -7626,257 +8087,3 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!1 &5001234567890123401
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 5001234567890123402}
-  - component: {fileID: 5001234567890123403}
-  - component: {fileID: 5001234567890123404}
-  - component: {fileID: 5001234567890123405}
-  - component: {fileID: 5001234567890123406}
-  m_Layer: 0
-  m_Name: NameCanvas
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &5001234567890123402
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5001234567890123401}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 2.2, z: 0}
-  m_LocalScale: {x: 0.01, y: 0.01, z: 0.01}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 5001234567890123408}
-  m_Father: {fileID: 1521601950827864487}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 200, y: 50}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!223 &5001234567890123403
-Canvas:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5001234567890123401}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_RenderMode: 2
-  m_Camera: {fileID: 0}
-  m_PlaneDistance: 100
-  m_PixelPerfect: 0
-  m_ReceivesEvents: 1
-  m_OverrideSorting: 0
-  m_OverridePixelPerfect: 0
-  m_SortingBucketNormalizedSize: 0
-  m_VertexColorAlwaysGammaSpace: 0
-  m_UseReflectionProbes: 0
-  m_AdditionalShaderChannelsFlag: 0
-  m_UpdateRectTransformForStandalone: 0
-  m_SortingLayerID: 0
-  m_SortingOrder: 0
-  m_TargetDisplay: 0
---- !u!114 &5001234567890123404
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5001234567890123401}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
-  m_UiScaleMode: 0
-  m_ReferencePixelsPerUnit: 100
-  m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 800, y: 600}
-  m_ScreenMatchMode: 0
-  m_MatchWidthOrHeight: 0
-  m_PhysicalUnit: 3
-  m_FallbackScreenDPI: 96
-  m_DefaultSpriteDPI: 96
-  m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 1
---- !u!114 &5001234567890123405
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5001234567890123401}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
-  m_IgnoreReversedGraphics: 1
-  m_BlockingObjects: 0
-  m_BlockingMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
---- !u!114 &5001234567890123406
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5001234567890123401}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7a2c9e41f6b8443481d0c9e3f5a7b1d4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Scripts::Billboard
-  bloquearEjeVertical: 1
---- !u!1 &5001234567890123407
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 5001234567890123408}
-  - component: {fileID: 5001234567890123409}
-  - component: {fileID: 5001234567890123410}
-  m_Layer: 0
-  m_Name: NombreText
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &5001234567890123408
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5001234567890123407}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 5001234567890123402}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!222 &5001234567890123409
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5001234567890123407}
-  m_CullTransparentMesh: 1
---- !u!114 &5001234567890123410
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5001234567890123407}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 0
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_text: Mercante
-  m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
-  m_fontMaterial: {fileID: 0}
-  m_fontMaterials: []
-  m_fontColor32:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
-  m_enableVertexGradient: 0
-  m_colorMode: 3
-  m_fontColorGradient:
-    topLeft: {r: 1, g: 1, b: 1, a: 1}
-    topRight: {r: 1, g: 1, b: 1, a: 1}
-    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
-    bottomRight: {r: 1, g: 1, b: 1, a: 1}
-  m_fontColorGradientPreset: {fileID: 0}
-  m_spriteAsset: {fileID: 0}
-  m_tintAllSprites: 0
-  m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: -1183493901
-  m_overrideHtmlColors: 0
-  m_faceColor:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontSize: 28
-  m_fontSizeBase: 28
-  m_fontWeight: 700
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
-  m_fontStyle: 0
-  m_HorizontalAlignment: 2
-  m_VerticalAlignment: 512
-  m_textAlignment: 65535
-  m_characterSpacing: 0
-  m_characterHorizontalScale: 1
-  m_wordSpacing: 0
-  m_lineSpacing: 0
-  m_lineSpacingMax: 0
-  m_paragraphSpacing: 0
-  m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 1
-  m_wordWrappingRatios: 0.4
-  m_overflowMode: 0
-  m_linkedTextComponent: {fileID: 0}
-  parentLinkedComponent: {fileID: 0}
-  m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656b
-  m_enableExtraPadding: 1
-  checkPaddingRequired: 0
-  m_isRichText: 1
-  m_EmojiFallbackSupport: 1
-  m_parseCtrlCharacters: 1
-  m_isOrthographic: 1
-  m_isCullingEnabled: 0
-  m_horizontalMapping: 0
-  m_verticalMapping: 0
-  m_uvLineOffset: 0
-  m_geometrySortingOrder: 0
-  m_IsTextObjectScaleStatic: 0
-  m_VertexBufferAutoSizeReduction: 0
-  m_useMaxVisibleDescender: 1
-  m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
-  m_isUsingLegacyAnimationComponent: 0
-  m_isVolumetricText: 0
-  m_hasFontAssetChanged: 0
-  m_baseMaterial: {fileID: 0}
-  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}

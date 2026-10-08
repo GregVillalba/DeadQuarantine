@@ -36,8 +36,11 @@ public class OpcionesUI : MonoBehaviour
         ("RebindDisparar", "Fire", null),
         ("RebindApuntar", "Aim", null),
         ("RebindRecargar", "Reload", null),
-        ("RebindCambiarArma", "SwitchWeapon", null),
+        ("RebindArmaPrimaria", "SelectPrimary", null),
+        ("RebindArmaSecundaria", "SelectSecondary", null),
         ("RebindGolpe", "Melee", null),
+        ("RebindSlot1", "UseSlot1", null),
+        ("RebindGranada", "Grenade", null),
     };
 
     // Nombres fijos de los controles a resolver en el editor.

@@ -75,20 +75,64 @@ public void SumarReaparicion()
         NotificarResultadoCompraClientRpc(weaponId, alcanza, ParametrosParaDueno());
     }
 
-    // Cura al jugador que compra. Si tiene la vida llena o está abatido no se cobra.
+    // Guarda la cura en el inventario del jugador (se usa después con Q / Z). Sin lugar no se cobra.
     [ServerRpc]
     public void ComprarCuracionServerRpc(string itemId, int costo, int puntosDeSalud)
     {
         PlayerHealth health = transform.root.GetComponentInChildren<PlayerHealth>();
 
         bool exito = health != null &&
-                     health.PuedeCurarse &&
-                     ScoreNetwork.Value >= costo;
+                     ScoreNetwork.Value >= costo &&
+                     health.GuardarCura(itemId, puntosDeSalud);
 
         if (exito)
-        {
             ScoreNetwork.Value -= costo;
-            health.Heal(puntosDeSalud);
+
+        NotificarResultadoCompraClientRpc(itemId, exito, ParametrosParaDueno());
+    }
+
+    // Slot extra: compra única que sube la capacidad de cada slot del inventario.
+    [ServerRpc]
+    public void ComprarEspacioExtraServerRpc(string itemId, int costo)
+    {
+        PlayerHealth health = transform.root.GetComponentInChildren<PlayerHealth>();
+
+        bool exito = health != null &&
+                     ScoreNetwork.Value >= costo &&
+                     health.ComprarEspacioExtra();
+
+        if (exito)
+            ScoreNetwork.Value -= costo;
+
+        NotificarResultadoCompraClientRpc(itemId, exito, ParametrosParaDueno());
+    }
+
+    // Chaleco / casco: si no se tiene se compra (escudo lleno); si está dañado o roto se repara
+    // por costoReparacion; si está lleno no se cobra nada.
+    [ServerRpc]
+    public void ComprarBlindajeServerRpc(string itemId, PiezaBlindaje pieza, int costoCompra, int costoReparacion, int escudo)
+    {
+        PlayerHealth health = transform.root.GetComponentInChildren<PlayerHealth>();
+        bool exito = false;
+
+        if (health != null && health.IsAlive)
+        {
+            if (!health.TieneBlindaje(pieza))
+            {
+                if (ScoreNetwork.Value >= costoCompra && health.EquiparBlindaje(pieza, escudo))
+                {
+                    ScoreNetwork.Value -= costoCompra;
+                    exito = true;
+                }
+            }
+            else if (health.NecesitaReparacion(pieza) && ScoreNetwork.Value >= costoReparacion)
+            {
+                if (health.RepararBlindaje(pieza))
+                {
+                    ScoreNetwork.Value -= costoReparacion;
+                    exito = true;
+                }
+            }
         }
 
         NotificarResultadoCompraClientRpc(itemId, exito, ParametrosParaDueno());

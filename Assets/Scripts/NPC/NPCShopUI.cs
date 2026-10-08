@@ -71,7 +71,7 @@ public class NPCShopUI : MonoBehaviour
     [SerializeField] private FilaEstadistica filaCargador;
     [Tooltip("Vida que recuperan los consumibles de curación.")]
     [SerializeField] private FilaEstadistica filaCuracion;
-    [Tooltip("Armadura que da el equipamiento.")]
+    [Tooltip("Escudo que da el equipamiento (chaleco / casco).")]
     [SerializeField] private FilaEstadistica filaArmadura;
     [Tooltip("Daño que llena la barra entera.")]
     [SerializeField] private float danoMaximo = 200f;
@@ -83,8 +83,8 @@ public class NPCShopUI : MonoBehaviour
     [SerializeField] private float cargadorMaximo = 30f;
     [Tooltip("Curación que llena la barra entera.")]
     [SerializeField] private float curacionMaxima = 100f;
-    [Tooltip("Armadura que llena la barra entera.")]
-    [SerializeField] private float armaduraMaxima = 50f;
+    [Tooltip("Escudo que llena la barra entera.")]
+    [SerializeField] private float armaduraMaxima = 100f;
 
     [Serializable]
     private class FilaEstadistica
@@ -104,8 +104,18 @@ public class NPCShopUI : MonoBehaviour
     [SerializeField] private string formatoComprar = "COMPRAR - {0} pts";
     [SerializeField] private string textoYaComprado = "COMPRADO";
     [SerializeField] private string textoNoDisponibleCompra = "PRÓXIMAMENTE";
-    [Tooltip("Se muestra en los objetos de curación cuando el jugador ya tiene la vida llena.")]
-    [SerializeField] private string textoVidaLlena = "VIDA LLENA";
+    [Tooltip("Se muestra en las curas cuando no queda lugar para ellas en el inventario.")]
+    [SerializeField] private string textoInventarioLleno = "INVENTARIO LLENO";
+    [Tooltip("Se muestra en la caja de munición cuando el arma en mano ya tiene el cargador y la reserva llenos.")]
+    [SerializeField] private string textoMunicionLlena = "MUNICIÓN LLENA";
+    [Tooltip("Chaleco / casco comprado y con el escudo lleno.")]
+    [SerializeField] private string textoEquipado = "EQUIPADO";
+    [Tooltip("Chaleco / casco dañado o roto. {0} se reemplaza por el costo de reparación.")]
+    [SerializeField] private string formatoReparar = "REPARAR - {0} pts";
+    [Tooltip("Precio en la tarjeta de un chaleco / casco dañado. {0} = costo de reparación.")]
+    [SerializeField] private string formatoRepararTarjeta = "Reparar: {0} pts";
+    [Tooltip("Precio en la tarjeta de un chaleco / casco roto (0 de escudo). {0} = costo de reparación.")]
+    [SerializeField] private string formatoRotoTarjeta = "Roto - Reparar: {0} pts";
     [SerializeField] private Image progresoCompraFill;
     [SerializeField] private float tiempoMantenerParaComprar = 2f;
 
@@ -367,7 +377,11 @@ public class NPCShopUI : MonoBehaviour
             playerScore.ScoreNetwork.OnValueChanged += OnScoreChanged;
 
         if (playerHealth != null)
+        {
             playerHealth.OnHealthChanged += OnVidaCambiada;
+            playerHealth.OnBlindajeChanged += OnEquipamientoCambiado;
+            playerHealth.OnInventarioChanged += OnEquipamientoCambiado;
+        }
 
         movementWasLocked = playerMovement != null && playerMovement.MovementLocked;
         lookWasEnabled = playerLook != null && playerLook.enabled;
@@ -402,7 +416,11 @@ public class NPCShopUI : MonoBehaviour
             playerScore.ScoreNetwork.OnValueChanged -= OnScoreChanged;
 
         if (playerHealth != null)
+        {
             playerHealth.OnHealthChanged -= OnVidaCambiada;
+            playerHealth.OnBlindajeChanged -= OnEquipamientoCambiado;
+            playerHealth.OnInventarioChanged -= OnEquipamientoCambiado;
+        }
 
         DestruirFilas();
 
@@ -433,6 +451,10 @@ public class NPCShopUI : MonoBehaviour
         foreach (WeaponOffer oferta in currentVendor.Offers)
         {
             if (oferta.categoria != seccionActual)
+                continue;
+
+            // Ofertas de otra dificultad / modo: no aparecen.
+            if (!DisponibilidadTienda.SeMuestraEnPartidaActual(oferta))
                 continue;
 
             GameObject fila = Instantiate(rowPrefab, rowsContainer);
@@ -622,9 +644,19 @@ public class NPCShopUI : MonoBehaviour
             textoCompra.text = textoNoDisponibleCompra;
             textoCompra.color = colorNoDisponible;
         }
-        else if (VidaLlenaPara(ofertaSeleccionada))
+        else if (InventarioLlenoPara(ofertaSeleccionada))
         {
-            textoCompra.text = textoVidaLlena;
+            textoCompra.text = textoInventarioLleno;
+            textoCompra.color = colorComprado;
+        }
+        else if (MunicionLlenaPara(ofertaSeleccionada))
+        {
+            textoCompra.text = textoMunicionLlena;
+            textoCompra.color = colorComprado;
+        }
+        else if (ofertaSeleccionada.EsBlindaje && EstaComprada(ofertaSeleccionada))
+        {
+            textoCompra.text = textoEquipado;
             textoCompra.color = colorComprado;
         }
         else if (EstaComprada(ofertaSeleccionada))
@@ -634,8 +666,10 @@ public class NPCShopUI : MonoBehaviour
         }
         else
         {
-            bool alcanza = playerScore != null && playerScore.ScoreNetwork.Value >= ofertaSeleccionada.cost;
-            textoCompra.text = string.Format(formatoComprar, ofertaSeleccionada.cost);
+            int costo = CostoActual(ofertaSeleccionada);
+            bool alcanza = playerScore != null && playerScore.ScoreNetwork.Value >= costo;
+            string formato = BlindajeReparable(ofertaSeleccionada) ? formatoReparar : formatoComprar;
+            textoCompra.text = string.Format(formato, costo);
             textoCompra.color = alcanza ? colorAlcanza : colorNoAlcanza;
         }
     }
@@ -660,7 +694,7 @@ public class NPCShopUI : MonoBehaviour
             lineas.Add("Curación: +" + oferta.puntosDeSalud + " de vida");
 
         if (oferta.armadura > 0)
-            lineas.Add("Armadura: +" + oferta.armadura);
+            lineas.Add("Escudo: +" + oferta.armadura);
 
         return string.Join("\n", lineas);
     }
@@ -672,9 +706,10 @@ public class NPCShopUI : MonoBehaviour
             ofertaSeleccionada.disponible &&
             weaponSwitcher != null &&
             !EstaComprada(ofertaSeleccionada) &&
-            !VidaLlenaPara(ofertaSeleccionada) &&
+            !InventarioLlenoPara(ofertaSeleccionada) &&
+            !MunicionLlenaPara(ofertaSeleccionada) &&
             playerScore != null &&
-            playerScore.ScoreNetwork.Value >= ofertaSeleccionada.cost;
+            playerScore.ScoreNetwork.Value >= CostoActual(ofertaSeleccionada);
 
         bool teclaPresionada = Keyboard.current != null && Keyboard.current.spaceKey.isPressed;
 
@@ -727,23 +762,70 @@ public class NPCShopUI : MonoBehaviour
             ActualizarFilas();
     }
 
+    private void OnEquipamientoCambiado()
+    {
+        if (estaAbierta)
+            ActualizarFilas();
+    }
+
     // Las curaciones se compran cuantas veces se quiera; nunca quedan "compradas".
     // De las granadas solo queda "comprada" la que se está tirando ahora.
+    // Chaleco / casco: "comprado" solo mientras tiene el escudo lleno; dañado o roto se puede reparar.
     private bool EstaComprada(WeaponOffer oferta)
     {
+        if (oferta.EsBlindaje)
+            return playerHealth != null &&
+                   playerHealth.TieneBlindaje(oferta.piezaBlindaje) &&
+                   !playerHealth.NecesitaReparacion(oferta.piezaBlindaje);
+
+        // El Slot extra se compra una sola vez.
+        if (oferta.esEspacioInventario)
+            return playerHealth != null && playerHealth.EspacioExtraComprado.Value;
+
         if (grenadeThrow != null && grenadeThrow.EsTipoDeGranada(oferta.weaponId))
             return grenadeThrow.TipoActualId == oferta.weaponId;
 
         return !oferta.EsCuracion &&
+               !oferta.esMunicion &&
                weaponSwitcher != null &&
                weaponSwitcher.IsUnlocked(oferta.weaponId);
     }
 
-    private bool VidaLlenaPara(WeaponOffer oferta)
+    // Las curas van al inventario: sin un slot con lugar para ese tipo no se pueden comprar.
+    private bool InventarioLlenoPara(WeaponOffer oferta)
     {
         return oferta.EsCuracion &&
                playerHealth != null &&
-               !playerHealth.PuedeCurarse;
+               !playerHealth.PuedeGuardarCura(oferta.weaponId);
+    }
+
+    // La caja de munición restaura el arma en mano: si ya está llena no tiene sentido comprarla.
+    private bool MunicionLlenaPara(WeaponOffer oferta)
+    {
+        return oferta.esMunicion &&
+               weaponSwitcher != null &&
+               weaponSwitcher.CurrentWeapon != null &&
+               weaponSwitcher.CurrentWeapon.MunicionCompleta;
+    }
+
+    private bool BlindajeReparable(WeaponOffer oferta)
+    {
+        return oferta.EsBlindaje &&
+               playerHealth != null &&
+               playerHealth.NecesitaReparacion(oferta.piezaBlindaje);
+    }
+
+    private bool BlindajeRoto(WeaponOffer oferta)
+    {
+        return BlindajeReparable(oferta) && playerHealth.EscudoDe(oferta.piezaBlindaje) <= 0;
+    }
+
+    // Lo que cuesta ahora: la reparación si la pieza está dañada o rota, si no el precio de compra.
+    private int CostoActual(WeaponOffer oferta)
+    {
+        return BlindajeReparable(oferta) && currentVendor != null
+            ? currentVendor.CostoReparacion(oferta)
+            : oferta.cost;
     }
 
     private void ActualizarFilas()
@@ -756,10 +838,14 @@ public class NPCShopUI : MonoBehaviour
             bool disponible = fila.oferta.disponible;
 
             bool comprada = disponible && EstaComprada(fila.oferta);
-            bool vidaLlena = disponible && VidaLlenaPara(fila.oferta);
+            bool inventarioLleno = disponible && InventarioLlenoPara(fila.oferta);
+            bool municionLlena = disponible && MunicionLlenaPara(fila.oferta);
+
+            bool reparable = disponible && BlindajeReparable(fila.oferta);
+            int costo = CostoActual(fila.oferta);
 
             bool alcanza = playerScore != null &&
-                           playerScore.ScoreNetwork.Value >= fila.oferta.cost;
+                           playerScore.ScoreNetwork.Value >= costo;
 
             if (fila.icono != null)
             {
@@ -780,24 +866,39 @@ public class NPCShopUI : MonoBehaviour
 
                 colorFila = colorNoDisponible;
             }
-            else if (vidaLlena)
+            else if (inventarioLleno)
             {
                 if (fila.etiquetaCosto != null)
-                    fila.etiquetaCosto.text = "Vida llena";
+                    fila.etiquetaCosto.text = "Inventario lleno";
+
+                colorFila = colorComprado;
+            }
+            else if (municionLlena)
+            {
+                if (fila.etiquetaCosto != null)
+                    fila.etiquetaCosto.text = "Munición llena";
 
                 colorFila = colorComprado;
             }
             else if (comprada)
             {
                 if (fila.etiquetaCosto != null)
-                    fila.etiquetaCosto.text = "Comprada";
+                    fila.etiquetaCosto.text = fila.oferta.EsBlindaje ? "Equipado" : "Comprada";
 
                 colorFila = colorComprado;
+            }
+            else if (reparable)
+            {
+                if (fila.etiquetaCosto != null)
+                    fila.etiquetaCosto.text = string.Format(
+                        BlindajeRoto(fila.oferta) ? formatoRotoTarjeta : formatoRepararTarjeta, costo);
+
+                colorFila = alcanza ? colorAlcanza : colorNoAlcanza;
             }
             else
             {
                 if (fila.etiquetaCosto != null)
-                    fila.etiquetaCosto.text = fila.oferta.cost + " pts";
+                    fila.etiquetaCosto.text = costo + " pts";
 
                 colorFila = alcanza ? colorAlcanza : colorNoAlcanza;
             }

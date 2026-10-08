@@ -174,6 +174,152 @@ Transform:
   - {fileID: 5590569457023223321}
   m_Father: {fileID: 6242715308081735122}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &195177618645564475
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5562773725124919845}
+  m_Layer: 0
+  m_Name: Limits
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5562773725124919845
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 195177618645564475}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.004, y: -0.04, z: 0.018}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 5080472405434775523}
+  - {fileID: 6808251564675414546}
+  - {fileID: 7838454357335893618}
+  m_Father: {fileID: 4496252039056711960}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &351069327672158675
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4363941383397255228}
+  - component: {fileID: 6294546266173285107}
+  - component: {fileID: 7738390390249867415}
+  - component: {fileID: 7653925297152721295}
+  m_Layer: 0
+  m_Name: TableLeftLimit
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4363941383397255228
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 351069327672158675}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.384, y: 1.3234893, z: 0.003}
+  m_LocalScale: {x: 0.28670195, y: 2.1076624, z: -0.98818874}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5080472405434775523}
+  m_LocalEulerAnglesHint: {x: 0, y: 3.223, z: 0}
+--- !u!33 &6294546266173285107
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 351069327672158675}
+  m_Mesh: {fileID: 0}
+--- !u!23 &7738390390249867415
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 351069327672158675}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!65 &7653925297152721295
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 351069327672158675}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &368801169050056068
 GameObject:
   m_ObjectHideFlags: 0
@@ -1331,6 +1477,230 @@ Transform:
   - {fileID: 565098695449748923}
   m_Father: {fileID: 3226080123911864760}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1646407048041167481
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6808251564675414546}
+  - component: {fileID: 3083866265720413589}
+  - component: {fileID: 1679030958081969171}
+  - component: {fileID: 7321223377889800972}
+  m_Layer: 0
+  m_Name: GunRackLimit
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6808251564675414546
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1646407048041167481}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.028124573, z: -0, w: 0.9996044}
+  m_LocalPosition: {x: 1.8300011, y: 1.2325678, z: -0.51999974}
+  m_LocalScale: {x: 1.2901453, y: 2.463604, z: -0.77043045}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5562773725124919845}
+  m_LocalEulerAnglesHint: {x: 0, y: 3.223, z: 0}
+--- !u!33 &3083866265720413589
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1646407048041167481}
+  m_Mesh: {fileID: 0}
+--- !u!23 &1679030958081969171
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1646407048041167481}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!65 &7321223377889800972
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1646407048041167481}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &1672120579727501999
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7838454357335893618}
+  - component: {fileID: 8547617686227284689}
+  - component: {fileID: 5025035223409574362}
+  - component: {fileID: 8993956208563907636}
+  m_Layer: 0
+  m_Name: ShelfLimit
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7838454357335893618
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1672120579727501999}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.018096685, z: -0, w: 0.9998363}
+  m_LocalPosition: {x: -2.140001, y: 1.64, z: -0.31999993}
+  m_LocalScale: {x: 1.8896142, y: 3.285467, z: 0.88457817}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5562773725124919845}
+  m_LocalEulerAnglesHint: {x: 0, y: 2.074, z: 0}
+--- !u!33 &8547617686227284689
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1672120579727501999}
+  m_Mesh: {fileID: 0}
+--- !u!23 &5025035223409574362
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1672120579727501999}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!65 &8993956208563907636
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1672120579727501999}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1974157887746542764
 GameObject:
   m_ObjectHideFlags: 0
@@ -1786,6 +2156,118 @@ Transform:
   - {fileID: 8906366629756543865}
   m_Father: {fileID: 4042537638300930300}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2544272055589536378
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9145025701319407687}
+  - component: {fileID: 2264890172758171097}
+  - component: {fileID: 657358614759181961}
+  - component: {fileID: 705518319815900441}
+  m_Layer: 0
+  m_Name: TableRightLimit
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9145025701319407687
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2544272055589536378}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.384, y: 1.3234895, z: 0.006}
+  m_LocalScale: {x: 0.28670198, y: 2.1076624, z: -0.98818874}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5080472405434775523}
+  m_LocalEulerAnglesHint: {x: 0, y: 3.223, z: 0}
+--- !u!33 &2264890172758171097
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2544272055589536378}
+  m_Mesh: {fileID: 0}
+--- !u!23 &657358614759181961
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2544272055589536378}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!65 &705518319815900441
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2544272055589536378}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &2545416879678186303
 GameObject:
   m_ObjectHideFlags: 0
@@ -4587,6 +5069,121 @@ SkinnedMeshRenderer:
     m_Center: {x: 0.00011152029, y: 0.84347904, z: -0.03633435}
     m_Extent: {x: 1.025528, y: 0.9445722, z: 0.24946828}
   m_DirtyAABB: 0
+--- !u!1 &4802555877366230827
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5080472405434775523}
+  - component: {fileID: 5408916590828909317}
+  - component: {fileID: 2119888301880628556}
+  - component: {fileID: 317494534234351306}
+  m_Layer: 0
+  m_Name: TableLimit
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5080472405434775523
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4802555877366230827}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.028124573, z: -0, w: 0.9996044}
+  m_LocalPosition: {x: 0.030000001, y: 0.622, z: 0.26999956}
+  m_LocalScale: {x: 2.2171268, y: 1.1688799, z: 2.5902488}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 4363941383397255228}
+  - {fileID: 9145025701319407687}
+  - {fileID: 5932136854446997676}
+  m_Father: {fileID: 5562773725124919845}
+  m_LocalEulerAnglesHint: {x: 0, y: 3.223, z: 0}
+--- !u!33 &5408916590828909317
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4802555877366230827}
+  m_Mesh: {fileID: 0}
+--- !u!23 &2119888301880628556
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4802555877366230827}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!65 &317494534234351306
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4802555877366230827}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &4944891750715830917
 GameObject:
   m_ObjectHideFlags: 0
@@ -4982,6 +5579,7 @@ Transform:
   - {fileID: 6977522479975788790}
   - {fileID: 1493314690006008637}
   - {fileID: 231845336866998990}
+  - {fileID: 5562773725124919845}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 176.984, z: 0}
 --- !u!95 &7235786834848943752
@@ -4994,7 +5592,7 @@ Animator:
   m_GameObject: {fileID: 5101806914358668905}
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: b3a849229c6faea448cb1f0200840e8d, type: 3}
-  m_Controller: {fileID: 9100000, guid: 36b4444f905f18a45b26ac0ea0477494, type: 2}
+  m_Controller: {fileID: 9100000, guid: e1e1f7b3cff1ee3408163f3417fcda70, type: 2}
   m_CullingMode: 1
   m_UpdateMode: 0
   m_ApplyRootMotion: 1
@@ -5043,49 +5641,316 @@ MonoBehaviour:
   - weaponId: Revolver
     weaponName: Revolver
     cost: 5000
-    weaponIcon: {fileID: 21300000, guid: 72df9454bbf9a6a46931033e8f709d98, type: 3}
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: b7df9d66b732fcf4784802357ad58254, type: 3}
+    categoria: 0
     disponible: 0
+    dificultades: 7
+    modos: 7
     descripcion: 'Arma de mayor potencia pero con menos carencia que la pistola inicial.  '
     dano: 50
     alcance: 150
+    esArrojadiza: 0
     capacidadCargador: 7
     cadencia: 0.5
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    piezaBlindaje: 0
+    esEspacioInventario: 0
+    esBarril: 0
   - weaponId: Rifle
     weaponName: Rifle de asalto
-    cost: 1500
-    weaponIcon: {fileID: 21300000, guid: cf8eabf114d4a044b91137d3fad06f26, type: 3}
+    cost: 15000
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: 08790bb9eb8727f49b4c60d3e1d68fd8, type: 3}
+    categoria: 0
     disponible: 1
+    dificultades: 7
+    modos: 7
     descripcion: "Con este rifle de asalto puedes mantener alejados a tus enemigos
       por su mayor da\xF1o y su amplio alcance."
     dano: 50
     alcance: 120
+    esArrojadiza: 0
     capacidadCargador: 30
     cadencia: 0.1
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    piezaBlindaje: 0
+    esEspacioInventario: 0
+    esBarril: 0
   - weaponId: Escopeta
     weaponName: Escopeta
     cost: 15000
-    weaponIcon: {fileID: 21300000, guid: 46d0f367893425444b488bd59fcc874f, type: 3}
-    disponible: 0
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: dfe504abb9ea09c428b5c44fa38cdadf, type: 3}
+    categoria: 0
+    disponible: 1
+    dificultades: 7
+    modos: 7
     descripcion: "Nada mejor que una buena escopeta para aguantar una extensa oleada.
       Adquiere esta hermosa arma  y tus enemigos caer\xE1n frente a ti."
     dano: 200
     alcance: 25
+    esArrojadiza: 0
     capacidadCargador: 10
     cadencia: 1
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    piezaBlindaje: 0
+    esEspacioInventario: 0
+    esBarril: 0
   - weaponId: Granadas
     weaponName: Granadas
     cost: 2000
-    weaponIcon: {fileID: 21300000, guid: c44f35d0755157b4a958f40a5a8ffb7e, type: 3}
-    disponible: 0
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: 3c84896e27573b346976e1e5ef2e6786, type: 3}
+    categoria: 1
+    disponible: 1
+    dificultades: 7
+    modos: 7
     descripcion: "Usa esta granada si te encuentras acorralado por un gran grupo
       de enemigos. Su alto da\xF1o te dar\xE1 tiempo para huir."
     dano: 200
     alcance: 20
+    esArrojadiza: 1
     capacidadCargador: 0
     cadencia: 0
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    piezaBlindaje: 0
+    esEspacioInventario: 0
+    esBarril: 0
+  - weaponId: Granada Cegadora
+    weaponName: Granada Cegadora
+    cost: 2000
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: dbd606b50b0b7c44e86e530380c8c08c, type: 3}
+    categoria: 1
+    disponible: 1
+    dificultades: 7
+    modos: 7
+    descripcion: "Una poderosa granada que no hace mucho da\xF1o pero es muy util
+      para huir cegando a tus enemigos."
+    dano: 10
+    alcance: 20
+    esArrojadiza: 1
+    capacidadCargador: 0
+    cadencia: 0
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    piezaBlindaje: 0
+    esEspacioInventario: 0
+    esBarril: 0
+  - weaponId: Granada de Humo
+    weaponName: Granada de Humo
+    cost: 2000
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: 91716cc282564b84ab6d3f1ab72467b5, type: 3}
+    categoria: 1
+    disponible: 1
+    dificultades: 7
+    modos: 7
+    descripcion: Es una granada de humo que no tiene mucha utilidad en un apocalipsis
+      zombie.
+    dano: 10
+    alcance: 20
+    esArrojadiza: 1
+    capacidadCargador: 0
+    cadencia: 0
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    piezaBlindaje: 0
+    esEspacioInventario: 0
+    esBarril: 0
+  - weaponId: "Frasco de vida peque\xF1o"
+    weaponName: "Frasco de vida peque\xF1o"
+    cost: 5000
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: 9a1ea11fd03ec4f4092f48c83098eff5, type: 3}
+    categoria: 2
+    disponible: 1
+    dificultades: 4
+    modos: 7
+    descripcion: Se guarda en el inventario. Al usarla cura 50 puntos de salud.
+    dano: 0
+    alcance: 0
+    esArrojadiza: 0
+    capacidadCargador: 0
+    cadencia: 0
+    esConsumible: 1
+    puntosDeSalud: 50
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    piezaBlindaje: 0
+    esEspacioInventario: 0
+    esBarril: 0
+  - weaponId: Frasco de vida grande
+    weaponName: Frasco de vida grande
+    cost: 8000
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: 4ae9fe43e4db9b74cbde7af67e1e338f, type: 3}
+    categoria: 2
+    disponible: 1
+    dificultades: 4
+    modos: 7
+    descripcion: Se guarda en el inventario. Al usarla cura 100 puntos de salud.
+    dano: 0
+    alcance: 0
+    esArrojadiza: 0
+    capacidadCargador: 0
+    cadencia: 0
+    esConsumible: 1
+    puntosDeSalud: 100
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    piezaBlindaje: 0
+    esEspacioInventario: 0
+    esBarril: 0
+  - weaponId: "Caja de munici\xF3n"
+    weaponName: "Caja de munici\xF3n"
+    cost: 2000
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: 263468d88e9d19b46be3d858627afdb6, type: 3}
+    categoria: 2
+    disponible: 1
+    dificultades: 6
+    modos: 7
+    descripcion: "Reestablece la munici\xF3n completa del arma seleccionada"
+    dano: 0
+    alcance: 0
+    esArrojadiza: 0
+    capacidadCargador: 0
+    cadencia: 0
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 1
+    armadura: 0
+    esEquipamiento: 0
+    piezaBlindaje: 0
+    esEspacioInventario: 0
+    esBarril: 0
+  - weaponId: Barril explosivo
+    weaponName: Barril explosivo
+    cost: 5000
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: 3163183364f11ba4d830c6131d76cd09, type: 3}
+    categoria: 2
+    disponible: 0
+    dificultades: 7
+    modos: 4
+    descripcion: "Disparale a estos barriles para crear una explosi\xF3n en \xE1rea
+      que da\xF1a a enemigos cercanos"
+    dano: 200
+    alcance: 20
+    esArrojadiza: 0
+    capacidadCargador: 0
+    cadencia: 0
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    piezaBlindaje: 0
+    esEspacioInventario: 0
+    esBarril: 1
+  - weaponId: Casco
+    weaponName: "Casco bal\xEDstico"
+    cost: 2000
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: 4e71f11c64ca270409eafc2e326e2158, type: 3}
+    categoria: 3
+    disponible: 1
+    dificultades: 7
+    modos: 7
+    descripcion: "Aumenta tu barra de escudo en 25 puntos. Si compras este \xEDtem
+      al recibir da\xF1o se reduce tu barra de escudo en vez de tu barra de salud.
+      Combina esta pieza con el chaleco para llenar tu barra de escudo."
+    dano: 0
+    alcance: 0
+    esArrojadiza: 0
+    capacidadCargador: 0
+    cadencia: 0
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 0
+    armadura: 25
+    esEquipamiento: 1
+    piezaBlindaje: 2
+    esEspacioInventario: 0
+    esBarril: 0
+  - weaponId: Espacio Extra
+    weaponName: Slot extra en el inventario
+    cost: 5000
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: 6d2e502912815dc4abe61690644554af, type: 3}
+    categoria: 3
+    disponible: 1
+    dificultades: 7
+    modos: 7
+    descripcion: "Permite llevar una cura m\xE1s del mismo tipo en el slot de curas"
+    dano: 0
+    alcance: 0
+    esArrojadiza: 0
+    capacidadCargador: 0
+    cadencia: 0
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 0
+    armadura: 0
+    esEquipamiento: 0
+    piezaBlindaje: 0
+    esEspacioInventario: 1
+    esBarril: 0
+  - weaponId: Chaleco
+    weaponName: "Chaleco bal\xEDstico"
+    cost: 2000
+    weaponIcon: {fileID: 0}
+    imagenTarjeta: {fileID: 21300000, guid: 38be1ffda42db7a40bceca146e34ef6a, type: 3}
+    categoria: 3
+    disponible: 1
+    dificultades: 7
+    modos: 7
+    descripcion: "Aumenta tu barra de escudo en 75 puntos. Si compras este \xEDtem
+      al recibir da\xF1o se reduce tu barra de escudo en vez de tu barra de salud.
+      Combina esta pieza con el casco para llenar tu barra de escudo."
+    dano: 0
+    alcance: 0
+    esArrojadiza: 0
+    capacidadCargador: 0
+    cadencia: 0
+    esConsumible: 0
+    puntosDeSalud: 0
+    esMunicion: 0
+    armadura: 75
+    esEquipamiento: 1
+    piezaBlindaje: 1
+    esEspacioInventario: 0
+    esBarril: 0
+  porcentajeReparacion: 0.25
   audioSource: {fileID: 0}
   purchaseSuccessSound: {fileID: 8300000, guid: 487c0b5596520c2498ec1af8b8abc0a0, type: 3}
-  purchaseDeniedSound: {fileID: 0}
+  purchaseDeniedSound: {fileID: 8300000, guid: 3a0bb452de8298a4692e50e90fc5192f, type: 3}
 --- !u!1 &5122725832992993963
 GameObject:
   m_ObjectHideFlags: 0
@@ -7049,6 +7914,118 @@ SkinnedMeshRenderer:
     m_Center: {x: -0.002930373, y: 1.4884231, z: -0.020747475}
     m_Extent: {x: 0.1631276, y: 0.09145135, z: 0.13126609}
   m_DirtyAABB: 0
+--- !u!1 &8143760820334828606
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5932136854446997676}
+  - component: {fileID: 4764077282699952029}
+  - component: {fileID: 7977826929535014472}
+  - component: {fileID: 6878943369210137768}
+  m_Layer: 0
+  m_Name: TableUpLimit
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5932136854446997676
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8143760820334828606}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0, y: 1.585, z: 0.027}
+  m_LocalScale: {x: 0.38887, y: 1, z: 0.95235}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5080472405434775523}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &4764077282699952029
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8143760820334828606}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &7977826929535014472
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8143760820334828606}
+  m_Enabled: 0
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!65 &6878943369210137768
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8143760820334828606}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &8212219549930013486
 GameObject:
   m_ObjectHideFlags: 0
