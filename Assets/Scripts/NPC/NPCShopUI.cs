@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -18,6 +19,30 @@ public class NPCShopUI : MonoBehaviour
     [SerializeField] private GameObject rowPrefab;
     [SerializeField] private Button closeButton;
     [SerializeField] private TextMeshProUGUI scoreText;
+    [Tooltip("{0} se reemplaza por los puntos del jugador.")]
+    [SerializeField] private string formatoPuntos = "Tus puntos: {0}";
+
+    [Header("Secciones (pestañas de la izquierda)")]
+    [Tooltip("Un elemento por pestaña: su categoría y el botón que la abre. Las ofertas se filtran por WeaponOffer.categoria.")]
+    [SerializeField] private List<SeccionTienda> secciones = new List<SeccionTienda>();
+    [SerializeField] private CategoriaTienda seccionInicial = CategoriaTienda.Armas;
+    [SerializeField] private Color colorSeccionNormal = new Color(1f, 1f, 1f, 0.08f);
+    [SerializeField] private Color colorSeccionSeleccionada = new Color(0.4f, 0.9f, 1f, 0.35f);
+    [SerializeField] private Color colorMarcoNormal = new Color(1f, 1f, 1f, 0.35f);
+    [SerializeField] private Color colorMarcoSeleccionado = new Color(0.45f, 0.95f, 1f, 1f);
+    [Tooltip("Opcional. Se activa cuando la sección elegida no tiene ofertas (ej: un texto \"Próximamente\").")]
+    [SerializeField] private GameObject avisoSeccionVacia;
+
+    [Serializable]
+    private class SeccionTienda
+    {
+        public CategoriaTienda categoria;
+        public Button boton;
+        [Tooltip("Opcional. Imagen que se tiñe al seleccionar la sección. Si queda vacío se usa la imagen del botón.")]
+        public Image fondo;
+        [Tooltip("Opcional. Borde de la pestaña: se tiñe con Color Marco Normal / Seleccionado.")]
+        public Image marco;
+    }
 
     [Header("Colores")]
     [SerializeField] private Color colorAlcanza = new Color(0f, 1f, 0f, 1f);
@@ -26,15 +51,61 @@ public class NPCShopUI : MonoBehaviour
     [SerializeField] private Color colorNoDisponible = new Color(0.6f, 0.6f, 0.6f, 1f);
     [SerializeField] private Color colorFilaNormal = new Color(1f, 1f, 1f, 0.08f);
     [SerializeField] private Color colorFilaSeleccionada = new Color(1f, 0.85f, 0.2f, 0.35f);
+    [Tooltip("Color fijo del nombre en la tarjeta. El estado (alcanza / no alcanza / comprada) se indica solo con el color del precio.")]
+    [SerializeField] private Color colorNombreTarjeta = Color.white;
 
     [Header("Panel de detalle (derecha)")]
+    [Tooltip("Opcional. Se muestra solo mientras hay un objeto seleccionado.")]
+    [SerializeField] private GameObject panelDetalle;
     [SerializeField] private Image iconoDetalle;
     [SerializeField] private TextMeshProUGUI nombreDetalleText;
     [SerializeField] private TextMeshProUGUI descripcionDetalleText;
+    [Tooltip("Opcional. Todas las estadísticas en un solo texto (formato viejo). Si usás las filas de abajo podés dejarlo vacío.")]
     [SerializeField] private TextMeshProUGUI statsDetalleText;
-    [SerializeField] private string textoSinSeleccion = "Seleccioná un arma de la lista para ver su descripción y estadísticas.";
+    [SerializeField] private string textoSinSeleccion = "Seleccioná un objeto de la lista para ver su descripción y estadísticas.";
+
+    [Header("Estadísticas (filas con barra)")]
+    [SerializeField] private FilaEstadistica filaDano;
+    [SerializeField] private FilaEstadistica filaCadencia;
+    [SerializeField] private FilaEstadistica filaAlcance;
+    [SerializeField] private FilaEstadistica filaCargador;
+    [Tooltip("Vida que recuperan los consumibles de curación.")]
+    [SerializeField] private FilaEstadistica filaCuracion;
+    [Tooltip("Armadura que da el equipamiento.")]
+    [SerializeField] private FilaEstadistica filaArmadura;
+    [Tooltip("Daño que llena la barra entera.")]
+    [SerializeField] private float danoMaximo = 200f;
+    [Tooltip("Balas por segundo que llenan la barra entera (cadencia = segundos entre disparos).")]
+    [SerializeField] private float balasPorSegundoMaximo = 10f;
+    [Tooltip("Alcance (m) que llena la barra entera.")]
+    [SerializeField] private float alcanceMaximo = 150f;
+    [Tooltip("Balas de cargador que llenan la barra entera.")]
+    [SerializeField] private float cargadorMaximo = 30f;
+    [Tooltip("Curación que llena la barra entera.")]
+    [SerializeField] private float curacionMaxima = 100f;
+    [Tooltip("Armadura que llena la barra entera.")]
+    [SerializeField] private float armaduraMaxima = 50f;
+
+    [Serializable]
+    private class FilaEstadistica
+    {
+        [Tooltip("La fila entera: se oculta cuando la estadística no aplica (ej: cargador en granadas).")]
+        public GameObject fila;
+        public TextMeshProUGUI valor;
+        [Tooltip("Opcional. Image en modo Filled.")]
+        public Image barra;
+    }
 
     [Header("Comprar manteniendo ESPACIO")]
+    [Tooltip("Opcional. Bloque de compra (abajo a la derecha). Se muestra solo mientras hay un objeto seleccionado.")]
+    [SerializeField] private GameObject panelCompra;
+    [SerializeField] private TextMeshProUGUI textoCompra;
+    [Tooltip("{0} se reemplaza por el costo.")]
+    [SerializeField] private string formatoComprar = "COMPRAR - {0} pts";
+    [SerializeField] private string textoYaComprado = "COMPRADO";
+    [SerializeField] private string textoNoDisponibleCompra = "PRÓXIMAMENTE";
+    [Tooltip("Se muestra en los objetos de curación cuando el jugador ya tiene la vida llena.")]
+    [SerializeField] private string textoVidaLlena = "VIDA LLENA";
     [SerializeField] private Image progresoCompraFill;
     [SerializeField] private float tiempoMantenerParaComprar = 2f;
 
@@ -63,6 +134,7 @@ public class NPCShopUI : MonoBehaviour
     private PlayerMovement playerMovement;
     private PlayerLook playerLook;
     private PlayerHealth playerHealth;
+    private GrenadeThrow grenadeThrow;
 
     private bool estaAbierta;
     private bool movementWasLocked;
@@ -97,7 +169,7 @@ public class NPCShopUI : MonoBehaviour
         closeFrame = -100;
     }
 
-    [Header("Fila de oferta (nombres de los hijos del prefab)")]
+    [Header("Tarjeta de oferta (nombres de los hijos del prefab)")]
     [SerializeField] private string nombreIcono = "Icon";
     [SerializeField] private string nombreTextoNombre = "NameText";
     [SerializeField] private string nombreTextoCosto = "CostText";
@@ -116,6 +188,7 @@ public class NPCShopUI : MonoBehaviour
 
     private WeaponOffer ofertaSeleccionada;
     private float tiempoMantenido;
+    private CategoriaTienda seccionActual;
 
     private NetworkObject networkObject;
     private bool faseComprasAnterior;
@@ -135,6 +208,15 @@ public class NPCShopUI : MonoBehaviour
 
         if (listoButton != null)
             listoButton.onClick.AddListener(MarcarListo);
+
+        foreach (SeccionTienda seccion in secciones)
+        {
+            if (seccion == null || seccion.boton == null)
+                continue;
+
+            CategoriaTienda captura = seccion.categoria;
+            seccion.boton.onClick.AddListener(() => SeleccionarSeccion(captura));
+        }
 
         if (listoButtonText == null && listoButton != null)
             listoButtonText = listoButton.GetComponentInChildren<TextMeshProUGUI>(true);
@@ -264,11 +346,13 @@ public class NPCShopUI : MonoBehaviour
         LocalShopOpen = true;
         ofertaSeleccionada = null;
         tiempoMantenido = 0f;
+        seccionActual = seccionInicial;
 
         OcultarPrompt();
         CrearFilas();
         ActualizarFilas();
         ActualizarPanelDetalle();
+        ActualizarSecciones();
 
         if (shopPanel != null)
             shopPanel.SetActive(true);
@@ -281,6 +365,9 @@ public class NPCShopUI : MonoBehaviour
 
         if (playerScore != null)
             playerScore.ScoreNetwork.OnValueChanged += OnScoreChanged;
+
+        if (playerHealth != null)
+            playerHealth.OnHealthChanged += OnVidaCambiada;
 
         movementWasLocked = playerMovement != null && playerMovement.MovementLocked;
         lookWasEnabled = playerLook != null && playerLook.enabled;
@@ -314,6 +401,9 @@ public class NPCShopUI : MonoBehaviour
         if (playerScore != null)
             playerScore.ScoreNetwork.OnValueChanged -= OnScoreChanged;
 
+        if (playerHealth != null)
+            playerHealth.OnHealthChanged -= OnVidaCambiada;
+
         DestruirFilas();
 
         if (shopPanel != null)
@@ -342,6 +432,9 @@ public class NPCShopUI : MonoBehaviour
 
         foreach (WeaponOffer oferta in currentVendor.Offers)
         {
+            if (oferta.categoria != seccionActual)
+                continue;
+
             GameObject fila = Instantiate(rowPrefab, rowsContainer);
             fila.name = "Oferta_" + oferta.weaponId;
             fila.SetActive(true);
@@ -401,14 +494,64 @@ public class NPCShopUI : MonoBehaviour
         ActualizarPanelDetalle();
     }
 
+    private void SeleccionarSeccion(CategoriaTienda categoria)
+    {
+        if (!estaAbierta || categoria == seccionActual)
+            return;
+
+        seccionActual = categoria;
+        ofertaSeleccionada = null;
+        tiempoMantenido = 0f;
+
+        DestruirFilas();
+        CrearFilas();
+        ActualizarFilas();
+        ActualizarPanelDetalle();
+        ActualizarSecciones();
+    }
+
+    private void ActualizarSecciones()
+    {
+        foreach (SeccionTienda seccion in secciones)
+        {
+            if (seccion == null)
+                continue;
+
+            Image fondo = seccion.fondo != null
+                ? seccion.fondo
+                : seccion.boton != null ? seccion.boton.image : null;
+
+            bool seleccionada = seccion.categoria == seccionActual;
+
+            if (fondo != null)
+                fondo.color = seleccionada ? colorSeccionSeleccionada : colorSeccionNormal;
+
+            if (seccion.marco != null)
+                seccion.marco.color = seleccionada ? colorMarcoSeleccionado : colorMarcoNormal;
+        }
+
+        if (avisoSeccionVacia != null)
+            avisoSeccionVacia.SetActive(filas.Count == 0);
+    }
+
     private void ActualizarPanelDetalle()
     {
         bool haySeleccion = ofertaSeleccionada != null;
 
+        if (panelDetalle != null && panelDetalle.activeSelf != haySeleccion)
+            panelDetalle.SetActive(haySeleccion);
+
+        if (panelCompra != null && panelCompra.activeSelf != haySeleccion)
+            panelCompra.SetActive(haySeleccion);
+
         if (iconoDetalle != null)
         {
-            iconoDetalle.sprite = haySeleccion ? ofertaSeleccionada.weaponIcon : null;
-            iconoDetalle.enabled = haySeleccion && ofertaSeleccionada.weaponIcon != null;
+            Sprite imagen = haySeleccion
+                ? (ofertaSeleccionada.imagenTarjeta != null ? ofertaSeleccionada.imagenTarjeta : ofertaSeleccionada.weaponIcon)
+                : null;
+
+            iconoDetalle.sprite = imagen;
+            iconoDetalle.enabled = imagen != null;
         }
 
         if (nombreDetalleText != null)
@@ -420,21 +563,106 @@ public class NPCShopUI : MonoBehaviour
         if (statsDetalleText != null)
             statsDetalleText.text = haySeleccion ? ConstruirTextoStats(ofertaSeleccionada) : string.Empty;
 
+        ActualizarFilasEstadisticas();
+        ActualizarTextoCompra();
+
         if (progresoCompraFill != null)
             progresoCompraFill.fillAmount = 0f;
     }
 
+    private void ActualizarFilasEstadisticas()
+    {
+        WeaponOffer oferta = ofertaSeleccionada;
+        bool conStats = oferta != null && TieneStatsDeArma(oferta);
+        bool conCargador = conStats && !oferta.esArrojadiza && !oferta.esBarril;
+        bool conCuracion = oferta != null && oferta.EsCuracion;
+        bool conArmadura = oferta != null && oferta.armadura > 0;
+
+        // cadencia = segundos entre disparos -> balas por segundo.
+        float balasPorSegundo = conCargador && oferta.cadencia > 0f ? 1f / oferta.cadencia : 0f;
+
+        MostrarEstadistica(filaDano, conStats, conStats ? oferta.dano.ToString() : string.Empty, conStats ? oferta.dano / danoMaximo : 0f);
+        MostrarEstadistica(filaAlcance, conStats, conStats ? oferta.alcance + " m" : string.Empty, conStats ? oferta.alcance / alcanceMaximo : 0f);
+        MostrarEstadistica(filaCadencia, conCargador, balasPorSegundo.ToString("0.#") + " balas/segundo", balasPorSegundo / balasPorSegundoMaximo);
+        MostrarEstadistica(filaCargador, conCargador, conCargador ? oferta.capacidadCargador + " balas" : string.Empty, conCargador ? oferta.capacidadCargador / cargadorMaximo : 0f);
+        MostrarEstadistica(filaCuracion, conCuracion, conCuracion ? "+" + oferta.puntosDeSalud + " de vida" : string.Empty, conCuracion ? oferta.puntosDeSalud / curacionMaxima : 0f);
+        MostrarEstadistica(filaArmadura, conArmadura, conArmadura ? "+" + oferta.armadura : string.Empty, conArmadura ? oferta.armadura / armaduraMaxima : 0f);
+    }
+
+    // Daño/alcance/cargador solo tienen sentido en armas, utilidades arrojadizas y el barril explosivo.
+    private static bool TieneStatsDeArma(WeaponOffer oferta)
+    {
+        return oferta.esBarril ||
+               (oferta.categoria != CategoriaTienda.Consumibles &&
+                oferta.categoria != CategoriaTienda.Equipamiento);
+    }
+
+    private static void MostrarEstadistica(FilaEstadistica fila, bool visible, string valor, float proporcion)
+    {
+        if (fila == null)
+            return;
+
+        if (fila.fila != null && fila.fila.activeSelf != visible)
+            fila.fila.SetActive(visible);
+
+        if (fila.valor != null)
+            fila.valor.text = valor;
+
+        if (fila.barra != null)
+            fila.barra.fillAmount = Mathf.Clamp01(proporcion);
+    }
+
+    private void ActualizarTextoCompra()
+    {
+        if (textoCompra == null || ofertaSeleccionada == null)
+            return;
+
+        if (!ofertaSeleccionada.disponible)
+        {
+            textoCompra.text = textoNoDisponibleCompra;
+            textoCompra.color = colorNoDisponible;
+        }
+        else if (VidaLlenaPara(ofertaSeleccionada))
+        {
+            textoCompra.text = textoVidaLlena;
+            textoCompra.color = colorComprado;
+        }
+        else if (EstaComprada(ofertaSeleccionada))
+        {
+            textoCompra.text = textoYaComprado;
+            textoCompra.color = colorComprado;
+        }
+        else
+        {
+            bool alcanza = playerScore != null && playerScore.ScoreNetwork.Value >= ofertaSeleccionada.cost;
+            textoCompra.text = string.Format(formatoComprar, ofertaSeleccionada.cost);
+            textoCompra.color = alcanza ? colorAlcanza : colorNoAlcanza;
+        }
+    }
+
     private string ConstruirTextoStats(WeaponOffer oferta)
     {
-        string texto = "Daño: " + oferta.dano + "\nAlcance: " + oferta.alcance + " m";
+        var lineas = new List<string>();
 
-        if (!oferta.esArrojadiza)
+        if (TieneStatsDeArma(oferta))
         {
-            texto += "\nCargador: " + oferta.capacidadCargador + " balas" +
-                     "\nCadencia: " + oferta.cadencia;
+            lineas.Add("Daño: " + oferta.dano);
+            lineas.Add("Alcance: " + oferta.alcance + " m");
+
+            if (!oferta.esArrojadiza && !oferta.esBarril)
+            {
+                lineas.Add("Cargador: " + oferta.capacidadCargador + " balas");
+                lineas.Add("Cadencia: " + oferta.cadencia);
+            }
         }
 
-        return texto;
+        if (oferta.EsCuracion)
+            lineas.Add("Curación: +" + oferta.puntosDeSalud + " de vida");
+
+        if (oferta.armadura > 0)
+            lineas.Add("Armadura: +" + oferta.armadura);
+
+        return string.Join("\n", lineas);
     }
 
     private void ActualizarCompraMantenida()
@@ -443,7 +671,8 @@ public class NPCShopUI : MonoBehaviour
             ofertaSeleccionada != null &&
             ofertaSeleccionada.disponible &&
             weaponSwitcher != null &&
-            !weaponSwitcher.IsUnlocked(ofertaSeleccionada.weaponId) &&
+            !EstaComprada(ofertaSeleccionada) &&
+            !VidaLlenaPara(ofertaSeleccionada) &&
             playerScore != null &&
             playerScore.ScoreNetwork.Value >= ofertaSeleccionada.cost;
 
@@ -492,25 +721,51 @@ public class NPCShopUI : MonoBehaviour
             ActualizarFilas();
     }
 
+    private void OnVidaCambiada(int previousValue, int currentValue)
+    {
+        if (estaAbierta)
+            ActualizarFilas();
+    }
+
+    // Las curaciones se compran cuantas veces se quiera; nunca quedan "compradas".
+    // De las granadas solo queda "comprada" la que se está tirando ahora.
+    private bool EstaComprada(WeaponOffer oferta)
+    {
+        if (grenadeThrow != null && grenadeThrow.EsTipoDeGranada(oferta.weaponId))
+            return grenadeThrow.TipoActualId == oferta.weaponId;
+
+        return !oferta.EsCuracion &&
+               weaponSwitcher != null &&
+               weaponSwitcher.IsUnlocked(oferta.weaponId);
+    }
+
+    private bool VidaLlenaPara(WeaponOffer oferta)
+    {
+        return oferta.EsCuracion &&
+               playerHealth != null &&
+               !playerHealth.PuedeCurarse;
+    }
+
     private void ActualizarFilas()
     {
         if (playerScore != null && scoreText != null)
-            scoreText.text = "Tus puntos: " + playerScore.ScoreNetwork.Value;
+            scoreText.text = string.Format(formatoPuntos, playerScore.ScoreNetwork.Value);
 
         foreach (OfertaFila fila in filas)
         {
             bool disponible = fila.oferta.disponible;
 
-            bool comprada = disponible && weaponSwitcher != null &&
-                            weaponSwitcher.IsUnlocked(fila.oferta.weaponId);
+            bool comprada = disponible && EstaComprada(fila.oferta);
+            bool vidaLlena = disponible && VidaLlenaPara(fila.oferta);
 
             bool alcanza = playerScore != null &&
                            playerScore.ScoreNetwork.Value >= fila.oferta.cost;
 
             if (fila.icono != null)
             {
-                fila.icono.sprite = fila.oferta.weaponIcon;
-                fila.icono.enabled = fila.oferta.weaponIcon != null;
+                Sprite imagen = fila.oferta.imagenTarjeta != null ? fila.oferta.imagenTarjeta : fila.oferta.weaponIcon;
+                fila.icono.sprite = imagen;
+                fila.icono.enabled = imagen != null;
             }
 
             if (fila.etiquetaNombre != null)
@@ -524,6 +779,13 @@ public class NPCShopUI : MonoBehaviour
                     fila.etiquetaCosto.text = "Próximamente";
 
                 colorFila = colorNoDisponible;
+            }
+            else if (vidaLlena)
+            {
+                if (fila.etiquetaCosto != null)
+                    fila.etiquetaCosto.text = "Vida llena";
+
+                colorFila = colorComprado;
             }
             else if (comprada)
             {
@@ -541,7 +803,7 @@ public class NPCShopUI : MonoBehaviour
             }
 
             if (fila.etiquetaNombre != null)
-                fila.etiquetaNombre.color = colorFila;
+                fila.etiquetaNombre.color = colorNombreTarjeta;
 
             if (fila.etiquetaCosto != null)
                 fila.etiquetaCosto.color = colorFila;
@@ -549,6 +811,9 @@ public class NPCShopUI : MonoBehaviour
             if (fila.fondo != null)
                 fila.fondo.color = fila.oferta == ofertaSeleccionada ? colorFilaSeleccionada : colorFilaNormal;
         }
+
+        // Los puntos o la compra cambiaron: el bloque de compra también.
+        ActualizarTextoCompra();
     }
 
     private void BloquearJugador()
@@ -611,6 +876,7 @@ public class NPCShopUI : MonoBehaviour
         playerMovement = root.GetComponentInChildren<PlayerMovement>(true);
         playerLook = root.GetComponentInChildren<PlayerLook>(true);
         playerHealth = root.GetComponentInChildren<PlayerHealth>(true);
+        grenadeThrow = root.GetComponentInChildren<GrenadeThrow>(true);
     }
 
     // =========================================================

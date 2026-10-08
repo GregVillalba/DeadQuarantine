@@ -72,15 +72,37 @@ public void SumarReaparicion()
             ScoreNetwork.Value -= costo;
         }
 
-        ClientRpcParams targetParams = new ClientRpcParams
+        NotificarResultadoCompraClientRpc(weaponId, alcanza, ParametrosParaDueno());
+    }
+
+    // Cura al jugador que compra. Si tiene la vida llena o está abatido no se cobra.
+    [ServerRpc]
+    public void ComprarCuracionServerRpc(string itemId, int costo, int puntosDeSalud)
+    {
+        PlayerHealth health = transform.root.GetComponentInChildren<PlayerHealth>();
+
+        bool exito = health != null &&
+                     health.PuedeCurarse &&
+                     ScoreNetwork.Value >= costo;
+
+        if (exito)
+        {
+            ScoreNetwork.Value -= costo;
+            health.Heal(puntosDeSalud);
+        }
+
+        NotificarResultadoCompraClientRpc(itemId, exito, ParametrosParaDueno());
+    }
+
+    private ClientRpcParams ParametrosParaDueno()
+    {
+        return new ClientRpcParams
         {
             Send = new ClientRpcSendParams
             {
                 TargetClientIds = new ulong[] { OwnerClientId }
             }
         };
-
-        NotificarResultadoCompraClientRpc(weaponId, alcanza, targetParams);
     }
 
     [ClientRpc]
