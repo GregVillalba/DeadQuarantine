@@ -138,10 +138,21 @@ public class MultiplayerPlayerSpawner : NetworkBehaviour
         // USAR LOS SPAWNS DEL ESCENARIO ACTIVO
         // =====================================================
 
-        if (escenarioActivo != null)
+     /*   if (escenarioActivo != null)
         {
             Transform spawnJugador =
                 escenarioActivo.SpawnJugador;
+
+            if (spawnJugador != null)
+            {
+                return spawnJugador;
+            }
+        }*/
+
+        if (escenarioActivo != null)
+        {
+            Transform spawnJugador =
+                escenarioActivo.ObtenerSpawnJugador(index);
 
             if (spawnJugador != null)
             {

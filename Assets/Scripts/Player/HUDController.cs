@@ -60,11 +60,13 @@ public class HUDController : MonoBehaviour
 
     private Coroutine hitMarkerCoroutine;
 
+    private bool etiquetaActualizada;
+
     private void Start()
     {
         BuscarRoundManager();
 
-        NetworkObject networkObject =
+       /* NetworkObject networkObject =
             GetComponentInParent<NetworkObject>();
 
         if (
@@ -79,7 +81,7 @@ public class HUDController : MonoBehaviour
                 if (playerLabelText != null)
                     playerLabelText.text = "Jugador 2 (TÚ)";
             }
-        }
+        }*/
 
         if (hitMarker != null)
         {
@@ -102,8 +104,50 @@ public class HUDController : MonoBehaviour
         ActualizarTodo();
     }
 
+    private void ActualizarEtiquetaJugador()
+    {
+        if (etiquetaActualizada || playerLabelText == null)
+            return;
+
+        // El jugador al que pertenece este HUD.
+        NetworkObject networkObject =
+            playerHealth != null
+                ? playerHealth.GetComponentInParent<NetworkObject>()
+                : GetComponentInParent<NetworkObject>();
+
+        // Todavia no esta listo: se reintenta en el proximo cuadro.
+        if (networkObject == null || !networkObject.IsSpawned)
+            return;
+
+        // Este HUD no es del jugador local.
+        if (!networkObject.IsOwner)
+            return;
+
+        MultiplayerPlayerSpawnAssigner assigner =
+            networkObject.GetComponent<MultiplayerPlayerSpawnAssigner>();
+
+        // Singleplayer: no hay asignador, es siempre el jugador 1.
+        if (assigner == null)
+        {
+            playerLabelText.text = "Jugador 1 (TÚ)";
+            etiquetaActualizada = true;
+            return;
+        }
+
+        // Multijugador: espera a que el servidor asigne el numero de jugador.
+        if (assigner.AssignedSpawnIndex.Value < 0)
+            return;
+
+        playerLabelText.text =
+            "Jugador " + (assigner.AssignedSpawnIndex.Value + 1) + " (TÚ)";
+
+        etiquetaActualizada = true;
+    }
+
     private void Update()
     {
+        ActualizarEtiquetaJugador();
+        
         if (roundManager == null)
         {
             BuscarRoundManager();
