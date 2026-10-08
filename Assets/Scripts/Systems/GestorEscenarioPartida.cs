@@ -69,7 +69,8 @@ public class GestorEscenariosPartida : MonoBehaviour
         // Activamos únicamente el escenario seleccionado.
         if (escenarioActivo != null)
         {
-            escenarioActivo.gameObject.SetActive(true);
+           // escenarioActivo.gameObject.SetActive(true);
+           escenarioActivo.transform.parent.gameObject.SetActive(true);
 
             Debug.Log(
                 "Escenario activo: " +
@@ -82,13 +83,16 @@ public class GestorEscenariosPartida : MonoBehaviour
     private void DesactivarTodosLosEscenarios()
     {
         if (escenarioLaboratorio != null)
-            escenarioLaboratorio.gameObject.SetActive(false);
+          //  escenarioLaboratorio.gameObject.SetActive(false);
+          escenarioLaboratorio.transform.parent.gameObject.SetActive(false);
 
         if (escenarioCiudad != null)
-            escenarioCiudad.gameObject.SetActive(false);
+          //  escenarioCiudad.gameObject.SetActive(false);
+          escenarioCiudad.transform.parent.gameObject.SetActive(false);
 
         if (escenarioCabana != null)
-            escenarioCabana.gameObject.SetActive(false);
+           // escenarioCabana.gameObject.SetActive(false);
+           escenarioCabana.transform.parent.gameObject.SetActive(false);
     }
 
 

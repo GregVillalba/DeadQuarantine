@@ -3200,7 +3200,7 @@ Transform:
   m_GameObject: {fileID: 91457470}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 17.771, y: -0.156, z: -36.105}
+  m_LocalPosition: {x: 2.43, y: -0.156, z: -2.24}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -61630,7 +61630,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Scripts::ConfiguracionEscenarioJugable
   tipoEscenario: 1
-  spawnJugador: {fileID: 1105806687}
+  spawnJugador: {fileID: 1944771817}
+  spawnsJugadoresAdicionales:
+  - {fileID: 242160920}
   spawnsZombies:
   - {fileID: 1756240973}
   - {fileID: 608357998}
@@ -67232,6 +67234,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Scripts::ConfiguracionEscenarioJugable
   tipoEscenario: 3
   spawnJugador: {fileID: 1367798575}
+  spawnsJugadoresAdicionales:
+  - {fileID: 91457471}
   spawnsZombies:
   - {fileID: 1227662080}
   - {fileID: 2099888818}

@@ -392,6 +392,153 @@ public class NPCShopUITests
         Assert.AreEqual(0f, progresoCompraFill.fillAmount);
     }
  
+    // --- Secciones ---
+
+    private Button AgregarSeccion(CategoriaTienda categoria)
+    {
+        System.Type tipo = typeof(NPCShopUI).GetNestedType("SeccionTienda", BindingFlags.NonPublic);
+        object seccion = System.Activator.CreateInstance(tipo);
+
+        Button boton = CrearGameObject("Seccion_" + categoria, typeof(Image), typeof(Button)).GetComponent<Button>();
+        boton.image = boton.GetComponent<Image>();
+
+        tipo.GetField("categoria").SetValue(seccion, categoria);
+        tipo.GetField("boton").SetValue(seccion, boton);
+
+        ((IList)GetPrivateField("secciones")).Add(seccion);
+        return boton;
+    }
+
+    [Test]
+    public void SeleccionarSeccion_ConTiendaCerrada_NoCambiaLaSeccion()
+    {
+        SetPrivateField("estaAbierta", false);
+        SetPrivateField("seccionActual", CategoriaTienda.Armas);
+
+        InvokePrivateMethod("SeleccionarSeccion", CategoriaTienda.Consumibles);
+
+        Assert.AreEqual(CategoriaTienda.Armas, GetPrivateField("seccionActual"));
+    }
+
+    [Test]
+    public void SeleccionarSeccion_ConTiendaAbierta_CambiaLaSeccionYLimpiaLaSeleccion()
+    {
+        LogAssert.Expect(LogType.Error, "[NPCShopUI] Falta rowPrefab, rowsContainer o mercader.");
+
+        SetPrivateField("estaAbierta", true);
+        SetPrivateField("seccionActual", CategoriaTienda.Armas);
+        SetPrivateField("ofertaSeleccionada", new WeaponOffer());
+        SetPrivateField("tiempoMantenido", 1f);
+
+        InvokePrivateMethod("SeleccionarSeccion", CategoriaTienda.Utilidades);
+
+        Assert.AreEqual(CategoriaTienda.Utilidades, GetPrivateField("seccionActual"));
+        Assert.IsNull(GetPrivateField("ofertaSeleccionada"));
+        Assert.AreEqual(0f, (float)GetPrivateField("tiempoMantenido"));
+    }
+
+    [Test]
+    public void ActualizarSecciones_ResaltaSoloLaPestanaDeLaSeccionActual()
+    {
+        Button armas = AgregarSeccion(CategoriaTienda.Armas);
+        Button utilidades = AgregarSeccion(CategoriaTienda.Utilidades);
+        SetPrivateField("seccionActual", CategoriaTienda.Utilidades);
+
+        InvokePrivateMethod("ActualizarSecciones");
+
+        Assert.AreEqual((Color)GetPrivateField("colorSeccionNormal"), armas.image.color);
+        Assert.AreEqual((Color)GetPrivateField("colorSeccionSeleccionada"), utilidades.image.color);
+    }
+
+    [Test]
+    public void ActualizarSecciones_SinOfertasEnLaSeccion_MuestraElAvisoDeSeccionVacia()
+    {
+        GameObject aviso = CrearGameObject("AvisoVacia");
+        aviso.SetActive(false);
+        SetPrivateField("avisoSeccionVacia", aviso);
+
+        InvokePrivateMethod("ActualizarSecciones");
+
+        Assert.IsTrue(aviso.activeSelf);
+    }
+
+    // --- Estadísticas del panel de detalle ---
+
+    private (GameObject fila, TextMeshProUGUI valor, Image barra) CablearFilaEstadistica(string campo)
+    {
+        System.Type tipo = typeof(NPCShopUI).GetNestedType("FilaEstadistica", BindingFlags.NonPublic);
+        object fila = System.Activator.CreateInstance(tipo);
+
+        GameObject filaGO = CrearGameObject(campo);
+        TextMeshProUGUI valor = CrearGameObject(campo + "_Valor", typeof(TextMeshProUGUI)).GetComponent<TextMeshProUGUI>();
+        Image barra = CrearGameObject(campo + "_Barra", typeof(Image)).GetComponent<Image>();
+
+        tipo.GetField("fila").SetValue(fila, filaGO);
+        tipo.GetField("valor").SetValue(fila, valor);
+        tipo.GetField("barra").SetValue(fila, barra);
+        SetPrivateField(campo, fila);
+
+        return (filaGO, valor, barra);
+    }
+
+    [Test]
+    public void ActualizarFilasEstadisticas_ConArma_MuestraCadenciaEnBalasPorSegundo()
+    {
+        var cadencia = CablearFilaEstadistica("filaCadencia");
+        SetPrivateField("balasPorSegundoMaximo", 10f);
+        SetPrivateField("ofertaSeleccionada", new WeaponOffer { categoria = CategoriaTienda.Armas, cadencia = 0.1f });
+
+        InvokePrivateMethod("ActualizarFilasEstadisticas");
+
+        Assert.IsTrue(cadencia.fila.activeSelf);
+        Assert.AreEqual("10 balas/segundo", cadencia.valor.text);
+        Assert.AreEqual(1f, cadencia.barra.fillAmount, 0.001f);
+    }
+
+    [Test]
+    public void ActualizarFilasEstadisticas_ConArrojadiza_OcultaCargadorYCadencia()
+    {
+        var dano = CablearFilaEstadistica("filaDano");
+        var cargador = CablearFilaEstadistica("filaCargador");
+        SetPrivateField("ofertaSeleccionada", new WeaponOffer { categoria = CategoriaTienda.Utilidades, esArrojadiza = true, dano = 200 });
+
+        InvokePrivateMethod("ActualizarFilasEstadisticas");
+
+        Assert.IsTrue(dano.fila.activeSelf);
+        Assert.AreEqual("200", dano.valor.text);
+        Assert.IsFalse(cargador.fila.activeSelf);
+    }
+
+    [Test]
+    public void ActualizarFilasEstadisticas_ConCuracion_MuestraSoloLaVidaQueCura()
+    {
+        var dano = CablearFilaEstadistica("filaDano");
+        var curacion = CablearFilaEstadistica("filaCuracion");
+        SetPrivateField("curacionMaxima", 100f);
+        SetPrivateField("ofertaSeleccionada", new WeaponOffer { categoria = CategoriaTienda.Consumibles, esConsumible = true, puntosDeSalud = 25 });
+
+        InvokePrivateMethod("ActualizarFilasEstadisticas");
+
+        Assert.IsFalse(dano.fila.activeSelf);
+        Assert.IsTrue(curacion.fila.activeSelf);
+        Assert.AreEqual("+25 de vida", curacion.valor.text);
+        Assert.AreEqual(0.25f, curacion.barra.fillAmount, 0.001f);
+    }
+
+    [Test]
+    public void ActualizarFilasEstadisticas_ConArmadura_MuestraLaArmadura()
+    {
+        var curacion = CablearFilaEstadistica("filaCuracion");
+        var armadura = CablearFilaEstadistica("filaArmadura");
+        SetPrivateField("ofertaSeleccionada", new WeaponOffer { categoria = CategoriaTienda.Equipamiento, armadura = 5 });
+
+        InvokePrivateMethod("ActualizarFilasEstadisticas");
+
+        Assert.IsFalse(curacion.fila.activeSelf);
+        Assert.IsTrue(armadura.fila.activeSelf);
+        Assert.AreEqual("+5", armadura.valor.text);
+    }
+
     // --- ActualizarCompraMantenida / Update ---
  
     [Test]

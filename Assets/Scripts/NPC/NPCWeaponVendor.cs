@@ -14,6 +14,7 @@ public class NPCWeaponVendor : MonoBehaviour
     [SerializeField] private AudioClip purchaseDeniedSound;
 
     private WeaponSwitcher pendingSwitcher;
+    private GrenadeThrow pendingGrenadeThrow;
     private PlayerScore pendingScore;
     private string pendingWeaponId;
 
@@ -56,6 +57,39 @@ public class NPCWeaponVendor : MonoBehaviour
             return;
         }
 
+        if (oferta.EsCuracion)
+        {
+            // Sin switcher pendiente: al terminar no se desbloquea ningún arma.
+            pendingSwitcher = null;
+            pendingScore = playerScore;
+            pendingWeaponId = weaponId;
+
+            playerScore.OnPurchaseResult += OnPurchaseResultInterno;
+            playerScore.ComprarCuracionServerRpc(weaponId, oferta.cost, oferta.puntosDeSalud);
+            return;
+        }
+
+        GrenadeThrow grenadeThrow = camara.transform.root.GetComponentInChildren<GrenadeThrow>();
+
+        if (grenadeThrow != null && grenadeThrow.EsTipoDeGranada(weaponId))
+        {
+            // Ya es el tipo que se tira: no se cobra de nuevo.
+            if (grenadeThrow.TipoActualId == weaponId)
+            {
+                OnPurchaseResult?.Invoke(weaponId, true);
+                return;
+            }
+
+            pendingSwitcher = null;
+            pendingGrenadeThrow = grenadeThrow;
+            pendingScore = playerScore;
+            pendingWeaponId = weaponId;
+
+            playerScore.OnPurchaseResult += OnPurchaseResultInterno;
+            playerScore.ComprarArmaServerRpc(weaponId, oferta.cost);
+            return;
+        }
+
         if (switcher.IsUnlocked(weaponId))
         {
             OnPurchaseResult?.Invoke(weaponId, true);
@@ -63,6 +97,7 @@ public class NPCWeaponVendor : MonoBehaviour
         }
 
         pendingSwitcher = switcher;
+        pendingGrenadeThrow = null;
         pendingScore = playerScore;
         pendingWeaponId = weaponId;
 
@@ -83,7 +118,11 @@ public class NPCWeaponVendor : MonoBehaviour
         if (exito && pendingSwitcher != null)
             pendingSwitcher.UnlockWeapon(weaponId, equipAfterUnlock: true);
 
+        if (exito && pendingGrenadeThrow != null)
+            pendingGrenadeThrow.EquiparTipo(weaponId);
+
         pendingSwitcher = null;
+        pendingGrenadeThrow = null;
         pendingScore = null;
         pendingWeaponId = null;
 
