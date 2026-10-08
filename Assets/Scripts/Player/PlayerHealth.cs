@@ -4,7 +4,8 @@ using Unity.Netcode;
 using System;
 using System.Collections;
 
-public class PlayerHealth : NetworkBehaviour
+// El inventario de curas está en PlayerHealthInventario.cs.
+public partial class PlayerHealth : NetworkBehaviour
 {
     public enum PlayerState
     {
@@ -17,13 +18,9 @@ public class PlayerHealth : NetworkBehaviour
     [Header("Vida")]
     [SerializeField] private int maxHealth = 100;
 
-    [Header("Chaleco")]
-    [Tooltip("Armadura máxima: chaleco + casco.")]
-    [SerializeField] private int maxArmor = 50;
-    [Tooltip("Armadura que da comprar el chaleco.")]
-    [SerializeField] private int vestArmorAmount = 25;
-    [Tooltip("Armadura que da comprar el casco.")]
-    [SerializeField] private int helmetArmorAmount = 25;
+    [Header("Escudo (chaleco + casco)")]
+    [Tooltip("Escudo máximo sumando todas las piezas. Lo que da cada pieza se configura en su oferta del mercader (Armadura).")]
+    [SerializeField] private int maxArmor = 100;
 
     [Header("Vidas")]
     [SerializeField] private int startingLives = 1;
@@ -47,7 +44,7 @@ public class PlayerHealth : NetworkBehaviour
             NetworkVariableWritePermission.Server
         );
 
-    // Armadura actual (0 al empezar; chaleco +25, casco +25). Absorbe daño antes que la vida.
+    // Escudo total (chaleco + casco). Absorbe daño antes que la vida. Lo lee el HUD.
     public NetworkVariable<int> Armor =
         new NetworkVariable<int>(
             0,
@@ -55,7 +52,23 @@ public class PlayerHealth : NetworkBehaviour
             NetworkVariableWritePermission.Server
         );
 
+    // Escudo de cada pieza. Max = 0 -> la pieza no se compró. Escudo = 0 con Max > 0 -> pieza "rota".
+    public NetworkVariable<int> VestShield =
+        new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    public NetworkVariable<int> VestShieldMax =
+        new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    public NetworkVariable<int> HelmetShield =
+        new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    public NetworkVariable<int> HelmetShieldMax =
+        new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
     public int MaxArmor => maxArmor;
+
+    /// <summary>Cambió el escudo de alguna pieza (compra, reparación o daño). Lo usa la tienda.</summary>
+    public event Action OnBlindajeChanged;
 
     public NetworkVariable<int> Lives =
         new NetworkVariable<int>(
@@ -147,6 +160,12 @@ public class PlayerHealth : NetworkBehaviour
                 maxHealth;
 
             Armor.Value = 0;
+            VestShield.Value = 0;
+            VestShieldMax.Value = 0;
+            HelmetShield.Value = 0;
+            HelmetShieldMax.Value = 0;
+
+            InicializarInventarioServidor();
 
             Lives.Value =
                 startingLives;
@@ -175,6 +194,13 @@ public class PlayerHealth : NetworkBehaviour
         State.OnValueChanged +=
             StateChanged;
 
+        VestShield.OnValueChanged += BlindajeChanged;
+        VestShieldMax.OnValueChanged += BlindajeChanged;
+        HelmetShield.OnValueChanged += BlindajeChanged;
+        HelmetShieldMax.OnValueChanged += BlindajeChanged;
+
+        SuscribirInventario();
+
         OnHealthChanged?.Invoke(
             CurrentHealth.Value,
             CurrentHealth.Value
@@ -201,6 +227,13 @@ public class PlayerHealth : NetworkBehaviour
 
         State.OnValueChanged -=
             StateChanged;
+
+        VestShield.OnValueChanged -= BlindajeChanged;
+        VestShieldMax.OnValueChanged -= BlindajeChanged;
+        HelmetShield.OnValueChanged -= BlindajeChanged;
+        HelmetShieldMax.OnValueChanged -= BlindajeChanged;
+
+        DesuscribirInventario();
     }
 
     // =========================================================
@@ -209,6 +242,8 @@ public class PlayerHealth : NetworkBehaviour
 
     private void Update()
     {
+        LeerInputInventario();
+
         if (!IsServer)
             return;
 
@@ -269,38 +304,100 @@ public class PlayerHealth : NetworkBehaviour
     // CHALECO / CASCO
     // =========================================================
 
-    /// <summary>Solo servidor. Suma armadura sin pasar del máximo.</summary>
-    public void AddArmor(int amount)
-    {
-        if (!IsServer || amount <= 0)
-            return;
+    // Una pieza comprada no desaparece: si pierde todo su escudo queda "rota" (0 puntos) hasta repararla.
 
-        Armor.Value = Mathf.Clamp(Armor.Value + amount, 0, maxArmor);
+    public bool TieneBlindaje(PiezaBlindaje pieza)
+    {
+        return EscudoMaximoDe(pieza) > 0;
     }
 
-    /// <summary>Solo servidor. Chaleco: +25.</summary>
-    public void AddVest()
+    public int EscudoDe(PiezaBlindaje pieza)
     {
-        AddArmor(vestArmorAmount);
+        switch (pieza)
+        {
+            case PiezaBlindaje.Chaleco: return VestShield.Value;
+            case PiezaBlindaje.Casco: return HelmetShield.Value;
+            default: return 0;
+        }
     }
 
-    /// <summary>Solo servidor. Casco: +25.</summary>
-    public void AddHelmet()
+    public int EscudoMaximoDe(PiezaBlindaje pieza)
     {
-        AddArmor(helmetArmorAmount);
+        switch (pieza)
+        {
+            case PiezaBlindaje.Chaleco: return VestShieldMax.Value;
+            case PiezaBlindaje.Casco: return HelmetShieldMax.Value;
+            default: return 0;
+        }
     }
 
-    // Para llamar desde la tienda del jugador local (el dueño de este objeto), host o cliente.
-    [ServerRpc]
-    public void AddVestServerRpc()
+    /// <summary>La pieza está comprada pero le falta escudo (dañada o rota).</summary>
+    public bool NecesitaReparacion(PiezaBlindaje pieza)
     {
-        AddVest();
+        return TieneBlindaje(pieza) && EscudoDe(pieza) < EscudoMaximoDe(pieza);
     }
 
-    [ServerRpc]
-    public void AddHelmetServerRpc()
+    /// <summary>Solo servidor. Equipa la pieza con el escudo lleno. El total no pasa de Max Armor.</summary>
+    public bool EquiparBlindaje(PiezaBlindaje pieza, int escudo)
     {
-        AddHelmet();
+        if (!IsServer || pieza == PiezaBlindaje.Ninguna || escudo <= 0 || TieneBlindaje(pieza))
+            return false;
+
+        PiezaBlindaje otra = pieza == PiezaBlindaje.Chaleco ? PiezaBlindaje.Casco : PiezaBlindaje.Chaleco;
+        escudo = Mathf.Min(escudo, maxArmor - EscudoMaximoDe(otra));
+
+        if (escudo <= 0)
+            return false;
+
+        SetEscudo(pieza, escudo, escudo);
+        return true;
+    }
+
+    /// <summary>Solo servidor. Devuelve la pieza a su escudo máximo.</summary>
+    public bool RepararBlindaje(PiezaBlindaje pieza)
+    {
+        if (!IsServer || !NecesitaReparacion(pieza))
+            return false;
+
+        SetEscudo(pieza, EscudoMaximoDe(pieza), EscudoMaximoDe(pieza));
+        return true;
+    }
+
+    private void SetEscudo(PiezaBlindaje pieza, int escudo, int maximo)
+    {
+        if (pieza == PiezaBlindaje.Chaleco)
+        {
+            VestShieldMax.Value = maximo;
+            VestShield.Value = Mathf.Clamp(escudo, 0, maximo);
+        }
+        else if (pieza == PiezaBlindaje.Casco)
+        {
+            HelmetShieldMax.Value = maximo;
+            HelmetShield.Value = Mathf.Clamp(escudo, 0, maximo);
+        }
+
+        Armor.Value = VestShield.Value + HelmetShield.Value;
+    }
+
+    // El escudo absorbe el daño antes que la vida (1 punto de escudo = 1 de daño).
+    // Primero se gasta el casco y después el chaleco. Devuelve el daño que sobra para la vida.
+    private int AbsorberConEscudo(int amount)
+    {
+        amount = AbsorberConPieza(PiezaBlindaje.Casco, amount);
+        amount = AbsorberConPieza(PiezaBlindaje.Chaleco, amount);
+        return amount;
+    }
+
+    private int AbsorberConPieza(PiezaBlindaje pieza, int amount)
+    {
+        int escudo = EscudoDe(pieza);
+
+        if (amount <= 0 || escudo <= 0)
+            return amount;
+
+        int absorbido = Mathf.Min(escudo, amount);
+        SetEscudo(pieza, escudo - absorbido, EscudoMaximoDe(pieza));
+        return amount - absorbido;
     }
 
     // =========================================================
@@ -323,13 +420,7 @@ public class PlayerHealth : NetworkBehaviour
         if (CurrentHealth.Value <= 0)
             return;
 
-        // La armadura absorbe el daño primero (1 punto de armadura = 1 de daño).
-        if (Armor.Value > 0 && amount > 0)
-        {
-            int absorbed = Mathf.Min(Armor.Value, amount);
-            Armor.Value -= absorbed;
-            amount -= absorbed;
-        }
+        amount = AbsorberConEscudo(amount);
 
         CurrentHealth.Value -=
             amount;
@@ -739,6 +830,11 @@ public class PlayerHealth : NetworkBehaviour
             "/" +
             maxHealth
         );
+    }
+
+    private void BlindajeChanged(int previousValue, int newValue)
+    {
+        OnBlindajeChanged?.Invoke();
     }
 
     private void LivesChanged(

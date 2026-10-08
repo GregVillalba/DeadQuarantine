@@ -288,6 +288,20 @@ public class Weapon : MonoBehaviour
         reserveInitialized = true;
     }
 
+    /// <summary>true si el cargador y la reserva ya están llenos: la caja de munición no tendría efecto.</summary>
+    public bool MunicionCompleta =>
+        currentAmmo >= maxAmmo && (!UsesLimitedReserve || ReserveAmmo >= ReserveCapacity);
+
+    /// <summary>
+    /// Caja de munición: deja el arma con la munición con la que se compró (cargador lleno y reserva al máximo
+    /// de la dificultad actual). Si había una recarga en curso, al encontrar el cargador lleno no descuenta nada.
+    /// </summary>
+    public void RestaurarMunicion()
+    {
+        currentAmmo = maxAmmo;
+        RefillReserveAmmo();
+    }
+
     // Se inicializa al primer uso y no en Awake: las armas sin comprar nunca se activan, y en un cliente
     // la dificultad del host puede llegar unos frames después de que nace el jugador.
     private void EnsureReserveInitialized()

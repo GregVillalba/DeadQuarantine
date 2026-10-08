@@ -24,6 +24,7 @@ public class MerchantIndicatorUI : MonoBehaviour
     private Transform jugador;
     private Transform mercader;
     private NPCShopUI shopUI;
+    private bool faseComprasAnterior;
 
     private void Start()
     {
@@ -40,8 +41,16 @@ public class MerchantIndicatorUI : MonoBehaviour
         // La flecha y el tiempo solo se muestran durante la fase de compras.
         if (RoundManager.Instance == null || !RoundManager.Instance.IsShopPhaseActive)
         {
+            faseComprasAnterior = false;
             MostrarIndicador(false, false);
             return;
+        }
+
+        // Al empezar cada fase de compras se vuelve a elegir el mercader (el jugador ya está en su mapa).
+        if (!faseComprasAnterior)
+        {
+            faseComprasAnterior = true;
+            BuscarMercader();
         }
 
         // Con la tienda abierta el tiempo ya se ve dentro del panel.
@@ -133,11 +142,46 @@ public class MerchantIndicatorUI : MonoBehaviour
         return (segundos / 60).ToString("00") + ":" + (segundos % 60).ToString("00");
     }
 
+    // Puede haber más de un mercader activo en la escena (uno por mapa). Se elige el que está dentro
+    // del escenario de la partida; si ninguno lo está, el más cercano al jugador.
     private void BuscarMercader()
     {
-        NPCWeaponVendor vendedor = FindFirstObjectByType<NPCWeaponVendor>();
+        Transform raizEscenario = RaizEscenarioActivo();
+        NPCWeaponVendor elegido = null;
+        bool elegidoEnEscenario = false;
+        float mejorDistancia = float.MaxValue;
 
-        if (vendedor != null)
-            mercader = vendedor.transform;
+        foreach (NPCWeaponVendor vendedor in FindObjectsByType<NPCWeaponVendor>(FindObjectsSortMode.None))
+        {
+            bool enEscenario = raizEscenario != null && vendedor.transform.IsChildOf(raizEscenario);
+            float distancia = jugador != null
+                ? (vendedor.transform.position - jugador.position).sqrMagnitude
+                : 0f;
+
+            bool mejor = elegido == null ||
+                         (enEscenario && !elegidoEnEscenario) ||
+                         (enEscenario == elegidoEnEscenario && distancia < mejorDistancia);
+
+            if (!mejor)
+                continue;
+
+            elegido = vendedor;
+            elegidoEnEscenario = enEscenario;
+            mejorDistancia = distancia;
+        }
+
+        mercader = elegido != null ? elegido.transform : null;
+    }
+
+    // GestorEscenariosPartida activa el padre del escenario elegido: ese es el que contiene a su mercader.
+    private static Transform RaizEscenarioActivo()
+    {
+        GestorEscenariosPartida gestor = FindFirstObjectByType<GestorEscenariosPartida>();
+        ConfiguracionEscenarioJugable escenario = gestor != null ? gestor.ObtenerEscenarioActivo() : null;
+
+        if (escenario == null)
+            return null;
+
+        return escenario.transform.parent != null ? escenario.transform.parent : escenario.transform;
     }
 }

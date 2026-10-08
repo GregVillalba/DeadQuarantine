@@ -241,6 +241,16 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""interactions"": """",
                     ""initialStateCheck"": true,
                     ""priority"": 0
+                },
+                {
+                    ""name"": ""UseSlot1"",
+                    ""type"": ""Button"",
+                    ""id"": ""6a1d2f3e-8b4c-4e5a-9f10-2c3d4e5f6a71"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false,
+                    ""priority"": 0
                 }
             ],
             ""bindings"": [
@@ -452,6 +462,17 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""action"": ""PreviousWeapon"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""8c3f4b5a-ad6e-4a7c-9b32-4e5f6a7b8c93"",
+                    ""path"": ""<Keyboard>/q"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""UseSlot1"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -475,6 +496,7 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         m_Player_SelectSecondary = m_Player.FindAction("SelectSecondary", throwIfNotFound: true);
         m_Player_NextWeapon = m_Player.FindAction("NextWeapon", throwIfNotFound: true);
         m_Player_PreviousWeapon = m_Player.FindAction("PreviousWeapon", throwIfNotFound: true);
+        m_Player_UseSlot1 = m_Player.FindAction("UseSlot1", throwIfNotFound: true);
     }
 
     ~@PlayerControls()
@@ -570,6 +592,7 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_SelectSecondary;
     private readonly InputAction m_Player_NextWeapon;
     private readonly InputAction m_Player_PreviousWeapon;
+    private readonly InputAction m_Player_UseSlot1;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -642,6 +665,10 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @PreviousWeapon => m_Wrapper.m_Player_PreviousWeapon;
         /// <summary>
+        /// Provides access to the underlying input action "Player/UseSlot1".
+        /// </summary>
+        public InputAction @UseSlot1 => m_Wrapper.m_Player_UseSlot1;
+        /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
         public InputActionMap Get() { return m_Wrapper.m_Player; }
@@ -712,6 +739,9 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @PreviousWeapon.started += instance.OnPreviousWeapon;
             @PreviousWeapon.performed += instance.OnPreviousWeapon;
             @PreviousWeapon.canceled += instance.OnPreviousWeapon;
+            @UseSlot1.started += instance.OnUseSlot1;
+            @UseSlot1.performed += instance.OnUseSlot1;
+            @UseSlot1.canceled += instance.OnUseSlot1;
         }
 
         /// <summary>
@@ -768,6 +798,9 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @PreviousWeapon.started -= instance.OnPreviousWeapon;
             @PreviousWeapon.performed -= instance.OnPreviousWeapon;
             @PreviousWeapon.canceled -= instance.OnPreviousWeapon;
+            @UseSlot1.started -= instance.OnUseSlot1;
+            @UseSlot1.performed -= instance.OnUseSlot1;
+            @UseSlot1.canceled -= instance.OnUseSlot1;
         }
 
         /// <summary>
@@ -913,5 +946,12 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnPreviousWeapon(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "UseSlot1" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnUseSlot1(InputAction.CallbackContext context);
     }
 }

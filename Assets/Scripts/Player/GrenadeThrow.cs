@@ -42,6 +42,9 @@ public class GrenadeThrow : MonoBehaviour
 
     public bool EsTipoDeGranada(string id) => IndiceDeTipo(id) >= 0;
 
+    /// <summary>Tecla para tirar la granada (respeta la reasignación de teclas). Lo muestra el HUD.</summary>
+    public string TeclaGranada => controls != null ? controls.Player.Grenade.GetBindingDisplayString() : string.Empty;
+
     /// <summary>Todas las granadas que se tiren desde ahora son de este tipo. Sin inventario: reemplaza al anterior.</summary>
     public void EquiparTipo(string id)
     {
@@ -71,6 +74,7 @@ public class GrenadeThrow : MonoBehaviour
     private void Awake()
     {
         controls = new PlayerControls();
+        ConfiguracionesJuego.CargarRebinds(controls.asset);
         tipoActual = IndiceDeTipo(tipoInicialId);
 
         if (grenadeHandModel != null)

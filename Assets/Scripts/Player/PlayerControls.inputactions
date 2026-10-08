@@ -155,6 +155,16 @@
                     "interactions": "",
                     "initialStateCheck": true,
                     "priority": 0
+                },
+                {
+                    "name": "UseSlot1",
+                    "type": "Button",
+                    "id": "6a1d2f3e-8b4c-4e5a-9f10-2c3d4e5f6a71",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
                 }
             ],
             "bindings": [
@@ -364,6 +374,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "PreviousWeapon",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "8c3f4b5a-ad6e-4a7c-9b32-4e5f6a7b8c93",
+                    "path": "<Keyboard>/q",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "UseSlot1",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

@@ -99,6 +99,13 @@ public class RoundManager : NetworkBehaviour
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server);
 
+    // Modo elegido por el host (ConfiguracionPartidaSeleccionada.ModoJuego). Lo usa la tienda
+    // para mostrar solo las ofertas de este modo. 0 = Ninguno (no se filtra).
+    public NetworkVariable<int> ModoNetwork =
+    new NetworkVariable<int>(0,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server);
+
     // Fase de compras entre rondas: mientras está activa no hay ronda en curso
     // (no aparecen zombies) y el mercader está habilitado.
     public NetworkVariable<bool> ShopPhaseActiveNetwork =
@@ -1588,5 +1595,8 @@ public class RoundManager : NetworkBehaviour
         {
             DifficultyNetwork.Value = (int)dm.CurrentDifficulty;
         }
+
+        if (ConfiguracionPartidaSeleccionada.Instancia != null)
+            ModoNetwork.Value = (int)ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado;
     }
 }
