@@ -63,6 +63,17 @@ public class MultiplayerMenuManager : MonoBehaviour
     private string textoNombreModo = "";
     private string textoNombreDificultad = "";
 
+    // Dificultad elegida (se guarda al comenzar la partida).
+    private ConfiguracionPartidaSeleccionada.Dificultad dificultadActual =
+        ConfiguracionPartidaSeleccionada.Dificultad.Ninguna;
+
+    // Modos que ya se pueden jugar (Historia todavia no).
+    private bool ModoHabilitado()
+    {
+        return modoActual == ModoSeleccionado.Ronda5 ||
+               modoActual == ModoSeleccionado.Infinitas;
+    }
+
     private bool jugador1Listo = false;
 
     // Laboratorio y Cabaña están disponibles.
@@ -132,7 +143,7 @@ public class MultiplayerMenuManager : MonoBehaviour
     // DIFICULTADES
     // =========================================================
 
-    public void SeleccionarDificultadNormal(GameObject marcoSeleccionado)
+   /* public void SeleccionarDificultadNormal(GameObject marcoSeleccionado)
     {
         MarcarDificultadExclusiva(marcoSeleccionado);
 
@@ -171,6 +182,66 @@ public class MultiplayerMenuManager : MonoBehaviour
     {
         MarcarDificultadExclusiva(marcoSeleccionado);
         MostrarAvisoInhabilitado();
+    }*/
+
+        private void ElegirDificultad(
+        GameObject marcoSeleccionado,
+        string nombreDificultad,
+        ConfiguracionPartidaSeleccionada.Dificultad dificultad
+    )
+    {
+        MarcarDificultadExclusiva(marcoSeleccionado);
+
+        if (!ModoHabilitado())
+        {
+            MostrarAvisoInhabilitado();
+            return;
+        }
+
+        dificultadActual = dificultad;
+        textoNombreDificultad = nombreDificultad;
+        OcultarAvisoInhabilitado();
+
+        if (textoModalidadDificultad != null)
+        {
+            textoModalidadDificultad.text =
+                $"{textoNombreModo} - {textoNombreDificultad}";
+        }
+
+        if (modalidadPanel != null)
+            modalidadPanel.SetActive(false);
+
+        if (aparienciaPanel != null)
+            aparienciaPanel.SetActive(true);
+
+        ResetearApariencia();
+    }
+
+    public void SeleccionarDificultadNormal(GameObject marcoSeleccionado)
+    {
+        ElegirDificultad(
+            marcoSeleccionado,
+            "DIFICULTAD NORMAL",
+            ConfiguracionPartidaSeleccionada.Dificultad.Normal
+        );
+    }
+
+    public void SeleccionarDificultadDificil(GameObject marcoSeleccionado)
+    {
+        ElegirDificultad(
+            marcoSeleccionado,
+            "DIFICULTAD DIFICIL",
+            ConfiguracionPartidaSeleccionada.Dificultad.Dificil
+        );
+    }
+
+    public void SeleccionarDificultadPesadilla(GameObject marcoSeleccionado)
+    {
+        ElegirDificultad(
+            marcoSeleccionado,
+            "DIFICULTAD PESADILLA",
+            ConfiguracionPartidaSeleccionada.Dificultad.Pesadilla
+        );
     }
 
     private void MarcarDificultadExclusiva(GameObject marcoSeleccionado)
@@ -429,10 +500,24 @@ public class MultiplayerMenuManager : MonoBehaviour
         // DIFICULTAD
         // -----------------------------------------------------
 
-        if (textoNombreDificultad == "DIFICULTAD NORMAL")
+       /* if (textoNombreDificultad == "DIFICULTAD NORMAL")
         {
             ConfiguracionPartidaSeleccionada.Instancia.dificultadSeleccionada =
                 ConfiguracionPartidaSeleccionada.Dificultad.Normal;
+        }
+        else
+        {
+            Debug.LogError(
+                "MultiplayerMenuManager: No se pudo determinar la dificultad."
+            );
+
+            return;
+        }*/
+
+        if (dificultadActual != ConfiguracionPartidaSeleccionada.Dificultad.Ninguna)
+        {
+            ConfiguracionPartidaSeleccionada.Instancia.dificultadSeleccionada =
+                dificultadActual;
         }
         else
         {
@@ -537,6 +622,8 @@ public class MultiplayerMenuManager : MonoBehaviour
 
         textoNombreModo = "";
         textoNombreDificultad = "";
+
+        dificultadActual = ConfiguracionPartidaSeleccionada.Dificultad.Ninguna;
 
         if (textoModalidadDificultad != null)
             textoModalidadDificultad.text = "";

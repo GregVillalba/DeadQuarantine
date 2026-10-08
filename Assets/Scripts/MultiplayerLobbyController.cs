@@ -74,6 +74,10 @@ public class MultiplayerLobbyController : MonoBehaviour
     private const string COUNTDOWN_PROPERTY =
         "CountdownEndUtcTicks";
 
+    private const string ESCENARIO_PROPERTY = "Escenario";
+    private const string MODO_PROPERTY = "Modo";
+    private const string DIFICULTAD_PROPERTY = "Dificultad";
+
     private void Awake()
     {
         if (network == null)
@@ -150,6 +154,7 @@ public class MultiplayerLobbyController : MonoBehaviour
             return;
 
         ActualizarEstadoSala();
+        AplicarConfiguracionDeSesion();
         LeerCountdownDeSesion();
         ActualizarCountdownVisual();
     }
@@ -184,6 +189,8 @@ public class MultiplayerLobbyController : MonoBehaviour
 
             // Guardamos el código de forma persistente
             CodigoGeneradoParaMostrar = codigo;
+
+            await EscribirConfiguracionPartida();
 
             if (labelCodigoACopiar != null)
             {
@@ -580,6 +587,8 @@ public class MultiplayerLobbyController : MonoBehaviour
         DateTime countdownEndTime =
             DateTime.UtcNow.AddSeconds(5);
 
+        await EscribirConfiguracionPartida();
+
         await EscribirCountdown(
             countdownEndTime.Ticks
         );
@@ -636,6 +645,85 @@ public class MultiplayerLobbyController : MonoBehaviour
         );
 
         await hostSession.SavePropertiesAsync();
+    }
+
+    // HOST: publica en la sesion lo que eligio (escenario, modo y dificultad).
+    private async Task EscribirConfiguracionPartida()
+    {
+        if (network == null ||
+            network.CurrentSession == null ||
+            !network.CurrentSession.IsHost)
+        {
+            return;
+        }
+
+        ConfiguracionPartidaSeleccionada config =
+            ConfiguracionPartidaSeleccionada.Instancia;
+
+        if (config == null)
+            return;
+
+        var hostSession = network.CurrentSession.AsHost();
+
+        hostSession.SetProperty(
+            ESCENARIO_PROPERTY,
+            new SessionProperty(((int)config.escenarioSeleccionado).ToString())
+        );
+
+        hostSession.SetProperty(
+            MODO_PROPERTY,
+            new SessionProperty(((int)config.modoSeleccionado).ToString())
+        );
+
+        hostSession.SetProperty(
+            DIFICULTAD_PROPERTY,
+            new SessionProperty(((int)config.dificultadSeleccionada).ToString())
+        );
+
+        await hostSession.SavePropertiesAsync();
+    }
+
+    // INVITADO: copia a su configuracion local lo que eligio el host.
+    private void AplicarConfiguracionDeSesion()
+    {
+        if (network == null ||
+            network.CurrentSession == null ||
+            network.CurrentSession.IsHost)
+        {
+            return;
+        }
+
+        ConfiguracionPartidaSeleccionada config =
+            ConfiguracionPartidaSeleccionada.Instancia;
+
+        if (config == null)
+            return;
+
+        var props = network.CurrentSession.Properties;
+
+        if (props.TryGetValue(ESCENARIO_PROPERTY, out var escProp) &&
+            int.TryParse(escProp.Value, out int escValor))
+        {
+            config.escenarioSeleccionado =
+                (ConfiguracionPartidaSeleccionada.Escenario)escValor;
+        }
+
+        if (props.TryGetValue(MODO_PROPERTY, out var modoProp) &&
+            int.TryParse(modoProp.Value, out int modoValor))
+        {
+            config.modoSeleccionado =
+                (ConfiguracionPartidaSeleccionada.ModoJuego)modoValor;
+        }
+
+        if (props.TryGetValue(DIFICULTAD_PROPERTY, out var difProp) &&
+            int.TryParse(difProp.Value, out int difValor))
+        {
+            config.dificultadSeleccionada =
+                (ConfiguracionPartidaSeleccionada.Dificultad)difValor;
+        }
+
+        if (DifficultyManager.Instance != null)
+            DifficultyManager.Instance.SincronizarConSeleccion();
     }
 
     private void LeerCountdownDeSesion()

@@ -391,6 +391,37 @@ public class NetworkBootstrap : MonoBehaviour
                 NetworkManager.Singleton.IsListening
             );
 
+            // ========================================================
+            // ESPERAR A QUE LOS INVITADOS SE CONECTEN A NETCODE
+            // ========================================================
+            // Si se carga la escena antes de que el invitado termine de
+            // conectarse, la recibe dos veces ("Server Scene Handle already exist").
+
+            int jugadoresEsperados = currentSession.Players.Count;
+            float esperaClientes = 0f;
+
+            while (
+                NetworkManager.Singleton.ConnectedClientsIds.Count <
+                jugadoresEsperados
+            )
+            {
+                await Task.Delay(100);
+
+                esperaClientes += 0.1f;
+
+                if (esperaClientes >= 15f)
+                {
+                    Debug.LogError(
+                        "[Network] Los invitados no se conectaron a tiempo."
+                    );
+
+                    return;
+                }
+            }
+
+            // Margen para que el invitado termine de sincronizar la escena actual.
+            await Task.Delay(1500);
+
 
             // ========================================================
             // CARGAR ESCENA

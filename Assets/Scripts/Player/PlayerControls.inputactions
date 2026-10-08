@@ -97,16 +97,6 @@
                     "priority": 0
                 },
                 {
-                    "name": "SwitchWeapon",
-                    "type": "Button",
-                    "id": "d13ce63d-d0dc-41ea-9cef-5c9c89680ac9",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false,
-                    "priority": 0
-                },
-                {
                     "name": "Melee",
                     "type": "Button",
                     "id": "23d99a88-7361-4f1a-b3dd-fbedee64019e",
@@ -124,6 +114,46 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "SelectPrimary",
+                    "type": "Button",
+                    "id": "0f983a6d-1940-44e4-a5df-364e37f85fb3",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "SelectSecondary",
+                    "type": "Button",
+                    "id": "d0e2fa65-363c-4b5f-8b1a-715f3801f2d0",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "NextWeapon",
+                    "type": "Value",
+                    "id": "9795d87a-4cda-416d-b8fa-48c182bee234",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true,
+                    "priority": 0
+                },
+                {
+                    "name": "PreviousWeapon",
+                    "type": "Value",
+                    "id": "2541cf45-6b4a-45d1-b3ff-337cb1fb2c4b",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true,
                     "priority": 0
                 }
             ],
@@ -273,17 +303,6 @@
                 },
                 {
                     "name": "",
-                    "id": "6cdad12e-1e8f-41b8-9382-2d3355a49c5e",
-                    "path": "<Keyboard>/#(2)",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "SwitchWeapon",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "f1ce3163-859c-468b-a466-78675db52e0a",
                     "path": "<Keyboard>/v",
                     "interactions": "",
@@ -301,6 +320,50 @@
                     "processors": "",
                     "groups": "",
                     "action": "Grenade",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "a0dbba37-e135-45f1-bc3d-f6a77ad99610",
+                    "path": "<Keyboard>/1",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SelectPrimary",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "7d14efa2-3eb4-4d07-94d3-7cca69b086a5",
+                    "path": "<Keyboard>/2",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SelectSecondary",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "43ead703-37cc-4d4d-a963-d8f87695fcef",
+                    "path": "<Mouse>/scroll",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "NextWeapon",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "4a6a4e90-3fa1-439e-bea3-ecd34f378807",
+                    "path": "<Mouse>/scroll",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "PreviousWeapon",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

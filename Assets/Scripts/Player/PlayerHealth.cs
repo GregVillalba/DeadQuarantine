@@ -17,6 +17,14 @@ public class PlayerHealth : NetworkBehaviour
     [Header("Vida")]
     [SerializeField] private int maxHealth = 100;
 
+    [Header("Chaleco")]
+    [Tooltip("Armadura máxima: chaleco + casco.")]
+    [SerializeField] private int maxArmor = 50;
+    [Tooltip("Armadura que da comprar el chaleco.")]
+    [SerializeField] private int vestArmorAmount = 25;
+    [Tooltip("Armadura que da comprar el casco.")]
+    [SerializeField] private int helmetArmorAmount = 25;
+
     [Header("Vidas")]
     [SerializeField] private int startingLives = 1;
 
@@ -38,6 +46,16 @@ public class PlayerHealth : NetworkBehaviour
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Server
         );
+
+    // Armadura actual (0 al empezar; chaleco +25, casco +25). Absorbe daño antes que la vida.
+    public NetworkVariable<int> Armor =
+        new NetworkVariable<int>(
+            0,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+
+    public int MaxArmor => maxArmor;
 
     public NetworkVariable<int> Lives =
         new NetworkVariable<int>(
@@ -127,6 +145,8 @@ public class PlayerHealth : NetworkBehaviour
         {
             CurrentHealth.Value =
                 maxHealth;
+
+            Armor.Value = 0;
 
             Lives.Value =
                 startingLives;
@@ -246,6 +266,44 @@ public class PlayerHealth : NetworkBehaviour
     }
 
     // =========================================================
+    // CHALECO / CASCO
+    // =========================================================
+
+    /// <summary>Solo servidor. Suma armadura sin pasar del máximo.</summary>
+    public void AddArmor(int amount)
+    {
+        if (!IsServer || amount <= 0)
+            return;
+
+        Armor.Value = Mathf.Clamp(Armor.Value + amount, 0, maxArmor);
+    }
+
+    /// <summary>Solo servidor. Chaleco: +25.</summary>
+    public void AddVest()
+    {
+        AddArmor(vestArmorAmount);
+    }
+
+    /// <summary>Solo servidor. Casco: +25.</summary>
+    public void AddHelmet()
+    {
+        AddArmor(helmetArmorAmount);
+    }
+
+    // Para llamar desde la tienda del jugador local (el dueño de este objeto), host o cliente.
+    [ServerRpc]
+    public void AddVestServerRpc()
+    {
+        AddVest();
+    }
+
+    [ServerRpc]
+    public void AddHelmetServerRpc()
+    {
+        AddHelmet();
+    }
+
+    // =========================================================
     // DAÑO
     // =========================================================
 
@@ -264,6 +322,14 @@ public class PlayerHealth : NetworkBehaviour
 
         if (CurrentHealth.Value <= 0)
             return;
+
+        // La armadura absorbe el daño primero (1 punto de armadura = 1 de daño).
+        if (Armor.Value > 0 && amount > 0)
+        {
+            int absorbed = Mathf.Min(Armor.Value, amount);
+            Armor.Value -= absorbed;
+            amount -= absorbed;
+        }
 
         CurrentHealth.Value -=
             amount;

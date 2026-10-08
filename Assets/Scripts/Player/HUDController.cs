@@ -25,6 +25,13 @@ public class HUDController : MonoBehaviour
 
     [Header("Estamina")]
     [SerializeField] private Image staminaFill;
+    [Tooltip("Número que baja junto con la barra (0-100).")]
+    [SerializeField] private TextMeshProUGUI staminaValueText;
+
+    [Header("Chaleco")]
+    [SerializeField] private Image armorFill;
+    [Tooltip("Número que acompaña a la barra de chaleco (0-50).")]
+    [SerializeField] private TextMeshProUGUI armorValueText;
 
     [Header("Munición")]
     [SerializeField] private TextMeshProUGUI ammoText;
@@ -53,11 +60,13 @@ public class HUDController : MonoBehaviour
 
     private Coroutine hitMarkerCoroutine;
 
+    private bool etiquetaActualizada;
+
     private void Start()
     {
         BuscarRoundManager();
 
-        NetworkObject networkObject =
+       /* NetworkObject networkObject =
             GetComponentInParent<NetworkObject>();
 
         if (
@@ -72,7 +81,7 @@ public class HUDController : MonoBehaviour
                 if (playerLabelText != null)
                     playerLabelText.text = "Jugador 2 (TÚ)";
             }
-        }
+        }*/
 
         if (hitMarker != null)
         {
@@ -95,8 +104,50 @@ public class HUDController : MonoBehaviour
         ActualizarTodo();
     }
 
+    private void ActualizarEtiquetaJugador()
+    {
+        if (etiquetaActualizada || playerLabelText == null)
+            return;
+
+        // El jugador al que pertenece este HUD.
+        NetworkObject networkObject =
+            playerHealth != null
+                ? playerHealth.GetComponentInParent<NetworkObject>()
+                : GetComponentInParent<NetworkObject>();
+
+        // Todavia no esta listo: se reintenta en el proximo cuadro.
+        if (networkObject == null || !networkObject.IsSpawned)
+            return;
+
+        // Este HUD no es del jugador local.
+        if (!networkObject.IsOwner)
+            return;
+
+        MultiplayerPlayerSpawnAssigner assigner =
+            networkObject.GetComponent<MultiplayerPlayerSpawnAssigner>();
+
+        // Singleplayer: no hay asignador, es siempre el jugador 1.
+        if (assigner == null)
+        {
+            playerLabelText.text = "Jugador 1 (TÚ)";
+            etiquetaActualizada = true;
+            return;
+        }
+
+        // Multijugador: espera a que el servidor asigne el numero de jugador.
+        if (assigner.AssignedSpawnIndex.Value < 0)
+            return;
+
+        playerLabelText.text =
+            "Jugador " + (assigner.AssignedSpawnIndex.Value + 1) + " (TÚ)";
+
+        etiquetaActualizada = true;
+    }
+
     private void Update()
     {
+        ActualizarEtiquetaJugador();
+        
         if (roundManager == null)
         {
             BuscarRoundManager();
@@ -125,7 +176,10 @@ public class HUDController : MonoBehaviour
     {
         weapon = newWeapon;
 
-        if (weaponIcon != null)
+        // Si la imagen del icono pertenece a un objeto con ImageWeapon (arma + accesorios), ese script ya la
+        // maneja solo: no se le pisa el sprite (antes se le ponía null y el icono desaparecía).
+        // Solo se usa el sprite suelto cuando es una imagen común y hay un sprite para poner.
+        if (weaponIcon != null && newIcon != null && weaponIcon.GetComponentInParent<ImageWeapon>(true) == null)
             weaponIcon.sprite = newIcon;
     }
     private void BuscarRoundManager()
@@ -152,6 +206,7 @@ public class HUDController : MonoBehaviour
     {
         UpdateHealthBar();
         UpdateStaminaBar();
+        UpdateArmorBar();
         UpdateAmmoText();
         UpdateRounds();
         UpdateCrosshair();
@@ -208,13 +263,39 @@ public class HUDController : MonoBehaviour
 
     private void UpdateStaminaBar()
     {
-        if (playerMovement == null ||
-            staminaFill == null)
+        if (playerMovement == null)
             return;
 
-        staminaFill.fillAmount =
-            playerMovement.CurrentStamina /
-            playerMovement.MaxStamina;
+        float fraction =
+            playerMovement.MaxStamina > 0f
+                ? Mathf.Clamp01(playerMovement.CurrentStamina / playerMovement.MaxStamina)
+                : 0f;
+
+        if (staminaFill != null)
+            staminaFill.fillAmount = fraction;
+
+        // El número baja a medida que baja la barra.
+        if (staminaValueText != null)
+            staminaValueText.text = Mathf.CeilToInt(fraction * 100f).ToString();
+    }
+
+    // =========================================================
+    // CHALECO
+    // =========================================================
+
+    private void UpdateArmorBar()
+    {
+        if (playerHealth == null)
+            return;
+
+        int current = playerHealth.Armor.Value;
+        int max = Mathf.Max(playerHealth.MaxArmor, 1);
+
+        if (armorFill != null)
+            armorFill.fillAmount = Mathf.Clamp01((float)current / max);
+
+        if (armorValueText != null)
+            armorValueText.text = current.ToString();
     }
 
     // =========================================================
