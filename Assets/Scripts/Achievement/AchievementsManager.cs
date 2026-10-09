@@ -1,12 +1,28 @@
 
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using UnityEngine;
+using UnityEngine.Networking;
 using Unity.Netcode;
 
 public class AchievementsManager : MonoBehaviour
 {
     public static AchievementsManager Instance { get; private set; }
+
+    [Header("Configuración Backend / Base de Datos")]
+    [SerializeField]
+    private string apiUrl = "http://localhost:3000/api/logros/desbloquear";
+
+    [SerializeField]
+    private string usernameJugador = "UserUnity";
+
+    public string UsernameJugador
+    {
+        get => usernameJugador;
+        set => usernameJugador = value;
+    }
 
     [Header("Base de datos de logros")]
     [SerializeField]
@@ -17,7 +33,7 @@ public class AchievementsManager : MonoBehaviour
     private AchievementsData datos;
 
     // ============================================================
-    // DATOS
+    // DATOS LOCALES Y SERIALIZACIÓN
     // ============================================================
 
     [System.Serializable]
@@ -36,6 +52,21 @@ public class AchievementsManager : MonoBehaviour
 
         // IDs únicos de Easter Eggs encontrados.
         public List<string> easterEggsEncontrados = new List<string>();
+    }
+
+    [System.Serializable]
+    private class LogroApiPayload
+    {
+        public string username;
+        public string sublogro_clave;
+    }
+
+    [System.Serializable]
+    private class LogroApiResponse
+    {
+        public bool success;
+        public string mensaje;
+        public string logro_padre_desbloqueado;
     }
 
     // ============================================================
@@ -64,7 +95,7 @@ public class AchievementsManager : MonoBehaviour
     }
 
     // ============================================================
-    // BASE DE DATOS
+    // BASE DE DATOS LOCAL
     // ============================================================
 
     private void InicializarBaseDeDatos()
@@ -312,6 +343,12 @@ public class AchievementsManager : MonoBehaviour
                     id,
                     AchievementRank.Ninguno
                 );
+
+                // Enviar logro directo al backend/MySQL.
+                ReportarProgresoServidor(
+                    id,
+                    AchievementRank.Ninguno
+                );
             }
 
             GuardarProgreso();
@@ -369,10 +406,16 @@ public class AchievementsManager : MonoBehaviour
 
         if (nuevoRango == AchievementRank.Oro)
         {
-            Debug.Log("[ACHIEVEMENTS] LOGRO COMPLETADO: " + id);
+            Debug.Log(
+                "[ACHIEVEMENTS] LOGRO COMPLETADO: " + id
+            );
         }
 
+        // Mostrar el aviso una sola vez.
         MostrarLogroEnHUD(id, nuevoRango);
+
+        // Notificar el sublogro a MySQL.
+        ReportarProgresoServidor(id, nuevoRango);
     }
 
     // ============================================================
@@ -455,10 +498,17 @@ public class AchievementsManager : MonoBehaviour
         );
 
         if (rango == AchievementRank.Oro)
-            Debug.Log("[ACHIEVEMENTS] LOGRO COMPLETADO: " + id);
+        {
+            Debug.Log(
+                "[ACHIEVEMENTS] LOGRO COMPLETADO: " + id
+            );
+        }
 
         MostrarLogroEnHUD(id, rango);
         GuardarProgreso();
+
+        // Notificar sublogro a MySQL.
+        ReportarProgresoServidor(id, rango);
     }
 
     // ============================================================
@@ -488,6 +538,12 @@ public class AchievementsManager : MonoBehaviour
             );
 
             GuardarProgreso();
+
+            ReportarProgresoServidor(
+                id,
+                AchievementRank.Ninguno
+            );
+
             return;
         }
 
@@ -526,14 +582,152 @@ public class AchievementsManager : MonoBehaviour
         );
 
         if (rango == AchievementRank.Oro)
-            Debug.Log("[ACHIEVEMENTS] LOGRO COMPLETADO: " + id);
+        {
+            Debug.Log(
+                "[ACHIEVEMENTS] LOGRO COMPLETADO: " + id
+            );
+        }
 
         MostrarLogroEnHUD(id, rango);
         GuardarProgreso();
+
+        ReportarProgresoServidor(id, rango);
     }
 
     // ============================================================
-    // OBTENER DEFINICIÓN
+    // COMUNICACIÓN CON MYSQL / SERVIDOR
+    // ============================================================
+
+    private void ReportarProgresoServidor(
+        AchievementId id,
+        AchievementRank rango
+    )
+    {
+        string sublogroClave = ObtenerClaveSublogro(id, rango);
+
+        if (string.IsNullOrEmpty(sublogroClave))
+        {
+            Debug.LogWarning(
+                $"[ACHIEVEMENTS API] No se encontró clave asignada para: " +
+                $"{id} - {rango}"
+            );
+            return;
+        }
+
+        StartCoroutine(EnviarSublogroCoroutine(sublogroClave));
+    }
+
+    private string ObtenerClaveSublogro(
+        AchievementId id,
+        AchievementRank rango
+    )
+    {
+        // Mapea los enums locales a las claves de MySQL.
+        switch (id)
+        {
+            case AchievementId.DerrotadorSupremo:
+                if (rango == AchievementRank.Bronce)
+                    return "derrota_50_zombies";
+                if (rango == AchievementRank.Plata)
+                    return "derrota_100_zombies";
+                if (rango == AchievementRank.Oro)
+                    return "derrota_300_zombies";
+                break;
+
+            case AchievementId.SupervivienteDelInfierno:
+                if (rango == AchievementRank.Bronce)
+                    return "supervivencia_normal";
+                if (rango == AchievementRank.Plata)
+                    return "supervivencia_dificil";
+                if (rango == AchievementRank.Oro)
+                    return "supervivencia_pesadilla";
+                break;
+
+            case AchievementId.CompletadorDeRondas:
+                if (rango == AchievementRank.Bronce)
+                    return "rondas_normal";
+                if (rango == AchievementRank.Plata)
+                    return "rondas_dificil";
+                if (rango == AchievementRank.Oro)
+                    return "rondas_pesadilla";
+                break;
+
+            case AchievementId.CampeonDelPoligono:
+                return "completar_poligono";
+
+            case AchievementId.DondeEstaWally:
+                if (rango == AchievementRank.Bronce)
+                    return "easter_egg_1";
+                if (rango == AchievementRank.Plata)
+                    return "easter_egg_2";
+                if (rango == AchievementRank.Oro)
+                    return "easter_egg_3";
+                break;
+        }
+
+        return null;
+    }
+
+    private IEnumerator EnviarSublogroCoroutine(string sublogroClave)
+    {
+        LogroApiPayload payload = new LogroApiPayload
+        {
+            username = this.usernameJugador,
+            sublogro_clave = sublogroClave
+        };
+
+        string jsonPayload = JsonUtility.ToJson(payload);
+
+        using (UnityWebRequest request = new UnityWebRequest(apiUrl, "POST"))
+        {
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
+
+            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            request.downloadHandler = new DownloadHandlerBuffer();
+
+            request.SetRequestHeader(
+                "Content-Type",
+                "application/json"
+            );
+
+            yield return request.SendWebRequest();
+
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                LogroApiResponse respuesta =
+                    JsonUtility.FromJson<LogroApiResponse>(
+                        request.downloadHandler.text
+                    );
+
+                Debug.Log(
+                    $"[ACHIEVEMENTS API] Servidor actualizó sublogro " +
+                    $"'{sublogroClave}' para {usernameJugador}."
+                );
+
+                if (respuesta != null &&
+                    !string.IsNullOrEmpty(
+                        respuesta.logro_padre_desbloqueado
+                    ))
+                {
+                    Debug.Log(
+                        "[ACHIEVEMENTS API] ¡LOGRO GLOBAL COMPLETADO " +
+                        "EN BASE DE DATOS: " +
+                        respuesta.logro_padre_desbloqueado + "!"
+                    );
+                }
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "[ACHIEVEMENTS API] Falló al sincronizar en la nube " +
+                    $"({request.error}). Progreso guardado únicamente en local."
+                );
+            }
+        }
+    }
+
+    // ============================================================
+    // OBTENER DEFINICIONES Y ESTADOS
     // ============================================================
 
     private AchievementDefinition ObtenerDefinicion(AchievementId id)
@@ -684,7 +878,7 @@ public class AchievementsManager : MonoBehaviour
         if (datos.logros == null)
             datos.logros = new List<AchievementData>();
 
-        // Compatibilidad con JSON anteriores.
+        // Compatibilidad con archivos JSON anteriores.
         if (datos.easterEggsEncontrados == null)
         {
             datos.easterEggsEncontrados = new List<string>();
@@ -719,7 +913,10 @@ public class AchievementsManager : MonoBehaviour
         IReadOnlyList<AchievementDefinition> definiciones =
             achievementDatabase.ObtenerTodos();
 
-        return definiciones != null ? definiciones.Count : 0;
+        if (definiciones == null)
+            return 0;
+
+        return definiciones.Count;
     }
 
     // ============================================================
