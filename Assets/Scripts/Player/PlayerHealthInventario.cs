@@ -4,7 +4,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-/// <summary>Un slot del inventario de curas: qué cura guarda y cuántas.</summary>
+/// <summary>Un slot del inventario de utilidades: qué objeto guarda y cuántos (curas y granadas).</summary>
 public struct SlotCura : INetworkSerializable, IEquatable<SlotCura>
 {
     public FixedString64Bytes itemId;
@@ -27,32 +27,62 @@ public struct SlotCura : INetworkSerializable, IEquatable<SlotCura>
 }
 
 /// <summary>
-/// Inventario de curas del jugador (slot 1 al lado de la munición en el HUD; el slot 2 es de las granadas).
-/// Las curas compradas en el mercader se guardan acá y se usan con UseSlot1 (Q por defecto).
-/// Cada slot guarda un solo tipo de cura: la compra va al slot que ya tiene ese tipo (si hay lugar)
-/// o al primer slot vacío. El "Slot extra" del mercader sube la capacidad de los slots de curas.
+/// Inventario de utilidades del jugador (al lado de la munición en el HUD):
+/// - Slot de curas (tecla Q, UseSlot1).
+/// - Slot de granadas (tecla G, lo tira GrenadeThrow).
+/// El jugador empieza con los dos slots vacíos y con capacidad 1 por slot.
+/// Cada slot guarda un solo tipo de objeto: la compra va al slot que ya tiene ese tipo (si hay lugar)
+/// o al slot vacío. Cada slot tiene su propio "Slot extra" en el mercader: se compra por separado y
+/// varias veces (por defecto 1 + 2 compras = 3 por slot).
 /// </summary>
 public partial class PlayerHealth
 {
-    [Header("Inventario de curas")]
+    [Header("Inventario de utilidades")]
     [Tooltip("Cantidad de slots de curas. Hoy es 1: el slot 2 del HUD es de las granadas.")]
     [Min(1)] [SerializeField] private int cantidadSlotsCuras = 1;
-    [Tooltip("Curas del mismo tipo que entran en un slot.")]
+    [Tooltip("Objetos del mismo tipo que entran en un slot al empezar (sin ningún Slot extra).")]
     [Min(1)] [SerializeField] private int capacidadSlot = 1;
-    [Tooltip("Curas del mismo tipo que entran en un slot después de comprar el Slot extra.")]
-    [Min(1)] [SerializeField] private int capacidadSlotConEspacioExtra = 2;
+    [Tooltip("Cuánto sube la capacidad de cada slot por cada Slot extra comprado.")]
+    [Min(1)] [SerializeField] private int incrementoPorEspacioExtra = 1;
+    [Tooltip("Cuántas veces se puede comprar el Slot extra de CADA slot (curas y granadas por separado). Con capacidad 1 y 2 compras: 3 por slot.")]
+    [Min(0)] [SerializeField] private int maxEspaciosExtra = 2;
 
     // Se crea en Awake (antes del spawn de red), igual que las NetworkList de RoundManager.
     public NetworkList<SlotCura> SlotsCuras;
 
-    public NetworkVariable<bool> EspacioExtraComprado =
-        new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    /// <summary>Slot G: qué granada lleva el jugador y cuántas. Vacío = no puede tirar granadas.</summary>
+    public NetworkVariable<SlotCura> SlotGranada =
+        new NetworkVariable<SlotCura>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    /// <summary>Cuántos Slot extra se compraron para el slot de curas (0 hasta maxEspaciosExtra).</summary>
+    public NetworkVariable<int> EspaciosExtraCuras =
+        new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    /// <summary>Cuántos Slot extra se compraron para el slot de granadas (0 hasta maxEspaciosExtra).</summary>
+    public NetworkVariable<int> EspaciosExtraGranadas =
+        new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     /// <summary>Cambió algún slot o la capacidad. Lo usan el HUD y la tienda.</summary>
     public event Action OnInventarioChanged;
 
     public int CantidadSlotsCuras => cantidadSlotsCuras;
-    public int CapacidadPorSlot => EspacioExtraComprado.Value ? capacidadSlotConEspacioExtra : capacidadSlot;
+    /// <summary>Capacidad actual del slot de curas (Q).</summary>
+    public int CapacidadCuras => capacidadSlot + EspaciosExtraCuras.Value * incrementoPorEspacioExtra;
+
+    /// <summary>Capacidad actual del slot de granadas (G).</summary>
+    public int CapacidadGranadas => capacidadSlot + EspaciosExtraGranadas.Value * incrementoPorEspacioExtra;
+
+    /// <summary>Cuántos Slot extra se compraron para ese slot.</summary>
+    public int EspaciosExtraDe(SlotInventarioExtra slot)
+    {
+        return slot == SlotInventarioExtra.Granadas ? EspaciosExtraGranadas.Value : EspaciosExtraCuras.Value;
+    }
+
+    /// <summary>true si ya no se pueden comprar más Slot extra para ese slot.</summary>
+    public bool EspaciosExtraAlMaximo(SlotInventarioExtra slot)
+    {
+        return EspaciosExtraDe(slot) >= maxEspaciosExtra;
+    }
 
     private PlayerControls controlesInventario;
     private InputAction accionSlot1;
@@ -76,13 +106,17 @@ public partial class PlayerHealth
         for (int i = 0; i < cantidadSlotsCuras; i++)
             SlotsCuras.Add(default);
 
-        EspacioExtraComprado.Value = false;
+        SlotGranada.Value = default;
+        EspaciosExtraCuras.Value = 0;
+        EspaciosExtraGranadas.Value = 0;
     }
 
     private void SuscribirInventario()
     {
         SlotsCuras.OnListChanged += InventarioListaChanged;
-        EspacioExtraComprado.OnValueChanged += EspacioExtraChanged;
+        SlotGranada.OnValueChanged += SlotGranadaChanged;
+        EspaciosExtraCuras.OnValueChanged += EspaciosExtraChanged;
+        EspaciosExtraGranadas.OnValueChanged += EspaciosExtraChanged;
 
         if (IsOwner)
         {
@@ -99,7 +133,9 @@ public partial class PlayerHealth
     private void DesuscribirInventario()
     {
         SlotsCuras.OnListChanged -= InventarioListaChanged;
-        EspacioExtraComprado.OnValueChanged -= EspacioExtraChanged;
+        SlotGranada.OnValueChanged -= SlotGranadaChanged;
+        EspaciosExtraCuras.OnValueChanged -= EspaciosExtraChanged;
+        EspaciosExtraGranadas.OnValueChanged -= EspaciosExtraChanged;
 
         if (controlesInventario != null)
         {
@@ -116,7 +152,12 @@ public partial class PlayerHealth
         OnInventarioChanged?.Invoke();
     }
 
-    private void EspacioExtraChanged(bool anterior, bool actual)
+    private void SlotGranadaChanged(SlotCura anterior, SlotCura actual)
+    {
+        OnInventarioChanged?.Invoke();
+    }
+
+    private void EspaciosExtraChanged(int anterior, int actual)
     {
         OnInventarioChanged?.Invoke();
     }
@@ -164,6 +205,17 @@ public partial class PlayerHealth
         return BuscarSlotPara(itemId) >= 0;
     }
 
+    /// <summary>true si hay lugar en el slot G para una granada de este tipo.</summary>
+    public bool PuedeGuardarGranada(string itemId)
+    {
+        SlotCura slot = SlotGranada.Value;
+
+        if (slot.Vacio)
+            return true;
+
+        return slot.itemId.ToString() == itemId && slot.cantidad < CapacidadGranadas;
+    }
+
     // Primero el slot que ya tiene ese tipo de cura (si le queda lugar); si no, el primer slot vacío.
     private int BuscarSlotPara(string itemId)
     {
@@ -174,7 +226,7 @@ public partial class PlayerHealth
         {
             SlotCura slot = SlotsCuras[i];
 
-            if (!slot.Vacio && slot.itemId.ToString() == itemId && slot.cantidad < CapacidadPorSlot)
+            if (!slot.Vacio && slot.itemId.ToString() == itemId && slot.cantidad < CapacidadCuras)
                 return i;
         }
 
@@ -216,13 +268,37 @@ public partial class PlayerHealth
         return true;
     }
 
-    /// <summary>Solo servidor. Compra única del Slot extra. false si ya estaba comprado.</summary>
-    public bool ComprarEspacioExtra()
+    /// <summary>Solo servidor. Guarda una granada comprada en el slot G. false si no hay lugar.</summary>
+    public bool GuardarGranada(string itemId)
     {
-        if (!IsServer || EspacioExtraComprado.Value)
+        if (!IsServer || string.IsNullOrEmpty(itemId) || !PuedeGuardarGranada(itemId))
             return false;
 
-        EspacioExtraComprado.Value = true;
+        SlotCura slot = SlotGranada.Value;
+
+        if (slot.Vacio)
+        {
+            slot.itemId = new FixedString64Bytes(itemId);
+            slot.curacion = 0;
+            slot.cantidad = 0;
+        }
+
+        slot.cantidad++;
+        SlotGranada.Value = slot;
+        return true;
+    }
+
+    /// <summary>Solo servidor. Compra del Slot extra de ese slot (curas o granadas). false si ya está al máximo.</summary>
+    public bool ComprarEspacioExtra(SlotInventarioExtra slot)
+    {
+        if (!IsServer || EspaciosExtraAlMaximo(slot))
+            return false;
+
+        if (slot == SlotInventarioExtra.Granadas)
+            EspaciosExtraGranadas.Value++;
+        else
+            EspaciosExtraCuras.Value++;
+
         return true;
     }
 
@@ -241,5 +317,35 @@ public partial class PlayerHealth
 
         slot.cantidad--;
         SlotsCuras[indice] = slot.Vacio ? default : slot;
+    }
+
+    /// <summary>
+    /// Lo llama GrenadeThrow del dueño al soltar la granada. El servidor valida que quede una en el slot G,
+    /// crea el proyectil y recién ahí la descuenta.
+    /// </summary>
+    [ServerRpc]
+    public void SolicitarLanzamientoGranadaServerRpc(Vector3 posicion, Vector3 velocidad)
+    {
+        if (!IsAlive)
+            return;
+
+        SlotCura slot = SlotGranada.Value;
+
+        if (slot.Vacio)
+            return;
+
+        GrenadeThrow lanzador = transform.root.GetComponentInChildren<GrenadeThrow>(true);
+
+        if (lanzador == null)
+        {
+            Debug.LogWarning("[PlayerHealth] No se encontró GrenadeThrow en el jugador.");
+            return;
+        }
+
+        if (!lanzador.CrearProyectilServidor(slot.itemId.ToString(), posicion, velocidad))
+            return;
+
+        slot.cantidad--;
+        SlotGranada.Value = slot.Vacio ? default : slot;
     }
 }

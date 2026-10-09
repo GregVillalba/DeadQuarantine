@@ -768,8 +768,7 @@ public class NPCShopUI : MonoBehaviour
             ActualizarFilas();
     }
 
-    // Las curaciones se compran cuantas veces se quiera; nunca quedan "compradas".
-    // De las granadas solo queda "comprada" la que se está tirando ahora.
+    // Las curaciones y las granadas se gastan al usarlas: nunca quedan "compradas".
     // Chaleco / casco: "comprado" solo mientras tiene el escudo lleno; dañado o roto se puede reparar.
     private bool EstaComprada(WeaponOffer oferta)
     {
@@ -778,12 +777,12 @@ public class NPCShopUI : MonoBehaviour
                    playerHealth.TieneBlindaje(oferta.piezaBlindaje) &&
                    !playerHealth.NecesitaReparacion(oferta.piezaBlindaje);
 
-        // El Slot extra se compra una sola vez.
+        // Cada Slot extra (Q o G) se puede comprar varias veces: queda "comprado" al llegar al máximo de ese slot.
         if (oferta.esEspacioInventario)
-            return playerHealth != null && playerHealth.EspacioExtraComprado.Value;
+            return playerHealth != null && playerHealth.EspaciosExtraAlMaximo(oferta.slotExtra);
 
         if (grenadeThrow != null && grenadeThrow.EsTipoDeGranada(oferta.weaponId))
-            return grenadeThrow.TipoActualId == oferta.weaponId;
+            return false;
 
         return !oferta.EsCuracion &&
                !oferta.esMunicion &&
@@ -791,12 +790,19 @@ public class NPCShopUI : MonoBehaviour
                weaponSwitcher.IsUnlocked(oferta.weaponId);
     }
 
-    // Las curas van al inventario: sin un slot con lugar para ese tipo no se pueden comprar.
+    // Las curas y las granadas van al inventario: sin un slot con lugar para ese tipo no se pueden comprar.
     private bool InventarioLlenoPara(WeaponOffer oferta)
     {
-        return oferta.EsCuracion &&
-               playerHealth != null &&
-               !playerHealth.PuedeGuardarCura(oferta.weaponId);
+        if (playerHealth == null)
+            return false;
+
+        if (oferta.EsCuracion)
+            return !playerHealth.PuedeGuardarCura(oferta.weaponId);
+
+        if (grenadeThrow != null && grenadeThrow.EsTipoDeGranada(oferta.weaponId))
+            return !playerHealth.PuedeGuardarGranada(oferta.weaponId);
+
+        return false;
     }
 
     // La caja de munición restaura el arma en mano: si ya está llena no tiene sentido comprarla.

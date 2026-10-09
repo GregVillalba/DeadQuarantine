@@ -18,6 +18,9 @@ public class NetworkBootstrap : MonoBehaviour
 
     public string CurrentJoinCode { get; private set; }
 
+    public event Action OnGuestLeft; // lo recibe el HOST cuando el invitado se va
+    public event Action OnHostLeft;  // lo recibe el INVITADO cuando el host se va
+
     public bool IsHost =>
         currentSession != null && currentSession.IsHost;
 
@@ -65,7 +68,8 @@ public class NetworkBootstrap : MonoBehaviour
     // INICIALIZAR UNITY SERVICES
     // ============================================================
 
-    private async Task EnsureServicesInitialized()
+   // private async Task EnsureServicesInitialized()
+   public async Task<bool> EnsureServicesInitialized() 
     {
         try
         {
@@ -85,6 +89,7 @@ public class NetworkBootstrap : MonoBehaviour
                 "[Network] Servicios listos. PlayerId: " +
                 AuthenticationService.Instance.PlayerId
             );
+            return true;
         }
         catch (Exception e)
         {
@@ -92,6 +97,7 @@ public class NetworkBootstrap : MonoBehaviour
                 "[Network] Error inicializando servicios: " +
                 e.Message
             );
+            return false;
         }
     }
 
@@ -102,6 +108,11 @@ public class NetworkBootstrap : MonoBehaviour
 
     public async Task<string> StartHost()
     {
+        isIntentionalLeave = false;
+
+        if (!await EnsureServicesInitialized())
+            return null;
+
         try
         {
             SessionOptions options =
@@ -148,6 +159,11 @@ public class NetworkBootstrap : MonoBehaviour
 
     public async Task<bool> StartClient(string joinCode)
     {
+        isIntentionalLeave = false;
+
+        if (!await EnsureServicesInitialized())
+            return false;
+
         try
         {
             if (string.IsNullOrWhiteSpace(joinCode))
@@ -469,7 +485,7 @@ public class NetworkBootstrap : MonoBehaviour
         );
     }
 
-    private void OnClientDisconnected(ulong clientId)
+   /* private void OnClientDisconnected(ulong clientId)
     {
         if (NetworkManager.Singleton == null)
             return;
@@ -488,9 +504,43 @@ public class NetworkBootstrap : MonoBehaviour
         Debug.LogWarning("[Network] Se perdió la conexión con el Host. Volviendo al menú.");
 
         _ = GoToMenuDueToDisconnect();
+    }*/
+
+    private void OnClientDisconnected(ulong clientId)
+{
+    if (NetworkManager.Singleton == null)
+        return;
+
+    // HOST: se fue otro jugador
+    if (IsHost)
+    {
+        if (clientId != NetworkManager.Singleton.LocalClientId && !isIntentionalLeave)
+            OnGuestLeft?.Invoke();
+
+        return;
     }
 
-    private async Task GoToMenuDueToDisconnect()
+    // INVITADO: solo nos interesa cuando el desconectado somos nosotros
+    if (clientId != NetworkManager.Singleton.LocalClientId)
+        return;
+
+    if (isIntentionalLeave)
+    {
+        isIntentionalLeave = false;
+        return;
+    }
+
+    Debug.LogWarning("[Network] Se perdió la conexión con el Host.");
+
+    // Si hay un cartel escuchando, él decide cuándo salir; si no, vuelve al menú como antes.
+    if (OnHostLeft != null)
+        OnHostLeft.Invoke();
+    else
+        _ = GoToMenuDueToDisconnect();
+}
+
+    //private async Task GoToMenuDueToDisconnect()
+    public async Task GoToMenuDueToDisconnect()
     {
         if (NetworkManager.Singleton != null)
             NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;

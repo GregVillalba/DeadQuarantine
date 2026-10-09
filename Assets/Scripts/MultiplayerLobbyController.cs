@@ -23,6 +23,9 @@ public class MultiplayerLobbyController : MonoBehaviour
     [Header("--- NETWORK ---")]
     [SerializeField] private NetworkBootstrap network;
 
+    [Header("--- AVISO SIN INTERNET ---")]
+    [SerializeField] private GameObject panelSinInternet;
+
     [Header("--- INGRESAR CÓDIGO ---")]
     [SerializeField] private TMP_InputField codigoInputField;
 
@@ -138,6 +141,8 @@ public class MultiplayerLobbyController : MonoBehaviour
         {
             countdownPanel.SetActive(false);
         }
+        if (panelSinInternet != null)
+            panelSinInternet.SetActive(false);
 
         ActualizarUI(
             jugador1Conectado: false,
@@ -165,12 +170,21 @@ public class MultiplayerLobbyController : MonoBehaviour
 
     public async void OnClick_CrearSala()
     {
+        if (!VerificarInternet())
+            return;
+
         if (network == null)
             network = NetworkBootstrap.Instance;
 
         if (network == null)
         {
             Debug.LogError("[Lobby] No se encontró NetworkBootstrap.");
+            return;
+        }
+
+        if (Application.internetReachability == NetworkReachability.NotReachable)
+        {
+            MostrarSinInternet();
             return;
         }
 
@@ -181,6 +195,7 @@ public class MultiplayerLobbyController : MonoBehaviour
             if (string.IsNullOrEmpty(codigo))
             {
                 Debug.LogError("[Lobby] No se pudo crear la sala.");
+                MostrarSinInternet();
                 return;
             }
 
@@ -216,6 +231,7 @@ public class MultiplayerLobbyController : MonoBehaviour
         catch (Exception e)
         {
             Debug.LogError("[Lobby] Error creando sala: " + e.Message);
+            MostrarSinInternet();
         }
     }
 
@@ -225,6 +241,9 @@ public class MultiplayerLobbyController : MonoBehaviour
 
     public void OnClick_IrAIngresarCodigo()
     {
+        if (!VerificarInternet())
+            return;
+
         // Si estamos en la escena "PantallasUI", cargamos "NetworkLobby"
         if (SceneManager.GetActiveScene().name == "PantallasUI")
         {
@@ -244,6 +263,9 @@ public class MultiplayerLobbyController : MonoBehaviour
 
     public async void OnClick_ConfirmarUnirseConCodigo()
     {
+        if (!VerificarInternet())
+            return;
+            
         if (codigoInputField == null)
             return;
 
@@ -942,5 +964,29 @@ public class MultiplayerLobbyController : MonoBehaviour
                 OnClick_CopiarCodigo
             );
         }
+    }
+
+    private void MostrarSinInternet()
+    {
+        if (panelSinInternet != null)
+            panelSinInternet.SetActive(true);
+    }
+
+    public bool VerificarInternet()
+    {
+        if (Application.internetReachability != NetworkReachability.NotReachable)
+            return true;
+
+        MostrarSinInternet();
+        return false;
+    }
+
+// Botón "Aceptar" del cartel
+    public void OnClick_CerrarSinInternet()
+    {
+        if (panelSinInternet != null)
+            panelSinInternet.SetActive(false);
+
+        
     }
 }

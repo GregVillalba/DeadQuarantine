@@ -19,7 +19,6 @@ public class NPCWeaponVendor : MonoBehaviour
     [SerializeField] private AudioClip purchaseDeniedSound;
 
     private WeaponSwitcher pendingSwitcher;
-    private GrenadeThrow pendingGrenadeThrow;
     private Weapon pendingWeapon;
     private PlayerScore pendingScore;
     private string pendingWeaponId;
@@ -72,6 +71,7 @@ public class NPCWeaponVendor : MonoBehaviour
         {
             // Sin switcher pendiente: al terminar no se desbloquea ningún arma.
             pendingSwitcher = null;
+            pendingWeapon = null;
             pendingScore = playerScore;
             pendingWeaponId = weaponId;
 
@@ -82,14 +82,14 @@ public class NPCWeaponVendor : MonoBehaviour
 
         if (oferta.esEspacioInventario)
         {
+            // El servidor valida que ese slot (curas o granadas) no haya llegado al máximo de Slot extra.
             pendingSwitcher = null;
-            pendingGrenadeThrow = null;
             pendingWeapon = null;
             pendingScore = playerScore;
             pendingWeaponId = weaponId;
 
             playerScore.OnPurchaseResult += OnPurchaseResultInterno;
-            playerScore.ComprarEspacioExtraServerRpc(weaponId, oferta.cost);
+            playerScore.ComprarEspacioExtraServerRpc(weaponId, oferta.cost, oferta.slotExtra);
             return;
         }
 
@@ -97,7 +97,6 @@ public class NPCWeaponVendor : MonoBehaviour
         {
             // El servidor decide si es compra o reparación según el estado de la pieza.
             pendingSwitcher = null;
-            pendingGrenadeThrow = null;
             pendingWeapon = null;
             pendingScore = playerScore;
             pendingWeaponId = weaponId;
@@ -120,7 +119,6 @@ public class NPCWeaponVendor : MonoBehaviour
             }
 
             pendingSwitcher = null;
-            pendingGrenadeThrow = null;
             pendingWeapon = arma;
             pendingScore = playerScore;
             pendingWeaponId = weaponId;
@@ -134,20 +132,24 @@ public class NPCWeaponVendor : MonoBehaviour
 
         if (grenadeThrow != null && grenadeThrow.EsTipoDeGranada(weaponId))
         {
-            // Ya es el tipo que se tira: no se cobra de nuevo.
-            if (grenadeThrow.TipoActualId == weaponId)
+            // Las granadas van al slot G: sin lugar para ese tipo no se cobra.
+            PlayerHealth salud = camara.transform.root.GetComponentInChildren<PlayerHealth>();
+
+            if (salud == null || !salud.PuedeGuardarGranada(weaponId))
             {
-                OnPurchaseResult?.Invoke(weaponId, true);
+                PlaySound(purchaseDeniedSound);
+                OnPurchaseResult?.Invoke(weaponId, false);
                 return;
             }
 
+            // El servidor guarda la granada en el slot: acá no queda nada pendiente por aplicar.
             pendingSwitcher = null;
-            pendingGrenadeThrow = grenadeThrow;
+            pendingWeapon = null;
             pendingScore = playerScore;
             pendingWeaponId = weaponId;
 
             playerScore.OnPurchaseResult += OnPurchaseResultInterno;
-            playerScore.ComprarArmaServerRpc(weaponId, oferta.cost);
+            playerScore.ComprarGranadaServerRpc(weaponId, oferta.cost);
             return;
         }
 
@@ -158,7 +160,7 @@ public class NPCWeaponVendor : MonoBehaviour
         }
 
         pendingSwitcher = switcher;
-        pendingGrenadeThrow = null;
+        pendingWeapon = null;
         pendingScore = playerScore;
         pendingWeaponId = weaponId;
 
@@ -179,14 +181,10 @@ public class NPCWeaponVendor : MonoBehaviour
         if (exito && pendingSwitcher != null)
             pendingSwitcher.UnlockWeapon(weaponId, equipAfterUnlock: true);
 
-        if (exito && pendingGrenadeThrow != null)
-            pendingGrenadeThrow.EquiparTipo(weaponId);
-
         if (exito && pendingWeapon != null)
             pendingWeapon.RestaurarMunicion();
 
         pendingSwitcher = null;
-        pendingGrenadeThrow = null;
         pendingWeapon = null;
         pendingScore = null;
         pendingWeaponId = null;
