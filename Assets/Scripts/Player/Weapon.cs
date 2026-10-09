@@ -114,6 +114,9 @@ public class Weapon : MonoBehaviour
     public bool IsAiming { get; private set; }
 
     public int CurrentAmmo => currentAmmo;
+
+    /// <summary>Balas que entran en el cargador. Lo usa el HUD para el aviso de poca munición.</summary>
+    public int CapacidadCargador => maxAmmo;
     // ----- CAMBIO COMBINADO: PROPIEDADES DE DIFICULTAD (DEL COMPAÑERO) -----
     public int MaxAmmo => EffectiveMaxAmmo; 
     

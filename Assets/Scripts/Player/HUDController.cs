@@ -61,6 +61,33 @@ public class HUDController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI ammoMaxText;
     [SerializeField] private TextMeshProUGUI weaponNameText;
 
+    [Header("Aviso de munición (cartel en el centro)")]
+    [Tooltip("Texto del cartel. Si queda vacío se crea uno solo en el centro del Canvas.")]
+    [SerializeField] private TextMeshProUGUI avisoMunicionText;
+    [Tooltip("Con este porcentaje del cargador (o menos) aparece el aviso de poca munición. Siempre es al menos 1 bala.")]
+    [Range(0f, 1f)] [SerializeField] private float porcentajePocaMunicion = 0.10f;
+    [SerializeField] private string textoPocaMunicion = "POCA MUNICIÓN";
+    [SerializeField] private string textoRecargar = "RECARGAR";
+    [SerializeField] private string textoSinMunicion = "SIN MUNICIÓN";
+    [Tooltip("Poca munición: amarillo.")]
+    [SerializeField] private Color colorPocaMunicion = new Color(1f, 0.92f, 0.2f);
+    [Tooltip("Recargar (cargador en 0 y todavía hay reserva): naranja.")]
+    [SerializeField] private Color colorRecargar = new Color(1f, 0.55f, 0f);
+    [Tooltip("Sin munición (cargador y reserva en 0): rojo.")]
+    [SerializeField] private Color colorSinMunicion = new Color(1f, 0.15f, 0.15f);
+    [Tooltip("Estilo del cartel creado automáticamente (si asignás tu propio texto, se respeta su estilo).")]
+    [SerializeField] private float tamanoTextoAviso = 30f;
+    [Tooltip("Separación entre letras (estilo Call of Duty: letras bien espaciadas).")]
+    [SerializeField] private float espaciadoLetrasAviso = 14f;
+    [Tooltip("Grosor del contorno oscuro que le da lectura al texto sobre cualquier fondo (0 = sin contorno).")]
+    [Range(0f, 1f)] [SerializeField] private float grosorContornoAviso = 0.25f;
+    [SerializeField] private Color colorContornoAviso = new Color(0f, 0f, 0f, 0.9f);
+    [Tooltip("Recargar y Sin munición titilan suavemente para llamar la atención. Poca munición queda fija.")]
+    [SerializeField] private bool titilarEnUrgente = true;
+    [SerializeField] private float velocidadTitilado = 6f;
+    [Tooltip("Desplazamiento vertical del cartel respecto al centro de la pantalla (negativo = más abajo, para no tapar la mira).")]
+    [SerializeField] private float desplazamientoYAviso = -140f;
+
     [Header("Rondas")]
     [SerializeField] private TextMeshProUGUI roundsText;
     [SerializeField] private TextMeshProUGUI zombiesText;
@@ -84,6 +111,7 @@ public class HUDController : MonoBehaviour
     private Coroutine hitMarkerCoroutine;
 
     private bool etiquetaActualizada;
+    private bool avisoMunicionIntentado;
 
     private void Start()
     {
@@ -231,6 +259,7 @@ public class HUDController : MonoBehaviour
         UpdateStaminaBar();
         UpdateArmorBar();
         UpdateAmmoText();
+        UpdateAvisoMunicion();
         UpdateRounds();
         UpdateCrosshair();
         UpdateLivesUI();
@@ -653,6 +682,111 @@ public class HUDController : MonoBehaviour
             weaponNameText.text =
                 weapon.WeaponName.ToUpper();
         }
+    }
+
+    // =========================================================
+    // AVISO DE MUNICIÓN (cartel en el centro)
+    // =========================================================
+
+    // Poca munición (amarillo): el cargador está en el porcentaje configurado o menos.
+    // Recargar (naranja): cargador en 0 pero todavía hay reserva.
+    // Sin munición (rojo): cargador en 0 y reserva en 0 (0/0).
+    private void UpdateAvisoMunicion()
+    {
+        if (avisoMunicionText == null && !avisoMunicionIntentado)
+        {
+            avisoMunicionIntentado = true;
+            CrearAvisoMunicion();
+        }
+
+        if (avisoMunicionText == null)
+            return;
+
+        string texto = null;
+        Color color = Color.white;
+        bool urgente = false;
+
+        // Sin aviso mientras recarga, abatido, sin arma o con un arma sin cargador (cuerpo a cuerpo).
+        bool puedeAvisar = weapon != null &&
+                           !weapon.IsReloading &&
+                           weapon.CapacidadCargador > 0 &&
+                           (playerHealth == null || !playerHealth.IsDowned);
+
+        if (puedeAvisar)
+        {
+            int actual = weapon.CurrentAmmo;
+            int umbral = Mathf.Max(1, Mathf.FloorToInt(weapon.CapacidadCargador * porcentajePocaMunicion));
+
+            if (actual <= 0)
+            {
+                urgente = true;
+                bool sinReserva = weapon.UsesLimitedReserve && weapon.ReserveAmmo <= 0;
+                texto = sinReserva ? textoSinMunicion : textoRecargar;
+                color = sinReserva ? colorSinMunicion : colorRecargar;
+            }
+            else if (actual <= umbral && actual < weapon.CapacidadCargador)
+            {
+                texto = textoPocaMunicion;
+                color = colorPocaMunicion;
+            }
+        }
+
+        bool mostrar = !string.IsNullOrEmpty(texto);
+
+        if (avisoMunicionText.gameObject.activeSelf != mostrar)
+            avisoMunicionText.gameObject.SetActive(mostrar);
+
+        if (!mostrar)
+            return;
+
+        // Titilado suave solo en los avisos urgentes (la opacidad sube y baja sin llegar a apagarse).
+        if (urgente && titilarEnUrgente)
+            color.a = Mathf.Lerp(0.45f, 1f, (Mathf.Sin(Time.unscaledTime * velocidadTitilado) + 1f) * 0.5f);
+
+        avisoMunicionText.text = texto;
+        avisoMunicionText.color = color;
+    }
+
+    // Crea el cartel en el centro del Canvas cuando no se asignó uno en el Inspector.
+    private void CrearAvisoMunicion()
+    {
+        Canvas canvas = ammoText != null ? ammoText.canvas : GetComponentInParent<Canvas>();
+
+        if (canvas == null)
+            return;
+
+        GameObject go = new GameObject("AvisoMunicion", typeof(RectTransform), typeof(TextMeshProUGUI));
+        go.layer = canvas.gameObject.layer;
+        go.transform.SetParent(canvas.rootCanvas.transform, false);
+
+        RectTransform rt = (RectTransform)go.transform;
+        rt.anchorMin = new Vector2(0.5f, 0.5f);
+        rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.sizeDelta = new Vector2(700f, 90f);
+        rt.anchoredPosition = new Vector2(0f, desplazamientoYAviso);
+
+        TextMeshProUGUI texto = go.GetComponent<TextMeshProUGUI>();
+        texto.alignment = TextAlignmentOptions.Center;
+        texto.fontSize = tamanoTextoAviso;
+        texto.characterSpacing = espaciadoLetrasAviso;
+        texto.fontStyle = FontStyles.Bold;
+        texto.raycastTarget = false;
+        texto.text = string.Empty;
+
+        // Misma fuente que el texto de munición, para que combine con el HUD.
+        if (ammoText != null)
+            texto.font = ammoText.font;
+
+        // El contorno se aplica después de asignar la fuente (al cambiar de fuente se pierde el material).
+        if (grosorContornoAviso > 0f)
+        {
+            texto.outlineWidth = grosorContornoAviso;
+            texto.outlineColor = colorContornoAviso;
+        }
+
+        go.SetActive(false);
+        avisoMunicionText = texto;
     }
 
     // =========================================================
