@@ -1,8 +1,9 @@
+
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
+using Unity.Netcode;
 
 public class GameplayPopupsController : MonoBehaviour
 {
@@ -18,13 +19,7 @@ public class GameplayPopupsController : MonoBehaviour
     [SerializeField]
     private string nombreEscenaMenu = "PantallasUI";
 
-
     public static GameplayPopupsController Instance { get; private set; }
-
-
-    // ============================================================
-    // AWAKE
-    // ============================================================
 
     private void Awake()
     {
@@ -41,67 +36,33 @@ public class GameplayPopupsController : MonoBehaviour
             new GameObject(
                 "EventSystem",
                 typeof(EventSystem),
-                typeof(InputSystemUIInputModule)
-            );
+                typeof(InputSystemUIInputModule));
         }
 
-        if (achievementHUD == null)
-        {
-            achievementHUD =
-                FindAnyObjectByType<AchievementHUD>(
-                    FindObjectsInactive.Include
-                );
-        }
+        BuscarAchievementHUD();
     }
-
-
-    // ============================================================
-    // MENU
-    // ============================================================
 
     public void VolverAlMenuPrincipal()
     {
         Time.timeScale = 1f;
-
         AudioListener.pause = false;
-
-        SceneManager.LoadScene(
-            nombreEscenaMenu
-        );
+        SceneManager.LoadScene(nombreEscenaMenu);
     }
-
-
-    // ============================================================
-    // PANEL RONDA
-    // ============================================================
 
     public void MostrarPanelRonda()
     {
         if (panelRonda != null)
-        {
             panelRonda.SetActive(true);
-        }
         else
-        {
             Debug.LogError(
-                "El panelRonda no está asignado en el Inspector."
-            );
-        }
+                "[POPUPS] El panelRonda no está asignado en el Inspector.");
     }
-
 
     public void OcultarPanelRonda()
     {
         if (panelRonda != null)
-        {
             panelRonda.SetActive(false);
-        }
     }
-
-
-    // ============================================================
-    // PANEL LOGRO
-    // ============================================================
 
     public void MostrarPanelLogro()
     {
@@ -110,99 +71,90 @@ public class GameplayPopupsController : MonoBehaviour
         if (achievementHUD == null)
         {
             Debug.LogError(
-                "No se encontró un AchievementHUD en la escena."
-            );
-
+                "[POPUPS] No se encontró el AchievementHUD del jugador local.");
             return;
         }
 
-        achievementHUD.gameObject.SetActive(true);
+        // No desactivar ni activar el GameObject del HUD:
+        // Show controla su visibilidad mediante CanvasGroup.
     }
 
-
-    // ============================================================
-    // MOSTRAR LOGRO
-    // ============================================================
-
-    public void MostrarPanelLogro(
-        AchievementId id
-    )
+    public void MostrarPanelLogro(AchievementId id)
     {
-        MostrarPanelLogro(
-            id,
-            AchievementRank.Ninguno
-        );
+        MostrarPanelLogro(id, AchievementRank.Ninguno);
     }
-
 
     public void MostrarPanelLogro(
         AchievementId id,
-        AchievementRank rango
-    )
+        AchievementRank rango)
     {
         BuscarAchievementHUD();
 
         if (achievementHUD == null)
         {
-            Debug.LogError(
-                "No se encontró un AchievementHUD en la escena."
-            );
-
+            Debug.LogWarning(
+                "[POPUPS] No se encontró el AchievementHUD del jugador local. " +
+                "Logro: " + id);
             return;
         }
 
-        achievementHUD.Show(
-            id,
-            rango
-        );
+        achievementHUD.Show(id, rango);
     }
 
-
-    public void MostrarLogro(
-        AchievementId id
-    )
+    public void MostrarLogro(AchievementId id)
     {
         MostrarPanelLogro(id);
     }
 
-
     public void MostrarLogro(
         AchievementId id,
-        AchievementRank rango
-    )
+        AchievementRank rango)
     {
-        MostrarPanelLogro(
-            id,
-            rango
-        );
+        MostrarPanelLogro(id, rango);
     }
-
-
-    // ============================================================
-    // OCULTAR LOGRO
-    // ============================================================
 
     public void OcultarPanelLogro()
     {
         if (achievementHUD != null)
-        {
             achievementHUD.Hide();
-        }
     }
-
-
-    // ============================================================
-    // BUSCAR HUD
-    // ============================================================
 
     private void BuscarAchievementHUD()
     {
+        // En multijugador, buscar primero el HUD del jugador propietario
+        // de este cliente, nunca el de otro jugador.
+        if (NetworkManager.Singleton != null &&
+            NetworkManager.Singleton.IsListening)
+        {
+            var clienteLocal = NetworkManager.Singleton.LocalClient;
+
+            if (clienteLocal == null ||
+                clienteLocal.PlayerObject == null)
+            {
+                achievementHUD = null;
+                return;
+            }
+
+            achievementHUD =
+                clienteLocal.PlayerObject.GetComponentInChildren<AchievementHUD>(
+                    true);
+
+            return;
+        }
+
+        // En modo individual, utilizar la referencia del Inspector
+        // o buscar el HUD de la escena, incluso si está inactivo.
         if (achievementHUD == null)
         {
             achievementHUD =
                 FindAnyObjectByType<AchievementHUD>(
-                    FindObjectsInactive.Include
-                );
+                    FindObjectsInactive.Include);
         }
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
     }
 }

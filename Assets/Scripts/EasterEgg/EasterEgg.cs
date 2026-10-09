@@ -67,11 +67,12 @@ public class EasterEgg : NetworkBehaviour
         if (controls != null)
             controls.Player.Disable();
     }
+public override void OnDestroy()
+{
+    controls?.Dispose();
 
-    private void OnDestroy()
-    {
-        controls?.Dispose();
-    }
+    base.OnDestroy();
+}
 
     // =========================================================
     // NETWORK SPAWN
@@ -101,30 +102,19 @@ public class EasterEgg : NetworkBehaviour
     // UPDATE
     // =========================================================
 
-    private void Update()
+private void Update()
+{
+    BuscarCamaraJugadorLocal();
+
+    if (localPlayerCamera == null)
+        return;
+
+    if (EstaDisponibleParaInteraccion() &&
+        controls.Player.Interact.triggered)
     {
-        BuscarCamaraJugadorLocal();
-
-        if (localPlayerCamera == null)
-        {
-            OcultarPrompt();
-            return;
-        }
-
-        BuscarPromptJugadorLocal();
-
-        if (EstaDisponibleParaInteraccion())
-        {
-            MostrarPrompt();
-
-            if (controls.Player.Interact.triggered)
-                ActivarPorInteraccion();
-        }
-        else
-        {
-            OcultarPrompt();
-        }
+        ActivarPorInteraccion();
     }
+}
 
     // =========================================================
     // BUSCAR CÁMARA LOCAL
@@ -196,6 +186,10 @@ public class EasterEgg : NetworkBehaviour
 
     private bool EstaDisponibleParaInteraccion()
     {
+
+        if (!PuedeMostrarCartel())
+    return false;
+    
         if (EstaEncontrado())
             return false;
 
@@ -654,4 +648,21 @@ public class EasterEgg : NetworkBehaviour
 
         return null;
     }
+
+    public bool PuedeMostrarCartel()
+{
+    if (EstaEncontrado())
+        return false;
+
+    if (string.IsNullOrWhiteSpace(easterEggId))
+        return false;
+
+    if (AchievementsManager.Instance != null &&
+        AchievementsManager.Instance.EasterEggYaEncontrado(easterEggId))
+    {
+        return false;
+    }
+
+    return true;
+}
 }
