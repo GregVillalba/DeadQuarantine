@@ -103,6 +103,14 @@ public class WeaponSwitcher : MonoBehaviour
 
         if (weaponAnimator != null)
             holsterLayerIndex = weaponAnimator.GetLayerIndex("Holster");
+
+        // ConfiguracionesJuego ya recarga las teclas de este asset; solo falta avisar al HUD.
+        ConfiguracionesJuego.CambiosAplicados += OnCambiosAplicados;
+    }
+
+    private void OnCambiosAplicados()
+    {
+        BindingsChanged?.Invoke();
     }
 
     private void OnEnable()
@@ -129,6 +137,7 @@ public class WeaponSwitcher : MonoBehaviour
 
     private void OnDestroy()
     {
+        ConfiguracionesJuego.CambiosAplicados -= OnCambiosAplicados;
         controls?.Dispose();
     }
 

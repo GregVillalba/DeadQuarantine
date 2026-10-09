@@ -10,6 +10,10 @@ public class PauseController : NetworkBehaviour
     [Header("Pausa")]
     [SerializeField] private GameObject popupMenuHome;
 
+    [Header("Configuraciones (dentro de la pausa)")]
+    [SerializeField] private ConfiguracionesPanelController configuraciones;
+    [SerializeField] private OpcionesUI opcionesControles;
+
     [Header("HUD del jugador")]
     [SerializeField] private GameObject hud;
 
@@ -210,7 +214,10 @@ public class PauseController : NetworkBehaviour
             return;
         }
 
-        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+        // Mientras se reasigna una tecla, Esc cancela el re-mapeado y no la pausa.
+        bool reasignandoTecla = opcionesControles != null && opcionesControles.ReasignandoTecla;
+
+        if (!reasignandoTecla && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             if (estaPausado)
                 ReanudarJuego();
@@ -271,8 +278,18 @@ public class PauseController : NetworkBehaviour
         LocalPlayerPaused = false;
         resumeFrame = Time.frameCount;
 
+        // Cierra las configuraciones abiertas para que la próxima pausa arranque en el menú.
+        if (opcionesControles != null)
+            opcionesControles.Cerrar();
+
+        if (configuraciones != null)
+            configuraciones.CerrarTodo();
+
         if (popupMenuHome != null)
             popupMenuHome.SetActive(false);
+
+        // Teclas y sensibilidad guardadas se aplican recién al volver al juego.
+        ConfiguracionesJuego.AplicarCambios();
 
         RestaurarEstadoJugador();
         HabilitarJugador();

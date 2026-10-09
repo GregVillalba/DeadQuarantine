@@ -37,8 +37,21 @@ public class PlayerLook : MonoBehaviour
 
         pitch = 0f;
 
+        // La sensibilidad se puede cambiar desde el menú de pausa.
+        ConfiguracionesJuego.CambiosAplicados += ActualizarSensibilidad;
+
         // Arranca SIEMPRE bloqueado; se libera explícitamente después.
         enabled = false;
+    }
+
+    private void OnDestroy()
+    {
+        ConfiguracionesJuego.CambiosAplicados -= ActualizarSensibilidad;
+    }
+
+    private void ActualizarSensibilidad()
+    {
+        mouseSensitivity = ConfiguracionesJuego.ObtenerSensibilidad();
     }
 
     private void OnEnable()
