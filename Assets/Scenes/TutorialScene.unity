@@ -9525,108 +9525,11 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 952989340}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1 &953070755 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5101806914358668905, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+--- !u!82 &953070756 stripped
+AudioSource:
+  m_CorrespondingSourceObject: {fileID: 5717789089575011701, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
   m_PrefabInstance: {fileID: 2141546354}
   m_PrefabAsset: {fileID: 0}
---- !u!82 &953070756
-AudioSource:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 953070755}
-  m_Enabled: 1
-  serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 0}
-  m_Resource: {fileID: 0}
-  m_PlayOnAwake: 1
-  m_Volume: 1
-  m_Pitch: 1
-  Loop: 0
-  Mute: 0
-  Spatialize: 0
-  SpatializePostEffects: 0
-  Priority: 128
-  DopplerLevel: 1
-  MinDistance: 1
-  MaxDistance: 500
-  Pan2D: 0
-  rolloffMode: 0
-  BypassEffects: 0
-  BypassListenerEffects: 0
-  BypassReverbZones: 0
-  rolloffCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  panLevelCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  spreadCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  reverbZoneMixCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
 --- !u!1 &965461903
 GameObject:
   m_ObjectHideFlags: 0
@@ -21778,6 +21681,14 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: audioSource
+      value: 
+      objectReference: {fileID: 953070756}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.size
+      value: 14
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
       propertyPath: offers.Array.data[0].cost
       value: 0
       objectReference: {fileID: 0}
@@ -21830,52 +21741,201 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
-      propertyPath: offers.Array.data[9].modos
-      value: 4
+      propertyPath: offers.Array.data[3].modos
+      value: -1
       objectReference: {fileID: 0}
     - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
-      propertyPath: offers.Array.data[8].disponible
+      propertyPath: offers.Array.data[10].modos
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[11].modos
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[13].modos
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[3].alcance
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[3].iconoHud
+      value: 
+      objectReference: {fileID: 21300000, guid: f1d94e8037041a74caa3c9ed7b76a3d8, type: 3}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[6].iconoHud
+      value: 
+      objectReference: {fileID: 2083573178, guid: 4815aac1a950c26479451c1580f75213, type: 3}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[7].iconoHud
+      value: 
+      objectReference: {fileID: 781243994, guid: 0059ab64bd26f0240809d6cca0d74d29, type: 3}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[10].iconoHud
+      value: 
+      objectReference: {fileID: 1752195647, guid: 17dd8d1115ea52c4688a0c461bc85ec3, type: 3}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[11].armadura
+      value: 75
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[11].iconoHud
+      value: 
+      objectReference: {fileID: -1365011973, guid: 2d8a83bd94f938345a5f361e5d6805f8, type: 3}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[11].weaponId
+      value: Chaleco
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[12].armadura
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[12].weaponId
+      value: Espacio Granadas Extra
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[13].weaponId
+      value: Espacio Curas Extra
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[12].slotExtra
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
-      propertyPath: offers.Array.data[9].disponible
-      value: 1
+      propertyPath: offers.Array.data[13].categoria
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
-      propertyPath: offers.Array.data[10].disponible
-      value: 1
+      propertyPath: offers.Array.data[4].disponible
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
-      propertyPath: offers.Array.data[11].disponible
-      value: 1
+      propertyPath: offers.Array.data[5].disponible
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
       propertyPath: offers.Array.data[11].weaponName
-      value: Slot extra del inventario
+      value: "Chaleco bal\xEDstico"
       objectReference: {fileID: 0}
     - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
-      propertyPath: offers.Array.data[6].dificultades
-      value: 4
+      propertyPath: offers.Array.data[12].weaponName
+      value: Slot extra de granadas
       objectReference: {fileID: 0}
     - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
-      propertyPath: offers.Array.data[7].dificultades
-      value: 4
+      propertyPath: offers.Array.data[13].disponible
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[13].weaponName
+      value: Slot extra de curacion
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[11].descripcion
+      value: "Aumenta tu barra de escudo en 75 puntos. Si compras este \xEDtem al
+        recibir da\xF1o se reduce tu barra de escudo en vez de tu barra de salud.
+        Combina esta pieza con el casco para llenar tu barra de escudo."
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[12].descripcion
+      value: Permite llevar uno mas de capacidad para granadas por cada compra, hasta
+        un maximo de 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[13].descripcion
+      value: Permite llevar uno mas de capacidad para curacion por cada compra, hasta
+        un maximo de 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[3].dificultades
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[10].dificultades
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[10].iconoHudRoto
+      value: 
+      objectReference: {fileID: 111540135, guid: 4fe284558c8671e4cbbb59720e740648, type: 3}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[11].dificultades
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[11].iconoHudRoto
+      value: 
+      objectReference: {fileID: 657025440, guid: c15ccc00562cb6b46b070bad344e53d3, type: 3}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[13].dificultades
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[6].puntosDeSalud
+      value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[7].puntosDeSalud
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[11].imagenTarjeta
+      value: 
+      objectReference: {fileID: 21300000, guid: 38be1ffda42db7a40bceca146e34ef6a, type: 3}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[11].piezaBlindaje
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[12].imagenTarjeta
+      value: 
+      objectReference: {fileID: 21300000, guid: eb82911d904ee1947aa7671795dbf08c, type: 3}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[12].piezaBlindaje
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[13].imagenTarjeta
+      value: 
+      objectReference: {fileID: 21300000, guid: 6d2e502912815dc4abe61690644554af, type: 3}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[11].esEquipamiento
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[12].esEquipamiento
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[11].esEspacioInventario
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[12].esEspacioInventario
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[13].esEspacioInventario
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5101806914358668905, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
       propertyPath: m_Name
       value: Mercader
       objectReference: {fileID: 0}
-    - target: {fileID: 7235786834848943752, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
-      propertyPath: m_Controller
-      value: 
-      objectReference: {fileID: 9100000, guid: e1e1f7b3cff1ee3408163f3417fcda70, type: 2}
+    - target: {fileID: 5717789089575011701, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: Priority
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 5717789089575011701, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: m_Volume
+      value: 0.253
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 5101806914358668905, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 953070756}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
 --- !u!1 &2147380883
 GameObject:

@@ -26,36 +26,40 @@ public class GrenadeThrow : MonoBehaviour
         public GameObject prefab;
     }
 
-    [Header("Tipos de granada (se cambian comprándolos en el mercader)")]
+    [Header("Tipos de granada (el jugador empieza sin ninguna: se compran en el mercader)")]
     [SerializeField] private TipoGranada[] tipos = new TipoGranada[0];
-    [Tooltip("Tipo con el que arranca el jugador.")]
-    [SerializeField] private string tipoInicialId = "Granadas";
 
     private PlayerControls controls;
+    private PlayerHealth playerHealth;
     private int grenadeLeftLayerIndex = -1;
     private int grenadeRightLayerIndex = -1;
     private bool isThrowing;
-    private int tipoActual = -1;
 
-    /// <summary>Id del tipo de granada que se tira ahora (null si no hay tipos configurados).</summary>
-    public string TipoActualId => tipoActual >= 0 ? tipos[tipoActual].id : null;
+    // Las granadas (tipo y cantidad) viven en el slot G de PlayerHealth, que es el que se sincroniza por red.
+    private PlayerHealth Salud
+    {
+        get
+        {
+            if (playerHealth == null)
+                playerHealth = transform.root.GetComponentInChildren<PlayerHealth>(true);
+
+            return playerHealth;
+        }
+    }
+
+    /// <summary>true si el jugador tiene al menos una granada en el slot G.</summary>
+    public bool TieneGranadas => Salud != null && !Salud.SlotGranada.Value.Vacio;
 
     public bool EsTipoDeGranada(string id) => IndiceDeTipo(id) >= 0;
 
     /// <summary>Tecla para tirar la granada (respeta la reasignación de teclas). Lo muestra el HUD.</summary>
     public string TeclaGranada => controls != null ? controls.Player.Grenade.GetBindingDisplayString() : string.Empty;
 
-    /// <summary>Todas las granadas que se tiren desde ahora son de este tipo. Sin inventario: reemplaza al anterior.</summary>
-    public void EquiparTipo(string id)
-    {
-        int indice = IndiceDeTipo(id);
-
-        if (indice >= 0)
-            tipoActual = indice;
-    }
-
     private int IndiceDeTipo(string id)
     {
+        if (string.IsNullOrEmpty(id))
+            return -1;
+
         for (int i = 0; i < tipos.Length; i++)
             if (tipos[i] != null && tipos[i].id == id)
                 return i;
@@ -65,7 +69,7 @@ public class GrenadeThrow : MonoBehaviour
 
     private GameObject PrefabDeTipo(int indice)
     {
-        if (indice >= 0 && indice < tipos.Length && tipos[indice].prefab != null)
+        if (indice >= 0 && indice < tipos.Length && tipos[indice] != null && tipos[indice].prefab != null)
             return tipos[indice].prefab;
 
         return grenadePrefab;
@@ -75,7 +79,6 @@ public class GrenadeThrow : MonoBehaviour
     {
         controls = new PlayerControls();
         ConfiguracionesJuego.CargarRebinds(controls.asset);
-        tipoActual = IndiceDeTipo(tipoInicialId);
 
         if (grenadeHandModel != null)
             grenadeHandModel.SetActive(false);
@@ -102,12 +105,19 @@ public class GrenadeThrow : MonoBehaviour
     private void OnGrenadeInput(InputAction.CallbackContext context)
     {
         if (PlayerInputGate.ActionsBlocked)
-        return; 
+            return;
 
         if (PauseController.LocalPlayerPaused)
             return;
 
         if (isThrowing || weaponAnimator == null)
+            return;
+
+        // Solo el dueño del jugador tira granadas, y solo si tiene alguna en el slot G.
+        if (Salud == null || !Salud.IsOwner)
+            return;
+
+        if (!TieneGranadas)
             return;
 
         if (grenadeLeftLayerIndex < 0 && grenadeRightLayerIndex < 0)
@@ -149,24 +159,32 @@ public class GrenadeThrow : MonoBehaviour
         if (grenadeHandModel != null)
             grenadeHandModel.SetActive(false);
 
-        if (playerCamera == null || throwPoint == null)
+        if (playerCamera == null || throwPoint == null || Salud == null)
             return;
 
         Vector3 direction = playerCamera.transform.forward +
                             Vector3.up * (throwUpwardArc / Mathf.Max(0.01f, throwForce));
         Vector3 velocity = direction.normalized * throwForce;
 
-        RequestThrowServerRpc(throwPoint.position, velocity, tipoActual);
+        // El servidor descuenta la granada del slot G y crea el proyectil.
+        Salud.SolicitarLanzamientoGranadaServerRpc(throwPoint.position, velocity);
     }
 
-    [ServerRpc]
-    private void RequestThrowServerRpc(
-        Vector3 position,
-        Vector3 velocity,
-        int tipo,
-        ServerRpcParams rpcParams = default)
+    /// <summary>
+    /// Solo servidor (lo llama PlayerHealth después de validar que hay granada en el slot).
+    /// Crea y lanza el proyectil del tipo indicado. false si no se pudo crear.
+    /// </summary>
+    public bool CrearProyectilServidor(string tipoId, Vector3 position, Vector3 velocity)
     {
-        GameObject instance = Instantiate(PrefabDeTipo(tipo), position, Quaternion.identity);
+        GameObject prefab = PrefabDeTipo(IndiceDeTipo(tipoId));
+
+        if (prefab == null)
+        {
+            Debug.LogError("[GrenadeThrow] No hay prefab para la granada '" + tipoId + "' ni Grenade Prefab asignado.");
+            return false;
+        }
+
+        GameObject instance = Instantiate(prefab, position, Quaternion.identity);
         instance.SetActive(true);
 
         NetworkObject networkObject = instance.GetComponent<NetworkObject>();
@@ -174,13 +192,14 @@ public class GrenadeThrow : MonoBehaviour
 
         if (networkObject == null || projectile == null)
         {
-            Debug.LogError("[GrenadeThrow] grenadePrefab debe tener NetworkObject y GrenadeProjectile en el root.");
+            Debug.LogError("[GrenadeThrow] El prefab de la granada debe tener NetworkObject y GrenadeProjectile en el root.");
             Destroy(instance);
-            return;
+            return false;
         }
 
         networkObject.Spawn(true);
         projectile.Launch(velocity);
+        return true;
     }
 
     private void FinishThrow()

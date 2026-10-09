@@ -18,6 +18,13 @@ public enum PiezaBlindaje
     Casco
 }
 
+/// <summary>Slot del inventario de utilidades al que sube la capacidad un Slot extra.</summary>
+public enum SlotInventarioExtra
+{
+    Curas,      // tecla Q
+    Granadas    // tecla G
+}
+
 [Serializable]
 public class WeaponOffer
 {
@@ -28,6 +35,14 @@ public class WeaponOffer
 
     [Tooltip("Imagen grande del modelo para la tarjeta de la tienda (se genera con Tools > Tienda > Generar imagen de arma). Si queda vacía se usa Weapon Icon.")]
     public Sprite imagenTarjeta;
+
+    [Tooltip("Icono chico que se muestra en el HUD (slots de utilidades). Es independiente del de la tienda. " +
+             "Si queda vacío se usa Imagen Tarjeta o, si tampoco hay, Weapon Icon.")]
+    public Sprite iconoHud;
+
+    [Tooltip("Solo chaleco / casco: icono del HUD cuando la pieza está rota (escudo en 0). " +
+             "Si queda vacío se usa Icono Hud teñido de rojo.")]
+    public Sprite iconoHudRoto;
 
     [Tooltip("Sección de la tienda en la que se muestra esta oferta.")]
     public CategoriaTienda categoria = CategoriaTienda.Armas;
@@ -70,8 +85,12 @@ public class WeaponOffer
              "se puede reparar en la tienda por un porcentaje del costo (ver NPCWeaponVendor).")]
     public PiezaBlindaje piezaBlindaje = PiezaBlindaje.Ninguna;
 
-    [Tooltip("Slot extra: compra única que sube la capacidad de cada slot del inventario de curas.")]
+    [Tooltip("Slot extra: sube la capacidad de UN slot del inventario (se elige abajo en 'Slot Extra'). " +
+             "Se puede comprar varias veces, hasta el máximo configurado en PlayerHealth.")]
     public bool esEspacioInventario;
+
+    [Tooltip("Solo para el Slot extra: qué slot mejora. Curas = tecla Q, Granadas = tecla G. Cada slot se compra por separado.")]
+    public SlotInventarioExtra slotExtra = SlotInventarioExtra.Curas;
 
     
 

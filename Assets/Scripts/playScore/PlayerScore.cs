@@ -91,15 +91,32 @@ public void SumarReaparicion()
         NotificarResultadoCompraClientRpc(itemId, exito, ParametrosParaDueno());
     }
 
-    // Slot extra: compra única que sube la capacidad de cada slot del inventario.
+    // Guarda la granada en el slot G del jugador. Sin lugar (slot lleno o de otro tipo) no se cobra.
     [ServerRpc]
-    public void ComprarEspacioExtraServerRpc(string itemId, int costo)
+    public void ComprarGranadaServerRpc(string itemId, int costo)
     {
         PlayerHealth health = transform.root.GetComponentInChildren<PlayerHealth>();
 
         bool exito = health != null &&
                      ScoreNetwork.Value >= costo &&
-                     health.ComprarEspacioExtra();
+                     health.GuardarGranada(itemId);
+
+        if (exito)
+            ScoreNetwork.Value -= costo;
+
+        NotificarResultadoCompraClientRpc(itemId, exito, ParametrosParaDueno());
+    }
+
+    // Slot extra: sube la capacidad de un slot (curas o granadas). Se compra por separado para cada uno,
+    // varias veces (hasta el máximo de PlayerHealth).
+    [ServerRpc]
+    public void ComprarEspacioExtraServerRpc(string itemId, int costo, SlotInventarioExtra slot)
+    {
+        PlayerHealth health = transform.root.GetComponentInChildren<PlayerHealth>();
+
+        bool exito = health != null &&
+                     ScoreNetwork.Value >= costo &&
+                     health.ComprarEspacioExtra(slot);
 
         if (exito)
             ScoreNetwork.Value -= costo;

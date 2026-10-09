@@ -46,6 +46,16 @@ public class HUDController : MonoBehaviour
     [Tooltip("Opacidad del texto de la tecla cuando el slot está vacío.")]
     [Range(0f, 1f)] [SerializeField] private float alfaTeclaSlotVacio = 0.35f;
 
+    [Header("Blindaje en el HUD (slots 3 y 4)")]
+    [Tooltip("Slot 3: chaleco. Si queda vacío se busca el objeto llamado Slot03; si tampoco existe se duplica el marco de Slot02.")]
+    [SerializeField] private Image slotChaleco;
+    [Tooltip("Slot 4: casco. Si queda vacío se busca el objeto llamado Slot04; si tampoco existe se duplica el marco de Slot02.")]
+    [SerializeField] private Image slotCasco;
+    [Tooltip("Separación entre marcos cuando se duplican (solo si el contenedor no tiene un Layout Group que los acomode).")]
+    [SerializeField] private float separacionSlotsBlindaje = 10f;
+    [Tooltip("Tinte del icono de una pieza rota cuando la oferta no tiene Icono Hud Roto.")]
+    [SerializeField] private Color colorBlindajeRotoSinIcono = new Color(1f, 0.3f, 0.3f, 0.6f);
+
     [Header("Munición")]
     [SerializeField] private TextMeshProUGUI ammoText;
     [SerializeField] private TextMeshProUGUI ammoMaxText;
@@ -228,7 +238,7 @@ public class HUDController : MonoBehaviour
     }
 
     // =========================================================
-    // INVENTARIO (slot 1: curas, slot 2: granada equipada)
+    // INVENTARIO (slot 1: curas, slot 2: granadas, slots 3 y 4: chaleco y casco)
     // =========================================================
 
     private class SlotHud
@@ -240,11 +250,16 @@ public class HUDController : MonoBehaviour
 
     private SlotHud hudCura;
     private SlotHud hudGranada;
+    private SlotHud hudChaleco;
+    private SlotHud hudCasco;
     private bool slotsCreados;
     private GrenadeThrow grenadeThrow;
 
     private readonly System.Collections.Generic.Dictionary<string, Sprite> iconosOfertas =
         new System.Collections.Generic.Dictionary<string, Sprite>();
+
+    private readonly System.Collections.Generic.Dictionary<PiezaBlindaje, WeaponOffer> ofertasBlindaje =
+        new System.Collections.Generic.Dictionary<PiezaBlindaje, WeaponOffer>();
 
     private void UpdateInventarioCuras()
     {
@@ -253,6 +268,8 @@ public class HUDController : MonoBehaviour
 
         UpdateSlotCura();
         UpdateSlotGranada();
+        UpdateSlotBlindaje(PiezaBlindaje.Chaleco, slotChaleco, hudChaleco);
+        UpdateSlotBlindaje(PiezaBlindaje.Casco, slotCasco, hudCasco);
     }
 
     private void UpdateSlotCura()
@@ -266,26 +283,98 @@ public class HUDController : MonoBehaviour
         MostrarIcono(hudCura, lleno ? IconoDeOferta(slot.itemId.ToString()) : null);
 
         // La cantidad solo aporta algo cuando en el slot entra más de una cura (Slot extra comprado).
-        hudCura.cantidad.text = lleno && playerHealth.CapacidadPorSlot > 1
-            ? slot.cantidad + "/" + playerHealth.CapacidadPorSlot
+        hudCura.cantidad.text = lleno && playerHealth.CapacidadCuras > 1
+            ? slot.cantidad + "/" + playerHealth.CapacidadCuras
             : string.Empty;
 
         hudCura.tecla.text = playerHealth.TeclaSlotCura;
         hudCura.tecla.alpha = lleno ? 1f : alfaTeclaSlotVacio;
     }
 
-    // Las granadas son infinitas: el slot muestra el tipo que se tira ahora (el último comprado).
+    // Slot G: muestra la granada que lleva el jugador y cuántas. Vacío = no puede tirar granadas.
     private void UpdateSlotGranada()
     {
-        if (hudGranada == null || grenadeThrow == null)
+        if (hudGranada == null || playerHealth == null)
             return;
 
-        string tipo = grenadeThrow.TipoActualId;
-        Sprite icono = string.IsNullOrEmpty(tipo) ? null : IconoDeOferta(tipo);
+        SlotCura slot = playerHealth.SlotGranada.Value;
+        bool lleno = !slot.Vacio;
 
-        MostrarIcono(hudGranada, icono);
-        hudGranada.tecla.text = grenadeThrow.TeclaGranada;
-        hudGranada.tecla.alpha = icono != null ? 1f : alfaTeclaSlotVacio;
+        MostrarIcono(hudGranada, lleno ? IconoDeOferta(slot.itemId.ToString()) : null);
+
+        // La cantidad solo aporta algo cuando en el slot entra más de una granada (Slot extra comprado).
+        hudGranada.cantidad.text = lleno && playerHealth.CapacidadGranadas > 1
+            ? slot.cantidad + "/" + playerHealth.CapacidadGranadas
+            : string.Empty;
+
+        hudGranada.tecla.text = grenadeThrow != null ? grenadeThrow.TeclaGranada : string.Empty;
+        hudGranada.tecla.alpha = lleno ? 1f : alfaTeclaSlotVacio;
+    }
+
+    // Chaleco / casco: el slot solo se activa cuando se compró la pieza. Si pierde todo el escudo
+    // se muestra el icono "roto" hasta que se repare en la tienda.
+    private void UpdateSlotBlindaje(PiezaBlindaje pieza, Image marco, SlotHud hud)
+    {
+        if (hud == null || marco == null || playerHealth == null)
+            return;
+
+        bool tiene = playerHealth.TieneBlindaje(pieza);
+
+        if (marco.gameObject.activeSelf != tiene)
+            marco.gameObject.SetActive(tiene);
+
+        if (!tiene)
+            return;
+
+        bool rota = playerHealth.EscudoDe(pieza) <= 0;
+        WeaponOffer oferta = OfertaDeBlindaje(pieza);
+
+        Sprite icono = oferta != null ? IconoHudDeOferta(oferta) : null;
+        Color color = Color.white;
+
+        if (rota)
+        {
+            if (oferta != null && oferta.iconoHudRoto != null)
+                icono = oferta.iconoHudRoto;
+            else
+                color = colorBlindajeRotoSinIcono;
+        }
+
+        MostrarIcono(hud, icono);
+        hud.icono.color = color;
+        hud.cantidad.text = string.Empty;
+        hud.tecla.text = string.Empty;
+    }
+
+    // Busca en los mercaderes la oferta de esa pieza (de ahí salen los iconos del HUD).
+    private WeaponOffer OfertaDeBlindaje(PiezaBlindaje pieza)
+    {
+        if (ofertasBlindaje.TryGetValue(pieza, out WeaponOffer cacheada))
+            return cacheada;
+
+        foreach (NPCWeaponVendor vendor in FindObjectsByType<NPCWeaponVendor>(FindObjectsSortMode.None))
+        {
+            foreach (WeaponOffer oferta in vendor.Offers)
+            {
+                if (oferta.EsBlindaje && oferta.piezaBlindaje == pieza)
+                {
+                    // Solo se cachea si se encontró: el mercader puede aparecer más tarde.
+                    ofertasBlindaje[pieza] = oferta;
+                    return oferta;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    // Icono del HUD: el propio de la oferta; si no tiene, el de la tienda (imagen de tarjeta o icono).
+    private static Sprite IconoHudDeOferta(WeaponOffer oferta)
+    {
+        if (oferta.iconoHud != null)
+            return oferta.iconoHud;
+
+        return oferta.imagenTarjeta != null ? oferta.imagenTarjeta : oferta.weaponIcon;
     }
 
     private static void MostrarIcono(SlotHud hud, Sprite icono)
@@ -304,10 +393,47 @@ public class HUDController : MonoBehaviour
         if (slotGranada == null)
             slotGranada = BuscarImagenPorNombre("Slot02");
 
+        // Chaleco y casco: Slot03 / Slot04 del HUD. Si no existen se duplica el marco del slot de granadas
+        // (antes de crearle los hijos, para que la copia salga limpia).
+        if (slotChaleco == null)
+            slotChaleco = BuscarImagenPorNombre("Slot03");
+
+        if (slotChaleco == null)
+            slotChaleco = ClonarMarco(slotGranada, "Slot03", 1);
+
+        if (slotCasco == null)
+            slotCasco = BuscarImagenPorNombre("Slot04");
+
+        if (slotCasco == null)
+            slotCasco = ClonarMarco(slotGranada, "Slot04", 2);
+
         grenadeThrow = transform.root.GetComponentInChildren<GrenadeThrow>(true);
 
         hudCura = CrearSlotHud(slotCuras);
         hudGranada = CrearSlotHud(slotGranada);
+        hudChaleco = CrearSlotHud(slotChaleco);
+        hudCasco = CrearSlotHud(slotCasco);
+    }
+
+    // Duplica un marco de slot y lo corre hacia la derecha (si su contenedor no lo acomoda solo).
+    private Image ClonarMarco(Image origen, string nombre, int posicion)
+    {
+        if (origen == null)
+            return null;
+
+        GameObject copia = Instantiate(origen.gameObject, origen.transform.parent, false);
+        copia.name = nombre;
+
+        Transform padre = origen.transform.parent;
+        bool padreAcomoda = padre != null && padre.GetComponent<UnityEngine.UI.LayoutGroup>() != null;
+
+        if (!padreAcomoda)
+        {
+            RectTransform rt = (RectTransform)copia.transform;
+            rt.anchoredPosition += new Vector2((rt.rect.width + separacionSlotsBlindaje) * posicion, 0f);
+        }
+
+        return copia.GetComponent<Image>();
     }
 
     private SlotHud CrearSlotHud(Image marco)
@@ -380,7 +506,7 @@ public class HUDController : MonoBehaviour
         return texto;
     }
 
-    // El icono sale de la oferta del mercader con ese id (imagen de tarjeta o, si no hay, el icono).
+    // El icono sale de la oferta del mercader con ese id (Icono Hud; si no tiene, imagen de tarjeta o icono).
     private Sprite IconoDeOferta(string itemId)
     {
         if (iconosOfertas.TryGetValue(itemId, out Sprite cacheado))
@@ -394,7 +520,7 @@ public class HUDController : MonoBehaviour
             {
                 if (oferta.weaponId == itemId)
                 {
-                    icono = oferta.imagenTarjeta != null ? oferta.imagenTarjeta : oferta.weaponIcon;
+                    icono = IconoHudDeOferta(oferta);
                     break;
                 }
             }
