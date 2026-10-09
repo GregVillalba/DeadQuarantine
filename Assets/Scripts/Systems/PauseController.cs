@@ -58,6 +58,10 @@ public class PauseController : NetworkBehaviour
     [SerializeField] private TextMeshProUGUI textoFaseCompras;
     [SerializeField] private string mensajeFaseCompras = "Tiempo para comprar habilitado";
 
+    [Header("Aviso: compañero abandonó")]
+    [SerializeField] private GameObject panelCompaneroAbandono;
+    [SerializeField] private float duracionPanelCompaneroAbandono = 4f;
+
     private bool estaPausado;
 
     public bool EstaPausado => estaPausado;
@@ -98,6 +102,8 @@ public class PauseController : NetworkBehaviour
     private bool pendienteAccionEsVictoria;
     private Coroutine ocultarPanelRondaCoroutine;
     private Coroutine ocultarPanelFaseComprasCoroutine;
+
+    private Coroutine ocultarPanelCompaneroCoroutine;
 
     private void Awake()
     {
@@ -144,6 +150,9 @@ public class PauseController : NetworkBehaviour
 
         if (hud != null)
             hud.SetActive(false);
+
+        if (panelCompaneroAbandono != null)
+            panelCompaneroAbandono.SetActive(false);
     }
 
     public void MostrarHUD()
@@ -165,6 +174,9 @@ public class PauseController : NetworkBehaviour
         // El cursor y el bloqueo inicial de la historia los maneja StoryIntroController.
         if (EsSinglePlayer())
             return;
+
+        if (NetworkBootstrap.Instance != null)
+            NetworkBootstrap.Instance.OnGuestLeft += MostrarAvisoCompaneroAbandono;
 
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
@@ -406,6 +418,9 @@ public class PauseController : NetworkBehaviour
 
     private void OnDestroy()
     {
+        if (NetworkBootstrap.Instance != null)
+            NetworkBootstrap.Instance.OnGuestLeft -= MostrarAvisoCompaneroAbandono;
+
         // Solo si ESTA instancia era la que estaba en pausa: el PauseController de otro jugador
         // que se va de la partida no debe cancelar tu pausa.
         if (estaPausado)
@@ -447,10 +462,10 @@ public class PauseController : NetworkBehaviour
             textoPrecisionVictoria.text = playerScore.PrecisionPorcentaje.ToString() + "%";
 
         if (textoReaparicionesVictoria != null && playerScore != null)
-    textoReaparicionesVictoria.text = playerScore.ReaparicionesNetwork.Value.ToString();
+            textoReaparicionesVictoria.text = playerScore.ReaparicionesNetwork.Value.ToString();
 
-if (textoCaidasVictoria != null && playerScore != null)
-        textoCaidasVictoria.text = playerScore.CaidasNetwork.Value.ToString();
+        if (textoCaidasVictoria != null && playerScore != null)
+            textoCaidasVictoria.text = playerScore.CaidasNetwork.Value.ToString();
 
 
 
@@ -624,5 +639,27 @@ if (textoCaidasVictoria != null && playerScore != null)
     {
         yield return new WaitForSeconds(segundos);
         OcultarPanelFaseCompras();
+    }
+
+    private void MostrarAvisoCompaneroAbandono()
+    {
+    if (panelCompaneroAbandono == null)
+        return;
+
+    panelCompaneroAbandono.SetActive(true);
+
+    if (ocultarPanelCompaneroCoroutine != null)
+        StopCoroutine(ocultarPanelCompaneroCoroutine);
+
+    ocultarPanelCompaneroCoroutine =
+        StartCoroutine(OcultarAvisoCompaneroDespuesDeTiempo(duracionPanelCompaneroAbandono));
+    }
+
+    private IEnumerator OcultarAvisoCompaneroDespuesDeTiempo(float segundos)
+    {
+        yield return new WaitForSeconds(segundos);
+
+        if (panelCompaneroAbandono != null)
+            panelCompaneroAbandono.SetActive(false);
     }
 }
