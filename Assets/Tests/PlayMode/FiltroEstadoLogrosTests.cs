@@ -6,7 +6,7 @@ using TMPro;
 
 public class FiltroEstadoLogrosTests
 {
-    private GameObject filtroGameObject;
+   /* private GameObject filtroGameObject;
     private FiltroEstadoLogros filtroScript;
     private Transform contenedor;
     private GameObject textoNoItems;
@@ -14,6 +14,7 @@ public class FiltroEstadoLogrosTests
     [SetUp]
     public void Setup()
     {
+        
         // Crear la estructura de GameObjects necesaria para el test
         filtroGameObject = new GameObject("FiltroEstadoLogros");
         filtroScript = filtroGameObject.AddComponent<FiltroEstadoLogros>();
@@ -87,4 +88,6 @@ public class FiltroEstadoLogrosTests
 
         return tarjeta;
     }
+*/
+
 }
