@@ -45,4 +45,15 @@ public class ConfiguracionesPanelController : MonoBehaviour
         if (configuracionesPanel != null) configuracionesPanel.SetActive(false);
         if (menuPrincipalPanel != null) menuPrincipalPanel.SetActive(true);
     }
+
+    // Cierra cualquier pantalla de configuración abierta y deja visible el
+    // menú (lo usa el menú de pausa al reanudar, para que la próxima pausa
+    // arranque desde sus botones y no desde un subpanel).
+    public void CerrarTodo()
+    {
+        if (sonidoPanel != null) sonidoPanel.SetActive(false);
+        if (sensibilidadMousePanel != null) sensibilidadMousePanel.SetActive(false);
+        if (configuracionesPanel != null) configuracionesPanel.SetActive(false);
+        if (menuPrincipalPanel != null) menuPrincipalPanel.SetActive(true);
+    }
 }

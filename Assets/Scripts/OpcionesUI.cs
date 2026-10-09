@@ -63,8 +63,15 @@ public class OpcionesUI : MonoBehaviour
     private float _tamanoOriginalTexto;
     private bool _mapaEstabaActivo;
     private bool _resuelto;
+    private int _frameFinRebind = -100;
 
     public bool EstaAbierto => _grupo != null && _grupo.alpha > 0.01f;
+
+    /// <summary>
+    /// true mientras se espera una tecla nueva, y en el frame en que se
+    /// cancela: el Esc que cancela el re-mapeado no debe cerrar también la pausa.
+    /// </summary>
+    public bool ReasignandoTecla => _operacion != null || Time.frameCount - _frameFinRebind <= 1;
 
     public void Abrir()
     {
@@ -273,6 +280,7 @@ public class OpcionesUI : MonoBehaviour
     {
         if (!ReferenceEquals(op, _operacion)) return;
         _operacion = null;
+        _frameFinRebind = Time.frameCount;
         RestaurarMapaDeAccion();
         op.Dispose();
         RestaurarTamanoTexto();
