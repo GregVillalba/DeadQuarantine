@@ -10,7 +10,7 @@ public class SceneLoader : MonoBehaviour
         ElegirPersonaje
     }
 
-    // Esta variable estática sobrevive al cambio de escenas
+    // Esta variable estï¿½tica sobrevive al cambio de escenas
     public static PantallaApertura pantallaSolicitada = PantallaApertura.Ninguna;
 
     [Header("Paneles / Sub-pantallas en PantallasUI")]
@@ -20,7 +20,7 @@ public class SceneLoader : MonoBehaviour
 
     private void Start()
     {
-        // Al arrancar PantallasUI, verifica si venías de NetworkLobby pidiendo abrir una pantalla
+        // Al arrancar PantallasUI, verifica si venï¿½as de NetworkLobby pidiendo abrir una pantalla
         if (SceneManager.GetActiveScene().name == "PantallasUI")
         {
             if (pantallaSolicitada == PantallaApertura.Modalidad)
@@ -52,11 +52,31 @@ public class SceneLoader : MonoBehaviour
         SceneManager.LoadScene("PantallasUI");
     }
 
-    // --- MÉTODOS PARA LLAMAR DESDE NETWORK LOBBY ---
+    // --- Mï¿½TODOS PARA LLAMAR DESDE NETWORK LOBBY ---
 
     // Llamar al presionar CREAR en NetworkLobby
+    /*public void IrACrearSalaModalidad()
+    {
+        pantallaSolicitada = PantallaApertura.Modalidad;
+        SceneManager.LoadScene("PantallasUI");
+    }*/
+
     public void IrACrearSalaModalidad()
     {
+        MultiplayerLobbyController lobbyController =
+            FindFirstObjectByType<MultiplayerLobbyController>();
+
+        if (lobbyController == null)
+        {
+            Debug.LogError(
+                "[SceneLoader] No se encontrÃ³ MultiplayerLobbyController en NetworkLobby."
+            );
+            return;
+        }
+
+        if (!lobbyController.VerificarInternet())
+            return;
+
         pantallaSolicitada = PantallaApertura.Modalidad;
         SceneManager.LoadScene("PantallasUI");
     }
@@ -64,11 +84,28 @@ public class SceneLoader : MonoBehaviour
     // Llamar al presionar UNIRSE en NetworkLobby
     public void IrAUnirseElegirPersonaje()
     {
+       /* pantallaSolicitada = PantallaApertura.ElegirPersonaje;
+        SceneManager.LoadScene("PantallasUI");*/
+
+        MultiplayerLobbyController lobbyController =
+        FindFirstObjectByType<MultiplayerLobbyController>();
+
+        if (lobbyController == null)
+        {
+            Debug.LogError(
+                "[SceneLoader] No se encontrÃ³ MultiplayerLobbyController en NetworkLobby."
+        );
+        return;
+        }
+
+        if (!lobbyController.VerificarInternet())
+            return;
+
         pantallaSolicitada = PantallaApertura.ElegirPersonaje;
         SceneManager.LoadScene("PantallasUI");
     }
 
-    // --- NAVEGACIÓN DENTRO DE PANTALLAS UI ---
+    // --- NAVEGACIï¿½N DENTRO DE PANTALLAS UI ---
 
     public void MostrarPantallaModalidad()
     {
