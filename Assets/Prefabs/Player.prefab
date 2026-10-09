@@ -25209,7 +25209,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &787090060113344644
 RectTransform:
   m_ObjectHideFlags: 0
@@ -29855,7 +29855,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3516423437
+  GlobalObjectIdHash: 1614284941
   InScenePlacedSourceGlobalObjectIdHash: 477224611
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -43347,7 +43347,12 @@ MonoBehaviour:
   colorPocaMunicion: {r: 1, g: 0.92, b: 0.2, a: 1}
   colorRecargar: {r: 1, g: 0.55, b: 0, a: 1}
   colorSinMunicion: {r: 1, g: 0.15, b: 0.15, a: 1}
-  tamanoAvisoMunicion: 48
+  tamanoTextoAviso: 30
+  espaciadoLetrasAviso: 14
+  grosorContornoAviso: 0.25
+  colorContornoAviso: {r: 0, g: 0, b: 0, a: 0.9}
+  titilarEnUrgente: 1
+  velocidadTitilado: 6
   desplazamientoYAviso: -140
   roundsText: {fileID: 2152147415015172424}
   zombiesText: {fileID: 4561915002598998872}
