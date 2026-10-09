@@ -29749,7 +29749,7 @@ MonoBehaviour:
   staminaDrainRate: 1.5
   staminaRegenRate: 1
   exhaustedRecoverThreshold: 0.25
-  crouchHeight: 1.3
+  crouchHeight: 1
   crouchSpeed: 2.5
   crouchTransitionSpeed: 8
   parkourLayer:
@@ -31499,6 +31499,7 @@ GameObject:
   - component: {fileID: 101452102690540902}
   - component: {fileID: 2572015956964376660}
   - component: {fileID: 8607994785319131398}
+  - component: {fileID: 3834096274645451622}
   m_Layer: 0
   m_Name: Camera
   m_TagString: MainCamera
@@ -32225,6 +32226,25 @@ MonoBehaviour:
         m_RotationOrder: 4
     landMinFallSpeed: 1.5
   characterController: {fileID: 4434044238315664879}
+--- !u!114 &3834096274645451622
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5802491283031396125}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d861c77f10c6b8a4d82568ac09d64dde, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::CameraBobbing
+  characterController: {fileID: 4434044238315664879}
+  playerMovement: {fileID: 7292988215955829792}
+  bobFrequency: 8
+  bobAmount: 0.05
+  bobFrequencySprintMultiplier: 1.5
+  crouchingHeight: 1
+  crouchTransitionSpeed: 8
 --- !u!1 &5853719097837363778
 GameObject:
   m_ObjectHideFlags: 0
@@ -58596,7 +58616,7 @@ MonoBehaviour:
   bobFrequency: 8
   bobAmount: 0.012
   bobFrequencySprintMultiplier: 1.5
-  proceduralBobScale: 0
+  proceduralBobScale: 1
   bobFadeOutTime: 0.15
   bobFadeInTime: 0.2
   positionSpring:
