@@ -1,9 +1,11 @@
+
 using UnityEngine;
 using Unity.Netcode;
 
 public class EasterEgg : NetworkBehaviour
 {
     [Header("Easter Egg")]
+    [SerializeField] private string easterEggId;
     [SerializeField] private int maxHealth = 1;
     [SerializeField] private int rewardPoints = 1000;
 
@@ -18,7 +20,6 @@ public class EasterEgg : NetworkBehaviour
     [SerializeField] private Collider eggCollider;
 
     private PlayerControls controls;
-
     private Camera localPlayerCamera;
 
     private NetworkVariable<int> currentHealthNetwork =
@@ -35,7 +36,6 @@ public class EasterEgg : NetworkBehaviour
             NetworkVariableWritePermission.Server
         );
 
-
     // =========================================================
     // AWAKE
     // =========================================================
@@ -44,9 +44,7 @@ public class EasterEgg : NetworkBehaviour
     {
         controls = new PlayerControls();
 
-        ConfiguracionesJuego.CargarRebinds(
-            controls.asset
-        );
+        ConfiguracionesJuego.CargarRebinds(controls.asset);
 
         if (eggCollider == null)
             eggCollider = GetComponent<Collider>();
@@ -54,21 +52,26 @@ public class EasterEgg : NetworkBehaviour
         OcultarPrompt();
     }
 
-
     // =========================================================
     // ENABLE / DISABLE
     // =========================================================
 
     private void OnEnable()
     {
-        controls.Player.Enable();
+        if (controls != null)
+            controls.Player.Enable();
     }
 
     private void OnDisable()
     {
-        controls.Player.Disable();
+        if (controls != null)
+            controls.Player.Disable();
     }
 
+    private void OnDestroy()
+    {
+        controls?.Dispose();
+    }
 
     // =========================================================
     // NETWORK SPAWN
@@ -76,63 +79,52 @@ public class EasterEgg : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        currentHealthNetwork.OnValueChanged +=
-            OnHealthChanged;
-
-        foundNetwork.OnValueChanged +=
-            OnFoundChanged;
+        currentHealthNetwork.OnValueChanged += OnHealthChanged;
+        foundNetwork.OnValueChanged += OnFoundChanged;
 
         if (IsServer)
         {
-            currentHealthNetwork.Value =
-                maxHealth;
-
-            foundNetwork.Value =
-                false;
+            currentHealthNetwork.Value = maxHealth;
+            foundNetwork.Value = false;
         }
 
         AplicarEstadoActual();
     }
 
-
     public override void OnNetworkDespawn()
     {
-        currentHealthNetwork.OnValueChanged -=
-            OnHealthChanged;
-
-        foundNetwork.OnValueChanged -=
-            OnFoundChanged;
+        currentHealthNetwork.OnValueChanged -= OnHealthChanged;
+        foundNetwork.OnValueChanged -= OnFoundChanged;
     }
-
 
     // =========================================================
     // UPDATE
     // =========================================================
-private void Update()
-{
-    BuscarPromptJugadorLocal();
 
-    BuscarCamaraJugadorLocal();
-
-    if (localPlayerCamera == null)
+    private void Update()
     {
-        OcultarPrompt();
-        return;
-    }
+        BuscarCamaraJugadorLocal();
 
-    if (EstaDisponibleParaInteraccion())
-    {
-        MostrarPrompt();
+        if (localPlayerCamera == null)
+        {
+            OcultarPrompt();
+            return;
+        }
 
-        if (controls.Player.Interact.triggered)
-            ActivarPorInteraccion();
-    }
-    else
-    {
-        OcultarPrompt();
-    }
-}
+        BuscarPromptJugadorLocal();
 
+        if (EstaDisponibleParaInteraccion())
+        {
+            MostrarPrompt();
+
+            if (controls.Player.Interact.triggered)
+                ActivarPorInteraccion();
+        }
+        else
+        {
+            OcultarPrompt();
+        }
+    }
 
     // =========================================================
     // BUSCAR CÁMARA LOCAL
@@ -149,16 +141,12 @@ private void Update()
         localPlayerCamera = null;
 
         Camera[] cameras =
-    FindObjectsByType<Camera>(
-        FindObjectsInactive.Exclude
-    );
+            FindObjectsByType<Camera>(
+                FindObjectsInactive.Exclude
+            );
+
         foreach (Camera cam in cameras)
         {
-            // IMPORTANTE:
-            // Solo buscamos la cámara cuyo GameObject
-            // se llama "PlayerCamera".
-            //
-            // La WeaponCamera queda ignorada.
             if (cam.gameObject.name != "PlayerCamera")
                 continue;
 
@@ -187,9 +175,6 @@ private void Update()
         }
 
         // FALLBACK
-        //
-        // Solo aceptamos Camera.main si también
-        // se llama PlayerCamera.
         if (Camera.main != null &&
             Camera.main.isActiveAndEnabled &&
             Camera.main.gameObject.name == "PlayerCamera")
@@ -200,12 +185,10 @@ private void Update()
             if (networkObject == null ||
                 networkObject.IsOwner)
             {
-                localPlayerCamera =
-                    Camera.main;
+                localPlayerCamera = Camera.main;
             }
         }
     }
-
 
     // =========================================================
     // INTERACCIÓN
@@ -216,34 +199,26 @@ private void Update()
         if (EstaEncontrado())
             return false;
 
-        if (eggCollider == null)
+        if (eggCollider == null || !eggCollider.enabled)
             return false;
 
-        Vector3 origen =
-            localPlayerCamera.transform.position;
+        Vector3 origen = localPlayerCamera.transform.position;
 
-        Vector3 direccion =
-            eggCollider.bounds.center - origen;
+        Vector3 direccion = eggCollider.bounds.center - origen;
 
-        float distancia =
-            direccion.magnitude;
+        float distancia = direccion.magnitude;
 
         if (distancia > interactionDistance)
             return false;
 
         direccion.Normalize();
 
-        Ray ray =
-            new Ray(
-                origen,
-                direccion
-            );
+        Ray ray = new Ray(origen, direccion);
 
         if (!Physics.Raycast(
             ray,
             out RaycastHit hit,
-            interactionDistance
-        ))
+            interactionDistance))
         {
             return false;
         }
@@ -254,10 +229,12 @@ private void Update()
         return egg == this;
     }
 
-
     private void ActivarPorInteraccion()
     {
         if (EstaEncontrado())
+            return;
+
+        if (!ValidarId())
             return;
 
         // MULTIPLAYER / NETCODE
@@ -272,7 +249,6 @@ private void Update()
         ActivarLocalmente();
     }
 
-
     // =========================================================
     // ACTIVAR POR E
     // =========================================================
@@ -282,18 +258,18 @@ private void Update()
         InvokePermission = RpcInvokePermission.Everyone
     )]
     private void ActivarRpc(
-        RpcParams rpcParams = default
-    )
+        RpcParams rpcParams = default)
     {
         if (foundNetwork.Value)
             return;
 
-        ulong clientId =
-            rpcParams.Receive.SenderClientId;
+        if (!ValidarId())
+            return;
+
+        ulong clientId = rpcParams.Receive.SenderClientId;
 
         ActivarEnServidor(clientId);
     }
-
 
     // =========================================================
     // DAÑO POR DISPARO
@@ -302,8 +278,7 @@ private void Update()
     public void TakeDamage(
         int amount,
         Vector3 hitPoint,
-        Vector3 hitNormal
-    )
+        Vector3 hitNormal)
     {
         if (EstaEncontrado())
             return;
@@ -311,14 +286,14 @@ private void Update()
         if (amount <= 0)
             return;
 
+        if (!ValidarId())
+            return;
+
         // MULTIPLAYER / NETCODE
         if (NetworkManager.Singleton != null &&
             NetworkManager.Singleton.IsListening)
         {
-            TakeDamageRpc(
-                amount
-            );
-
+            TakeDamageRpc(amount);
             return;
         }
 
@@ -328,11 +303,9 @@ private void Update()
         if (currentHealthNetwork.Value <= 0)
         {
             currentHealthNetwork.Value = 0;
-
             ActivarLocalmente();
         }
     }
-
 
     [Rpc(
         SendTo.Server,
@@ -340,13 +313,12 @@ private void Update()
     )]
     private void TakeDamageRpc(
         int amount,
-        RpcParams rpcParams = default
-    )
+        RpcParams rpcParams = default)
     {
-        if (foundNetwork.Value)
+        if (foundNetwork.Value || amount <= 0)
             return;
 
-        if (amount <= 0)
+        if (!ValidarId())
             return;
 
         currentHealthNetwork.Value -= amount;
@@ -358,43 +330,33 @@ private void Update()
             ulong shooterClientId =
                 rpcParams.Receive.SenderClientId;
 
-            ActivarEnServidor(
-                shooterClientId
-            );
+            ActivarEnServidor(shooterClientId);
         }
     }
-
 
     // =========================================================
     // ACTIVAR EN SERVIDOR
     // =========================================================
 
-    private void ActivarEnServidor(
-        ulong clientId
-    )
+    private void ActivarEnServidor(ulong clientId)
     {
-        if (!IsServer)
+        if (!IsServer || foundNetwork.Value)
             return;
 
-        if (foundNetwork.Value)
+        if (!ValidarId())
             return;
 
         foundNetwork.Value = true;
         currentHealthNetwork.Value = 0;
 
-        DarRecompensa(
-            clientId
-        );
+        DarRecompensa(clientId);
     }
-
 
     // =========================================================
     // RECOMPENSA
     // =========================================================
 
-    private void DarRecompensa(
-        ulong clientId
-    )
+    private void DarRecompensa(ulong clientId)
     {
         if (!IsServer)
             return;
@@ -404,8 +366,7 @@ private void Update()
 
         if (!NetworkManager.Singleton.ConnectedClients.TryGetValue(
             clientId,
-            out NetworkClient client
-        ))
+            out NetworkClient client))
         {
             return;
         }
@@ -414,62 +375,37 @@ private void Update()
             return;
 
         PlayerScore playerScore =
-            client.PlayerObject
-                .GetComponentInChildren<PlayerScore>();
+            client.PlayerObject.GetComponentInChildren<PlayerScore>();
 
         if (playerScore != null)
         {
-            playerScore.SumarPuntos(
-                rewardPoints
-            );
+            playerScore.SumarPuntos(rewardPoints);
         }
 
         MostrarLogroAlJugadorClientRpc(
             new ClientRpcParams
             {
-                Send =
-                    new ClientRpcSendParams
+                Send = new ClientRpcSendParams
+                {
+                    TargetClientIds = new ulong[]
                     {
-                        TargetClientIds =
-                            new ulong[]
-                            {
-                                clientId
-                            }
+                        clientId
                     }
+                }
             }
         );
     }
 
-
     // =========================================================
-    // LOGRO
+    // LOGRO MULTIPLAYER
     // =========================================================
 
     [ClientRpc]
     private void MostrarLogroAlJugadorClientRpc(
-        ClientRpcParams clientRpcParams = default
-    )
+        ClientRpcParams clientRpcParams = default)
     {
-        if (AchievementsManager.Instance == null)
-        {
-            Debug.LogWarning(
-                "[EASTER EGG] No existe AchievementsManager."
-            );
-
-            return;
-        }
-
-        AchievementsManager.Instance.SumarProgreso(
-            AchievementId.DondeEstaWally,
-            1
-        );
-
-        Debug.Log(
-            "[EASTER EGG] Easter Egg encontrado. " +
-            "Progreso DondeEstaWally +1."
-        );
+        RegistrarEasterEggEnLogros();
     }
-
 
     // =========================================================
     // SINGLEPLAYER SIN NETWORK
@@ -480,33 +416,78 @@ private void Update()
         if (EstaEncontrado())
             return;
 
+        if (!ValidarId())
+            return;
+
         foundNetwork.Value = true;
         currentHealthNetwork.Value = 0;
 
-        PlayerScore score =
-            ObtenerPlayerScoreLocal();
+        PlayerScore score = ObtenerPlayerScoreLocal();
 
         if (score != null)
         {
-            score.SumarPuntos(
-                rewardPoints
-            );
+            score.SumarPuntos(rewardPoints);
         }
 
-        if (AchievementsManager.Instance != null)
-        {
-            AchievementsManager.Instance.SumarProgreso(
-                AchievementId.DondeEstaWally,
-                1
-            );
-        }
+        RegistrarEasterEggEnLogros();
 
         Debug.Log(
-            "[EASTER EGG] Encontrado localmente. " +
-            "+1000 puntos."
+            "[EASTER EGG] Encontrado localmente. +" +
+            rewardPoints + " puntos."
         );
     }
 
+    // =========================================================
+    // REGISTRO PERSISTENTE DEL EASTER EGG
+    // =========================================================
+
+    private void RegistrarEasterEggEnLogros()
+    {
+        if (!ValidarId())
+            return;
+
+        if (AchievementsManager.Instance == null)
+        {
+            Debug.LogWarning(
+                "[EASTER EGG] No existe AchievementsManager."
+            );
+
+            return;
+        }
+
+        bool registrado =
+            AchievementsManager.Instance
+                .RegistrarEasterEggEncontrado(easterEggId);
+
+        if (registrado)
+        {
+            Debug.Log(
+                "[EASTER EGG] Nuevo Easter Egg registrado: " +
+                easterEggId
+            );
+        }
+        else
+        {
+            Debug.Log(
+                "[EASTER EGG] Este Easter Egg ya estaba registrado: " +
+                easterEggId
+            );
+        }
+    }
+
+    private bool ValidarId()
+    {
+        if (!string.IsNullOrWhiteSpace(easterEggId))
+            return true;
+
+        Debug.LogError(
+            "[EASTER EGG] Falta asignar un ID en el Inspector: " +
+            gameObject.name,
+            this
+        );
+
+        return false;
+    }
 
     // =========================================================
     // PLAYER SCORE LOCAL
@@ -535,7 +516,6 @@ private void Update()
         return null;
     }
 
-
     // =========================================================
     // ESTADO
     // =========================================================
@@ -545,27 +525,20 @@ private void Update()
         return foundNetwork.Value;
     }
 
-
     private void OnHealthChanged(
         int previousValue,
-        int newValue
-    )
+        int newValue)
     {
         if (newValue <= 0)
-        {
             OcultarPrompt();
-        }
     }
-
 
     private void OnFoundChanged(
         bool previousValue,
-        bool newValue
-    )
+        bool newValue)
     {
         AplicarEstadoActual();
     }
-
 
     private void AplicarEstadoActual()
     {
@@ -583,7 +556,6 @@ private void Update()
         }
     }
 
-
     // =========================================================
     // PROMPT
     // =========================================================
@@ -594,7 +566,6 @@ private void Update()
             interactionPrompt.SetActive(true);
     }
 
-
     private void OcultarPrompt()
     {
         if (interactionPrompt != null)
@@ -602,76 +573,85 @@ private void Update()
     }
 
     private void BuscarPromptJugadorLocal()
-{
-    if (interactionPrompt != null)
-        return;
-
-    PlayerScore[] players = FindObjectsByType<PlayerScore>();
-
-    foreach (PlayerScore player in players)
     {
-        NetworkObject networkObject =
-            player.GetComponentInParent<NetworkObject>();
+        if (interactionPrompt != null)
+            return;
 
-        // En multiplayer, buscar solamente dentro del jugador local.
-        if (NetworkManager.Singleton != null &&
-            NetworkManager.Singleton.IsListening)
+        PlayerScore[] players =
+            FindObjectsByType<PlayerScore>();
+
+        foreach (PlayerScore player in players)
         {
-            if (networkObject == null || !networkObject.IsOwner)
+            NetworkObject networkObject =
+                player.GetComponentInParent<NetworkObject>();
+
+            // MULTIPLAYER: solo el jugador local
+            if (NetworkManager.Singleton != null &&
+                NetworkManager.Singleton.IsListening)
+            {
+                if (networkObject == null || !networkObject.IsOwner)
+                    continue;
+            }
+
+            Transform root = player.transform.root;
+
+            Transform hudCanvas =
+                BuscarHijoPorNombre(root, "HUD_Canvas");
+
+            if (hudCanvas == null)
                 continue;
+
+            Transform easterEggUI =
+                BuscarHijoPorNombre(
+                    hudCanvas,
+                    "EasterEggInteractionUI");
+
+            if (easterEggUI == null)
+                continue;
+
+            Transform interfaz =
+                BuscarHijoPorNombre(
+                    easterEggUI,
+                    "interface_EasterEgg");
+
+            if (interfaz == null)
+                continue;
+
+            Transform texto =
+                BuscarHijoPorNombre(
+                    interfaz,
+                    "Text_EasterEgg");
+
+            if (texto == null)
+                continue;
+
+            interactionPrompt = texto.gameObject;
+
+            Debug.Log(
+                "[EasterEgg] Texto de interacción encontrado " +
+                "en el jugador local."
+            );
+
+            return;
+        }
+    }
+
+    private Transform BuscarHijoPorNombre(
+        Transform padre,
+        string nombre)
+    {
+        if (padre.name == nombre)
+            return padre;
+
+        foreach (Transform hijo in padre)
+        {
+            Transform encontrado =
+                BuscarHijoPorNombre(hijo, nombre);
+
+            if (encontrado != null)
+                return encontrado;
         }
 
-        Transform root = player.transform.root;
-
-        Transform hudCanvas = BuscarHijoPorNombre(
-            root, "HUD_Canvas");
-
-        if (hudCanvas == null)
-            continue;
-
-        Transform easterEggUI = BuscarHijoPorNombre(
-            hudCanvas, "EasterEggInteractionUI");
-
-        if (easterEggUI == null)
-            continue;
-
-        Transform interfaz = BuscarHijoPorNombre(
-            easterEggUI, "interface_EasterEgg");
-
-        if (interfaz == null)
-            continue;
-
-        Transform texto = BuscarHijoPorNombre(
-            interfaz, "Text_EasterEgg");
-
-        if (texto == null)
-            continue;
-
-        interactionPrompt = texto.gameObject;
-        interactionPrompt.SetActive(false);
-
-        Debug.Log("[EasterEgg] Texto de interacción encontrado en el jugador local.");
-
-        return;
+        return null;
     }
-}
-
-private Transform BuscarHijoPorNombre(
-    Transform padre,
-    string nombre)
-{
-    if (padre.name == nombre)
-        return padre;
-
-    foreach (Transform hijo in padre)
-    {
-        Transform encontrado = BuscarHijoPorNombre(
-            hijo, nombre);
-
-        if (encontrado != null)
-            return encontrado;
-    }
-
-    return null;
-}
 }
