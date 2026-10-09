@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.EventSystems;
@@ -19,8 +20,8 @@ public class Weapon : MonoBehaviour
     [SerializeField] private CameraRecoil cameraRecoil;
     [SerializeField] private WeaponRecoil weaponRecoil;
     [SerializeField] private float recoilIntensityMultiplier = 1f;
-    [Tooltip("Qué curvas de recoil del original usa esta arma: AR (rifles), SMG (subfusiles) o Handgun (pistolas, casi sin recoil). " +
-             "Al apuntar, el arma baja a 35% y la cámara queda igual: lo maneja cada script con los valores del original.")]
+
+    [Tooltip("Qué curvas de recoil del original usa esta arma: AR, SMG o Handgun.")]
     [SerializeField] private RecoilPreset recoilPreset = RecoilPreset.SMG;
 
     private HUDController hudController;
@@ -32,7 +33,7 @@ public class Weapon : MonoBehaviour
     [SerializeField] private AudioClip reloadSound;
     [SerializeField] private AudioClip reloadEmptySound;
 
-    [Header("Audio - Recarga por partes (Escopeta/Sniper)")]
+    [Header("Audio - Recarga por partes")]
     [SerializeField] private AudioClip reloadOpenSound;
     [SerializeField] private AudioClip reloadInsertSound;
     [SerializeField] private AudioClip reloadCloseSound;
@@ -46,9 +47,10 @@ public class Weapon : MonoBehaviour
     [SerializeField] private float range = 100f;
     [SerializeField] private int damage = 25;
     [SerializeField] private int maxAmmo = 12;
-    [Tooltip("Balas de reserva de ESTA arma cuando la dificultad limita la reserva (ej.: rifle 120, pistola 100). " +
-             "La dificultad la puede multiplicar (Reserve Ammo Multiplier). En Normal (recargas ilimitadas) no se usa.")]
+
+    [Tooltip("Balas de reserva de esta arma cuando la dificultad limita la reserva.")]
     [SerializeField] private int reserveAmmoCapacity = 120;
+
     [SerializeField] private string weaponName = "Pistola";
 
     [Header("Escopeta (perdigones)")]
@@ -56,7 +58,7 @@ public class Weapon : MonoBehaviour
     [SerializeField] private int pelletsPerShot = 8;
     [SerializeField] private float pelletSpreadAngle = 6f;
 
-    [Header("Cerrojo (Sniper de cerrojo manual)")]
+    [Header("Cerrojo")]
     [SerializeField] private bool requiresBoltActionAfterFire = false;
     [SerializeField] private float boltActionDuration = 1.3f;
     [SerializeField] private float boltActionDelay = 0.12f;
@@ -107,8 +109,8 @@ public class Weapon : MonoBehaviour
             if (partsAnimator == null)
                 partsAnimator = GetComponent<Animator>();
 
-            return (partsAnimator != null &&
-                    partsAnimator.runtimeAnimatorController != null)
+            return partsAnimator != null &&
+                   partsAnimator.runtimeAnimatorController != null
                 ? partsAnimator
                 : null;
         }
@@ -130,27 +132,27 @@ public class Weapon : MonoBehaviour
 
     public int CurrentAmmo => currentAmmo;
 
+    /// <summary>Balas que entran en el cargador. Lo usa el HUD.</summary>
+    public int CapacidadCargador => maxAmmo;
+
+    // Propiedades usadas por la dificultad y el HUD.
     public int MaxAmmo => EffectiveMaxAmmo;
 
     private int appliedMaxAmmo;
+
     public int EffectiveMaxAmmo;
 
     public float CurrentSpreadNormalized
     {
         get
         {
-            float minimumSpread =
-                IsAiming ? spreadAiming : spreadIdle;
+            float minimumSpread = IsAiming ? spreadAiming : spreadIdle;
 
             if (maxSpread <= minimumSpread)
                 return 0f;
 
             return Mathf.Clamp01(
-                Mathf.InverseLerp(
-                    minimumSpread,
-                    maxSpread,
-                    currentSpread
-                )
+                Mathf.InverseLerp(minimumSpread, maxSpread, currentSpread)
             );
         }
     }
@@ -183,12 +185,10 @@ public class Weapon : MonoBehaviour
     private void Awake()
     {
         controls = new PlayerControls();
-
-        ConfiguracionesJuego.CargarRebinds(
-            controls.asset
-        );
+        ConfiguracionesJuego.CargarRebinds(controls.asset);
 
         currentAmmo = maxAmmo;
+        EffectiveMaxAmmo = maxAmmo;
 
         if (playerCamera != null)
             defaultWorldFOV = playerCamera.fieldOfView;
@@ -196,32 +196,20 @@ public class Weapon : MonoBehaviour
         currentSpread = spreadIdle;
 
         if (playerMovement == null)
-            playerMovement =
-                GetComponentInParent<PlayerMovement>();
+            playerMovement = GetComponentInParent<PlayerMovement>();
 
         if (characterController == null)
-            characterController =
-                GetComponentInParent<CharacterController>();
+            characterController = GetComponentInParent<CharacterController>();
 
-        hudController =
-            GetComponentInParent<HUDController>();
+        hudController = GetComponentInParent<HUDController>();
 
         if (hudController == null)
-        {
-            hudController =
-                transform.root
-                    .GetComponentInChildren<HUDController>(true);
-        }
+            hudController = transform.root.GetComponentInChildren<HUDController>(true);
 
-        playerScore =
-            GetComponentInParent<PlayerScore>();
+        playerScore = GetComponentInParent<PlayerScore>();
 
         if (playerScore == null)
-        {
-            playerScore =
-                transform.root
-                    .GetComponentInChildren<PlayerScore>(true);
-        }
+            playerScore = transform.root.GetComponentInChildren<PlayerScore>(true);
     }
 
     private void OnEnable()
@@ -250,36 +238,18 @@ public class Weapon : MonoBehaviour
         IsAiming = false;
     }
 
-    private int ApplyDistanceFalloff(
-        int baseDamage,
-        float distance
-    )
+    private int ApplyDistanceFalloff(int baseDamage, float distance)
     {
         if (distance <= damageFalloffStart)
             return baseDamage;
 
         if (distance >= damageFalloffEnd)
-        {
-            return Mathf.RoundToInt(
-                baseDamage * minDamageMultiplier
-            );
-        }
+            return Mathf.RoundToInt(baseDamage * minDamageMultiplier);
 
-        float t = Mathf.InverseLerp(
-            damageFalloffStart,
-            damageFalloffEnd,
-            distance
-        );
+        float t = Mathf.InverseLerp(damageFalloffStart, damageFalloffEnd, distance);
+        float multiplier = Mathf.Lerp(1f, minDamageMultiplier, t);
 
-        float multiplier = Mathf.Lerp(
-            1f,
-            minDamageMultiplier,
-            t
-        );
-
-        return Mathf.RoundToInt(
-            baseDamage * multiplier
-        );
+        return Mathf.RoundToInt(baseDamage * multiplier);
     }
 
     // =========================================================
@@ -295,23 +265,19 @@ public class Weapon : MonoBehaviour
             : null;
 
     public bool UsesLimitedReserve =>
-        ActiveDifficulty != null &&
-        ActiveDifficulty.limitedReserveAmmo;
+        ActiveDifficulty != null && ActiveDifficulty.limitedReserveAmmo;
 
     public int ReserveCapacity
     {
         get
         {
-            float multiplier =
-                ActiveDifficulty != null
-                    ? ActiveDifficulty.reserveAmmoMultiplier
-                    : 1f;
+            float multiplier = ActiveDifficulty != null
+                ? ActiveDifficulty.reserveAmmoMultiplier
+                : 1f;
 
             return Mathf.Max(
                 0,
-                Mathf.RoundToInt(
-                    reserveAmmoCapacity * multiplier
-                )
+                Mathf.RoundToInt(reserveAmmoCapacity * multiplier)
             );
         }
     }
@@ -331,12 +297,7 @@ public class Weapon : MonoBehaviour
             return;
 
         EnsureReserveInitialized();
-
-        reserveAmmo =
-            Mathf.Min(
-                reserveAmmo + amount,
-                ReserveCapacity
-            );
+        reserveAmmo = Mathf.Min(reserveAmmo + amount, ReserveCapacity);
     }
 
     public void RefillReserveAmmo()
@@ -350,8 +311,7 @@ public class Weapon : MonoBehaviour
 
     public bool MunicionCompleta =>
         currentAmmo >= maxAmmo &&
-        (!UsesLimitedReserve ||
-         ReserveAmmo >= ReserveCapacity);
+        (!UsesLimitedReserve || ReserveAmmo >= ReserveCapacity);
 
     public void RestaurarMunicion()
     {
@@ -361,11 +321,8 @@ public class Weapon : MonoBehaviour
 
     private void EnsureReserveInitialized()
     {
-        if (reserveInitialized ||
-            !UsesLimitedReserve)
-        {
+        if (reserveInitialized || !UsesLimitedReserve)
             return;
-        }
 
         reserveAmmo = ReserveCapacity;
         reserveInitialized = true;
@@ -387,8 +344,7 @@ public class Weapon : MonoBehaviour
 
     private void FillMagazine()
     {
-        int needed =
-            maxAmmo - currentAmmo;
+        int needed = maxAmmo - currentAmmo;
 
         if (needed <= 0)
             return;
@@ -401,12 +357,7 @@ public class Weapon : MonoBehaviour
 
         EnsureReserveInitialized();
 
-        int loaded =
-            Mathf.Min(
-                needed,
-                reserveAmmo
-            );
-
+        int loaded = Mathf.Min(needed, reserveAmmo);
         currentAmmo += loaded;
         reserveAmmo -= loaded;
     }
@@ -418,37 +369,22 @@ public class Weapon : MonoBehaviour
 
     public void AnimationInsertOneShell()
     {
-        if (
-            currentAmmo < maxAmmo &&
-            TryConsumeReserve(1)
-        )
-        {
+        if (currentAmmo < maxAmmo && TryConsumeReserve(1))
             currentAmmo++;
-        }
 
-        shellLoading =
-            currentAmmo < maxAmmo &&
-            (!UsesLimitedReserve ||
-             reserveAmmo > 0);
+        shellLoading = currentAmmo < maxAmmo &&
+                       (!UsesLimitedReserve || reserveAmmo > 0);
 
         PlaySound(reloadInsertSound);
 
         Debug.Log(
             "[Weapon] Insertada bala. currentAmmo=" +
-            currentAmmo +
-            "/" +
-            maxAmmo +
-            " | ShellLoading=" +
-            shellLoading
+            currentAmmo + "/" + maxAmmo +
+            " | ShellLoading=" + shellLoading
         );
 
         if (weaponAnimator != null)
-        {
-            weaponAnimator.SetBool(
-                "ShellLoading",
-                shellLoading
-            );
-        }
+            weaponAnimator.SetBool("ShellLoading", shellLoading);
     }
 
     public void AnimationReloadFinished()
@@ -459,16 +395,13 @@ public class Weapon : MonoBehaviour
         }
         else if (
             currentAmmo != maxAmmo &&
-            (!UsesLimitedReserve ||
-             ReserveAmmo > 0)
+            (!UsesLimitedReserve || ReserveAmmo > 0)
         )
         {
             Debug.LogWarning(
                 "[Weapon] AnimationReloadFinished: el loop bala por bala terminó con " +
-                currentAmmo +
-                "/" +
-                maxAmmo +
-                " — revisá las condiciones ShellLoading en Insert A/B, se cortó antes de tiempo."
+                currentAmmo + "/" + maxAmmo +
+                " — revisá las condiciones ShellLoading en Insert A/B."
             );
 
             FillMagazine();
@@ -478,12 +411,7 @@ public class Weapon : MonoBehaviour
         shellLoading = false;
 
         if (weaponAnimator != null)
-        {
-            weaponAnimator.SetBool(
-                "ShellLoading",
-                false
-            );
-        }
+            weaponAnimator.SetBool("ShellLoading", false);
     }
 
     public void AnimationReloadOpen()
@@ -516,30 +444,16 @@ public class Weapon : MonoBehaviour
 
     private void Update()
     {
-        if (
-            IsAiming &&
-            playerMovement != null &&
-            playerMovement.IsSprinting
-        )
-        {
+        if (IsAiming && playerMovement != null && playerMovement.IsSprinting)
             IsAiming = false;
-        }
 
-        if (
-            isChambering &&
-            Time.time >= chamberReadyTime
-        )
+        if (isChambering && Time.time >= chamberReadyTime)
         {
             isChambering = false;
             boltActionActive = false;
 
             if (weaponAnimator != null)
-            {
-                weaponAnimator.SetBool(
-                    "BoltAction",
-                    false
-                );
-            }
+                weaponAnimator.SetBool("BoltAction", false);
         }
 
         UpdateAimFOV();
@@ -549,23 +463,12 @@ public class Weapon : MonoBehaviour
 
         if (isAutomatic)
         {
-            bool tieneBalas =
-                currentAmmo > 0;
+            bool tieneBalas = currentAmmo > 0;
 
-            if (
-                tieneBalas &&
-                controls.Player.Fire.IsPressed()
-            )
-            {
+            if (tieneBalas && controls.Player.Fire.IsPressed())
                 TryFire();
-            }
-            else if (
-                !tieneBalas &&
-                controls.Player.Fire.WasPressedThisFrame()
-            )
-            {
+            else if (!tieneBalas && controls.Player.Fire.WasPressedThisFrame())
                 TryFire();
-            }
         }
     }
 
@@ -573,45 +476,28 @@ public class Weapon : MonoBehaviour
     // AIM
     // =========================================================
 
-    private void OnAimStarted(
-        InputAction.CallbackContext context
-    )
+    private void OnAimStarted(InputAction.CallbackContext context)
     {
         Debug.Log(
-            "[Weapon] OnAimStarted llamado. InputLocked=" +
-            InputLocked +
-            " | isReloading=" +
-            isReloading +
+            "[Weapon] OnAimStarted llamado. InputLocked=" + InputLocked +
+            " | isReloading=" + isReloading +
             " | IsSprinting=" +
-            (
-                playerMovement != null &&
-                playerMovement.IsSprinting
-            )
+            (playerMovement != null && playerMovement.IsSprinting)
         );
 
         if (PauseController.LocalPlayerPaused)
             return;
 
-        if (InputLocked)
+        if (InputLocked || isReloading)
             return;
 
-        if (isReloading)
+        if (playerMovement != null && playerMovement.IsSprinting)
             return;
-
-        if (
-            playerMovement != null &&
-            playerMovement.IsSprinting
-        )
-        {
-            return;
-        }
 
         IsAiming = true;
     }
 
-    private void OnAimCanceled(
-        InputAction.CallbackContext context
-    )
+    private void OnAimCanceled(InputAction.CallbackContext context)
     {
         IsAiming = false;
     }
@@ -621,18 +507,13 @@ public class Weapon : MonoBehaviour
         if (playerCamera == null)
             return;
 
-        float targetFOV =
-            IsAiming
-                ? aimFOV
-                : defaultWorldFOV;
+        float targetFOV = IsAiming ? aimFOV : defaultWorldFOV;
 
-        playerCamera.fieldOfView =
-            Mathf.Lerp(
-                playerCamera.fieldOfView,
-                targetFOV,
-                aimTransitionSpeed *
-                Time.deltaTime
-            );
+        playerCamera.fieldOfView = Mathf.Lerp(
+            playerCamera.fieldOfView,
+            targetFOV,
+            aimTransitionSpeed * Time.deltaTime
+        );
     }
 
     // =========================================================
@@ -655,48 +536,27 @@ public class Weapon : MonoBehaviour
 
         float targetSpread;
 
-        if (
-            playerMovement != null &&
-            playerMovement.IsCrouching
-        )
-        {
-            targetSpread =
-                spreadCrouching;
-        }
+        if (playerMovement != null && playerMovement.IsCrouching)
+            targetSpread = spreadCrouching;
         else if (IsMovingOnGround())
-        {
-            targetSpread =
-                spreadMoving;
-        }
+            targetSpread = spreadMoving;
         else
-        {
-            targetSpread =
-                spreadIdle;
-        }
+            targetSpread = spreadIdle;
 
-        float recoverySpeed =
-            landingRecoveryTimer > 0f
-                ? landingRecoverySpeed
-                : spreadRecoverySpeed;
+        float recoverySpeed = landingRecoveryTimer > 0f
+            ? landingRecoverySpeed
+            : spreadRecoverySpeed;
 
-        currentSpread =
-            Mathf.MoveTowards(
-                currentSpread,
-                targetSpread,
-                recoverySpeed *
-                Time.deltaTime
-            );
+        currentSpread = Mathf.MoveTowards(
+            currentSpread,
+            targetSpread,
+            recoverySpeed * Time.deltaTime
+        );
 
-        currentSpread =
-            Mathf.Clamp(
-                currentSpread,
-                0f,
-                maxSpread
-            );
+        currentSpread = Mathf.Clamp(currentSpread, 0f, maxSpread);
 
         if (landingRecoveryTimer > 0f)
-            landingRecoveryTimer -=
-                Time.deltaTime;
+            landingRecoveryTimer -= Time.deltaTime;
     }
 
     private void UpdateJumpSpread()
@@ -704,60 +564,42 @@ public class Weapon : MonoBehaviour
         if (characterController == null)
             return;
 
-        bool isGrounded =
-            characterController.isGrounded;
+        bool isGrounded = characterController.isGrounded;
 
-        if (
-            wasGrounded &&
-            !isGrounded
-        )
+        if (wasGrounded && !isGrounded)
         {
-            currentSpread =
-                Mathf.Clamp(
-                    currentSpread +
-                    jumpSpread,
-                    0f,
-                    maxSpread
-                );
+            currentSpread = Mathf.Clamp(
+                currentSpread + jumpSpread,
+                0f,
+                maxSpread
+            );
         }
 
-        if (
-            !wasGrounded &&
-            isGrounded
-        )
-        {
-            landingRecoveryTimer =
-                landingRecoveryDuration;
-        }
+        if (!wasGrounded && isGrounded)
+            landingRecoveryTimer = landingRecoveryDuration;
 
         wasGrounded = isGrounded;
     }
 
     private bool IsMovingOnGround()
     {
-        if (characterController == null)
+        if (characterController == null || !characterController.isGrounded)
             return false;
 
-        if (!characterController.isGrounded)
-            return false;
+        Vector3 horizontalVelocity = new Vector3(
+            characterController.velocity.x,
+            0f,
+            characterController.velocity.z
+        );
 
-        Vector3 horizontalVelocity =
-            new Vector3(
-                characterController.velocity.x,
-                0f,
-                characterController.velocity.z
-            );
-
-        return horizontalVelocity.magnitude >
-               0.1f;
+        return horizontalVelocity.magnitude > 0.1f;
     }
 
     // =========================================================
     // ANIMATOR
     // =========================================================
 
-    private readonly AirTracker airTracker =
-        new AirTracker();
+    private readonly AirTracker airTracker = new AirTracker();
 
     private static readonly int RunningHash =
         Animator.StringToHash("Running");
@@ -768,52 +610,39 @@ public class Weapon : MonoBehaviour
     private bool lastLoggedSprint;
 
     [Header("Diagnóstico")]
-    [Tooltip("Escribe en la consola qué controller está usando el arma, si tiene el parámetro Running y cuándo cambia IsSprinting.")]
+    [Tooltip("Muestra información del parámetro Running en la consola.")]
     [SerializeField] private bool debugRunning = false;
 
     private bool AnimatorHasRunningParam()
     {
+        if (weaponAnimator == null)
+            return false;
+
         RuntimeAnimatorController controller =
             weaponAnimator.runtimeAnimatorController;
 
-        if (
-            hasRunningParam &&
-            controller == runningParamCheckedFor
-        )
-        {
+        if (hasRunningParam && controller == runningParamCheckedFor)
             return true;
-        }
 
         if (
             controller == runningParamCheckedFor &&
-            Time.unscaledTime <
-            nextRunningParamCheck
+            Time.unscaledTime < nextRunningParamCheck
         )
         {
             return false;
         }
 
         runningParamCheckedFor = controller;
-
-        nextRunningParamCheck =
-            Time.unscaledTime + 0.5f;
-
+        nextRunningParamCheck = Time.unscaledTime + 0.5f;
         hasRunningParam = false;
 
-        if (
-            controller != null &&
-            weaponAnimator.isInitialized
-        )
+        if (controller != null && weaponAnimator.isInitialized)
         {
-            foreach (
-                AnimatorControllerParameter p
-                in weaponAnimator.parameters
-            )
+            foreach (AnimatorControllerParameter p in weaponAnimator.parameters)
             {
                 if (
                     p.nameHash == RunningHash &&
-                    p.type ==
-                    AnimatorControllerParameterType.Bool
+                    p.type == AnimatorControllerParameterType.Bool
                 )
                 {
                     hasRunningParam = true;
@@ -824,14 +653,11 @@ public class Weapon : MonoBehaviour
             if (debugRunning)
             {
                 Debug.Log(
-                    "[Weapon] Controller del arma: '" +
-                    controller.name +
+                    "[Weapon] Controller del arma: '" + controller.name +
                     "' | parámetro Running (bool): " +
-                    (
-                        hasRunningParam
-                            ? "SÍ"
-                            : "NO, este no es el controller modificado"
-                    )
+                    (hasRunningParam
+                        ? "SÍ"
+                        : "NO, este no es el controller modificado")
                 );
             }
         }
@@ -844,85 +670,45 @@ public class Weapon : MonoBehaviour
         if (weaponAnimator == null)
             return;
 
-        weaponAnimator.SetBool(
-            "IsEmpty",
-            currentAmmo <= 0
-        );
+        weaponAnimator.SetBool("IsEmpty", currentAmmo <= 0);
 
         if (characterController == null)
             return;
 
-        Vector3 horizontalVelocity =
-            new Vector3(
-                characterController.velocity.x,
-                0f,
-                characterController.velocity.z
-            );
-
-        float speed =
-            horizontalVelocity.magnitude;
-
-        airTracker.Tick(
-            characterController,
-            Time.deltaTime
+        Vector3 horizontalVelocity = new Vector3(
+            characterController.velocity.x,
+            0f,
+            characterController.velocity.z
         );
+
+        float speed = horizontalVelocity.magnitude;
+
+        airTracker.Tick(characterController, Time.deltaTime);
 
         if (AnimatorHasRunningParam())
         {
-            weaponAnimator.SetBool(
-                RunningHash,
-                playerMovement != null &&
-                playerMovement.IsSprinting
-            );
+            bool sprintNow =
+                playerMovement != null && playerMovement.IsSprinting;
 
-            if (debugRunning)
+            weaponAnimator.SetBool(RunningHash, sprintNow);
+
+            if (debugRunning && sprintNow != lastLoggedSprint)
             {
-                bool sprintNow =
-                    playerMovement != null &&
-                    playerMovement.IsSprinting;
+                lastLoggedSprint = sprintNow;
 
-                if (
-                    sprintNow !=
-                    lastLoggedSprint
-                )
-                {
-                    lastLoggedSprint =
-                        sprintNow;
-
-                    Debug.Log(
-                        "[Weapon] IsSprinting=" +
-                        sprintNow +
-                        " | Running en el Animator=" +
-                        weaponAnimator.GetBool(
-                            RunningHash
-                        )
-                    );
-                }
+                Debug.Log(
+                    "[Weapon] IsSprinting=" + sprintNow +
+                    " | Running en el Animator=" +
+                    weaponAnimator.GetBool(RunningHash)
+                );
             }
 
-            if (
-                airTracker.IsAirborne &&
-                !(
-                    playerMovement != null &&
-                    playerMovement.IsSprinting
-                )
-            )
-            {
+            if (airTracker.IsAirborne && !sprintNow)
                 speed = 0f;
-            }
         }
 
-        weaponAnimator.SetFloat(
-            "Speed",
-            speed,
-            0.15f,
-            Time.deltaTime
-        );
-
-        weaponAnimator.SetBool(
-            "IsAiming",
-            IsAiming
-        );
+        weaponAnimator.SetFloat("Speed", speed, 0.15f, Time.deltaTime);
+        weaponAnimator.SetBool("IsAiming", IsAiming);
 
         UpdateAimingBlend();
     }
@@ -932,36 +718,24 @@ public class Weapon : MonoBehaviour
         if (weaponAnimator == null)
             return;
 
-        float target =
-            IsAiming ? 1f : 0f;
+        float target = IsAiming ? 1f : 0f;
 
-        aimingBlend =
-            Mathf.MoveTowards(
-                aimingBlend,
-                target,
-                aimingBlendSpeed *
-                Time.deltaTime
-            );
-
-        weaponAnimator.SetFloat(
-            "Aiming",
-            aimingBlend
+        aimingBlend = Mathf.MoveTowards(
+            aimingBlend,
+            target,
+            aimingBlendSpeed * Time.deltaTime
         );
+
+        weaponAnimator.SetFloat("Aiming", aimingBlend);
     }
 
     // =========================================================
     // DISPARO
     // =========================================================
 
-    private void OnFireSemiAuto(
-        InputAction.CallbackContext context
-    )
+    private void OnFireSemiAuto(InputAction.CallbackContext context)
     {
-        Debug.Log(
-            "[Weapon] OnFireSemiAuto llamado. InputLocked=" +
-            InputLocked
-        );
-
+        Debug.Log("[Weapon] OnFireSemiAuto llamado. InputLocked=" + InputLocked);
         TryFire();
     }
 
@@ -972,19 +746,13 @@ public class Weapon : MonoBehaviour
 
         if (InputLocked)
         {
-            Debug.Log(
-                "[Weapon] TryFire bloqueado: InputLocked=true"
-            );
-
+            Debug.Log("[Weapon] TryFire bloqueado: InputLocked=true");
             return;
         }
 
         if (Time.timeScale == 0f)
         {
-            Debug.Log(
-                "[Weapon] TryFire bloqueado: Time.timeScale == 0"
-            );
-
+            Debug.Log("[Weapon] TryFire bloqueado: Time.timeScale == 0");
             return;
         }
 
@@ -1003,31 +771,19 @@ public class Weapon : MonoBehaviour
 
         if (isReloading)
         {
-            Debug.Log(
-                "[Weapon] TryFire bloqueado: isReloading=true"
-            );
-
+            Debug.Log("[Weapon] TryFire bloqueado: isReloading=true");
             return;
         }
 
         if (isChambering)
         {
-            Debug.Log(
-                "[Weapon] TryFire bloqueado: isChambering=true"
-            );
-
+            Debug.Log("[Weapon] TryFire bloqueado: isChambering=true");
             return;
         }
 
-        if (
-            playerMovement != null &&
-            playerMovement.IsSprinting
-        )
+        if (playerMovement != null && playerMovement.IsSprinting)
         {
-            Debug.Log(
-                "[Weapon] TryFire bloqueado: IsSprinting=true"
-            );
-
+            Debug.Log("[Weapon] TryFire bloqueado: IsSprinting=true");
             return;
         }
 
@@ -1039,51 +795,29 @@ public class Weapon : MonoBehaviour
             PlaySound(emptySound);
 
             if (weaponAnimator != null)
-            {
-                weaponAnimator.SetTrigger(
-                    "FireEmpty"
-                );
-            }
+                weaponAnimator.SetTrigger("FireEmpty");
 
-            nextFireTime =
-                Time.time + fireRate;
-
+            nextFireTime = Time.time + fireRate;
             return;
         }
 
-        nextFireTime =
-            Time.time + fireRate;
-
+        nextFireTime = Time.time + fireRate;
         currentAmmo--;
 
         if (playerScore != null)
             playerScore.RegistrarDisparoServerRpc();
 
-        currentSpread =
-            Mathf.Clamp(
-                currentSpread +
-                spreadIncreasePerShot,
-                0f,
-                maxSpread
-            );
+        currentSpread = Mathf.Clamp(
+            currentSpread + spreadIncreasePerShot,
+            0f,
+            maxSpread
+        );
 
         if (cameraRecoil != null)
-        {
-            cameraRecoil.Fire(
-                recoilPreset,
-                IsAiming,
-                recoilIntensityMultiplier
-            );
-        }
+            cameraRecoil.Fire(recoilPreset, IsAiming, recoilIntensityMultiplier);
 
         if (weaponRecoil != null)
-        {
-            weaponRecoil.Fire(
-                recoilPreset,
-                IsAiming,
-                recoilIntensityMultiplier
-            );
-        }
+            weaponRecoil.Fire(recoilPreset, IsAiming, recoilIntensityMultiplier);
 
         PlaySound(shootSound);
 
@@ -1097,40 +831,26 @@ public class Weapon : MonoBehaviour
         if (requiresBoltActionAfterFire)
         {
             isChambering = true;
-
-            chamberReadyTime =
-                Time.time +
-                boltActionDuration;
-
+            chamberReadyTime = Time.time + boltActionDuration;
             boltActionActive = true;
 
             if (weaponAnimator != null)
-            {
-                weaponAnimator.SetBool(
-                    "BoltAction",
-                    true
-                );
-            }
+                weaponAnimator.SetBool("BoltAction", true);
         }
     }
 
     private IEnumerator PlayBoltActionAfterFire()
     {
-        yield return new WaitForSeconds(
-            boltActionDelay
-        );
+        yield return new WaitForSeconds(boltActionDelay);
 
         if (weaponAnimator != null)
         {
             Debug.Log(
                 "[Weapon] Enviando BoltAction después de " +
-                boltActionDelay +
-                " segundos."
+                boltActionDelay + " segundos."
             );
 
-            weaponAnimator.SetTrigger(
-                "BoltAction"
-            );
+            weaponAnimator.SetTrigger("BoltAction");
         }
     }
 
@@ -1138,43 +858,27 @@ public class Weapon : MonoBehaviour
     // RECARGA
     // =========================================================
 
-    private void OnReload(
-        InputAction.CallbackContext context
-    )
+    private void OnReload(InputAction.CallbackContext context)
     {
         if (PauseController.LocalPlayerPaused)
             return;
 
-        if (InputLocked)
-            return;
-
-        if (isReloading)
+        if (InputLocked || isReloading)
             return;
 
         if (currentAmmo == maxAmmo)
             return;
 
-        if (
-            UsesLimitedReserve &&
-            ReserveAmmo <= 0
-        )
-        {
+        if (UsesLimitedReserve && ReserveAmmo <= 0)
             return;
-        }
 
-        if (
-            playerMovement != null &&
-            playerMovement.IsSprinting
-        )
-        {
+        if (playerMovement != null && playerMovement.IsSprinting)
             return;
-        }
 
         IsAiming = false;
         isReloading = true;
 
-        bool wasEmpty =
-            currentAmmo == 0;
+        bool wasEmpty = currentAmmo == 0;
 
         if (wasEmpty)
             PlaySound(reloadEmptySound);
@@ -1183,40 +887,20 @@ public class Weapon : MonoBehaviour
 
         if (weaponAnimator != null)
         {
-            weaponAnimator.SetBool(
-                "IsEmpty",
-                wasEmpty
-            );
+            weaponAnimator.SetBool("IsEmpty", wasEmpty);
+            weaponAnimator.SetBool("MultiPartReload", usesMultiPartReload);
 
-            weaponAnimator.SetBool(
-                "MultiPartReload",
-                usesMultiPartReload
-            );
+            shellLoading = usesMultiPartReload && currentAmmo < maxAmmo;
+            weaponAnimator.SetBool("ShellLoading", shellLoading);
 
-            shellLoading =
-                usesMultiPartReload &&
-                currentAmmo < maxAmmo;
-
-            weaponAnimator.SetBool(
-                "ShellLoading",
-                shellLoading
-            );
-
-            weaponAnimator.SetTrigger(
-                "Reload"
-            );
+            weaponAnimator.SetTrigger("Reload");
         }
     }
 
     private void PlaySound(AudioClip clip)
     {
-        if (
-            audioSource != null &&
-            clip != null
-        )
-        {
+        if (audioSource != null && clip != null)
             audioSource.PlayOneShot(clip);
-        }
     }
 
     // =========================================================
@@ -1227,17 +911,8 @@ public class Weapon : MonoBehaviour
     {
         if (firesMultiplePellets)
         {
-            for (
-                int i = 0;
-                i < pelletsPerShot;
-                i++
-            )
-            {
-                FirePellet(
-                    currentSpread +
-                    pelletSpreadAngle
-                );
-            }
+            for (int i = 0; i < pelletsPerShot; i++)
+                FirePellet(currentSpread + pelletSpreadAngle);
         }
         else
         {
@@ -1245,34 +920,26 @@ public class Weapon : MonoBehaviour
         }
     }
 
-    private void FirePellet(
-        float spreadDegrees
-    )
+    private void FirePellet(float spreadDegrees)
     {
-        Vector3 spreadDirection =
-            ApplySpreadToDirection(
-                playerCamera.transform.forward,
-                spreadDegrees
-            );
+        if (playerCamera == null)
+            return;
 
-        Ray ray =
-            new Ray(
-                playerCamera.transform.position,
-                spreadDirection
-            );
+        Vector3 spreadDirection = ApplySpreadToDirection(
+            playerCamera.transform.forward,
+            spreadDegrees
+        );
 
-        RaycastHit[] hits =
-            Physics.RaycastAll(
-                ray,
-                range
-            );
+        Ray ray = new Ray(
+            playerCamera.transform.position,
+            spreadDirection
+        );
+
+        RaycastHit[] hits = Physics.RaycastAll(ray, range);
 
         System.Array.Sort(
             hits,
-            (a, b) =>
-                a.distance.CompareTo(
-                    b.distance
-                )
+            (a, b) => a.distance.CompareTo(b.distance)
         );
 
         bool validHitFound = false;
@@ -1286,13 +953,8 @@ public class Weapon : MonoBehaviour
             if (playerHit != null)
                 continue;
 
-            if (
-                hit.collider.transform.root ==
-                transform.root
-            )
-            {
+            if (hit.collider.transform.root == transform.root)
                 continue;
-            }
 
             if (
                 (bulletIgnoredLayers.value &
@@ -1317,36 +979,20 @@ public class Weapon : MonoBehaviour
         {
             RaycastHit hit = validHit;
 
-            Debug.Log(
-                "Impacto en: " +
-                hit.collider.name
-            );
+            Debug.Log("Impacto en: " + hit.collider.name);
 
-            Debug.DrawLine(
-                firePoint.position,
-                hit.point,
-                Color.red,
-                1f
-            );
+            if (firePoint != null)
+                Debug.DrawLine(firePoint.position, hit.point, Color.red, 1f);
 
-            SpawnBulletTrail(
-                hit.point
-            );
+            SpawnBulletTrail(hit.point);
 
-            // =====================================================
-            // ZOMBIE
-            // =====================================================
-
+            // Daño a zombies.
             ZombieHealth zombieHealth =
                 hit.collider.GetComponentInParent<ZombieHealth>();
 
             if (zombieHealth != null)
             {
-                int finalDamage =
-                    ApplyDistanceFalloff(
-                        damage,
-                        hit.distance
-                    );
+                int finalDamage = ApplyDistanceFalloff(damage, hit.distance);
 
                 zombieHealth.TakeDamage(
                     finalDamage,
@@ -1360,10 +1006,8 @@ public class Weapon : MonoBehaviour
                 return;
             }
 
-            // =====================================================
-            // EASTER EGG
-            // =====================================================
-
+            // EASTER EGG: permite que los disparos dañen los objetos
+            // que tengan el componente EasterEgg en el collider o sus padres.
             EasterEgg easterEgg =
                 hit.collider.GetComponentInParent<EasterEgg>();
 
@@ -1381,10 +1025,7 @@ public class Weapon : MonoBehaviour
                 return;
             }
 
-            // =====================================================
-            // DECAL
-            // =====================================================
-
+            // Impacto normal contra el escenario.
             if (DecalManager.Instance != null)
             {
                 DecalManager.Instance.SpawnBulletHole(
@@ -1397,15 +1038,13 @@ public class Weapon : MonoBehaviour
         else
         {
             Vector3 missPoint =
-                firePoint.position +
-                spreadDirection * range;
+                (firePoint != null ? firePoint.position : ray.origin)
+                + spreadDirection * range;
 
-            SpawnBulletTrail(
-                missPoint
-            );
+            SpawnBulletTrail(missPoint);
 
             Debug.DrawRay(
-                firePoint.position,
+                ray.origin,
                 spreadDirection * range,
                 Color.yellow,
                 1f
@@ -1417,27 +1056,18 @@ public class Weapon : MonoBehaviour
     // BULLET TRAIL
     // =========================================================
 
-    private void SpawnBulletTrail(
-        Vector3 targetPoint
-    )
+    private void SpawnBulletTrail(Vector3 targetPoint)
     {
-        if (
-            bulletTrailPrefab == null ||
-            firePoint == null
-        )
-        {
+        if (bulletTrailPrefab == null || firePoint == null)
             return;
-        }
 
-        GameObject trailObject =
-            Instantiate(
-                bulletTrailPrefab,
-                firePoint.position,
-                Quaternion.identity
-            );
+        GameObject trailObject = Instantiate(
+            bulletTrailPrefab,
+            firePoint.position,
+            Quaternion.identity
+        );
 
-        BulletTrail trail =
-            trailObject.GetComponent<BulletTrail>();
+        BulletTrail trail = trailObject.GetComponent<BulletTrail>();
 
         if (trail != null)
             trail.Init(targetPoint);
@@ -1455,26 +1085,15 @@ public class Weapon : MonoBehaviour
         if (spreadDegrees <= 0f)
             return baseDirection;
 
-        float randomX =
-            Random.Range(
-                -spreadDegrees,
-                spreadDegrees
-            );
+        float randomX = Random.Range(-spreadDegrees, spreadDegrees);
+        float randomY = Random.Range(-spreadDegrees, spreadDegrees);
 
-        float randomY =
-            Random.Range(
-                -spreadDegrees,
-                spreadDegrees
-            );
+        Quaternion spreadRotation = Quaternion.Euler(
+            randomY,
+            randomX,
+            0f
+        );
 
-        Quaternion spreadRotation =
-            Quaternion.Euler(
-                randomY,
-                randomX,
-                0f
-            );
-
-        return spreadRotation *
-               baseDirection;
+        return spreadRotation * baseDirection;
     }
 }
