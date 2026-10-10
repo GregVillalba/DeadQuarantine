@@ -1006,8 +1006,9 @@ public class Weapon : MonoBehaviour
                 return;
             }
 
+            
             // EASTER EGG: permite que los disparos dañen los objetos
-            // que tengan el componente EasterEgg en el collider o sus padres.
+            // sin otorgar puntos por impacto.
             EasterEgg easterEgg =
                 hit.collider.GetComponentInParent<EasterEgg>();
 
@@ -1019,11 +1020,9 @@ public class Weapon : MonoBehaviour
                     hit.normal
                 );
 
-                if (playerScore != null)
-                    playerScore.RegistrarImpactoServerRpc();
-
                 return;
             }
+
 
             // Impacto normal contra el escenario.
             if (DecalManager.Instance != null)
