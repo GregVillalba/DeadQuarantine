@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.SceneManagement;
 using Unity.Netcode;
 
 public class AchievementsManager : MonoBehaviour
@@ -28,9 +29,33 @@ public class AchievementsManager : MonoBehaviour
     [SerializeField]
     private AchievementDatabase achievementDatabase;
 
+    [Header("Restricciones de logros")]
+    [SerializeField]
+    private string escenaSinLogros = "TutorialScene";
+
     private PlayerScore playerScore;
     private string rutaArchivo;
     private AchievementsData datos;
+
+    // ============================================================
+    // COMPROBAR SI LOS LOGROS ESTÁN HABILITADOS
+    // ============================================================
+
+    public bool LogrosHabilitados
+    {
+        get
+        {
+            return SceneManager.GetActiveScene().name != escenaSinLogros;
+        }
+    }
+
+    private bool BloqueoLogrosActivo()
+    {
+        if (LogrosHabilitados)
+            return false;
+
+        return true;
+    }
 
     // ============================================================
     // DATOS LOCALES Y SERIALIZACIÓN
@@ -49,8 +74,6 @@ public class AchievementsManager : MonoBehaviour
     public class AchievementsData
     {
         public List<AchievementData> logros = new List<AchievementData>();
-
-        // IDs únicos de Easter Eggs encontrados.
         public List<string> easterEggsEncontrados = new List<string>();
     }
 
@@ -92,6 +115,11 @@ public class AchievementsManager : MonoBehaviour
         CargarProgreso();
         InicializarBaseDeDatos();
         InicializarLogros();
+
+        Debug.Log(
+            "[ACHIEVEMENTS] Gestor inicializado. Logros habilitados: " +
+            LogrosHabilitados
+        );
     }
 
     // ============================================================
@@ -147,10 +175,15 @@ public class AchievementsManager : MonoBehaviour
         playerScore.ZombiesEliminadosNetwork.OnValueChanged +=
             OnZombiesEliminadosChanged;
 
-        OnZombiesEliminadosChanged(
-            0,
-            playerScore.ZombiesEliminadosNetwork.Value
-        );
+        // Evita importar las bajas acumuladas durante el tutorial
+        // como progreso inicial de logros.
+        if (!BloqueoLogrosActivo())
+        {
+            OnZombiesEliminadosChanged(
+                0,
+                playerScore.ZombiesEliminadosNetwork.Value
+            );
+        }
 
         Debug.Log("[ACHIEVEMENTS] PlayerScore encontrado.");
     }
@@ -232,6 +265,9 @@ public class AchievementsManager : MonoBehaviour
 
     public bool RegistrarEasterEggEncontrado(string easterEggId)
     {
+        if (BloqueoLogrosActivo())
+            return false;
+
         if (datos == null)
         {
             Debug.LogError(
@@ -254,7 +290,6 @@ public class AchievementsManager : MonoBehaviour
             datos.easterEggsEncontrados = new List<string>();
         }
 
-        // No contar de nuevo un huevo ya encontrado.
         if (datos.easterEggsEncontrados.Contains(easterEggId))
         {
             Debug.Log(
@@ -265,7 +300,6 @@ public class AchievementsManager : MonoBehaviour
 
         datos.easterEggsEncontrados.Add(easterEggId);
 
-        // Guardar el ID antes de incrementar el logro.
         GuardarProgreso();
 
         SumarProgreso(
@@ -289,6 +323,9 @@ public class AchievementsManager : MonoBehaviour
         int valorNuevo
     )
     {
+        if (BloqueoLogrosActivo())
+            return;
+
         int zombiesNuevos = valorNuevo - valorAnterior;
 
         if (zombiesNuevos <= 0)
@@ -306,6 +343,9 @@ public class AchievementsManager : MonoBehaviour
 
     public void SumarProgreso(AchievementId id, int cantidad)
     {
+        if (BloqueoLogrosActivo())
+            return;
+
         if (cantidad <= 0)
             return;
 
@@ -344,7 +384,6 @@ public class AchievementsManager : MonoBehaviour
                     AchievementRank.Ninguno
                 );
 
-                // Enviar logro directo al backend/MySQL.
                 ReportarProgresoServidor(
                     id,
                     AchievementRank.Ninguno
@@ -367,6 +406,9 @@ public class AchievementsManager : MonoBehaviour
 
     private void ActualizarRangoDesdeProgreso(AchievementId id)
     {
+        if (BloqueoLogrosActivo())
+            return;
+
         AchievementData logro = ObtenerLogro(id);
         AchievementDefinition definicion = ObtenerDefinicion(id);
 
@@ -411,10 +453,7 @@ public class AchievementsManager : MonoBehaviour
             );
         }
 
-        // Mostrar el aviso una sola vez.
         MostrarLogroEnHUD(id, nuevoRango);
-
-        // Notificar el sublogro a MySQL.
         ReportarProgresoServidor(id, nuevoRango);
     }
 
@@ -460,6 +499,9 @@ public class AchievementsManager : MonoBehaviour
         AchievementRank rango
     )
     {
+        if (BloqueoLogrosActivo())
+            return;
+
         if (rango == AchievementRank.Ninguno)
             return;
 
@@ -506,8 +548,6 @@ public class AchievementsManager : MonoBehaviour
 
         MostrarLogroEnHUD(id, rango);
         GuardarProgreso();
-
-        // Notificar sublogro a MySQL.
         ReportarProgresoServidor(id, rango);
     }
 
@@ -517,6 +557,9 @@ public class AchievementsManager : MonoBehaviour
 
     public void Desbloquear(AchievementId id)
     {
+        if (BloqueoLogrosActivo())
+            return;
+
         AchievementData logro = ObtenerLogro(id);
         AchievementDefinition definicion = ObtenerDefinicion(id);
 
@@ -590,7 +633,6 @@ public class AchievementsManager : MonoBehaviour
 
         MostrarLogroEnHUD(id, rango);
         GuardarProgreso();
-
         ReportarProgresoServidor(id, rango);
     }
 
@@ -603,13 +645,16 @@ public class AchievementsManager : MonoBehaviour
         AchievementRank rango
     )
     {
+        if (BloqueoLogrosActivo())
+            return;
+
         string sublogroClave = ObtenerClaveSublogro(id, rango);
 
         if (string.IsNullOrEmpty(sublogroClave))
         {
             Debug.LogWarning(
-                $"[ACHIEVEMENTS API] No se encontró clave asignada para: " +
-                $"{id} - {rango}"
+                "[ACHIEVEMENTS API] No se encontró clave asignada para: " +
+                id + " - " + rango
             );
             return;
         }
@@ -622,7 +667,6 @@ public class AchievementsManager : MonoBehaviour
         AchievementRank rango
     )
     {
-        // Mapea los enums locales a las claves de MySQL.
         switch (id)
         {
             case AchievementId.DerrotadorSupremo:
@@ -670,6 +714,10 @@ public class AchievementsManager : MonoBehaviour
 
     private IEnumerator EnviarSublogroCoroutine(string sublogroClave)
     {
+        // No iniciar el envío si la escena activa es el tutorial.
+        if (BloqueoLogrosActivo())
+            yield break;
+
         LogroApiPayload payload = new LogroApiPayload
         {
             username = this.usernameJugador,
@@ -700,8 +748,8 @@ public class AchievementsManager : MonoBehaviour
                     );
 
                 Debug.Log(
-                    $"[ACHIEVEMENTS API] Servidor actualizó sublogro " +
-                    $"'{sublogroClave}' para {usernameJugador}."
+                    "[ACHIEVEMENTS API] Servidor actualizó sublogro '" +
+                    sublogroClave + "' para " + usernameJugador + "."
                 );
 
                 if (respuesta != null &&
@@ -720,7 +768,8 @@ public class AchievementsManager : MonoBehaviour
             {
                 Debug.LogWarning(
                     "[ACHIEVEMENTS API] Falló al sincronizar en la nube " +
-                    $"({request.error}). Progreso guardado únicamente en local."
+                    "(" + request.error +
+                    "). Progreso guardado únicamente en local."
                 );
             }
         }
@@ -759,6 +808,9 @@ public class AchievementsManager : MonoBehaviour
         AchievementRank rango
     )
     {
+        if (BloqueoLogrosActivo())
+            return;
+
         if (GameplayPopupsController.Instance == null)
         {
             Debug.LogWarning(
@@ -878,7 +930,6 @@ public class AchievementsManager : MonoBehaviour
         if (datos.logros == null)
             datos.logros = new List<AchievementData>();
 
-        // Compatibilidad con archivos JSON anteriores.
         if (datos.easterEggsEncontrados == null)
         {
             datos.easterEggsEncontrados = new List<string>();
