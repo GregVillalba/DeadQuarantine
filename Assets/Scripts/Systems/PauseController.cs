@@ -66,6 +66,9 @@ public class PauseController : NetworkBehaviour
     [SerializeField] private GameObject panelCompaneroAbandono;
     [SerializeField] private float duracionPanelCompaneroAbandono = 4f;
 
+    [Header("Guardar Score (Modo Supervivencia)")]
+    [SerializeField] private GuardarScoreCartelUI cartelGuardarScore;
+
     private bool estaPausado;
 
     public bool EstaPausado => estaPausado;
@@ -569,7 +572,62 @@ public class PauseController : NetworkBehaviour
             popupDerrota.SetActive(false);
 
         pendienteAccionEsVictoria = false;
-        MostrarValoracion();
+
+        // Detectar si estamos en Modo Supervivencia / Infinitas
+        bool esModoSupervivencia = (RoundManager.Instance != null && RoundManager.Instance.IsInfiniteMode)
+            || (ConfiguracionPartidaSeleccionada.Instancia != null &&
+                ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado == ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia);
+
+        // Obtener los datos actuales de la partida
+        int puntajeFinal = (playerScore != null) ? playerScore.ScoreNetwork.Value : 0;
+        string nombreFinal = PlayerPrefs.GetString("PlayerName", "Superviviente"); // o desde tu script de usuario
+        string modoFinal = "Singleplayer";
+
+        if (esModoSupervivencia && cartelGuardarScore != null)
+        {
+            cartelGuardarScore.AbrirCartel(nombreFinal, puntajeFinal, modoFinal, () =>
+            {
+                // Al terminar (guardado o cancelado), continúa con la valoración
+                MostrarValoracion();
+            });
+        }
+        else
+        {
+            MostrarValoracion();
+        }
+    }
+
+    public void OnVolverAlMenuDesdeDerrota()
+    {
+        if (!IsOwner)
+            return;
+
+        // Detectar si la partida que acaba de terminar fue en Modo Supervivencia / Infinitas
+        bool esModoSupervivencia = (RoundManager.Instance != null && RoundManager.Instance.IsInfiniteMode)
+            || (ConfiguracionPartidaSeleccionada.Instancia != null &&
+                ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado == ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia);
+
+        if (esModoSupervivencia && cartelGuardarScore != null)
+        {
+            // Ocultar el popup de derrota para que quede el foco en el cartel
+            if (popupDerrota != null)
+                popupDerrota.SetActive(false);
+
+            int puntajeFinal = (playerScore != null) ? playerScore.ScoreNetwork.Value : 0;
+            string nombreFinal = PlayerPrefs.GetString("PlayerName", "Superviviente");
+            string modoFinal = "Singleplayer";
+
+            // Abrir el cartel pasando la acción Salir() para que se ejecute al terminar
+            cartelGuardarScore.AbrirCartel(nombreFinal, puntajeFinal, modoFinal, () =>
+            {
+                Salir();
+            });
+        }
+        else
+        {
+            // Si no es supervivencia, vuelve directo al menú
+            Salir();
+        }
     }
 
     public void ContinuarDespuesDeRating()
@@ -679,4 +737,7 @@ public class PauseController : NetworkBehaviour
         if (panelCompaneroAbandono != null)
             panelCompaneroAbandono.SetActive(false);
     }
+
+
+
 }
