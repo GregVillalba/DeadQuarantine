@@ -117,6 +117,10 @@ public class GrenadeThrow : MonoBehaviour
         if (Salud == null || !Salud.IsOwner)
             return;
 
+        // Abatido no puede tirar utilidades.
+        if (Salud.IsDowned)
+            return;
+
         if (!TieneGranadas)
             return;
 

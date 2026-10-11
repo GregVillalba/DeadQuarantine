@@ -3,6 +3,7 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using Unity.Netcode;
+using UnityEngine.InputSystem;
 
 public class HUDController : MonoBehaviour
 {
@@ -56,6 +57,14 @@ public class HUDController : MonoBehaviour
     [Tooltip("Tinte del icono de una pieza rota cuando la oferta no tiene Icono Hud Roto.")]
     [SerializeField] private Color colorBlindajeRotoSinIcono = new Color(1f, 0.3f, 0.3f, 0.6f);
 
+    [Header("Cuchillo en el HUD")]
+    [Tooltip("Marco del slot del cuchillo. Si queda vacío se busca el objeto llamado Slot05; si tampoco existe se duplica el marco de Slot02.")]
+    [SerializeField] private Image slotCuchillo;
+    [Tooltip("Icono del cuchillo.")]
+    [SerializeField] private Sprite iconoCuchillo;
+    [Tooltip("Nombre de la acción del cuchillo en PlayerControls. Si queda vacío se usa \"Melee\" (la que usa MeleeAttack). Si no existe, se busca la acción que por defecto usa la tecla V.")]
+    [SerializeField] private string nombreAccionCuchillo = "";
+
     [Header("Munición")]
     [SerializeField] private TextMeshProUGUI ammoText;
     [SerializeField] private TextMeshProUGUI ammoMaxText;
@@ -101,6 +110,17 @@ public class HUDController : MonoBehaviour
 
     [SerializeField] private float crosshairMinGap = 40f;
     [SerializeField] private float crosshairMaxGap = 140f;
+
+    [Tooltip("Dispersión (en grados) con la que la mira tiene su tamaño mínimo (Crosshair Min Gap).")]
+    [SerializeField] private float crosshairAnguloBase = 5f;
+    [Tooltip("Cuánto se abre la mira por cada grado de dispersión del arma. Una escopeta (con el abanico de perdigones) " +
+             "tiene más grados que una pistola, por eso su mira sale más grande. Sube este valor para exagerar la diferencia.")]
+    [SerializeField] private float crosshairGapPorGrado = 3.33f;
+
+    [Header("Diagnóstico crosshair")]
+    [Tooltip("Escribe en la consola (cada 0.5 s) qué arma lee la mira y qué dispersión/tamaño calcula. Apagar al terminar.")]
+    [SerializeField] private bool debugCrosshair = true;
+    private float proximoLogCrosshair;
 
     [Header("Hit Marker")]
     [SerializeField] private GameObject hitMarker;
@@ -227,6 +247,10 @@ public class HUDController : MonoBehaviour
     {
         weapon = newWeapon;
 
+        if (debugCrosshair)
+            Debug.Log("[HUD] SetWeapon -> " + (newWeapon != null ? newWeapon.WeaponName + " (" + newWeapon.gameObject.name + ")" : "NULL") +
+                      " | HUD: " + transform.root.name + "/" + name, this);
+
         // Si la imagen del icono pertenece a un objeto con ImageWeapon (arma + accesorios), ese script ya la
         // maneja solo: no se le pisa el sprite (antes se le ponía null y el icono desaparecía).
         // Solo se usa el sprite suelto cuando es una imagen común y hay un sprite para poner.
@@ -281,6 +305,11 @@ public class HUDController : MonoBehaviour
     private SlotHud hudGranada;
     private SlotHud hudChaleco;
     private SlotHud hudCasco;
+    private SlotHud hudCuchillo;
+    private PlayerControls controlesCuchillo;
+    private InputAction accionCuchillo;
+    private string teclaCuchillo = string.Empty;
+    private float proximoRefrescoTeclaCuchillo;
     private bool slotsCreados;
     private GrenadeThrow grenadeThrow;
 
@@ -299,6 +328,7 @@ public class HUDController : MonoBehaviour
         UpdateSlotGranada();
         UpdateSlotBlindaje(PiezaBlindaje.Chaleco, slotChaleco, hudChaleco);
         UpdateSlotBlindaje(PiezaBlindaje.Casco, slotCasco, hudCasco);
+        UpdateSlotCuchillo();
     }
 
     private void UpdateSlotCura()
@@ -436,12 +466,91 @@ public class HUDController : MonoBehaviour
         if (slotCasco == null)
             slotCasco = ClonarMarco(slotGranada, "Slot04", 2);
 
+        // Cuchillo: Slot05 del HUD. Si no existe se duplica el marco del slot de granadas.
+        if (slotCuchillo == null)
+            slotCuchillo = BuscarImagenPorNombre("Slot05");
+
+        if (slotCuchillo == null)
+            slotCuchillo = ClonarMarco(slotGranada, "Slot05", 3);
+
         grenadeThrow = transform.root.GetComponentInChildren<GrenadeThrow>(true);
 
         hudCura = CrearSlotHud(slotCuras);
         hudGranada = CrearSlotHud(slotGranada);
         hudChaleco = CrearSlotHud(slotChaleco);
         hudCasco = CrearSlotHud(slotCasco);
+        hudCuchillo = CrearSlotHud(slotCuchillo);
+        PrepararAccionCuchillo();
+    }
+
+    // ---------------------------------------------------------
+    // Cuchillo: icono + tecla vinculada al control
+    // ---------------------------------------------------------
+
+    private void OnDestroy()
+    {
+        if (controlesCuchillo != null)
+        {
+            controlesCuchillo.Dispose();
+            controlesCuchillo = null;
+        }
+    }
+
+    // Carga los controles con las teclas reasignadas del jugador y busca la acción del cuchillo.
+    private void PrepararAccionCuchillo()
+    {
+        controlesCuchillo = new PlayerControls();
+        ConfiguracionesJuego.CargarRebinds(controlesCuchillo.asset);
+
+        InputAction accion = null;
+
+        // La acción del cuchillo en PlayerControls se llama "Melee" (es la que usa MeleeAttack).
+        string nombre = string.IsNullOrEmpty(nombreAccionCuchillo) ? "Melee" : nombreAccionCuchillo;
+        accion = controlesCuchillo.asset.FindAction(nombre, false);
+
+        // Si no existe: la acción que por defecto usa la tecla V.
+        if (accion == null)
+            accion = BuscarAccionConTeclaPorDefecto("<Keyboard>/v");
+
+        accionCuchillo = accion;
+
+        if (accionCuchillo == null)
+            Debug.LogWarning("[HUDController] No se encontró la acción del cuchillo. Escribí su nombre en 'Nombre Accion Cuchillo'.");
+    }
+
+    private InputAction BuscarAccionConTeclaPorDefecto(string ruta)
+    {
+        foreach (InputAction accion in controlesCuchillo.asset)
+        {
+            foreach (InputBinding binding in accion.bindings)
+            {
+                // path es la tecla por defecto: no cambia aunque el jugador reasigne el control.
+                if (string.Equals(binding.path, ruta, System.StringComparison.OrdinalIgnoreCase))
+                    return accion;
+            }
+        }
+
+        return null;
+    }
+
+    private void UpdateSlotCuchillo()
+    {
+        if (hudCuchillo == null)
+            return;
+
+        MostrarIcono(hudCuchillo, iconoCuchillo);
+        hudCuchillo.cantidad.text = string.Empty;
+
+        // Cada tanto se vuelven a leer las teclas guardadas, así el cambio de control se ve sin reiniciar.
+        if (accionCuchillo != null && Time.unscaledTime >= proximoRefrescoTeclaCuchillo)
+        {
+            proximoRefrescoTeclaCuchillo = Time.unscaledTime + 0.5f;
+            ConfiguracionesJuego.CargarRebinds(controlesCuchillo.asset);
+            teclaCuchillo = accionCuchillo.GetBindingDisplayString();
+        }
+
+        hudCuchillo.tecla.text = teclaCuchillo;
+        hudCuchillo.tecla.alpha = 1f;
     }
 
     // Duplica un marco de slot y lo corre hacia la derecha (si su contenedor no lo acomoda solo).
@@ -841,7 +950,16 @@ public class HUDController : MonoBehaviour
     {
         if (weapon == null ||
             crosshairRoot == null)
+        {
+            if (debugCrosshair && Time.unscaledTime >= proximoLogCrosshair)
+            {
+                proximoLogCrosshair = Time.unscaledTime + 2f;
+                Debug.LogWarning("[Crosshair] No se actualiza: weapon=" + (weapon != null ? weapon.name : "NULL") +
+                                 " | crosshairRoot=" + (crosshairRoot != null ? crosshairRoot.name : "NULL"), this);
+            }
+
             return;
+        }
 
         if (weapon.IsAiming)
         {
@@ -851,12 +969,25 @@ public class HUDController : MonoBehaviour
 
         crosshairRoot.SetActive(true);
 
+        // El tamaño sale de la dispersión real del arma en grados (incluye el abanico de la escopeta),
+        // así un arma con más dispersión tiene la mira más grande.
         float gap =
-            Mathf.Lerp(
+            Mathf.Clamp(
+                crosshairMinGap +
+                (weapon.CurrentSpreadAngle - crosshairAnguloBase) * crosshairGapPorGrado,
                 crosshairMinGap,
-                crosshairMaxGap,
-                weapon.CurrentSpreadNormalized
+                crosshairMaxGap
             );
+
+        if (debugCrosshair && Time.unscaledTime >= proximoLogCrosshair)
+        {
+            proximoLogCrosshair = Time.unscaledTime + 0.5f;
+            Debug.Log("[Crosshair] arma=" + weapon.WeaponName + " (" + weapon.gameObject.name + ")" +
+                      " | weaponEnabled=" + weapon.enabled +
+                      " | angulo=" + weapon.CurrentSpreadAngle.ToString("F1") +
+                      " | gap=" + gap.ToString("F0") +
+                      " | dashTop=" + (dashTop != null ? "ok" : "NULL"), this);
+        }
 
         if (dashTop != null)
         {

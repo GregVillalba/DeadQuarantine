@@ -280,6 +280,9 @@ public class PlayerMovement : NetworkBehaviour
             context.ReadValue<Vector2>();
     }
 
+    // Abatido: la cámara queda agachada y no puede saltar (ni hacer parkour).
+    private bool EstaAbatido => playerHealth != null && playerHealth.IsDowned;
+
     private void OnJump(
         InputAction.CallbackContext context
     )
@@ -288,6 +291,9 @@ public class PlayerMovement : NetworkBehaviour
         return;
 
         if (MovementLocked || PauseController.LocalPlayerPaused)
+            return;
+
+        if (EstaAbatido)
             return;
 
         if (isParkouring)
@@ -1682,9 +1688,10 @@ public class PlayerMovement : NetworkBehaviour
         else
         {
             // Con el movimiento bloqueado (pausa, tienda...) no se acepta agacharse ni pararse: se mantiene la postura.
-            wantsToCrouch = MovementLocked
+            // Abatido: queda agachado y no puede pararse hasta que se levanta.
+            wantsToCrouch = EstaAbatido || (MovementLocked
                 ? IsCrouching
-                : controls.Player.Crouch.IsPressed();
+                : controls.Player.Crouch.IsPressed());
         }
 
         if (

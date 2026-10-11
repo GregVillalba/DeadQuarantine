@@ -67,6 +67,13 @@ public class WeaponSwitcher : MonoBehaviour
     private int pendingIndex = -1;
     private bool isSwitching;
     private int holsterLayerIndex = -1;
+
+    // Estado abatido: el jugador queda obligado a usar el arma inicial y al levantarse recupera la que tenía.
+    private PlayerHealth saludJugador;
+    private int armaInicialIndex = -1;
+    private int armaAntesDeAbatido = -1;
+    private bool abatido;
+    private Coroutine rutinaAbatido;
     public Weapon CurrentWeapon => slots[currentIndex].weaponComponent;
     public int CurrentWeaponIndex => currentIndex;
 
@@ -138,6 +145,10 @@ public class WeaponSwitcher : MonoBehaviour
     private void OnDestroy()
     {
         ConfiguracionesJuego.CambiosAplicados -= OnCambiosAplicados;
+
+        if (saludJugador != null)
+            saludJugador.OnStateChanged -= OnEstadoJugadorCambio;
+
         controls?.Dispose();
     }
 
@@ -165,6 +176,10 @@ public class WeaponSwitcher : MonoBehaviour
         }
 
         EquipWeaponImmediate(index);
+
+        // Esta es el "arma inicial" que se usa obligatoriamente al estar abatido.
+        armaInicialIndex = index;
+        SuscribirEstadoJugador();
 
         // Arranca SIEMPRE bloqueado; se libera explícitamente después.
         if (CurrentWeapon != null)
@@ -423,6 +438,116 @@ public class WeaponSwitcher : MonoBehaviour
     }
 
     // =========================================================
+    // ESTADO ABATIDO: ARMA INICIAL OBLIGATORIA
+    // =========================================================
+
+    private void SuscribirEstadoJugador()
+    {
+        saludJugador = transform.root.GetComponentInChildren<PlayerHealth>(true);
+
+        if (saludJugador == null)
+            return;
+
+        saludJugador.OnStateChanged += OnEstadoJugadorCambio;
+
+        // Si el jugador ya estaba abatido cuando arranca este componente.
+        if (saludJugador.IsOwner && saludJugador.IsDowned)
+            EntrarEnAbatido();
+    }
+
+    private void OnEstadoJugadorCambio(PlayerHealth.PlayerState anterior, PlayerHealth.PlayerState nuevo)
+    {
+        // Solo el dueño del jugador cambia su arma.
+        if (saludJugador == null || !saludJugador.IsOwner)
+            return;
+
+        if (nuevo == PlayerHealth.PlayerState.Downed)
+            EntrarEnAbatido();
+        else if (abatido)
+            SalirDeAbatido();
+    }
+
+    private void EntrarEnAbatido()
+    {
+        if (abatido)
+            return;
+
+        abatido = true;
+
+        // Se recuerda el arma que tenía (o la que estaba sacando) para devolvérsela al levantarse.
+        armaAntesDeAbatido = SelectedIndex;
+
+        ForzarEquipo(armaInicialIndex, true);
+    }
+
+    private void SalirDeAbatido()
+    {
+        abatido = false;
+
+        int destino = armaAntesDeAbatido;
+        armaAntesDeAbatido = -1;
+
+        // Vuelve al arma que tenía antes de caer (si sigue en el inventario).
+        if (destino >= 0 && IsInInventory(destino))
+            ForzarEquipo(destino, false);
+    }
+
+    // liberarInput = true: además se deja el arma lista para disparar y apuntar (al caer abatido).
+    private void ForzarEquipo(int index, bool liberarInput)
+    {
+        if (rutinaAbatido != null)
+            StopCoroutine(rutinaAbatido);
+
+        rutinaAbatido = StartCoroutine(ForzarEquipoRoutine(index, liberarInput));
+    }
+
+    private IEnumerator ForzarEquipoRoutine(int index, bool liberarInput)
+    {
+        // Si justo está cambiando de arma, espera a que termine ese cambio.
+        while (isSwitching)
+            yield return null;
+
+        if (index < 0 || index >= slots.Length)
+        {
+            rutinaAbatido = null;
+            yield break;
+        }
+
+        if (index != currentIndex)
+            RequestEquip(index, true);
+
+        // Espera a que termine el cambio. Si el Animation Event de fin de Unholster no llega
+        // (el arma quedaría desactivada y sin input), se da por terminado a mano pasado un tiempo.
+        float limite = Time.time + 3f;
+
+        while (isSwitching && Time.time < limite)
+            yield return null;
+
+        if (isSwitching && currentIndex == index)
+            NotifyUnholsterFinished();
+
+        Weapon arma = slots[index].weaponComponent;
+
+        if (arma != null && !isSwitching)
+        {
+            // Una arma que quedó bloqueada (por ejemplo desde otra pantalla o ronda) no deja disparar ni apuntar.
+            if (liberarInput)
+                arma.InputLocked = false;
+
+            if (!arma.enabled)
+                arma.enabled = true;
+
+            if (debugInventory)
+            {
+                Debug.Log("[WeaponSwitcher] Arma forzada '" + slots[index].weaponId + "' | enabled=" + arma.enabled +
+                          " | InputLocked=" + arma.InputLocked);
+            }
+        }
+
+        rutinaAbatido = null;
+    }
+
+    // =========================================================
     // PRIMER EQUIP (sin animación de holster, no hay nada que guardar)
     // =========================================================
 
@@ -441,9 +566,17 @@ public class WeaponSwitcher : MonoBehaviour
     // CAMBIO DE ARMA CON ANIMACIÓN
     // =========================================================
 
-    public void RequestEquip(int index)
+    // forzar = true: cambio obligatorio por el estado abatido (puede ir a un arma que ya no está en el inventario).
+    public void RequestEquip(int index, bool forzar = false)
     {
-        if (index < 0 || index >= slots.Length || !IsInInventory(index))
+        if (index < 0 || index >= slots.Length)
+            return;
+
+        // Abatido: el arma inicial es obligatoria, no se puede cambiar de arma.
+        if (abatido && !forzar)
+            return;
+
+        if (!forzar && !IsInInventory(index))
             return;
 
         if (index == currentIndex || isSwitching)
