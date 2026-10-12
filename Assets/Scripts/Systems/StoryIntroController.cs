@@ -4,8 +4,20 @@ using UnityEngine.SceneManagement;
 
 public class StoryIntroController : NetworkBehaviour
 {
-    [Header("Historia Singleplayer")]
-    [SerializeField] private GameObject popupHistoria;
+    [Header("1. Modo Historia (por Escenario)")]
+    [SerializeField] private GameObject popupHistoria_Laboratorio;
+    [SerializeField] private GameObject popupHistoria_Ciudad;
+    [SerializeField] private GameObject popupHistoria_Cabana;
+
+    [Header("2. Modo Ronda 5 / Normal (por Escenario)")]
+    [SerializeField] private GameObject popupRonda5_Laboratorio;
+    [SerializeField] private GameObject popupRonda5_Ciudad;
+    [SerializeField] private GameObject popupRonda5_Cabana;
+
+    [Header("3. Modo Supervivencia / Infinitas (por Escenario)")]
+    [SerializeField] private GameObject popupSupervivencia_Laboratorio;
+    [SerializeField] private GameObject popupSupervivencia_Ciudad;
+    [SerializeField] private GameObject popupSupervivencia_Cabana;
 
     [Header("HUD del jugador")]
     [SerializeField] private GameObject hud;
@@ -15,16 +27,16 @@ public class StoryIntroController : NetworkBehaviour
     [SerializeField] private PlayerLook playerLook;
 
     [Header("Cámara del arma (FPS Arms)")]
-    [SerializeField] private GameObject weaponCameraObject; // el objeto "WeaponCamera" de la Hierarchy
+    [SerializeField] private GameObject weaponCameraObject;
     private WeaponSwitcher weaponSwitcher;
 
+    private GameObject popupActivoActual;
     private bool historiaActiva;
     public bool HistoriaActiva => historiaActiva;
 
     private void Awake()
     {
-        if (popupHistoria != null)
-            popupHistoria.SetActive(false);
+        ApagarTodosLosPopups();
 
         if (playerMovement == null)
             playerMovement = GetComponent<PlayerMovement>();
@@ -59,13 +71,64 @@ public class StoryIntroController : NetworkBehaviour
 
         BloquearJugador();
 
-        if (popupHistoria != null)
-            popupHistoria.SetActive(true);
+        // 1. Obtener Modo y Escenario seleccionados en el menú
+        ConfiguracionPartidaSeleccionada.ModoJuego modo = ConfiguracionPartidaSeleccionada.ModoJuego.Ronda5;
+        ConfiguracionPartidaSeleccionada.Escenario escenario = ConfiguracionPartidaSeleccionada.Escenario.Laboratorio;
+
+        if (ConfiguracionPartidaSeleccionada.Instancia != null)
+        {
+            modo = ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado;
+            escenario = ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado;
+        }
+
+        Debug.Log($"[StoryIntro] Modo elegido: {modo} | Escenario elegido: {escenario}");
+
+        // 2. Elegir la pantalla correcta entre las 9 combinaciones
+        popupActivoActual = ObtenerPopupSegunConfiguracion(modo, escenario);
+
+        // 3. Activar la pantalla seleccionada
+        if (popupActivoActual != null)
+        {
+            popupActivoActual.SetActive(true);
+        }
+        else
+        {
+            Debug.LogWarning("[StoryIntro] No está asignado el popup para este Modo y Escenario.");
+        }
 
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
     }
 
+    private GameObject ObtenerPopupSegunConfiguracion(
+        ConfiguracionPartidaSeleccionada.ModoJuego modo,
+        ConfiguracionPartidaSeleccionada.Escenario esc)
+    {
+        switch (modo)
+        {
+            case ConfiguracionPartidaSeleccionada.ModoJuego.Historia:
+                if (esc == ConfiguracionPartidaSeleccionada.Escenario.Ciudad) return popupHistoria_Ciudad;
+                if (esc == ConfiguracionPartidaSeleccionada.Escenario.Cabana) return popupHistoria_Cabana;
+                return popupHistoria_Laboratorio;
+
+            case ConfiguracionPartidaSeleccionada.ModoJuego.Ronda5:
+                if (esc == ConfiguracionPartidaSeleccionada.Escenario.Ciudad) return popupRonda5_Ciudad;
+                if (esc == ConfiguracionPartidaSeleccionada.Escenario.Cabana) return popupRonda5_Cabana;
+                return popupRonda5_Laboratorio;
+
+            case ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia:
+                if (esc == ConfiguracionPartidaSeleccionada.Escenario.Ciudad) return popupSupervivencia_Ciudad;
+                if (esc == ConfiguracionPartidaSeleccionada.Escenario.Cabana) return popupSupervivencia_Cabana;
+                return popupSupervivencia_Laboratorio;
+
+            default:
+                return popupRonda5_Laboratorio;
+        }
+    }
+
+    /// <summary>
+    /// Asignar este método en el OnClick() del botón Aceptar/Continuar de cada una de las 9 historias.
+    /// </summary>
     public void ContinuarHistoria()
     {
         Debug.Log("[StoryIntro] ContinuarHistoria() INICIO. IsOwner=" + IsOwner + " | historiaActiva=" + historiaActiva);
@@ -75,8 +138,16 @@ public class StoryIntroController : NetworkBehaviour
 
         historiaActiva = false;
 
-        if (popupHistoria != null)
-            popupHistoria.SetActive(false);
+        // Ocultar el popup que estaba visible
+        if (popupActivoActual != null)
+        {
+            popupActivoActual.SetActive(false);
+            popupActivoActual = null;
+        }
+        else
+        {
+            ApagarTodosLosPopups();
+        }
 
         if (hud != null)
             hud.SetActive(true);
@@ -90,6 +161,21 @@ public class StoryIntroController : NetworkBehaviour
             RoundManager.Instance.StartRound(1);
 
         Debug.Log("[StoryIntro] ContinuarHistoria() FIN.");
+    }
+
+    private void ApagarTodosLosPopups()
+    {
+        if (popupHistoria_Laboratorio != null) popupHistoria_Laboratorio.SetActive(false);
+        if (popupHistoria_Ciudad != null) popupHistoria_Ciudad.SetActive(false);
+        if (popupHistoria_Cabana != null) popupHistoria_Cabana.SetActive(false);
+
+        if (popupRonda5_Laboratorio != null) popupRonda5_Laboratorio.SetActive(false);
+        if (popupRonda5_Ciudad != null) popupRonda5_Ciudad.SetActive(false);
+        if (popupRonda5_Cabana != null) popupRonda5_Cabana.SetActive(false);
+
+        if (popupSupervivencia_Laboratorio != null) popupSupervivencia_Laboratorio.SetActive(false);
+        if (popupSupervivencia_Ciudad != null) popupSupervivencia_Ciudad.SetActive(false);
+        if (popupSupervivencia_Cabana != null) popupSupervivencia_Cabana.SetActive(false);
     }
 
     private void BloquearJugador()
