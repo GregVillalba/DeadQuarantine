@@ -66,6 +66,11 @@ public class PauseController : NetworkBehaviour
     [SerializeField] private GameObject panelCompaneroAbandono;
     [SerializeField] private float duracionPanelCompaneroAbandono = 4f;
 
+    [Header("Guardar Score")]
+    [SerializeField] private GuardarScoreCartelUI cartelGuardarScore;
+    [SerializeField] private UnityEngine.UI.Button botonVolverAlMenuDerrota;
+    [SerializeField] private UnityEngine.UI.Image fondoBotonVolverDerrota; // La Image del botón para teñirla de amarillo
+
     private bool estaPausado;
 
     public bool EstaPausado => estaPausado;
@@ -157,6 +162,9 @@ public class PauseController : NetworkBehaviour
 
         if (panelCompaneroAbandono != null)
             panelCompaneroAbandono.SetActive(false);
+
+        if (cartelGuardarScore == null)
+            cartelGuardarScore = transform.root.GetComponentInChildren<GuardarScoreCartelUI>(true);
     }
 
     public void MostrarHUD()
@@ -333,6 +341,70 @@ public class PauseController : NetworkBehaviour
 
         if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null)
             weaponSwitcher.CurrentWeapon.InputLocked = false;
+    }
+
+    /// <summary>
+    /// Asignar al OnClick() del botón Volver al Menú de pantallaDerrota
+    /// </summary>
+    public void OnVolverAlMenuDesdeDerrota()
+    {
+        if (!IsOwner)
+            return;
+
+        // Detectar si estamos en Modo Supervivencia
+        bool esModoSupervivencia = (RoundManager.Instance != null && RoundManager.Instance.IsInfiniteMode)
+            || (ConfiguracionPartidaSeleccionada.Instancia != null &&
+                ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado == ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia);
+
+        if (esModoSupervivencia && cartelGuardarScore != null)
+        {
+            // 1. Deshabilitar el botón de la pantalla de derrota
+            if (botonVolverAlMenuDerrota != null)
+                botonVolverAlMenuDerrota.interactable = false;
+
+            // 2. Obtener el nombre (leyendo de CharacterRenameManager o PlayerPrefs)
+            string nombreFinal = PlayerPrefs.GetString("PLAYER_CUSTOM_USERNAME", "");
+            if (string.IsNullOrWhiteSpace(nombreFinal))
+                nombreFinal = PlayerPrefs.GetString("NOMBRE_PERSONAJE_OSCAR", "Oscar");
+
+            int puntajeFinal = (playerScore != null) ? playerScore.ScoreNetwork.Value : 0;
+            string modoFinal = "Supervivencia";
+
+            // 3. Abrir el cartel sin apagar la pantalla de derrota
+            cartelGuardarScore.AbrirCartel(nombreFinal, puntajeFinal, modoFinal, () =>
+            {
+                // Callback: Se ejecuta cuando termina de guardar (o cancela)
+                HabilitarBotonVolverConAmarillo();
+            });
+        }
+        else
+        {
+            // Si no es supervivencia o no hay cartel, salir directo
+            Salir();
+        }
+    }
+
+    private void HabilitarBotonVolverConAmarillo()
+    {
+        if (botonVolverAlMenuDerrota != null)
+        {
+            botonVolverAlMenuDerrota.interactable = true;
+
+            // Pintar el fondo del botón de color amarillo
+            if (fondoBotonVolverDerrota != null)
+            {
+                fondoBotonVolverDerrota.color = new Color(1f, 0.85f, 0.1f, 1f); // Amarillo
+            }
+            else
+            {
+                var img = botonVolverAlMenuDerrota.GetComponent<UnityEngine.UI.Image>();
+                if (img != null) img.color = new Color(1f, 0.85f, 0.1f, 1f);
+            }
+
+            // Cambiar el evento para que el próximo clic salga de inmediato al menú
+            botonVolverAlMenuDerrota.onClick.RemoveAllListeners();
+            botonVolverAlMenuDerrota.onClick.AddListener(Salir);
+        }
     }
 
     private void RestaurarEstadoJugador()
