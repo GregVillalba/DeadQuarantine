@@ -69,6 +69,10 @@ public class PlayerDamageEffects : MonoBehaviour
             playerHealth.OnHealthChanged +=
                 OnHealthChanged;
 
+            // Si el golpe lo absorbe el escudo la vida no cambia: también hace el shake de cámara.
+            playerHealth.OnEscudoDanado +=
+                StartDamageShake;
+
             UpdateVignette(
                 playerHealth.CurrentHealth.Value
             );
@@ -88,6 +92,9 @@ public class PlayerDamageEffects : MonoBehaviour
         {
             playerHealth.OnHealthChanged -=
                 OnHealthChanged;
+
+            playerHealth.OnEscudoDanado -=
+                StartDamageShake;
         }
     }
 

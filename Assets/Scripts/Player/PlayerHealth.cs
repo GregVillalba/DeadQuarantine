@@ -70,6 +70,9 @@ public partial class PlayerHealth : NetworkBehaviour
     /// <summary>Cambió el escudo de alguna pieza (compra, reparación o daño). Lo usa la tienda.</summary>
     public event Action OnBlindajeChanged;
 
+    /// <summary>El escudo de alguna pieza bajó (el escudo absorbió un golpe). Lo usa PlayerDamageEffects para el shake de cámara.</summary>
+    public event Action OnEscudoDanado;
+
     public NetworkVariable<int> Lives =
         new NetworkVariable<int>(
             1,
@@ -194,9 +197,9 @@ public partial class PlayerHealth : NetworkBehaviour
         State.OnValueChanged +=
             StateChanged;
 
-        VestShield.OnValueChanged += BlindajeChanged;
+        VestShield.OnValueChanged += EscudoPiezaChanged;
         VestShieldMax.OnValueChanged += BlindajeChanged;
-        HelmetShield.OnValueChanged += BlindajeChanged;
+        HelmetShield.OnValueChanged += EscudoPiezaChanged;
         HelmetShieldMax.OnValueChanged += BlindajeChanged;
 
         SuscribirInventario();
@@ -228,9 +231,9 @@ public partial class PlayerHealth : NetworkBehaviour
         State.OnValueChanged -=
             StateChanged;
 
-        VestShield.OnValueChanged -= BlindajeChanged;
+        VestShield.OnValueChanged -= EscudoPiezaChanged;
         VestShieldMax.OnValueChanged -= BlindajeChanged;
-        HelmetShield.OnValueChanged -= BlindajeChanged;
+        HelmetShield.OnValueChanged -= EscudoPiezaChanged;
         HelmetShieldMax.OnValueChanged -= BlindajeChanged;
 
         DesuscribirInventario();
@@ -834,6 +837,15 @@ public partial class PlayerHealth : NetworkBehaviour
 
     private void BlindajeChanged(int previousValue, int newValue)
     {
+        OnBlindajeChanged?.Invoke();
+    }
+
+    // Escudo de una pieza: si bajó, el escudo absorbió un golpe (comprar o reparar lo sube, no cuenta).
+    private void EscudoPiezaChanged(int previousValue, int newValue)
+    {
+        if (newValue < previousValue)
+            OnEscudoDanado?.Invoke();
+
         OnBlindajeChanged?.Invoke();
     }
 

@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.EventSystems;
@@ -57,6 +56,8 @@ public class Weapon : MonoBehaviour
     [SerializeField] private bool firesMultiplePellets = false;
     [SerializeField] private int pelletsPerShot = 8;
     [SerializeField] private float pelletSpreadAngle = 6f;
+    [Tooltip("0 = perdigones repartidos parejo dentro del círculo. 1 = muy concentrados hacia el centro (más como una escopeta real).")]
+    [Range(0f, 1f)] [SerializeField] private float pelletCenterBias = 0.4f;
 
     [Header("Cerrojo")]
     [SerializeField] private bool requiresBoltActionAfterFire = false;
@@ -157,6 +158,12 @@ public class Weapon : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Dispersión real del arma en grados: la del momento (quieto, moviéndose, disparando, saltando)
+    /// más el abanico de los perdigones si es una escopeta. Lo usa el HUD para el tamaño de la mira.
+    /// </summary>
+    public float CurrentSpreadAngle => currentSpread + (firesMultiplePellets ? pelletSpreadAngle : 0f);
+
     public string WeaponName => weaponName;
     public bool IsReloading => isReloading;
     public bool ShellLoading => shellLoading;
@@ -238,18 +245,36 @@ public class Weapon : MonoBehaviour
         IsAiming = false;
     }
 
-    private int ApplyDistanceFalloff(int baseDamage, float distance)
+    // Multiplicador de daño según la distancia: 1 hasta 'Damage Falloff Start', baja de forma lineal
+    // y llega a 'Min Damage Multiplier' en 'Damage Falloff End' (o más lejos).
+    private float DistanceFalloffMultiplier(float distance)
     {
         if (distance <= damageFalloffStart)
-            return baseDamage;
+            return 1f;
 
         if (distance >= damageFalloffEnd)
-            return Mathf.RoundToInt(baseDamage * minDamageMultiplier);
+            return minDamageMultiplier;
 
         float t = Mathf.InverseLerp(damageFalloffStart, damageFalloffEnd, distance);
-        float multiplier = Mathf.Lerp(1f, minDamageMultiplier, t);
+        return Mathf.Lerp(1f, minDamageMultiplier, t);
+    }
 
-        return Mathf.RoundToInt(baseDamage * multiplier);
+    private int ApplyDistanceFalloff(int baseDamage, float distance)
+    {
+        return Mathf.RoundToInt(baseDamage * DistanceFalloffMultiplier(distance));
+    }
+
+    // Daño de UN impacto antes de la distancia. Escopeta: el daño total se reparte entre los perdigones
+    // (200 de daño y 8 perdigones = 25 por perdigón). Arma normal: el daño completo.
+    private float DanoBasePorImpacto
+    {
+        get
+        {
+            if (firesMultiplePellets && pelletsPerShot > 0)
+                return damage / (float)pelletsPerShot;
+
+            return damage;
+        }
     }
 
     // =========================================================
@@ -543,6 +568,21 @@ public class Weapon : MonoBehaviour
         else
             targetSpread = spreadIdle;
 
+        if (debugSpread && Time.unscaledTime >= nextSpreadLog)
+        {
+            nextSpreadLog = Time.unscaledTime + 0.5f;
+
+            Vector3 v = characterController.velocity;
+            Debug.Log("[Spread] " + weaponName +
+                      " | velHoriz=" + new Vector2(v.x, v.z).magnitude.ToString("F2") +
+                      " | agachado=" + (playerMovement != null && playerMovement.IsCrouching) +
+                      " | moviendose=" + IsMovingOnGround() +
+                      " | objetivo=" + targetSpread.ToString("F1") +
+                      " | actual=" + currentSpread.ToString("F1") +
+                      " | idle=" + spreadIdle + " moving=" + spreadMoving + " crouch=" + spreadCrouching +
+                      " | recuperacion=" + spreadRecoverySpeed, this);
+        }
+
         float recoverySpeed = landingRecoveryTimer > 0f
             ? landingRecoverySpeed
             : spreadRecoverySpeed;
@@ -612,6 +652,10 @@ public class Weapon : MonoBehaviour
     [Header("Diagnóstico")]
     [Tooltip("Muestra información del parámetro Running en la consola.")]
     [SerializeField] private bool debugRunning = false;
+
+    [Tooltip("Escribe en la consola (cada 0.5 s) por qué la dispersión sube o no al caminar. Apagar al terminar.")]
+    [SerializeField] private bool debugSpread = true;
+    private float nextSpreadLog;
 
     private bool AnimatorHasRunningParam()
     {
@@ -912,7 +956,7 @@ public class Weapon : MonoBehaviour
         if (firesMultiplePellets)
         {
             for (int i = 0; i < pelletsPerShot; i++)
-                FirePellet(currentSpread + pelletSpreadAngle);
+                FirePellet(currentSpread + pelletSpreadAngle, pelletCenterBias);
         }
         else
         {
@@ -920,14 +964,15 @@ public class Weapon : MonoBehaviour
         }
     }
 
-    private void FirePellet(float spreadDegrees)
+    private void FirePellet(float spreadDegrees, float centerBias = 0f)
     {
         if (playerCamera == null)
             return;
 
         Vector3 spreadDirection = ApplySpreadToDirection(
             playerCamera.transform.forward,
-            spreadDegrees
+            spreadDegrees,
+            centerBias
         );
 
         Ray ray = new Ray(
@@ -992,7 +1037,11 @@ public class Weapon : MonoBehaviour
 
             if (zombieHealth != null)
             {
-                int finalDamage = ApplyDistanceFalloff(damage, hit.distance);
+                // El daño del perdigón (o de la bala) baja con la distancia. Siempre pega al menos 1.
+                int finalDamage = Mathf.Max(
+                    1,
+                    Mathf.RoundToInt(DanoBasePorImpacto * DistanceFalloffMultiplier(hit.distance))
+                );
 
                 zombieHealth.TakeDamage(
                     finalDamage,
@@ -1015,7 +1064,7 @@ public class Weapon : MonoBehaviour
             if (easterEgg != null)
             {
                 easterEgg.TakeDamage(
-                    damage,
+                    Mathf.Max(1, Mathf.RoundToInt(DanoBasePorImpacto)),
                     hit.point,
                     hit.normal
                 );
@@ -1076,23 +1125,27 @@ public class Weapon : MonoBehaviour
     // DIRECCIÓN CON DISPERSIÓN
     // =========================================================
 
+    // La desviación se calcula en el espacio de la cámara (no en los ejes del mundo, que aplastaban el patrón
+    // según hacia dónde se mirara) y dentro de un círculo cuyo radio es la dispersión en grados.
+    // centerBias 0 = reparto parejo en el círculo; cuanto más alto, más perdigones cerca del centro.
     private Vector3 ApplySpreadToDirection(
         Vector3 baseDirection,
-        float spreadDegrees
+        float spreadDegrees,
+        float centerBias = 0f
     )
     {
         if (spreadDegrees <= 0f)
             return baseDirection;
 
-        float randomX = Random.Range(-spreadDegrees, spreadDegrees);
-        float randomY = Random.Range(-spreadDegrees, spreadDegrees);
+        float exponent = Mathf.Lerp(0.5f, 1.5f, Mathf.Clamp01(centerBias));
+        float radius = spreadDegrees * Mathf.Pow(Random.value, exponent);
+        float angle = Random.value * Mathf.PI * 2f;
 
-        Quaternion spreadRotation = Quaternion.Euler(
-            randomY,
-            randomX,
-            0f
-        );
+        float offsetX = Mathf.Cos(angle) * radius;
+        float offsetY = Mathf.Sin(angle) * radius;
 
-        return spreadRotation * baseDirection;
+        Quaternion aim = Quaternion.LookRotation(baseDirection);
+
+        return aim * Quaternion.Euler(offsetY, offsetX, 0f) * Vector3.forward;
     }
 }

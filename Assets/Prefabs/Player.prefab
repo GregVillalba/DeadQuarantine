@@ -33748,10 +33748,10 @@ MonoBehaviour:
   spreadMoving: 3
   spreadCrouching: 0.2
   spreadAiming: 0
-  spreadIncreasePerShot: 0.8
+  spreadIncreasePerShot: 1
   maxSpread: 8
-  spreadRecoverySpeed: 4
-  jumpSpread: 5
+  spreadRecoverySpeed: 5
+  jumpSpread: 6
   landingRecoverySpeed: 25
   landingRecoveryDuration: 0.25
   bulletIgnoredLayers:
@@ -33764,6 +33764,7 @@ MonoBehaviour:
   partsAnimator: {fileID: 0}
   EffectiveMaxAmmo: 0
   debugRunning: 0
+  debugSpread: 1
 --- !u!114 &5460714142774584377
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -35689,7 +35690,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1614284941
+  GlobalObjectIdHash: 3516423437
   InScenePlacedSourceGlobalObjectIdHash: 477224611
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -50219,6 +50220,9 @@ MonoBehaviour:
   slotCasco: {fileID: 9101191459883067014}
   separacionSlotsBlindaje: 10
   colorBlindajeRotoSinIcono: {r: 1, g: 0.3, b: 0.3, a: 0.6}
+  slotCuchillo: {fileID: 3535186673891411933}
+  iconoCuchillo: {fileID: 733081110, guid: 5aa3a939a20065c429f66a17782c3850, type: 3}
+  nombreAccionCuchillo: Melee
   ammoText: {fileID: 3450188156193082571}
   ammoMaxText: {fileID: 6824707905497664441}
   weaponNameText: {fileID: 2616464134593419025}
@@ -50244,8 +50248,11 @@ MonoBehaviour:
   dashBottom: {fileID: 1149846621614162676}
   dashLeft: {fileID: 8690859968825629791}
   dashRight: {fileID: 82254632095505927}
-  crosshairMinGap: 18
-  crosshairMaxGap: 140
+  crosshairMinGap: 20
+  crosshairMaxGap: 220
+  crosshairAnguloBase: 0
+  crosshairGapPorGrado: 10
+  debugCrosshair: 1
   hitMarker: {fileID: 314821388926402422}
   hitMarkerDuration: 0.08
 --- !u!1 &7074096631736102138
@@ -59269,6 +59276,81 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!1 &7783119504495667057
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7093342979046235927}
+  - component: {fileID: 1006261277153509612}
+  - component: {fileID: 3535186673891411933}
+  m_Layer: 3
+  m_Name: Melee
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &7093342979046235927
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7783119504495667057}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 9216820349589059348}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -220.4, y: -7.3}
+  m_SizeDelta: {x: 105, y: 120}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &1006261277153509612
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7783119504495667057}
+  m_CullTransparentMesh: 1
+--- !u!114 &3535186673891411933
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7783119504495667057}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 0.007843138, g: 0.24705882, b: 0, a: 0.61960787}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 1765285987, guid: 70e110121ba2beb4884d5966fa2e2b9a, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &7824089344029781402
 GameObject:
   m_ObjectHideFlags: 0
@@ -60291,6 +60373,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 7093342979046235927}
   - {fileID: 2047234190791326098}
   - {fileID: 2743555911752287290}
   - {fileID: 7859830906209031240}
@@ -65956,21 +66039,21 @@ MonoBehaviour:
   weaponName: Escopeta
   firesMultiplePellets: 1
   pelletsPerShot: 8
-  pelletSpreadAngle: 0.5
+  pelletSpreadAngle: 4
   requiresBoltActionAfterFire: 1
   boltActionDuration: 1.3
   boltActionDelay: 0.12
   aimFOV: 50
   aimTransitionSpeed: 10
   aimingBlendSpeed: 8
-  spreadIdle: 0.3
-  spreadMoving: 0.6
-  spreadCrouching: 0.15
-  spreadAiming: 0.1
-  spreadIncreasePerShot: 0
-  maxSpread: 1.5
-  spreadRecoverySpeed: 3
-  jumpSpread: 1
+  spreadIdle: 0.5
+  spreadMoving: 3
+  spreadCrouching: 0.5
+  spreadAiming: 0
+  spreadIncreasePerShot: 3
+  maxSpread: 8
+  spreadRecoverySpeed: 5
+  jumpSpread: 6
   landingRecoverySpeed: 25
   landingRecoveryDuration: 0.25
   bulletIgnoredLayers:
@@ -65983,6 +66066,7 @@ MonoBehaviour:
   partsAnimator: {fileID: 0}
   EffectiveMaxAmmo: 0
   debugRunning: 0
+  debugSpread: 1
 --- !u!114 &6235681954678017475
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -70087,14 +70171,14 @@ MonoBehaviour:
   aimFOV: 45
   aimTransitionSpeed: 10
   aimingBlendSpeed: 8
-  spreadIdle: 0.5
-  spreadMoving: 3
-  spreadCrouching: 0.2
+  spreadIdle: 0.6
+  spreadMoving: 4
+  spreadCrouching: 0.3
   spreadAiming: 0
-  spreadIncreasePerShot: 0.8
+  spreadIncreasePerShot: 0.5
   maxSpread: 8
-  spreadRecoverySpeed: 4
-  jumpSpread: 10
+  spreadRecoverySpeed: 3
+  jumpSpread: 6
   landingRecoverySpeed: 25
   landingRecoveryDuration: 0.25
   bulletIgnoredLayers:
@@ -70107,6 +70191,7 @@ MonoBehaviour:
   partsAnimator: {fileID: 0}
   EffectiveMaxAmmo: 0
   debugRunning: 0
+  debugSpread: 1
 --- !u!114 &1296286103284825024
 MonoBehaviour:
   m_ObjectHideFlags: 0

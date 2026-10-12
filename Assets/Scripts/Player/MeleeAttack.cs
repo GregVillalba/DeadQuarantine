@@ -23,6 +23,19 @@ public class MeleeAttack : MonoBehaviour
     private PlayerControls controls;
     private bool isAttacking;
     private int meleeLayerIndex = -1;
+    private PlayerHealth saludJugador;
+
+    // Se busca una sola vez en el jugador (PlayerHealth está en el mismo jugador que este script).
+    private PlayerHealth Salud
+    {
+        get
+        {
+            if (saludJugador == null)
+                saludJugador = transform.root.GetComponentInChildren<PlayerHealth>(true);
+
+            return saludJugador;
+        }
+    }
 
     private void Awake()
     {
@@ -54,6 +67,10 @@ public class MeleeAttack : MonoBehaviour
         return;
 
         if (PauseController.LocalPlayerPaused)
+            return;
+
+        // Abatido solo puede disparar y recargar: no puede usar el cuchillo.
+        if (Salud != null && Salud.IsDowned)
             return;
 
         if (isAttacking || weaponAnimator == null)
