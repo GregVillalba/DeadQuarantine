@@ -46,6 +46,11 @@ public class WeaponSwitcher : MonoBehaviour
     [SerializeField] private WeaponAnimationEvents weaponAnimationEvents;
     [SerializeField] private WeaponSway weaponSway; // <- NUEVO: para que el sway sepa si el arma actual está apuntando
 
+    [Header("Animator")]
+    [Tooltip("Opcional. Nombre del estado de reposo (Idle) de la capa base del Animator. Si se deja vacío se detecta solo " +
+             "al empezar (en todas las capas). Se usa para cortar la animación de recarga al cambiar de arma o al usar cuchillo/granada.")]
+    [SerializeField] private string baseIdleStateName = "";
+
     [Header("Armas")]
     [SerializeField] private WeaponSlot[] slots;
     [SerializeField] private int startingSlotIndex = 0;
@@ -66,6 +71,8 @@ public class WeaponSwitcher : MonoBehaviour
     private int currentIndex;
     private int pendingIndex = -1;
     private bool isSwitching;
+    private int[] layerIdleHashes;   // estado de reposo (por defecto) de cada capa del Animator
+    private bool unholsterPhase;   // true cuando ya se guardó el arma anterior y se está sacando la nueva
     private int holsterLayerIndex = -1;
 
     // Estado abatido: el jugador queda obligado a usar el arma inicial y al levantarse recupera la que tenía.
@@ -76,6 +83,13 @@ public class WeaponSwitcher : MonoBehaviour
     private Coroutine rutinaAbatido;
     public Weapon CurrentWeapon => slots[currentIndex].weaponComponent;
     public int CurrentWeaponIndex => currentIndex;
+
+    /// <summary>
+    /// true mientras se guarda el arma actual y se saca la nueva (de que empieza la animación de guardar
+    /// hasta que termina la de sacar). Durante ese tiempo no se puede disparar, recargar, apuntar,
+    /// acuchillar ni tirar granadas.
+    /// </summary>
+    public bool IsSwitching => isSwitching;
 
     /// <summary>
     /// Se dispara cuando cambia el arma elegida, se equipa una o se desbloquea una.
@@ -176,6 +190,8 @@ public class WeaponSwitcher : MonoBehaviour
         }
 
         EquipWeaponImmediate(index);
+
+        StartCoroutine(CaptureBaseIdleState());
 
         // Esta es el "arma inicial" que se usa obligatoriamente al estar abatido.
         armaInicialIndex = index;
@@ -590,12 +606,17 @@ public class WeaponSwitcher : MonoBehaviour
     private IEnumerator SwitchWeaponRoutine()
     {
         isSwitching = true;
+        unholsterPhase = false;
 
         WeaponSlot current = slots[currentIndex];
 
-        // Bloquea disparo/recarga sin ocultar el modelo todavía.
+        // Cambiar de arma cancela la recarga en curso y bloquea disparo/recarga/apuntado
+        // sin ocultar el modelo todavía.
         if (current.weaponComponent != null)
+        {
+            current.weaponComponent.CancelReload();
             current.weaponComponent.enabled = false;
+        }
 
         if (weaponAnimator != null)
             weaponAnimator.SetBool("Holstered", true);
@@ -617,15 +638,34 @@ public class WeaponSwitcher : MonoBehaviour
             }
         }
 
+        // Se corta cualquier animación que haya quedado a medias (por ejemplo una recarga) antes de cambiar de arma.
+        ResetBaseLayerToIdle();
+
         current.weaponRoot.SetActive(false);
 
         currentIndex = pendingIndex;
         WeaponSlot next = slots[currentIndex];
 
+        // El arma nueva se apaga ANTES de activar su modelo: si nunca se había usado, su componente
+        // seguía encendido y habría podido disparar/recargar/apuntar durante la animación de sacarla.
+        // NotifyUnholsterFinished() la vuelve a encender al terminar el Unholster.
+        if (next.weaponComponent != null)
+            next.weaponComponent.enabled = false;
+
         ApplyControllerAndVisuals(next);
+
+        // El Animator es el mismo para todas las armas: sin esto el arma nueva continuaba el estado
+        // (por ejemplo una recarga) del arma anterior.
+        ResetBaseLayerToIdle();
 
         if (weaponAnimator != null)
             weaponAnimator.SetBool("Holstered", false);
+
+        unholsterPhase = true;
+
+        // Un cuadro después: cambiar el controller puede reconstruir el Animator y perder el reset anterior.
+        yield return null;
+        ResetBaseLayerToIdle();
 
         // NotifyUnholsterFinished() (llamado por el Animation Event al
         // terminar el Unholster) reactiva el disparo y baja isSwitching.
@@ -666,8 +706,78 @@ public class WeaponSwitcher : MonoBehaviour
         InventoryChanged?.Invoke();
     }
 
+    // Guarda el estado de reposo (el que tiene cada capa al empezar) de TODAS las capas del Animator.
+    // La animación de recarga puede estar en cualquier capa, así que se resetean todas menos la de Holster.
+    private IEnumerator CaptureBaseIdleState()
+    {
+        for (int i = 0; i < 10 && weaponAnimator != null; i++)
+        {
+            yield return null;
+
+            int count = weaponAnimator.layerCount;
+            bool estable = true;
+
+            for (int l = 0; l < count; l++)
+            {
+                if (weaponAnimator.IsInTransition(l))
+                    estable = false;
+            }
+
+            if (!estable)
+                continue;
+
+            int[] hashes = new int[count];
+
+            for (int l = 0; l < count; l++)
+                hashes[l] = weaponAnimator.GetCurrentAnimatorStateInfo(l).fullPathHash;
+
+            if (!string.IsNullOrEmpty(baseIdleStateName))
+                hashes[0] = Animator.StringToHash(baseIdleStateName);
+
+            if (hashes[0] == 0)
+                continue;
+
+            layerIdleHashes = hashes;
+            yield break;
+        }
+
+        Debug.LogWarning("[WeaponSwitcher] No se pudo detectar el estado de reposo del Animator. " +
+                         "Completá 'Base Idle State Name' para que se corte la animación de recarga al cambiar de arma.");
+    }
+
+    /// <summary>
+    /// Devuelve todas las capas del Animator (menos Holster) a su estado de reposo y limpia los parámetros de recarga.
+    /// Corta de golpe una recarga en curso (el Animator es el mismo para todas las armas).
+    /// </summary>
+    public void ResetBaseLayerToIdle()
+    {
+        if (weaponAnimator == null || layerIdleHashes == null)
+            return;
+
+        weaponAnimator.ResetTrigger("Reload");
+        weaponAnimator.SetBool("ShellLoading", false);
+
+        int count = Mathf.Min(layerIdleHashes.Length, weaponAnimator.layerCount);
+
+        for (int l = 0; l < count; l++)
+        {
+            // La capa Holster no se toca: de ahí salen las animaciones de guardar y sacar.
+            if (l == holsterLayerIndex || layerIdleHashes[l] == 0)
+                continue;
+
+            weaponAnimator.Play(layerIdleHashes[l], l, 0f);
+        }
+    }
+
     public void NotifyUnholsterFinished()
     {
+        // Un evento de animación que llegue mientras todavía se está guardando el arma anterior
+        // no debe dar por terminado el cambio (dejaba disparar y recargar a mitad del cambio).
+        if (isSwitching && !unholsterPhase)
+            return;
+
+        unholsterPhase = false;
+
         WeaponSlot current = slots[currentIndex];
 
         if (current.weaponComponent != null)

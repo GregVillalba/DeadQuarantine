@@ -69,6 +69,10 @@ public class MeleeAttack : MonoBehaviour
         if (PauseController.LocalPlayerPaused)
             return;
 
+        // No se puede usar mientras se guarda o se saca un arma.
+        if (weaponSwitcher != null && weaponSwitcher.IsSwitching)
+            return;
+
         // Abatido solo puede disparar y recargar: no puede usar el cuchillo.
         if (Salud != null && Salud.IsDowned)
             return;
@@ -84,12 +88,9 @@ public class MeleeAttack : MonoBehaviour
 
         Weapon currentWeapon = weaponSwitcher != null ? weaponSwitcher.CurrentWeapon : null;
 
-        // No se puede acuchillar mientras se está recargando.
+        // Acuchillar cancela la recarga en curso.
         if (currentWeapon != null && currentWeapon.IsReloading)
-        {
-            Debug.Log("[MeleeAttack] Bloqueado: el arma está recargando.");
-            return;
-        }
+            currentWeapon.CancelReload();
 
         isAttacking = true;
 

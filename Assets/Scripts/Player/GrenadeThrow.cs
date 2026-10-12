@@ -110,6 +110,10 @@ public class GrenadeThrow : MonoBehaviour
         if (PauseController.LocalPlayerPaused)
             return;
 
+        // No se puede usar mientras se guarda o se saca un arma.
+        if (weaponSwitcher != null && weaponSwitcher.IsSwitching)
+            return;
+
         if (isThrowing || weaponAnimator == null)
             return;
 
@@ -132,8 +136,9 @@ public class GrenadeThrow : MonoBehaviour
 
         Weapon currentWeapon = weaponSwitcher != null ? weaponSwitcher.CurrentWeapon : null;
 
+        // Tirar una granada cancela la recarga en curso.
         if (currentWeapon != null && currentWeapon.IsReloading)
-            return;
+            currentWeapon.CancelReload();
 
         isThrowing = true;
 

@@ -24,6 +24,7 @@ public class Weapon : MonoBehaviour
     [SerializeField] private RecoilPreset recoilPreset = RecoilPreset.SMG;
 
     private HUDController hudController;
+    private WeaponSwitcher weaponSwitcher;
 
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
@@ -213,6 +214,11 @@ public class Weapon : MonoBehaviour
         if (hudController == null)
             hudController = transform.root.GetComponentInChildren<HUDController>(true);
 
+        weaponSwitcher = GetComponentInParent<WeaponSwitcher>();
+
+        if (weaponSwitcher == null)
+            weaponSwitcher = transform.root.GetComponentInChildren<WeaponSwitcher>(true);
+
         playerScore = GetComponentInParent<PlayerScore>();
 
         if (playerScore == null)
@@ -243,6 +249,46 @@ public class Weapon : MonoBehaviour
         controls.Player.Disable();
 
         IsAiming = false;
+
+        // Si el arma se apaga en medio de una recarga (por ejemplo al cambiar de arma), la recarga se cancela:
+        // el evento que bajaba 'isReloading' ya no va a llegar y el arma quedaría bloqueada.
+        isReloading = false;
+        shellLoading = false;
+    }
+
+    // true mientras se guarda un arma y se saca la otra. Se consulta directo al WeaponSwitcher, así el
+    // arma no responde aunque su componente quede encendido por algún motivo.
+    private bool SwitchBlocked => weaponSwitcher != null && weaponSwitcher.IsSwitching;
+
+    /// <summary>
+    /// Cancela la recarga en curso: la munición que todavía no se cargó no se carga, se corta el sonido
+    /// de recarga y el Animator vuelve a su estado de reposo. Lo usan el cambio de arma, el cuchillo y la granada.
+    /// </summary>
+    public void CancelReload()
+    {
+        bool estabaRecargando = isReloading || shellLoading;
+
+        isReloading = false;
+        shellLoading = false;
+
+        if (!estabaRecargando)
+            return;
+
+        // Corta el sonido de recarga que siga sonando.
+        if (audioSource != null)
+            audioSource.Stop();
+
+        // Saca el Animator del clip de recarga. Sin esto, el Animator (que es el mismo para todas las armas)
+        // seguía en el estado de recarga y el arma siguiente terminaba de reproducir esa animación.
+        if (weaponSwitcher != null)
+        {
+            weaponSwitcher.ResetBaseLayerToIdle();
+        }
+        else if (weaponAnimator != null)
+        {
+            weaponAnimator.ResetTrigger("Reload");
+            weaponAnimator.SetBool("ShellLoading", false);
+        }
     }
 
     // Multiplicador de daño según la distancia: 1 hasta 'Damage Falloff Start', baja de forma lineal
@@ -389,11 +435,17 @@ public class Weapon : MonoBehaviour
 
     public void AnimationAmmunitionFill()
     {
+        if (!isReloading)
+            return;
+
         FillMagazine();
     }
 
     public void AnimationInsertOneShell()
     {
+        if (!isReloading)
+            return;
+
         if (currentAmmo < maxAmmo && TryConsumeReserve(1))
             currentAmmo++;
 
@@ -414,6 +466,9 @@ public class Weapon : MonoBehaviour
 
     public void AnimationReloadFinished()
     {
+        if (!isReloading)
+            return;
+
         if (!usesMultiPartReload)
         {
             FillMagazine();
@@ -511,6 +566,9 @@ public class Weapon : MonoBehaviour
         );
 
         if (PauseController.LocalPlayerPaused)
+            return;
+
+        if (SwitchBlocked)
             return;
 
         if (InputLocked || isReloading)
@@ -788,6 +846,9 @@ public class Weapon : MonoBehaviour
         if (PauseController.LocalPlayerPaused)
             return;
 
+        if (SwitchBlocked)
+            return;
+
         if (InputLocked)
         {
             Debug.Log("[Weapon] TryFire bloqueado: InputLocked=true");
@@ -905,6 +966,9 @@ public class Weapon : MonoBehaviour
     private void OnReload(InputAction.CallbackContext context)
     {
         if (PauseController.LocalPlayerPaused)
+            return;
+
+        if (SwitchBlocked)
             return;
 
         if (InputLocked || isReloading)
