@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Networking;
@@ -8,14 +9,51 @@ using TMPro;
 public class GuardarScoreCartelUI : MonoBehaviour
 {
     [Header("Referencias Visuales")]
-    [SerializeField] private TMP_Text txtTitulo;          // "¿Deseas guardar tu score?"
-    [SerializeField] private Button btnOk;                // Objeto 'ok'
-    [SerializeField] private Button btnCancel;            // Objeto 'CANCEL'
-    [SerializeField] private TMP_Text txtResult;          // Objeto 'result' (muestra el puesto)
-    [SerializeField] private TMP_Text txtEstado;          // Objeto 'estado' (muestra si se guardó)
+    [SerializeField] private TMP_Text txtTitulo;   // "¿Deseas guardar tu score?"
+    [SerializeField] private Button btnOk;         // Objeto 'ok'
+    [SerializeField] private Button btnCancel;     // Objeto 'CANCEL'
+    [SerializeField] private TMP_Text txtResult;   // Label 'result': puesto en el ranking
+    [SerializeField] private TMP_Text txtEstado;   // Label de estado ("Se subió correctamente" / "Acceso denegado")
 
     [Header("Endpoint")]
     [SerializeField] private string apiUrl = "https://dead-quarentine-web.wasmer.app/api/ranking";
+
+    [Header("Mensajes y Tiempos")]
+    [SerializeField] private string mensajeExito = "Se subió correctamente";
+    [SerializeField] private string mensajeCancelado = "Acceso denegado";
+    [SerializeField] private string mensajeError = "No se pudo subir. Reintentá o cancelá.";
+    [SerializeField] private float segundosAntesDeCerrar = 1.5f;
+
+    [Serializable]
+    private class RankingEntry
+    {
+        public string username;
+        public int puntos;
+    }
+
+    [Serializable]
+    private class ScorePayload
+    {
+        public string username;
+        public int puntos;
+        public string modo;
+    }
+
+    private static class JsonHelper
+    {
+        public static T[] FromJson<T>(string json)
+        {
+            string newJson = "{\"array\":" + json + "}";
+            Wrapper<T> wrapper = JsonUtility.FromJson<Wrapper<T>>(newJson);
+            return wrapper.array;
+        }
+
+        [Serializable]
+        private class Wrapper<T>
+        {
+            public T[] array;
+        }
+    }
 
     private string nombreJugador;
     private int scoreJugador;
@@ -24,71 +62,132 @@ public class GuardarScoreCartelUI : MonoBehaviour
 
     private void Awake()
     {
-        if (btnOk != null)
-            btnOk.onClick.AddListener(OnOkClicked);
-
-        if (btnCancel != null)
-            btnCancel.onClick.AddListener(OnCancelClicked);
+        // Aseguramos que arranque completamente deshabilitado
+        gameObject.SetActive(false);
     }
 
-    public void AbrirCartel(string username, int puntos, string modo, Action onFinalizado)
+    /// <summary>
+    /// Abre el panel de score sobre la pantalla de derrota.
+    /// </summary>
+    public void AbrirCartel(string username, int puntos, string modo, Action onFinalizado, MonoBehaviour runner = null)
     {
-        nombreJugador = username;
+        nombreJugador = string.IsNullOrWhiteSpace(username) ? "Superviviente" : username;
         scoreJugador = puntos;
         modoJugador = modo;
         onFinalizadoCallback = onFinalizado;
 
         gameObject.SetActive(true);
-        transform.SetAsLastSibling(); // Se pone por delante de todo
+        enabled = true;
+        transform.SetAsLastSibling();
 
-        if (btnOk != null) btnOk.interactable = true;
-        if (btnCancel != null) btnCancel.interactable = true;
+        if (txtTitulo != null)
+            txtTitulo.text = $"¿Deseas guardar tu score de {puntos:N0} pts en el ranking?";
 
-        if (txtResult != null) txtResult.text = "";
-        if (txtEstado != null) txtEstado.text = "";
+        if (txtEstado != null)
+        {
+            txtEstado.text = "";
+            txtEstado.color = Color.white;
+        }
+
+        if (txtResult != null)
+            txtResult.text = "Calculando puesto...";
+
+        if (btnOk != null)
+        {
+            btnOk.onClick.RemoveAllListeners();
+            btnOk.onClick.AddListener(OnOkClicked);
+            btnOk.interactable = true;
+        }
+
+        if (btnCancel != null)
+        {
+            btnCancel.onClick.RemoveAllListeners();
+            btnCancel.onClick.AddListener(OnCancelClicked);
+            btnCancel.interactable = true;
+        }
+
+        // Si se provee un runner activo (PauseController), corre desde él
+        MonoBehaviour coroutineHost = (runner != null && runner.gameObject.activeInHierarchy) ? runner : this;
+
+        if (coroutineHost.gameObject.activeInHierarchy)
+        {
+            coroutineHost.StartCoroutine(CalcularPuesto());
+        }
+        else
+        {
+            Debug.LogError($"[GuardarScoreCartelUI] Ni scoreUI ni runner están activos en la jerarquía.");
+        }
     }
 
+
+    // ---------------------------------------------------------
+    // Cálculo del puesto en el ranking (GET)
+    // ---------------------------------------------------------
+    private IEnumerator CalcularPuesto()
+    {
+        Debug.Log("[GuardarScoreCartelUI] Consultando API para calcular puesto...");
+
+        using (UnityWebRequest req = UnityWebRequest.Get(apiUrl))
+        {
+            req.timeout = 10;
+            yield return req.SendWebRequest();
+
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogWarning($"[GuardarScoreCartelUI] Error al obtener ranking: {req.error}");
+                if (txtResult != null) txtResult.text = "Puesto: no disponible (sin conexión)";
+                yield break;
+            }
+
+            RankingEntry[] lista = null;
+            try
+            {
+                lista = JsonHelper.FromJson<RankingEntry>(req.downloadHandler.text);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[GuardarScoreCartelUI] Error parseando JSON: " + e.Message);
+            }
+
+            if (lista == null || txtResult == null)
+            {
+                if (txtResult != null) txtResult.text = "Puesto: no disponible";
+                yield break;
+            }
+
+            int puesto = lista.Count(j => j.puntos > scoreJugador) + 1;
+            Debug.Log($"<color=cyan>[GuardarScoreCartelUI] Puesto calculado: #{puesto}</color>");
+
+            txtResult.text = puesto <= 10
+                ? $"Tu score entra en el puesto #{puesto} del Top 10"
+                : $"Tu puesto estimado: #{puesto}";
+        }
+    }
+
+    // ---------------------------------------------------------
+    // Botón OK -> Subir score (POST)
+    // ---------------------------------------------------------
     private void OnOkClicked()
     {
-        StartCoroutine(EnviarScoreAPI());
+        Debug.Log("<color=green>[GuardarScoreCartelUI] Clic en OK: enviando score a la API...</color>");
+        PintarBotonNaranjaOscuro(btnOk);
+        StartCoroutine(SubirScore());
     }
 
-    private void OnCancelClicked()
+    private IEnumerator SubirScore()
     {
-        CerrarCartel();
-        onFinalizadoCallback?.Invoke();
-    }
+        BloquearBotones(true);
 
-    private void CerrarCartel()
-    {
-        gameObject.SetActive(false);
-    }
-
-    [Serializable]
-    private class ScorePayload
-    {
-        public string username;
-        public int score;
-        public string modo;
-    }
-
-    [Serializable]
-    private class ScoreResponse
-    {
-        public string mensaje;
-        public int puesto;
-        public bool success;
-    }
-
-    private IEnumerator EnviarScoreAPI()
-    {
-        if (btnOk != null) btnOk.interactable = false;
-        if (txtEstado != null) txtEstado.text = "Guardando...";
+        if (txtEstado != null)
+        {
+            txtEstado.color = Color.white;
+            txtEstado.text = "Guardando...";
+        }
 
         ScorePayload payload = new ScorePayload
         {
             username = nombreJugador,
-            score = scoreJugador,
+            puntos = scoreJugador,
             modo = modoJugador
         };
 
@@ -96,55 +195,83 @@ public class GuardarScoreCartelUI : MonoBehaviour
 
         using (UnityWebRequest req = new UnityWebRequest(apiUrl, "POST"))
         {
-            byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
-            req.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            req.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(json));
             req.downloadHandler = new DownloadHandlerBuffer();
             req.SetRequestHeader("Content-Type", "application/json");
+            req.timeout = 10;
 
             yield return req.SendWebRequest();
 
             if (req.result == UnityWebRequest.Result.Success)
             {
+                Debug.Log("<color=green>[GuardarScoreCartelUI] Score subido exitosamente.</color>");
                 if (txtEstado != null)
                 {
-                    txtEstado.text = "¡Score guardado con éxito!";
                     txtEstado.color = Color.green;
+                    txtEstado.text = mensajeExito; // "Se subió correctamente"
                 }
 
-                // Intentar parsear el puesto si la API devuelve JSON con 'puesto'
-                string respuesta = req.downloadHandler.text;
-                try
-                {
-                    ScoreResponse res = JsonUtility.FromJson<ScoreResponse>(respuesta);
-                    if (res != null && res.puesto > 0 && txtResult != null)
-                        txtResult.text = $"Puesto: #{res.puesto}";
-                }
-                catch
-                {
-                    if (txtResult != null)
-                        txtResult.text = "Top Ranking Actualizado";
-                }
-
-                // Esperamos 1.5s para que el usuario lea su puesto y avisamos a PauseController
-                yield return new WaitForSeconds(1.5f);
-                CerrarCartel();
-                onFinalizadoCallback?.Invoke();
+                yield return new WaitForSecondsRealtime(segundosAntesDeCerrar);
+                CerrarYAvisar();
             }
             else
             {
+                Debug.LogWarning($"[GuardarScoreCartelUI] Error al subir: {req.error} | {req.downloadHandler.text}");
+
                 if (txtEstado != null)
                 {
-                    txtEstado.text = "Error al guardar score";
                     txtEstado.color = Color.red;
+                    txtEstado.text = mensajeError;
                 }
 
-                if (btnOk != null) btnOk.interactable = true;
-
-                // Aun en error, tras 2s cerramos y devolvemos el control
-                yield return new WaitForSeconds(2f);
-                CerrarCartel();
-                onFinalizadoCallback?.Invoke();
+                BloquearBotones(false);
             }
         }
+    }
+
+    // ---------------------------------------------------------
+    // Botón CANCEL -> Acceso denegado
+    // ---------------------------------------------------------
+    private void OnCancelClicked()
+    {
+        Debug.Log("<color=red>[GuardarScoreCartelUI] Clic en CANCEL: Acción cancelada.</color>");
+        PintarBotonNaranjaOscuro(btnCancel);
+        StartCoroutine(CancelarCoroutine());
+    }
+
+    private IEnumerator CancelarCoroutine()
+    {
+        BloquearBotones(true);
+
+        if (txtEstado != null)
+        {
+            txtEstado.color = Color.red;
+            txtEstado.text = mensajeCancelado; // "Acceso denegado"
+        }
+
+        yield return new WaitForSecondsRealtime(segundosAntesDeCerrar);
+        CerrarYAvisar();
+    }
+
+    private void PintarBotonNaranjaOscuro(Button btn)
+    {
+        if (btn != null)
+        {
+            var img = btn.GetComponent<Image>();
+            if (img != null)
+                img.color = new Color(0.8f, 0.35f, 0.0f, 1f);
+        }
+    }
+
+    private void BloquearBotones(bool bloquear)
+    {
+        if (btnOk != null) btnOk.interactable = !bloquear;
+        if (btnCancel != null) btnCancel.interactable = !bloquear;
+    }
+
+    private void CerrarYAvisar()
+    {
+        gameObject.SetActive(false);
+        onFinalizadoCallback?.Invoke();
     }
 }

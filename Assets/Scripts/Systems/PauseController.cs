@@ -66,35 +66,19 @@ public class PauseController : NetworkBehaviour
     [SerializeField] private GameObject panelCompaneroAbandono;
     [SerializeField] private float duracionPanelCompaneroAbandono = 4f;
 
-    [Header("Guardar Score")]
+    [Header("Guardar Score (Modo Supervivencia)")]
     [SerializeField] private GuardarScoreCartelUI cartelGuardarScore;
-    [SerializeField] private UnityEngine.UI.Button botonVolverAlMenuDerrota;
-    [SerializeField] private UnityEngine.UI.Image fondoBotonVolverDerrota; // La Image del botón para teñirla de amarillo
+    [SerializeField] private UnityEngine.UI.Button botonVolverAlMenuDerrota; // Botón 'Volver al menú' de pantallaDerrota
 
     private bool estaPausado;
-
     public bool EstaPausado => estaPausado;
 
-    // ---------------------------------------------------------
-    // Estado de pausa del jugador LOCAL, legible desde cualquier script de movimiento / arma / cámara.
-    // Solo lo escribe el PauseController del dueño (los de los otros jugadores están deshabilitados),
-    // así que en multiplayer refleja únicamente TU pausa.
-    // ---------------------------------------------------------
-
-    /// <summary>true mientras el menú de pausa del jugador local está abierto.</summary>
     public static bool LocalPlayerPaused { get; private set; }
-
     private static int resumeFrame = -100;
 
-    /// <summary>
-    /// true en pausa y durante los 2 frames siguientes a reanudar. Hay que ignorar el delta del mouse
-    /// en ese lapso: al volver a bloquear el cursor el primer delta puede ser enorme y haría saltar
-    /// la cámara y el arma.
-    /// </summary>
     public static bool MouseInputBlocked =>
         LocalPlayerPaused || Time.frameCount - resumeFrame <= 2;
 
-    // Con "Enter Play Mode Options" (sin recargar dominio) los estáticos sobreviven entre partidas.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStaticState()
     {
@@ -105,66 +89,60 @@ public class PauseController : NetworkBehaviour
     private bool movementWasLocked;
     private bool lookWasEnabled;
     private bool weaponWasLocked;
-    private PlayerHealth.PlayerState stateAtPause; // solo se usa en multiplayer
+    private PlayerHealth.PlayerState stateAtPause;
 
     private bool finDeRondaActivo;
-    private bool pendienteAccionEsVictoria;
     private Coroutine ocultarPanelRondaCoroutine;
     private Coroutine ocultarPanelFaseComprasCoroutine;
-
     private Coroutine ocultarPanelCompaneroCoroutine;
 
     private void Awake()
     {
         playerScore = transform.root.GetComponentInChildren<PlayerScore>();
 
-        if (popupMenuHome != null)
-            popupMenuHome.SetActive(false);
+        if (popupMenuHome != null) popupMenuHome.SetActive(false);
+        if (playerHealth == null) playerHealth = GetComponent<PlayerHealth>();
+        if (playerMovement == null) playerMovement = GetComponent<PlayerMovement>();
+        if (playerLook == null) playerLook = GetComponentInChildren<PlayerLook>(true);
+        if (weaponSwitcher == null) weaponSwitcher = GetComponentInChildren<WeaponSwitcher>(true);
+        if (shopUI == null) shopUI = GetComponentInChildren<NPCShopUI>(true);
+        if (shopUI == null) shopUI = transform.root.GetComponentInChildren<NPCShopUI>(true);
+        if (storyIntro == null) storyIntro = GetComponent<StoryIntroController>();
+        if (popupVictoria != null) popupVictoria.SetActive(false);
+        if (popupDerrota != null) popupDerrota.SetActive(false);
+        if (popupValoracion != null) popupValoracion.SetActive(false);
+        if (panelRonda != null) panelRonda.SetActive(false);
+        if (panelFaseCompras != null) panelFaseCompras.SetActive(false);
+        if (hud != null) hud.SetActive(false);
+        if (panelCompaneroAbandono != null) panelCompaneroAbandono.SetActive(false);
 
-        if (playerHealth == null)
-            playerHealth = GetComponent<PlayerHealth>();
-
-        if (playerMovement == null)
-            playerMovement = GetComponent<PlayerMovement>();
-
-        if (playerLook == null)
-            playerLook = GetComponentInChildren<PlayerLook>(true);
-
-        if (weaponSwitcher == null)
-            weaponSwitcher = GetComponentInChildren<WeaponSwitcher>(true);
-
-        if (shopUI == null)
-            shopUI = GetComponentInChildren<NPCShopUI>(true);
-
-        if (shopUI == null)
-            shopUI = transform.root.GetComponentInChildren<NPCShopUI>(true);
-
-        if (storyIntro == null)
-            storyIntro = GetComponent<StoryIntroController>();
-
-        if (popupVictoria != null)
-            popupVictoria.SetActive(false);
-
-        if (popupDerrota != null)
-            popupDerrota.SetActive(false);
-
-        if (popupValoracion != null)
-            popupValoracion.SetActive(false);
-
-        if (panelRonda != null)
-            panelRonda.SetActive(false);
-
-        if (panelFaseCompras != null)
-            panelFaseCompras.SetActive(false);
-
-        if (hud != null)
-            hud.SetActive(false);
-
-        if (panelCompaneroAbandono != null)
-            panelCompaneroAbandono.SetActive(false);
-
+        // Buscar y mantener deshabilitado el cartel de score al iniciar
         if (cartelGuardarScore == null)
             cartelGuardarScore = transform.root.GetComponentInChildren<GuardarScoreCartelUI>(true);
+
+        if (cartelGuardarScore != null)
+        {
+            cartelGuardarScore.gameObject.SetActive(false);
+            Debug.Log("<color=cyan>[PauseController] Panel de score localizado y DESHABILITADO al iniciar.</color>");
+        }
+
+        // Conectar el botón de volver al menú de derrota
+        ConectarBotonVolverAlMenuDerrota();
+    }
+
+    private void ConectarBotonVolverAlMenuDerrota()
+    {
+        if (botonVolverAlMenuDerrota == null && popupDerrota != null)
+        {
+            botonVolverAlMenuDerrota = popupDerrota.GetComponentInChildren<UnityEngine.UI.Button>(true);
+        }
+
+        if (botonVolverAlMenuDerrota != null)
+        {
+            botonVolverAlMenuDerrota.onClick.RemoveAllListeners();
+            botonVolverAlMenuDerrota.onClick.AddListener(OnClickBotonVolverAlMenuDerrota);
+            Debug.Log("<color=cyan>[PauseController] Botón 'Volver al Menú' conectado exitosamente a OnClickBotonVolverAlMenuDerrota.</color>");
+        }
     }
 
     public void MostrarHUD()
@@ -183,7 +161,6 @@ public class PauseController : NetworkBehaviour
 
         ActualizarBotonReiniciar();
 
-        // El cursor y el bloqueo inicial de la historia los maneja StoryIntroController.
         if (EsSinglePlayer())
             return;
 
@@ -194,6 +171,9 @@ public class PauseController : NetworkBehaviour
         Cursor.lockState = CursorLockMode.Locked;
     }
 
+    private bool CartelGuardarScoreAbierto =>
+        cartelGuardarScore != null && cartelGuardarScore.gameObject.activeSelf;
+
     private void Update()
     {
         if (!IsOwner)
@@ -202,27 +182,18 @@ public class PauseController : NetworkBehaviour
         bool historiaActiva = storyIntro != null && storyIntro.HistoriaActiva;
         bool tiendaActiva = shopUI != null && shopUI.EstaAbierta;
 
-        // Mientras la historia, el fin de ronda o la tienda están abiertos, ESC no abre el menú de pausa.
         if (historiaActiva || finDeRondaActivo || tiendaActiva)
         {
             if (finDeRondaActivo && Keyboard.current != null)
             {
-                if (popupVictoria != null && popupVictoria.activeSelf &&
-                    Keyboard.current.sKey.wasPressedThisFrame)
+                if (popupVictoria != null && popupVictoria.activeSelf && Keyboard.current.sKey.wasPressedThisFrame)
                 {
-                    OnSiguienteRondaPresionado();
-                }
-                else if (popupDerrota != null && popupDerrota.activeSelf &&
-                    Keyboard.current.qKey.wasPressedThisFrame)
-                {
-                    OnReintentarPresionado();
+                    OnSiguienteRondaVictoriaPresionado();
                 }
             }
-
             return;
         }
 
-        // Mientras se reasigna una tecla, Esc cancela el re-mapeado y no la pausa.
         bool reasignandoTecla = opcionesControles != null && opcionesControles.ReasignandoTecla;
 
         if (!reasignandoTecla && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
@@ -286,7 +257,6 @@ public class PauseController : NetworkBehaviour
         LocalPlayerPaused = false;
         resumeFrame = Time.frameCount;
 
-        // Cierra las configuraciones abiertas para que la próxima pausa arranque en el menú.
         if (opcionesControles != null)
             opcionesControles.Cerrar();
 
@@ -296,7 +266,6 @@ public class PauseController : NetworkBehaviour
         if (popupMenuHome != null)
             popupMenuHome.SetActive(false);
 
-        // Teclas y sensibilidad guardadas se aplican recién al volver al juego.
         ConfiguracionesJuego.AplicarCambios();
 
         RestaurarEstadoJugador();
@@ -312,136 +281,43 @@ public class PauseController : NetworkBehaviour
         Cursor.lockState = CursorLockMode.Locked;
     }
 
-    // =========================================================
-    // BLOQUEAR / HABILITAR (solo la pausa; historia tiene su propia versión)
-    // =========================================================
-
     private void BloquearJugador()
     {
-        if (playerMovement != null)
-            playerMovement.MovementLocked = true;
-
-        if (playerLook != null)
-            playerLook.enabled = false;
-
-        if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null)
-            weaponSwitcher.CurrentWeapon.InputLocked = true;
+        if (playerMovement != null) playerMovement.MovementLocked = true;
+        if (playerLook != null) playerLook.enabled = false;
+        if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null) weaponSwitcher.CurrentWeapon.InputLocked = true;
     }
 
     private void HabilitarJugador()
     {
-        if (playerHealth != null && !playerHealth.IsAlive)
-            return;
-
-        if (playerMovement != null)
-            playerMovement.MovementLocked = false;
-
-        if (playerLook != null)
-            playerLook.enabled = true;
-
-        if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null)
-            weaponSwitcher.CurrentWeapon.InputLocked = false;
-    }
-
-    /// <summary>
-    /// Asignar al OnClick() del botón Volver al Menú de pantallaDerrota
-    /// </summary>
-    public void OnVolverAlMenuDesdeDerrota()
-    {
-        if (!IsOwner)
-            return;
-
-        // Detectar si estamos en Modo Supervivencia
-        bool esModoSupervivencia = (RoundManager.Instance != null && RoundManager.Instance.IsInfiniteMode)
-            || (ConfiguracionPartidaSeleccionada.Instancia != null &&
-                ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado == ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia);
-
-        if (esModoSupervivencia && cartelGuardarScore != null)
-        {
-            // 1. Deshabilitar el botón de la pantalla de derrota
-            if (botonVolverAlMenuDerrota != null)
-                botonVolverAlMenuDerrota.interactable = false;
-
-            // 2. Obtener el nombre (leyendo de CharacterRenameManager o PlayerPrefs)
-            string nombreFinal = PlayerPrefs.GetString("PLAYER_CUSTOM_USERNAME", "");
-            if (string.IsNullOrWhiteSpace(nombreFinal))
-                nombreFinal = PlayerPrefs.GetString("NOMBRE_PERSONAJE_OSCAR", "Oscar");
-
-            int puntajeFinal = (playerScore != null) ? playerScore.ScoreNetwork.Value : 0;
-            string modoFinal = "Supervivencia";
-
-            // 3. Abrir el cartel sin apagar la pantalla de derrota
-            cartelGuardarScore.AbrirCartel(nombreFinal, puntajeFinal, modoFinal, () =>
-            {
-                // Callback: Se ejecuta cuando termina de guardar (o cancela)
-                HabilitarBotonVolverConAmarillo();
-            });
-        }
-        else
-        {
-            // Si no es supervivencia o no hay cartel, salir directo
-            Salir();
-        }
-    }
-
-    private void HabilitarBotonVolverConAmarillo()
-    {
-        if (botonVolverAlMenuDerrota != null)
-        {
-            botonVolverAlMenuDerrota.interactable = true;
-
-            // Pintar el fondo del botón de color amarillo
-            if (fondoBotonVolverDerrota != null)
-            {
-                fondoBotonVolverDerrota.color = new Color(1f, 0.85f, 0.1f, 1f); // Amarillo
-            }
-            else
-            {
-                var img = botonVolverAlMenuDerrota.GetComponent<UnityEngine.UI.Image>();
-                if (img != null) img.color = new Color(1f, 0.85f, 0.1f, 1f);
-            }
-
-            // Cambiar el evento para que el próximo clic salga de inmediato al menú
-            botonVolverAlMenuDerrota.onClick.RemoveAllListeners();
-            botonVolverAlMenuDerrota.onClick.AddListener(Salir);
-        }
+        if (playerHealth != null && !playerHealth.IsAlive) return;
+        if (playerMovement != null) playerMovement.MovementLocked = false;
+        if (playerLook != null) playerLook.enabled = true;
+        if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null) weaponSwitcher.CurrentWeapon.InputLocked = false;
     }
 
     private void RestaurarEstadoJugador()
     {
-        // En multiplayer la partida sigue corriendo con el menú abierto: si te
-        // derribaron, eliminaron o revivieron durante la pausa, la foto guardada
-        // ya no vale y PlayerHealth/PlayerSpectator ya configuraron todo para el
-        // estado nuevo. Restaurarla reactivaría PlayerLook en pleno modo espectador.
-        if (!EsSinglePlayer() &&
-            playerHealth != null &&
-            playerHealth.State.Value != stateAtPause)
-        {
+        if (!EsSinglePlayer() && playerHealth != null && playerHealth.State.Value != stateAtPause)
             return;
-        }
 
-        if (playerMovement != null)
-            playerMovement.MovementLocked = movementWasLocked;
-
-        if (playerLook != null)
-            playerLook.enabled = lookWasEnabled;
-
-        if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null)
-            weaponSwitcher.CurrentWeapon.InputLocked = weaponWasLocked;
+        if (playerMovement != null) playerMovement.MovementLocked = movementWasLocked;
+        if (playerLook != null) playerLook.enabled = lookWasEnabled;
+        if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null) weaponSwitcher.CurrentWeapon.InputLocked = weaponWasLocked;
     }
-
-    // =========================================================
-    // MODO
-    // =========================================================
 
     private bool EsSinglePlayer()
     {
         return SceneManager.GetActiveScene().name == "MainSceneSinglePlayer";
     }
 
-    // =========================================================
-    // REINICIAR
-    // =========================================================
+    private bool EsModoSupervivencia()
+    {
+        return (RoundManager.Instance != null && RoundManager.Instance.IsInfiniteMode)
+            || (ConfiguracionPartidaSeleccionada.Instancia != null &&
+                ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado ==
+                ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia);
+    }
 
     private void ActualizarBotonReiniciar()
     {
@@ -463,10 +339,6 @@ public class PauseController : NetworkBehaviour
         SceneManager.LoadScene("MainSceneSinglePlayer");
     }
 
-    // =========================================================
-    // SALIR
-    // =========================================================
-
     public void Salir()
     {
         if (!IsOwner)
@@ -476,7 +348,7 @@ public class PauseController : NetworkBehaviour
         AudioListener.pause = false;
 
         if (NetworkBootstrap.Instance != null)
-            NetworkBootstrap.Instance.NotifyIntentionalLeave(); // <- nuevo
+            NetworkBootstrap.Instance.NotifyIntentionalLeave();
 
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             NetworkManager.Singleton.Shutdown();
@@ -484,16 +356,12 @@ public class PauseController : NetworkBehaviour
         SceneManager.LoadScene("PantallasUI");
     }
 
-    // =========================================================
-    // CURSOR
-    // =========================================================
-
     private void ActualizarCursor()
     {
         if (!IsOwner)
             return;
 
-        if (estaPausado)
+        if (estaPausado || finDeRondaActivo)
         {
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
@@ -510,8 +378,6 @@ public class PauseController : NetworkBehaviour
         if (NetworkBootstrap.Instance != null)
             NetworkBootstrap.Instance.OnGuestLeft -= MostrarAvisoCompaneroAbandono;
 
-        // Solo si ESTA instancia era la que estaba en pausa: el PauseController de otro jugador
-        // que se va de la partida no debe cancelar tu pausa.
         if (estaPausado)
             LocalPlayerPaused = false;
 
@@ -523,7 +389,7 @@ public class PauseController : NetworkBehaviour
     }
 
     // =========================================================
-    // VICTORIA / DERROTA
+    // VICTORIA (Otros modos ganados)
     // =========================================================
 
     public void MostrarVictoria()
@@ -533,73 +399,39 @@ public class PauseController : NetworkBehaviour
 
         finDeRondaActivo = true;
 
-        if (hud != null)
-            hud.SetActive(false);
-
+        if (hud != null) hud.SetActive(false);
         BloquearJugador();
 
-        if (popupVictoria != null)
-            popupVictoria.SetActive(true);
+        if (popupVictoria != null) popupVictoria.SetActive(true);
 
         if (textoPuntajeVictoria != null && playerScore != null)
             textoPuntajeVictoria.text = playerScore.ScoreNetwork.Value.ToString();
-
         if (textoZombiesVictoria != null && playerScore != null)
             textoZombiesVictoria.text = playerScore.ZombiesEliminadosNetwork.Value.ToString();
-
         if (textoPrecisionVictoria != null && playerScore != null)
             textoPrecisionVictoria.text = playerScore.PrecisionPorcentaje.ToString() + "%";
-
         if (textoReaparicionesVictoria != null && playerScore != null)
             textoReaparicionesVictoria.text = playerScore.ReaparicionesNetwork.Value.ToString();
-
         if (textoCaidasVictoria != null && playerScore != null)
             textoCaidasVictoria.text = playerScore.CaidasNetwork.Value.ToString();
-
-
 
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
     }
 
-    public void MostrarDerrota()
+    /// <summary>
+    /// Al continuar desde victoria, se abre el panel de rating.
+    /// </summary>
+    public void OnSiguienteRondaVictoriaPresionado()
     {
         if (!IsOwner)
             return;
 
-        finDeRondaActivo = true;
+        if (popupVictoria != null)
+            popupVictoria.SetActive(false);
 
-        if (hud != null)
-            hud.SetActive(false);
-
-        BloquearJugador();
-
-        if (popupDerrota != null)
-            popupDerrota.SetActive(true);
-
-        if (textoPuntajeDerrota != null && playerScore != null)
-            textoPuntajeDerrota.text = playerScore.ScoreNetwork.Value.ToString();
-
-        if (textoZombiesDerrota != null && playerScore != null)
-            textoZombiesDerrota.text = playerScore.ZombiesEliminadosNetwork.Value.ToString();
-
-        if (textoPrecisionDerrota != null && playerScore != null)
-            textoPrecisionDerrota.text = playerScore.PrecisionPorcentaje.ToString() + "%";
-
-       /* if (textoRondaDerrota != null && playerScore != null)
-            textoRondaDerrota.text = RoundManager.Instance.CurrentRound + " / " + RoundManager.Instance.MaxRounds;*/
-
-        if (textoRondaDerrota != null && playerScore != null)
-            textoRondaDerrota.text =
-                RoundManager.Instance.IsInfiniteMode
-                    ? RoundManager.Instance.CurrentRound.ToString()
-                    : RoundManager.Instance.CurrentRound + " / " + RoundManager.Instance.MaxRounds;
-
-        if (textoCaidasDerrota != null && playerScore != null)
-        textoCaidasDerrota.text = playerScore.CaidasNetwork.Value.ToString();
-
-        Cursor.visible = true;
-        Cursor.lockState = CursorLockMode.None;
+        Debug.Log("<color=green>[PauseController] Victoria en modo con rondas: abriendo panel de valoración.</color>");
+        MostrarValoracion();
     }
 
     public void MostrarValoracion()
@@ -608,42 +440,9 @@ public class PauseController : NetworkBehaviour
             popupValoracion.SetActive(true);
     }
 
-    public void OnSiguienteRondaPresionado()
-    {
-        if (!IsOwner)
-            return;
-
-        finDeRondaActivo = false;
-
-        if (popupVictoria != null)
-            popupVictoria.SetActive(false);
-
-        if (hud != null)
-            hud.SetActive(true);
-
-        HabilitarJugador();
-
-        Cursor.visible = false;
-        Cursor.lockState = CursorLockMode.Locked;
-
-        pendienteAccionEsVictoria = true;
-        MostrarValoracion();
-    }
-
-    public void OnReintentarPresionado()
-    {
-        if (!IsOwner)
-            return;
-
-        finDeRondaActivo = false;
-
-        if (popupDerrota != null)
-            popupDerrota.SetActive(false);
-
-        pendienteAccionEsVictoria = false;
-        MostrarValoracion();
-    }
-
+    /// <summary>
+    /// Luego de completar o cerrar la valoración en victoria, salimos al menú principal.
+    /// </summary>
     public void ContinuarDespuesDeRating()
     {
         if (!IsOwner)
@@ -652,22 +451,122 @@ public class PauseController : NetworkBehaviour
         if (popupValoracion != null)
             popupValoracion.SetActive(false);
 
-        if (pendienteAccionEsVictoria)
-            Salir();
-        else
-            ReiniciarJuego();
+        Salir();
     }
 
-    public void MostrarPanelRonda(int ronda, bool esRondaFinal)
+    // =========================================================
+    // DERROTA (Supervivencia o Derrota normal)
+    // =========================================================
+
+    public void MostrarDerrota()
     {
         if (!IsOwner)
             return;
 
-        if (panelRonda == null)
+        finDeRondaActivo = true;
+
+        if (hud != null) hud.SetActive(false);
+        BloquearJugador();
+
+        if (popupDerrota != null) popupDerrota.SetActive(true);
+
+        if (textoPuntajeDerrota != null && playerScore != null)
+            textoPuntajeDerrota.text = playerScore.ScoreNetwork.Value.ToString();
+        if (textoZombiesDerrota != null && playerScore != null)
+            textoZombiesDerrota.text = playerScore.ZombiesEliminadosNetwork.Value.ToString();
+        if (textoPrecisionDerrota != null && playerScore != null)
+            textoPrecisionDerrota.text = playerScore.PrecisionPorcentaje.ToString() + "%";
+        if (textoRondaDerrota != null && playerScore != null)
         {
-            Debug.LogError("El panelRonda no está asignado en el Inspector.");
+            textoRondaDerrota.text = (RoundManager.Instance != null && RoundManager.Instance.IsInfiniteMode)
+                ? RoundManager.Instance.CurrentRound.ToString()
+                : ((RoundManager.Instance != null) ? RoundManager.Instance.CurrentRound + " / " + RoundManager.Instance.MaxRounds : "1");
+        }
+        if (textoCaidasDerrota != null && playerScore != null)
+            textoCaidasDerrota.text = playerScore.CaidasNetwork.Value.ToString();
+
+        // En caso de que el botón se hubiera re-instanciado, lo volvemos a vincular
+        ConectarBotonVolverAlMenuDerrota();
+
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+    }
+
+    /// <summary>
+    /// Ejecutado al presionar "VOLVER AL MENÚ" en la pantalla de derrota.
+    /// </summary>
+    public void OnClickBotonVolverAlMenuDerrota()
+    {
+        Debug.Log("<color=yellow>[PauseController] >>> CLIC EN BOTÓN VOLVER AL MENÚ DE DERROTA <<<</color>");
+
+        if (EsModoSupervivencia())
+        {
+            Debug.Log("<color=orange>[PauseController] Modo Supervivencia detectado: Bloqueando botón, pintando naranja y abriendo score...</color>");
+            AbrirScoreSupervivencia();
+        }
+        else
+        {
+            Debug.Log("<color=green>[PauseController] Derrota en modo normal: Regresando directo al menú principal...</color>");
+            Salir();
+        }
+    }
+
+    private void AbrirScoreSupervivencia()
+    {
+        // 1. Pintar de naranja y deshabilitar interacción
+        if (botonVolverAlMenuDerrota != null)
+        {
+            Color colorNaranja = new Color(1.0f, 0.45f, 0.0f, 1.0f);
+
+            var img = botonVolverAlMenuDerrota.GetComponent<UnityEngine.UI.Image>();
+            if (img != null)
+                img.color = colorNaranja;
+
+            var colors = botonVolverAlMenuDerrota.colors;
+            colors.disabledColor = colorNaranja;
+            botonVolverAlMenuDerrota.colors = colors;
+
+            botonVolverAlMenuDerrota.interactable = false;
+            Debug.Log("<color=orange>[PauseController] Botón pintado de NARANJA y DESHABILITADO.</color>");
+        }
+
+        // 2. Verificar cartel
+        if (cartelGuardarScore == null)
+        {
+            cartelGuardarScore = transform.root.GetComponentInChildren<GuardarScoreCartelUI>(true);
+        }
+
+        if (cartelGuardarScore == null)
+        {
+            Debug.LogError("<color=red>[PauseController] ERROR: No se encontró GuardarScoreCartelUI en la jerarquía.</color>");
+            Salir();
             return;
         }
+
+        string nombreFinal = PlayerPrefs.GetString("PLAYER_CUSTOM_USERNAME", "");
+        if (string.IsNullOrWhiteSpace(nombreFinal))
+            nombreFinal = PlayerPrefs.GetString("NOMBRE_PERSONAJE_OSCAR", "Oscar");
+
+        int puntajeFinal = (playerScore != null) ? playerScore.ScoreNetwork.Value : 0;
+
+        Debug.Log($"<color=cyan>[PauseController] Abriendo cartel para '{nombreFinal}' con {puntajeFinal} pts.</color>");
+
+        // 3. Abrir cartel. Al finalizar (sea OK o Cancel), vuelve al menú
+        cartelGuardarScore.AbrirCartel(nombreFinal, puntajeFinal, "Supervivencia", () =>
+        {
+            Debug.Log("<color=green>[PauseController] Cartel finalizado. Volviendo al menú principal...</color>");
+            Salir();
+        }, this);
+    }
+
+    // =========================================================
+    // PANELES DE RONDA Y COMPRAS
+    // =========================================================
+
+    public void MostrarPanelRonda(int ronda, bool esRondaFinal)
+    {
+        if (!IsOwner) return;
+        if (panelRonda == null) return;
 
         if (textoRonda != null)
             textoRonda.text = esRondaFinal ? "Ronda Final" : "Ronda " + ronda;
@@ -692,20 +591,10 @@ public class PauseController : NetworkBehaviour
         OcultarPanelRonda();
     }
 
-    // =========================================================
-    // FASE DE COMPRAS
-    // =========================================================
-
     public void MostrarPanelFaseCompras()
     {
-        if (!IsOwner)
-            return;
-
-        if (panelFaseCompras == null)
-        {
-            Debug.LogError("El panelFaseCompras no está asignado en el Inspector.");
-            return;
-        }
+        if (!IsOwner) return;
+        if (panelFaseCompras == null) return;
 
         if (textoFaseCompras != null)
             textoFaseCompras.text = mensajeFaseCompras;
@@ -732,22 +621,18 @@ public class PauseController : NetworkBehaviour
 
     private void MostrarAvisoCompaneroAbandono()
     {
-    if (panelCompaneroAbandono == null)
-        return;
+        if (panelCompaneroAbandono == null) return;
+        panelCompaneroAbandono.SetActive(true);
 
-    panelCompaneroAbandono.SetActive(true);
+        if (ocultarPanelCompaneroCoroutine != null)
+            StopCoroutine(ocultarPanelCompaneroCoroutine);
 
-    if (ocultarPanelCompaneroCoroutine != null)
-        StopCoroutine(ocultarPanelCompaneroCoroutine);
-
-    ocultarPanelCompaneroCoroutine =
-        StartCoroutine(OcultarAvisoCompaneroDespuesDeTiempo(duracionPanelCompaneroAbandono));
+        ocultarPanelCompaneroCoroutine = StartCoroutine(OcultarAvisoCompaneroDespuesDeTiempo(duracionPanelCompaneroAbandono));
     }
 
     private IEnumerator OcultarAvisoCompaneroDespuesDeTiempo(float segundos)
     {
         yield return new WaitForSeconds(segundos);
-
         if (panelCompaneroAbandono != null)
             panelCompaneroAbandono.SetActive(false);
     }
