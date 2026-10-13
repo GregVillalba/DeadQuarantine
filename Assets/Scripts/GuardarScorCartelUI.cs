@@ -76,6 +76,14 @@ public class GuardarScoreCartelUI : MonoBehaviour
         modoJugador = modo;
         onFinalizadoCallback = onFinalizado;
 
+        // 1. Si está adentro de 'scoreUI' u otro panel padre desactivado, encendemos al padre primero
+        if (transform.parent != null)
+        {
+            transform.parent.gameObject.SetActive(true);
+            transform.parent.SetAsLastSibling();
+        }
+
+        // 2. Encendemos el cartel propio
         gameObject.SetActive(true);
         enabled = true;
         transform.SetAsLastSibling();
@@ -106,7 +114,7 @@ public class GuardarScoreCartelUI : MonoBehaviour
             btnCancel.interactable = true;
         }
 
-        // Si se provee un runner activo (PauseController), corre desde él
+        // Correr la corrutina asegurando que use un runner activo si hiciera falta
         MonoBehaviour coroutineHost = (runner != null && runner.gameObject.activeInHierarchy) ? runner : this;
 
         if (coroutineHost.gameObject.activeInHierarchy)
@@ -115,10 +123,9 @@ public class GuardarScoreCartelUI : MonoBehaviour
         }
         else
         {
-            Debug.LogError($"[GuardarScoreCartelUI] Ni scoreUI ni runner están activos en la jerarquía.");
+            Debug.LogError("[GuardarScoreCartelUI] No se pudo iniciar corrutina: host inactivo.");
         }
     }
-
 
     // ---------------------------------------------------------
     // Cálculo del puesto en el ranking (GET)
@@ -272,6 +279,13 @@ public class GuardarScoreCartelUI : MonoBehaviour
     private void CerrarYAvisar()
     {
         gameObject.SetActive(false);
+
+        // Apagamos también al padre scoreUI para que no quede un panel vacío en pantalla
+        if (transform.parent != null)
+        {
+            transform.parent.gameObject.SetActive(false);
+        }
+
         onFinalizadoCallback?.Invoke();
     }
 }
