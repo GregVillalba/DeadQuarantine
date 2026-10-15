@@ -11,6 +11,7 @@ public class GuardarScoreCartelUI : MonoBehaviour
     [Header("Referencias Visuales")]
     [SerializeField] private TMP_Text txtTitulo;   // "¿Deseas guardar tu score?"
     [SerializeField] private Button btnOk;         // Objeto 'ok'
+    [SerializeField] private TMP_Text txtBtnOk;    // Texto dentro de btnOk (si está vacío, se busca automáticamente)
     [SerializeField] private Button btnCancel;     // Objeto 'CANCEL'
     [SerializeField] private TMP_Text txtResult;   // Label 'result': puesto en el ranking
     [SerializeField] private TMP_Text txtEstado;   // Label de estado ("Se subió correctamente" / "Acceso denegado")
@@ -32,11 +33,31 @@ public class GuardarScoreCartelUI : MonoBehaviour
     }
 
     [Serializable]
+    private class GeoDataResponse
+    {
+        public string ip;             // IP pública
+        public string country;        // Nombre del país (ej: Argentina)
+        public string country_code;   // Código ISO (ej: AR)
+        public ConnectionInfo connection;
+
+        [Serializable]
+        public class ConnectionInfo
+        {
+            public bool is_vpn;       // Detecta VPN/Proxy
+        }
+    }
+
+    [Serializable]
     private class ScorePayload
     {
         public string username;
         public int puntos;
         public string modo;
+        public string ip;
+        public string pais;
+        public string codigo_pais;
+        public int usa_vpn;
+        public string creado_en;
     }
 
     private static class JsonHelper
@@ -59,11 +80,21 @@ public class GuardarScoreCartelUI : MonoBehaviour
     private int scoreJugador;
     private string modoJugador;
     private Action onFinalizadoCallback;
+    private Color colorOriginalBtnOk = Color.white;
 
     private void Awake()
     {
-        // Aseguramos que arranque completamente deshabilitado
         gameObject.SetActive(false);
+
+        if (btnOk != null)
+        {
+            if (txtBtnOk == null)
+                txtBtnOk = btnOk.GetComponentInChildren<TMP_Text>();
+
+            var img = btnOk.GetComponent<Image>();
+            if (img != null)
+                colorOriginalBtnOk = img.color;
+        }
     }
 
     /// <summary>
@@ -76,13 +107,11 @@ public class GuardarScoreCartelUI : MonoBehaviour
         modoJugador = modo;
         onFinalizadoCallback = onFinalizado;
 
-        // 1. Asegurar que este panel esté activo y en escala 1
         gameObject.SetActive(true);
         enabled = true;
-        transform.localScale = Vector3.one; // Fuerza Scale X:1, Y:1, Z:1
+        transform.localScale = Vector3.one;
         transform.SetAsLastSibling();
 
-        // 2. Encender a todos los hijos (por si 'guardar_score_cartel' estaba apagado)
         for (int i = 0; i < transform.childCount; i++)
         {
             transform.GetChild(i).gameObject.SetActive(true);
@@ -100,6 +129,9 @@ public class GuardarScoreCartelUI : MonoBehaviour
         if (txtResult != null)
             txtResult.text = "Calculando puesto...";
 
+        // Restaurar estado original del botón OK
+        RestaurarBotonOk();
+
         if (btnOk != null)
         {
             btnOk.onClick.RemoveAllListeners();
@@ -114,7 +146,6 @@ public class GuardarScoreCartelUI : MonoBehaviour
             btnCancel.interactable = true;
         }
 
-        // 3. Ejecutar cálculo de ranking
         MonoBehaviour coroutineHost = (runner != null && runner.gameObject.activeInHierarchy) ? runner : this;
 
         if (coroutineHost.gameObject.activeInHierarchy)
@@ -127,15 +158,18 @@ public class GuardarScoreCartelUI : MonoBehaviour
         }
     }
 
+    private void OnCancelClicked()
+    {
+        Debug.Log("<color=red>[GuardarScoreCartelUI] Clic en CANCEL: Acción cancelada.</color>");
+        PintarBotonNaranjaOscuro(btnCancel);
+        StartCoroutine(CancelarCoroutine());
+    }
     private void CerrarYAvisar()
     {
         gameObject.SetActive(false);
         onFinalizadoCallback?.Invoke();
     }
 
-    // ---------------------------------------------------------
-    // Cálculo del puesto en el ranking (GET)
-    // ---------------------------------------------------------
     private IEnumerator CalcularPuesto()
     {
         Debug.Log("[GuardarScoreCartelUI] Consultando API para calcular puesto...");
@@ -177,79 +211,60 @@ public class GuardarScoreCartelUI : MonoBehaviour
         }
     }
 
-    // ---------------------------------------------------------
-    // Botón OK -> Subir score (POST)
-    // ---------------------------------------------------------
     private void OnOkClicked()
     {
-        Debug.Log("<color=green>[GuardarScoreCartelUI] Clic en OK: enviando score a la API...</color>");
+        Debug.Log("<color=green>[GuardarScoreCartelUI] Clic en OK / Reintentar...</color>");
         PintarBotonNaranjaOscuro(btnOk);
-        StartCoroutine(SubirScore());
+        StartCoroutine(ObtenerDatosRedYSubirScore());
     }
 
-    private IEnumerator SubirScore()
+    private IEnumerator ObtenerDatosRedYSubirScore()
     {
         BloquearBotones(true);
 
         if (txtEstado != null)
         {
             txtEstado.color = Color.white;
-            txtEstado.text = "Guardando...";
+            txtEstado.text = "Detectando ubicación...";
         }
 
-        ScorePayload payload = new ScorePayload
+        string ipDetectada = "127.0.0.1";
+        string paisDetectado = "Desconocido";
+        string codigoPaisDetectado = "XX";
+        int usaVpnDetectado = 0;
+
+        // Endpoint seguro con HTTPS y gratuito
+        using (UnityWebRequest geoReq = UnityWebRequest.Get("https://ipwho.is/"))
         {
-            username = nombreJugador,
-            puntos = scoreJugador,
-            modo = modoJugador
-        };
+            geoReq.timeout = 5;
+            yield return geoReq.SendWebRequest();
 
-        string json = JsonUtility.ToJson(payload);
-
-        using (UnityWebRequest req = new UnityWebRequest(apiUrl, "POST"))
-        {
-            req.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(json));
-            req.downloadHandler = new DownloadHandlerBuffer();
-            req.SetRequestHeader("Content-Type", "application/json");
-            req.timeout = 10;
-
-            yield return req.SendWebRequest();
-
-            if (req.result == UnityWebRequest.Result.Success)
+            if (geoReq.result == UnityWebRequest.Result.Success)
             {
-                Debug.Log("<color=green>[GuardarScoreCartelUI] Score subido exitosamente.</color>");
-                if (txtEstado != null)
+                try
                 {
-                    txtEstado.color = Color.green;
-                    txtEstado.text = mensajeExito; // "Se subió correctamente"
+                    GeoDataResponse geo = JsonUtility.FromJson<GeoDataResponse>(geoReq.downloadHandler.text);
+                    if (geo != null)
+                    {
+                        ipDetectada = !string.IsNullOrEmpty(geo.ip) ? geo.ip : ipDetectada;
+                        paisDetectado = !string.IsNullOrEmpty(geo.country) ? geo.country : paisDetectado;
+                        codigoPaisDetectado = !string.IsNullOrEmpty(geo.country_code) ? geo.country_code : codigoPaisDetectado;
+                        usaVpnDetectado = (geo.connection != null && geo.connection.is_vpn) ? 1 : 0;
+                    }
                 }
-
-                yield return new WaitForSecondsRealtime(segundosAntesDeCerrar);
-                CerrarYAvisar();
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[GuardarScoreCartelUI] Error parseando datos de IP: {ex.Message}");
+                }
             }
             else
             {
-                Debug.LogWarning($"[GuardarScoreCartelUI] Error al subir: {req.error} | {req.downloadHandler.text}");
-
-                if (txtEstado != null)
-                {
-                    txtEstado.color = Color.red;
-                    txtEstado.text = mensajeError;
-                }
-
-                BloquearBotones(false);
+                Debug.LogWarning($"[GuardarScoreCartelUI] No se pudo consultar GeoIP ({geoReq.error}). Usando valores por defecto.");
             }
         }
-    }
 
-    // ---------------------------------------------------------
-    // Botón CANCEL -> Acceso denegado
-    // ---------------------------------------------------------
-    private void OnCancelClicked()
-    {
-        Debug.Log("<color=red>[GuardarScoreCartelUI] Clic en CANCEL: Acción cancelada.</color>");
-        PintarBotonNaranjaOscuro(btnCancel);
-        StartCoroutine(CancelarCoroutine());
+        // Ejecuta la subida a tu backend con los datos obtenidos
+        yield return StartCoroutine(SubirScore(ipDetectada, paisDetectado, codigoPaisDetectado, usaVpnDetectado));
     }
 
     private IEnumerator CancelarCoroutine()
@@ -259,11 +274,36 @@ public class GuardarScoreCartelUI : MonoBehaviour
         if (txtEstado != null)
         {
             txtEstado.color = Color.red;
-            txtEstado.text = mensajeCancelado; // "Acceso denegado"
+            txtEstado.text = mensajeCancelado;
         }
 
         yield return new WaitForSecondsRealtime(segundosAntesDeCerrar);
         CerrarYAvisar();
+    }
+
+    private void RestaurarBotonOk()
+    {
+        ActualizarTextoBotonOk("OK");
+        RestaurarColorBotonOk();
+    }
+
+    private void ActualizarTextoBotonOk(string nuevoTexto)
+    {
+        if (txtBtnOk == null && btnOk != null)
+            txtBtnOk = btnOk.GetComponentInChildren<TMP_Text>();
+
+        if (txtBtnOk != null)
+            txtBtnOk.text = nuevoTexto;
+    }
+
+    private void RestaurarColorBotonOk()
+    {
+        if (btnOk != null)
+        {
+            var img = btnOk.GetComponent<Image>();
+            if (img != null)
+                img.color = colorOriginalBtnOk;
+        }
     }
 
     private void PintarBotonNaranjaOscuro(Button btn)
@@ -282,5 +322,74 @@ public class GuardarScoreCartelUI : MonoBehaviour
         if (btnCancel != null) btnCancel.interactable = !bloquear;
     }
 
-   
+    private IEnumerator SubirScore(string ip, string pais, string codigoPais, int usaVpn)
+    {
+        if (txtEstado != null)
+        {
+            txtEstado.color = Color.white;
+            txtEstado.text = "Guardando...";
+        }
+
+        ScorePayload payload = new ScorePayload
+        {
+            username = nombreJugador,
+            puntos = scoreJugador,
+            modo = modoJugador,
+            ip = ip,
+            pais = pais,
+            codigo_pais = codigoPais,
+            usa_vpn = usaVpn,
+            creado_en = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
+        };
+
+        string json = JsonUtility.ToJson(payload);
+        Debug.Log($"<color=yellow>[GuardarScoreCartelUI] Enviando Payload Completo a {apiUrl}:</color>\n{json}");
+
+        using (UnityWebRequest req = new UnityWebRequest(apiUrl, "POST"))
+        {
+            req.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(json));
+            req.downloadHandler = new DownloadHandlerBuffer();
+            req.SetRequestHeader("Content-Type", "application/json");
+            req.timeout = 10;
+
+            yield return req.SendWebRequest();
+
+            long httpCode = req.responseCode;
+            string respuestaServidor = req.downloadHandler != null ? req.downloadHandler.text : "(sin respuesta)";
+
+            if (req.result == UnityWebRequest.Result.Success && (httpCode >= 200 && httpCode < 300))
+            {
+                Debug.Log($"<color=green>[GuardarScoreCartelUI] Score subido con éxito. HTTP {httpCode}</color>");
+
+                if (txtEstado != null)
+                {
+                    txtEstado.color = Color.green;
+                    txtEstado.text = mensajeExito;
+                }
+
+                yield return new WaitForSecondsRealtime(segundosAntesDeCerrar);
+                CerrarYAvisar();
+            }
+            else
+            {
+                Debug.LogError($"<color=red>[GuardarScoreCartelUI] ERROR AL GUARDAR SCORE:</color>\n" +
+                               $"- HTTP Code: {httpCode}\n" +
+                               $"- WebRequest Error: {req.error}\n" +
+                               $"- Respuesta del Servidor: {respuestaServidor}\n" +
+                               $"- Payload enviado: {json}");
+
+                if (txtEstado != null)
+                {
+                    txtEstado.color = Color.red;
+                    txtEstado.text = mensajeError;
+                }
+
+                ActualizarTextoBotonOk("Reintentar");
+                RestaurarColorBotonOk();
+                BloquearBotones(false);
+            }
+        }
+    }
+
+
 }
