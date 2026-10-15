@@ -76,17 +76,17 @@ public class GuardarScoreCartelUI : MonoBehaviour
         modoJugador = modo;
         onFinalizadoCallback = onFinalizado;
 
-        // 1. Si está adentro de 'scoreUI' u otro panel padre desactivado, encendemos al padre primero
-        if (transform.parent != null)
-        {
-            transform.parent.gameObject.SetActive(true);
-            transform.parent.SetAsLastSibling();
-        }
-
-        // 2. Encendemos el cartel propio
+        // 1. Asegurar que este panel esté activo y en escala 1
         gameObject.SetActive(true);
         enabled = true;
+        transform.localScale = Vector3.one; // Fuerza Scale X:1, Y:1, Z:1
         transform.SetAsLastSibling();
+
+        // 2. Encender a todos los hijos (por si 'guardar_score_cartel' estaba apagado)
+        for (int i = 0; i < transform.childCount; i++)
+        {
+            transform.GetChild(i).gameObject.SetActive(true);
+        }
 
         if (txtTitulo != null)
             txtTitulo.text = $"¿Deseas guardar tu score de {puntos:N0} pts en el ranking?";
@@ -114,7 +114,7 @@ public class GuardarScoreCartelUI : MonoBehaviour
             btnCancel.interactable = true;
         }
 
-        // Correr la corrutina asegurando que use un runner activo si hiciera falta
+        // 3. Ejecutar cálculo de ranking
         MonoBehaviour coroutineHost = (runner != null && runner.gameObject.activeInHierarchy) ? runner : this;
 
         if (coroutineHost.gameObject.activeInHierarchy)
@@ -123,8 +123,14 @@ public class GuardarScoreCartelUI : MonoBehaviour
         }
         else
         {
-            Debug.LogError("[GuardarScoreCartelUI] No se pudo iniciar corrutina: host inactivo.");
+            Debug.LogError("[GuardarScoreCartelUI] Host inactivo para corrutina.");
         }
+    }
+
+    private void CerrarYAvisar()
+    {
+        gameObject.SetActive(false);
+        onFinalizadoCallback?.Invoke();
     }
 
     // ---------------------------------------------------------
@@ -276,16 +282,5 @@ public class GuardarScoreCartelUI : MonoBehaviour
         if (btnCancel != null) btnCancel.interactable = !bloquear;
     }
 
-    private void CerrarYAvisar()
-    {
-        gameObject.SetActive(false);
-
-        // Apagamos también al padre scoreUI para que no quede un panel vacío en pantalla
-        if (transform.parent != null)
-        {
-            transform.parent.gameObject.SetActive(false);
-        }
-
-        onFinalizadoCallback?.Invoke();
-    }
+   
 }

@@ -510,7 +510,6 @@ public class PauseController : NetworkBehaviour
             Salir();
         }
     }
-
     private void AbrirScoreSupervivencia()
     {
         // 1. Pintar de naranja y deshabilitar interacción
@@ -530,18 +529,38 @@ public class PauseController : NetworkBehaviour
             Debug.Log("<color=orange>[PauseController] Botón pintado de NARANJA y DESHABILITADO.</color>");
         }
 
-        // 2. Verificar cartel
-        if (cartelGuardarScore == null)
+        // 2. BUSCAR EL CARTEL DENTRO DE ESTE CLON EXACTO DE LA ESCENA
+        // Buscamos directamente en nuestros propios componentes hijos (incluyendo inactivos)
+        GuardarScoreCartelUI cartelEnEscena = GetComponentInChildren<GuardarScoreCartelUI>(true);
+        if (cartelEnEscena == null)
         {
-            cartelGuardarScore = transform.root.GetComponentInChildren<GuardarScoreCartelUI>(true);
+            // Si no está debajo de este script, buscar en la raíz del Player clonado
+            cartelEnEscena = transform.root.GetComponentInChildren<GuardarScoreCartelUI>(true);
         }
 
-        if (cartelGuardarScore == null)
+        if (cartelEnEscena == null)
         {
-            Debug.LogError("<color=red>[PauseController] ERROR: No se encontró GuardarScoreCartelUI en la jerarquía.</color>");
+            Debug.LogError("<color=red>[PauseController] CRÍTICO: No se encontró GuardarScoreCartelUI dentro de Player(Clone) en la escena activa.</color>");
             Salir();
             return;
         }
+
+        cartelGuardarScore = cartelEnEscena;
+
+        // 3. ACTIVAR EXPLÍCITAMENTE TODOS LOS PADRES HASTA LA RAÍZ Y FORZAR ESCALA
+        Transform t = cartelGuardarScore.transform;
+        while (t != null && t != transform.root)
+        {
+            t.gameObject.SetActive(true);
+            //t.localScale = Vector3.one;
+            t = t.parent;
+        }
+
+        cartelGuardarScore.gameObject.SetActive(true);
+        cartelGuardarScore.transform.localScale = Vector3.one;
+        cartelGuardarScore.transform.SetAsLastSibling();
+
+        Debug.Log($"<color=green>[PauseController] Cartel '{cartelGuardarScore.gameObject.name}' ACTIVADO FORZOSAMENTE. activeInHierarchy={cartelGuardarScore.gameObject.activeInHierarchy}</color>");
 
         string nombreFinal = PlayerPrefs.GetString("PLAYER_CUSTOM_USERNAME", "");
         if (string.IsNullOrWhiteSpace(nombreFinal))
@@ -549,16 +568,13 @@ public class PauseController : NetworkBehaviour
 
         int puntajeFinal = (playerScore != null) ? playerScore.ScoreNetwork.Value : 0;
 
-        Debug.Log($"<color=cyan>[PauseController] Abriendo cartel para '{nombreFinal}' con {puntajeFinal} pts.</color>");
-
-        // 3. Abrir cartel. Al finalizar (sea OK o Cancel), vuelve al menú
+        // 4. Abrir cartel
         cartelGuardarScore.AbrirCartel(nombreFinal, puntajeFinal, "Supervivencia", () =>
         {
             Debug.Log("<color=green>[PauseController] Cartel finalizado. Volviendo al menú principal...</color>");
             Salir();
         }, this);
     }
-
     // =========================================================
     // PANELES DE RONDA Y COMPRAS
     // =========================================================
