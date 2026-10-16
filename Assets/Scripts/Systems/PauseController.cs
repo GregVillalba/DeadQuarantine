@@ -568,8 +568,11 @@ public class PauseController : NetworkBehaviour
 
         int puntajeFinal = (playerScore != null) ? playerScore.ScoreNetwork.Value : 0;
 
-        // 4. Abrir cartel
-        cartelGuardarScore.AbrirCartel(nombreFinal, puntajeFinal, "Supervivencia", () =>
+        // Determinar si la partida es Singleplayer o Multiplayer
+        string modoJuego = EsSinglePlayer() ? "Singleplayer" : "Multiplayer";
+
+        // 4. Abrir cartel pasando el modo correcto
+        cartelGuardarScore.AbrirCartel(nombreFinal, puntajeFinal, modoJuego, () =>
         {
             Debug.Log("<color=green>[PauseController] Cartel finalizado. Volviendo al menú principal...</color>");
             Salir();
