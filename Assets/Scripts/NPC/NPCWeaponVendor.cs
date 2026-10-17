@@ -9,7 +9,7 @@ public class NPCWeaponVendor : MonoBehaviour
     [SerializeField] private List<WeaponOffer> offers = new List<WeaponOffer>();
 
     [Header("Blindaje (chaleco / casco)")]
-    [Tooltip("Costo de reparar una pieza, como fracción de su costo de compra (0.25 = 25%).")]
+    [Tooltip("Precio de reparar una pieza, como fracción de su precio en recursos (0.25 = 25%, redondeado para arriba).")]
     [Range(0f, 1f)]
     [SerializeField] private float porcentajeReparacion = 0.25f;
 
@@ -20,7 +20,7 @@ public class NPCWeaponVendor : MonoBehaviour
 
     private WeaponSwitcher pendingSwitcher;
     private Weapon pendingWeapon;
-    private PlayerScore pendingScore;
+    private PlayerRecursos pendingRecursos;
     private string pendingWeaponId;
 
     public event Action<string, bool> OnPurchaseResult;
@@ -28,9 +28,15 @@ public class NPCWeaponVendor : MonoBehaviour
     public IReadOnlyList<WeaponOffer> Offers => offers;
     public string NombreMercader => gameObject.name;
 
-    public int CostoReparacion(WeaponOffer oferta)
+    // Cada recurso del precio por porcentajeReparacion, redondeado para arriba.
+    public PrecioRecursos PrecioReparacion(WeaponOffer oferta)
     {
-        return Mathf.CeilToInt(oferta.cost * porcentajeReparacion);
+        PrecioRecursos precio = oferta.Precio;
+
+        return new PrecioRecursos(
+            Mathf.CeilToInt(precio.Cantidad(TipoRecurso.PilaDeLatas) * porcentajeReparacion),
+            Mathf.CeilToInt(precio.Cantidad(TipoRecurso.Cantimplora) * porcentajeReparacion),
+            Mathf.CeilToInt(precio.Cantidad(TipoRecurso.Bidon) * porcentajeReparacion));
     }
 
     private void Awake()
@@ -59,11 +65,11 @@ public class NPCWeaponVendor : MonoBehaviour
         }
 
         WeaponSwitcher switcher = camara.transform.root.GetComponentInChildren<WeaponSwitcher>();
-        PlayerScore playerScore = camara.transform.root.GetComponentInChildren<PlayerScore>();
+        PlayerRecursos playerRecursos = camara.transform.root.GetComponentInChildren<PlayerRecursos>();
 
-        if (switcher == null || playerScore == null)
+        if (switcher == null || playerRecursos == null)
         {
-            Debug.LogWarning("[NPCWeaponVendor] No se encontraron WeaponSwitcher/PlayerScore en el jugador.");
+            Debug.LogWarning("[NPCWeaponVendor] No se encontraron WeaponSwitcher/PlayerRecursos en el jugador.");
             return;
         }
 
@@ -72,11 +78,11 @@ public class NPCWeaponVendor : MonoBehaviour
             // Sin switcher pendiente: al terminar no se desbloquea ningún arma.
             pendingSwitcher = null;
             pendingWeapon = null;
-            pendingScore = playerScore;
+            pendingRecursos = playerRecursos;
             pendingWeaponId = weaponId;
 
-            playerScore.OnPurchaseResult += OnPurchaseResultInterno;
-            playerScore.ComprarCuracionServerRpc(weaponId, oferta.cost, oferta.puntosDeSalud);
+            playerRecursos.OnPurchaseResult += OnPurchaseResultInterno;
+            playerRecursos.ComprarCuracionServerRpc(weaponId, oferta.Precio, oferta.puntosDeSalud);
             return;
         }
 
@@ -85,11 +91,11 @@ public class NPCWeaponVendor : MonoBehaviour
             // El servidor valida que ese slot (curas o granadas) no haya llegado al máximo de Slot extra.
             pendingSwitcher = null;
             pendingWeapon = null;
-            pendingScore = playerScore;
+            pendingRecursos = playerRecursos;
             pendingWeaponId = weaponId;
 
-            playerScore.OnPurchaseResult += OnPurchaseResultInterno;
-            playerScore.ComprarEspacioExtraServerRpc(weaponId, oferta.cost, oferta.slotExtra);
+            playerRecursos.OnPurchaseResult += OnPurchaseResultInterno;
+            playerRecursos.ComprarEspacioExtraServerRpc(weaponId, oferta.Precio, oferta.slotExtra);
             return;
         }
 
@@ -98,11 +104,11 @@ public class NPCWeaponVendor : MonoBehaviour
             // El servidor decide si es compra o reparación según el estado de la pieza.
             pendingSwitcher = null;
             pendingWeapon = null;
-            pendingScore = playerScore;
+            pendingRecursos = playerRecursos;
             pendingWeaponId = weaponId;
 
-            playerScore.OnPurchaseResult += OnPurchaseResultInterno;
-            playerScore.ComprarBlindajeServerRpc(weaponId, oferta.piezaBlindaje, oferta.cost, CostoReparacion(oferta), oferta.armadura);
+            playerRecursos.OnPurchaseResult += OnPurchaseResultInterno;
+            playerRecursos.ComprarBlindajeServerRpc(weaponId, oferta.piezaBlindaje, oferta.Precio, PrecioReparacion(oferta), oferta.armadura);
             return;
         }
 
@@ -120,11 +126,11 @@ public class NPCWeaponVendor : MonoBehaviour
 
             pendingSwitcher = null;
             pendingWeapon = arma;
-            pendingScore = playerScore;
+            pendingRecursos = playerRecursos;
             pendingWeaponId = weaponId;
 
-            playerScore.OnPurchaseResult += OnPurchaseResultInterno;
-            playerScore.ComprarArmaServerRpc(weaponId, oferta.cost);
+            playerRecursos.OnPurchaseResult += OnPurchaseResultInterno;
+            playerRecursos.ComprarArmaServerRpc(weaponId, oferta.Precio);
             return;
         }
 
@@ -145,11 +151,11 @@ public class NPCWeaponVendor : MonoBehaviour
             // El servidor guarda la granada en el slot: acá no queda nada pendiente por aplicar.
             pendingSwitcher = null;
             pendingWeapon = null;
-            pendingScore = playerScore;
+            pendingRecursos = playerRecursos;
             pendingWeaponId = weaponId;
 
-            playerScore.OnPurchaseResult += OnPurchaseResultInterno;
-            playerScore.ComprarGranadaServerRpc(weaponId, oferta.cost);
+            playerRecursos.OnPurchaseResult += OnPurchaseResultInterno;
+            playerRecursos.ComprarGranadaServerRpc(weaponId, oferta.Precio);
             return;
         }
 
@@ -161,11 +167,11 @@ public class NPCWeaponVendor : MonoBehaviour
 
         pendingSwitcher = switcher;
         pendingWeapon = null;
-        pendingScore = playerScore;
+        pendingRecursos = playerRecursos;
         pendingWeaponId = weaponId;
 
-        playerScore.OnPurchaseResult += OnPurchaseResultInterno;
-        playerScore.ComprarArmaServerRpc(weaponId, oferta.cost);
+        playerRecursos.OnPurchaseResult += OnPurchaseResultInterno;
+        playerRecursos.ComprarArmaServerRpc(weaponId, oferta.Precio);
     }
 
     private void OnPurchaseResultInterno(string weaponId, bool exito)
@@ -173,8 +179,8 @@ public class NPCWeaponVendor : MonoBehaviour
         if (weaponId != pendingWeaponId)
             return;
 
-        if (pendingScore != null)
-            pendingScore.OnPurchaseResult -= OnPurchaseResultInterno;
+        if (pendingRecursos != null)
+            pendingRecursos.OnPurchaseResult -= OnPurchaseResultInterno;
 
         PlaySound(exito ? purchaseSuccessSound : purchaseDeniedSound);
 
@@ -186,7 +192,7 @@ public class NPCWeaponVendor : MonoBehaviour
 
         pendingSwitcher = null;
         pendingWeapon = null;
-        pendingScore = null;
+        pendingRecursos = null;
         pendingWeaponId = null;
 
         OnPurchaseResult?.Invoke(weaponId, exito);
