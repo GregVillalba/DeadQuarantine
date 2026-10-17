@@ -60,6 +60,7 @@ public class GuardarScoreCartelUI : MonoBehaviour
         public string codigo_pais;
         public int usa_vpn;
         public string creado_en;
+        public string dificultad;
     }
 
     private static class JsonHelper
@@ -79,6 +80,7 @@ public class GuardarScoreCartelUI : MonoBehaviour
     }
 
     private string nombreJugador;
+    private string dificultadJugador;
     private int scoreJugador;
     private string modoJugador;
     private Action onFinalizadoCallback;
@@ -134,11 +136,22 @@ public class GuardarScoreCartelUI : MonoBehaviour
         }
     }
 
-    public void AbrirCartel(string username, int puntos, string modo, Action onFinalizado, MonoBehaviour runner = null)
+    private string ObtenerDificultadActual()
+    {
+        var cfg = ConfiguracionPartidaSeleccionada.Instancia;
+        if (cfg == null) return "";
+
+        var d = cfg.dificultadSeleccionada;
+        return d == ConfiguracionPartidaSeleccionada.Dificultad.Ninguna ? "" : d.ToString();
+    }
+
+
+    public void AbrirCartel(string username, int puntos, string modo, Action onFinalizado, MonoBehaviour runner = null, string dificultad = "Normal")
     {
         nombreJugador = string.IsNullOrWhiteSpace(username) ? "Superviviente" : username;
         scoreJugador = puntos;
         modoJugador = modo;
+        dificultadJugador = ObtenerDificultadActual();
         onFinalizadoCallback = onFinalizado;
 
         gameObject.SetActive(true);
@@ -263,10 +276,11 @@ public class GuardarScoreCartelUI : MonoBehaviour
 
         ScorePayload payload = new ScorePayload
         {
-            user_id = PlayerIdentity.GetUserId(), // <-- ID persistente inmutable
+            user_id = PlayerIdentity.GetUserId(),
             username = nombreJugador,
             puntos = scoreJugador,
             modo = modoJugador,
+            dificultad = dificultadJugador,
             ip = ip,
             pais = pais,
             codigo_pais = codigoPais,
@@ -276,6 +290,7 @@ public class GuardarScoreCartelUI : MonoBehaviour
 
         string json = JsonUtility.ToJson(payload);
         Debug.Log($"<color=yellow>[GuardarScoreCartelUI] Enviando Payload Completo a {apiUrl}:</color>\n{json}");
+
 
         using (UnityWebRequest req = new UnityWebRequest(apiUrl, "POST"))
         {

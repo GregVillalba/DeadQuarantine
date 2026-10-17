@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq; 
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
 using TMPro;
@@ -16,6 +16,7 @@ public class RankingTop10Manager : MonoBehaviour
         public string username;
         public int puntos;
         public string modo;
+        public string dificultad; // Recibido desde MySQL
     }
 
     public static class JsonHelper
@@ -45,6 +46,7 @@ public class RankingTop10Manager : MonoBehaviour
     [Header("Dropdowns de Filtro")]
     [SerializeField] private TMP_Dropdown dropdownOrden;
     [SerializeField] private TMP_Dropdown dropdownModo;
+    [SerializeField] private TMP_Dropdown dropdownDificultad; // <-- Dropdown para filtrar Dificultad
 
     [Header("Colores Podio")]
     [SerializeField] private Color colorOro = new Color(1f, 0.84f, 0f);
@@ -63,6 +65,9 @@ public class RankingTop10Manager : MonoBehaviour
     {
         if (dropdownModo != null)
             dropdownModo.onValueChanged.AddListener(_ => ActualizarRanking());
+
+        if (dropdownDificultad != null)
+            dropdownDificultad.onValueChanged.AddListener(_ => ActualizarRanking());
 
         if (dropdownOrden != null)
             dropdownOrden.onValueChanged.AddListener(_ => ActualizarRanking());
@@ -89,6 +94,12 @@ public class RankingTop10Manager : MonoBehaviour
         {
             string modo = dropdownModo.options[dropdownModo.value].text.Trim();
             url += "&mode=" + UnityWebRequest.EscapeURL(modo);
+        }
+
+        if (dropdownDificultad != null && dropdownDificultad.value > 0)
+        {
+            string dif = dropdownDificultad.options[dropdownDificultad.value].text.Trim();
+            url += "&dificultad=" + UnityWebRequest.EscapeURL(dif);
         }
 
         using (UnityWebRequest req = UnityWebRequest.Get(url))
@@ -194,7 +205,7 @@ public class RankingTop10Manager : MonoBehaviour
             esMiFila ? $"{j.username} (Tú)" : j.username,
             $"{j.puntos:N0} PTS",
             j.modo,
-            ""
+            string.IsNullOrEmpty(j.dificultad) ? "Normal" : j.dificultad // <-- Columna 5: Dificultad
         };
 
         for (int i = 0; i < t.Length && i < valores.Length; i++)
