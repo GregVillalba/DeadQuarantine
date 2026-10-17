@@ -8,20 +8,15 @@ using TMPro;
 
 public class RankingTop10Manager : MonoBehaviour
 {
-    [System.Serializable]
+    [Serializable]
     public class JugadorRanking
     {
+        public string puesto;   // "1".."5", "..." o el puesto real del usuario
+        public string user_id;
         public string username;
         public int puntos;
         public string modo;
-        public string dificultad;
-    }
-
-    // Estructura interna para retener el puesto real obtenido de la base de datos
-    private class JugadorConPuesto
-    {
-        public int puestoOriginal;
-        public JugadorRanking datos;
+        public string dificultad; // Recibido desde MySQL
     }
 
     public static class JsonHelper
@@ -41,7 +36,7 @@ public class RankingTop10Manager : MonoBehaviour
     }
 
     [Header("Conexión URL")]
-    [SerializeField] private string rankingUrl = "http://localhost:3000/api/ranking";
+    [SerializeField] private string rankingUrl = "https://dead-quarentine-web.wasmer.app/api/ranking";
 
     [Header("Referencias de UI - Tabla")]
     [SerializeField] private Transform contenedorFilas;
@@ -49,33 +44,33 @@ public class RankingTop10Manager : MonoBehaviour
     [SerializeField] private TMP_Text txtEstado;
 
     [Header("Dropdowns de Filtro")]
-    // Opciones: 0: Todos/Predeterminado (1° al 10°), 1: Ascendente (1° al 10°), 2: Descendente (10° al 1°)
     [SerializeField] private TMP_Dropdown dropdownOrden;
-
-    // Opciones: 0: Todos, 1: Singleplayer, 2: Multiplayer
     [SerializeField] private TMP_Dropdown dropdownModo;
-
-    // Opciones: 0: Todos, 1: Normal, 2: Difícil, 3: Pesadilla
-    [SerializeField] private TMP_Dropdown dropdownDificultad;
+    [SerializeField] private TMP_Dropdown dropdownDificultad; // <-- Dropdown para filtrar Dificultad
 
     [Header("Colores Podio")]
-    [SerializeField] private Color colorOro = new Color(1f, 0.84f, 0f);      // 1°
-    [SerializeField] private Color colorPlata = new Color(0.85f, 0.85f, 0.85f); // 2°
-    [SerializeField] private Color colorBronce = new Color(0.8f, 0.5f, 0.2f);   // 3°
+    [SerializeField] private Color colorOro = new Color(1f, 0.84f, 0f);
+    [SerializeField] private Color colorPlata = new Color(0.85f, 0.85f, 0.85f);
+    [SerializeField] private Color colorBronce = new Color(0.8f, 0.5f, 0.2f);
     [SerializeField] private Color colorResto = Color.white;
+    [SerializeField] private Color colorMiFila = new Color(0.2f, 1f, 0.5f);
 
-    private List<JugadorRanking> listaOriginal = new List<JugadorRanking>();
+    private Coroutine cargaActual;
+
+    [Header("Mi registro")]
+    [SerializeField] private bool mostrarMensajeSinRegistro = true;
+    [SerializeField] private string mensajeSinRegistro = "Aún no tenés puntaje";
 
     private void Awake()
     {
-        if (dropdownOrden != null)
-            dropdownOrden.onValueChanged.AddListener(delegate { AplicarFiltrosYRenderizar(); });
-
         if (dropdownModo != null)
-            dropdownModo.onValueChanged.AddListener(delegate { AplicarFiltrosYRenderizar(); });
+            dropdownModo.onValueChanged.AddListener(_ => ActualizarRanking());
 
         if (dropdownDificultad != null)
-            dropdownDificultad.onValueChanged.AddListener(delegate { AplicarFiltrosYRenderizar(); });
+            dropdownDificultad.onValueChanged.AddListener(_ => ActualizarRanking());
+
+        if (dropdownOrden != null)
+            dropdownOrden.onValueChanged.AddListener(_ => ActualizarRanking());
     }
 
     private void OnEnable()
@@ -85,165 +80,163 @@ public class RankingTop10Manager : MonoBehaviour
 
     public void ActualizarRanking()
     {
-        StartCoroutine(CargarRankingDesdeURL());
+        if (cargaActual != null) StopCoroutine(cargaActual);
+        cargaActual = StartCoroutine(CargarRankingDesdeURL());
     }
 
     private IEnumerator CargarRankingDesdeURL()
     {
-        if (txtEstado != null)
+        MostrarEstado("Cargando Ranking...");
+
+        string url = $"{rankingUrl}?user_id={UnityWebRequest.EscapeURL(PlayerIdentity.GetUserId())}";
+
+        if (dropdownModo != null && dropdownModo.value > 0)
         {
-            txtEstado.gameObject.SetActive(true);
-            txtEstado.text = "Cargando Top 10...";
+            string modo = dropdownModo.options[dropdownModo.value].text.Trim();
+            url += "&mode=" + UnityWebRequest.EscapeURL(modo);
         }
 
-        using (UnityWebRequest req = UnityWebRequest.Get(rankingUrl))
+        if (dropdownDificultad != null && dropdownDificultad.value > 0)
         {
+            string dif = dropdownDificultad.options[dropdownDificultad.value].text.Trim();
+            url += "&dificultad=" + UnityWebRequest.EscapeURL(dif);
+        }
+
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            req.timeout = 10;
             yield return req.SendWebRequest();
 
-            if (req.result == UnityWebRequest.Result.Success)
+            if (req.result != UnityWebRequest.Result.Success)
             {
-                if (txtEstado != null) txtEstado.gameObject.SetActive(false);
-
-                string json = req.downloadHandler.text;
-                JugadorRanking[] datos = JsonHelper.FromJson<JugadorRanking>(json);
-
-                listaOriginal = (datos != null) ? new List<JugadorRanking>(datos) : new List<JugadorRanking>();
-
-                AplicarFiltrosYRenderizar();
+                MostrarEstado("Error al conectar con el servidor.");
+                Debug.LogWarning($"[RANKING ERROR]: {req.error}\n{req.downloadHandler?.text}");
+                yield break;
             }
-            else
+
+            JugadorRanking[] datos = null;
+            try
             {
-                if (txtEstado != null)
-                {
-                    txtEstado.gameObject.SetActive(true);
-                    txtEstado.text = "Error al conectar con el servidor.";
-                }
-                Debug.LogWarning($"[RANKING ERROR]: {req.error}");
+                datos = JsonHelper.FromJson<JugadorRanking>(req.downloadHandler.text);
             }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[RANKING] Error parseando JSON: " + e.Message);
+            }
+
+            Renderizar(datos);
         }
     }
 
-    public void AplicarFiltrosYRenderizar()
+    private void Renderizar(JugadorRanking[] datos)
     {
-        // Limpiar filas previas
         foreach (Transform child in contenedorFilas)
         {
+            child.gameObject.SetActive(false);
             Destroy(child.gameObject);
         }
 
-        if (listaOriginal == null || listaOriginal.Count == 0)
+        var top = new List<JugadorRanking>();
+        JugadorRanking mia = null;
+        bool haySeparador = false;
+
+        if (datos != null)
         {
-            if (txtEstado != null)
+            foreach (var j in datos)
             {
-                txtEstado.gameObject.SetActive(true);
-                txtEstado.text = "No hay registros disponibles.";
-            }
-            return;
-        }
-
-        // 1. Asignar el puesto oficial (1° a 10°) según el orden natural por puntos
-        List<JugadorConPuesto> rankingBase = listaOriginal
-            .OrderByDescending(j => j.puntos)
-            .Select((j, index) => new JugadorConPuesto { puestoOriginal = index + 1, datos = j })
-            .ToList();
-
-        IEnumerable<JugadorConPuesto> filtrados = rankingBase;
-
-        // 2. FILTRAR POR MODO
-        if (dropdownModo != null && dropdownModo.value > 0)
-        {
-            string opcionModo = dropdownModo.options[dropdownModo.value].text.Trim();
-            filtrados = filtrados.Where(item => string.Equals(item.datos.modo, opcionModo, StringComparison.OrdinalIgnoreCase));
-        }
-
-        // 3. FILTRAR POR DIFICULTAD
-        if (dropdownDificultad != null && dropdownDificultad.value > 0)
-        {
-            string opcionDificultad = dropdownDificultad.options[dropdownDificultad.value].text.Trim();
-            filtrados = filtrados.Where(item => string.Equals(item.datos.dificultad, opcionDificultad, StringComparison.OrdinalIgnoreCase));
-        }
-
-        // 4. ORDENAR RESPECTO AL VALOR DEL PUESTO
-        // Ascendente: 1°, 2°, 3°... (del menor valor de puesto al mayor)
-        // Descendente: 10°, 9°, 8°... (del mayor valor de puesto al menor)
-        if (dropdownOrden != null)
-        {
-            string textoOrden = dropdownOrden.options[dropdownOrden.value].text.ToLower();
-
-            if (textoOrden.Contains("descendente"))
-            {
-                // De 10° a 1°
-                filtrados = filtrados.OrderByDescending(item => item.puestoOriginal);
-            }
-            else
-            {
-                // "Ascendente" o "Todos": de 1° a 10°
-                filtrados = filtrados.OrderBy(item => item.puestoOriginal);
+                if (j.puesto == "...") { haySeparador = true; continue; }
+                if (haySeparador) mia = j;
+                else top.Add(j);
             }
         }
-        else
-        {
-            filtrados = filtrados.OrderBy(item => item.puestoOriginal);
-        }
 
-        List<JugadorConPuesto> listaFinal = filtrados.Take(10).ToList();
-
-        if (listaFinal.Count == 0)
+        if (top.Count == 0)
         {
-            if (txtEstado != null)
-            {
-                txtEstado.gameObject.SetActive(true);
-                txtEstado.text = "No hay resultados con estos filtros.";
-            }
+            MostrarEstado("No hay registros disponibles.");
             return;
         }
 
         if (txtEstado != null) txtEstado.gameObject.SetActive(false);
 
-        // 5. Renderizar filas
-        for (int i = 0; i < listaFinal.Count; i++)
+        if (dropdownOrden != null &&
+            dropdownOrden.options[dropdownOrden.value].text.ToLower().Contains("descendente"))
         {
-            JugadorConPuesto item = listaFinal[i];
-            GameObject filaObj = Instantiate(prefabFila, contenedorFilas);
-
-            TMP_Text[] textosFila = filaObj.GetComponentsInChildren<TMP_Text>();
-
-            int puesto = item.puestoOriginal;
-
-            // Columna 1: Puesto numérico real
-            if (textosFila.Length > 0)
-            {
-                textosFila[0].text = $"{puesto}°";
-
-                if (puesto == 1) textosFila[0].color = colorOro;
-                else if (puesto == 2) textosFila[0].color = colorPlata;
-                else if (puesto == 3) textosFila[0].color = colorBronce;
-                else textosFila[0].color = colorResto;
-            }
-
-            // Columna 2: Usuario
-            if (textosFila.Length > 1)
-            {
-                textosFila[1].text = item.datos.username;
-            }
-
-            // Columna 3: Puntos
-            if (textosFila.Length > 2)
-            {
-                textosFila[2].text = item.datos.puntos.ToString("N0") + " PTS";
-            }
-
-            // Columna 4: Modo
-            if (textosFila.Length > 3)
-            {
-                textosFila[3].text = item.datos.modo;
-            }
-
-            // Columna 5: Dificultad
-            if (textosFila.Length > 4)
-            {
-                textosFila[4].text = item.datos.dificultad;
-            }
+            top.Reverse();
         }
+
+        string miId = PlayerIdentity.GetUserId();
+
+        foreach (var j in top)
+            CrearFilaUI(j, esMiFila: j.user_id == miId);
+
+        if (haySeparador && mia != null)
+        {
+            CrearFilaPuntosSuspensivos();
+            CrearFilaUI(mia, esMiFila: true);
+        }
+        else if (mostrarMensajeSinRegistro && !top.Any(j => j.user_id == miId))
+        {
+            CrearFilaMensaje(mensajeSinRegistro);
+        }
+    }
+
+    private void CrearFilaMensaje(string msg)
+    {
+        GameObject filaObj = Instantiate(prefabFila, contenedorFilas);
+        TMP_Text[] t = filaObj.GetComponentsInChildren<TMP_Text>();
+        for (int i = 0; i < t.Length; i++)
+        {
+            t[i].text = i == 1 ? msg : "";
+            t[i].color = new Color(0.8f, 0.8f, 0.8f, 0.8f);
+        }
+    }
+
+    private void CrearFilaUI(JugadorRanking j, bool esMiFila)
+    {
+        GameObject filaObj = Instantiate(prefabFila, contenedorFilas);
+        TMP_Text[] t = filaObj.GetComponentsInChildren<TMP_Text>();
+
+        int.TryParse(j.puesto, out int puesto);
+        Color color = esMiFila ? colorMiFila : ObtenerColorPuesto(puesto);
+
+        string[] valores =
+        {
+            $"{j.puesto}°",
+            esMiFila ? $"{j.username} (Tú)" : j.username,
+            $"{j.puntos:N0} PTS",
+            j.modo,
+            string.IsNullOrEmpty(j.dificultad) ? "Normal" : j.dificultad // <-- Columna 5: Dificultad
+        };
+
+        for (int i = 0; i < t.Length && i < valores.Length; i++)
+        {
+            t[i].text = valores[i];
+            t[i].color = color;
+        }
+    }
+
+    private void CrearFilaPuntosSuspensivos()
+    {
+        GameObject filaObj = Instantiate(prefabFila, contenedorFilas);
+        foreach (var txt in filaObj.GetComponentsInChildren<TMP_Text>())
+        {
+            txt.text = "...";
+            txt.color = new Color(0.8f, 0.8f, 0.8f, 0.6f);
+        }
+    }
+
+    private void MostrarEstado(string msg)
+    {
+        if (txtEstado == null) return;
+        txtEstado.gameObject.SetActive(true);
+        txtEstado.text = msg;
+    }
+
+    private Color ObtenerColorPuesto(int puesto)
+    {
+        if (puesto == 1) return colorOro;
+        if (puesto == 2) return colorPlata;
+        if (puesto == 3) return colorBronce;
+        return colorResto;
     }
 }
