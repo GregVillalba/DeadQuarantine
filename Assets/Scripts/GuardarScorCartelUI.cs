@@ -25,6 +25,7 @@ public class GuardarScoreCartelUI : MonoBehaviour
     [SerializeField] private string mensajeError = "No se pudo subir. Reintentá o cancelá.";
     [SerializeField] private float segundosAntesDeCerrar = 1.5f;
 
+
     [Serializable]
     private class RankingEntry
     {
@@ -50,6 +51,7 @@ public class GuardarScoreCartelUI : MonoBehaviour
     [Serializable]
     private class ScorePayload
     {
+        public string user_id;       // UUID persistente del dispositivo
         public string username;
         public int puntos;
         public string modo;
@@ -81,6 +83,41 @@ public class GuardarScoreCartelUI : MonoBehaviour
     private string modoJugador;
     private Action onFinalizadoCallback;
     private Color colorOriginalBtnOk = Color.white;
+
+
+    [Serializable] private class PuestoResponse { public int puesto; }
+
+
+    private IEnumerator CalcularPuesto()
+    {
+        string url = $"{apiUrl}?score={scoreJugador}";
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            req.timeout = 10;
+            yield return req.SendWebRequest();
+
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogWarning($"[GuardarScoreCartelUI] Error al calcular puesto: {req.error}\n{req.downloadHandler?.text}");
+                if (txtResult != null) txtResult.text = "Puesto: no disponible (sin conexión)";
+                yield break;
+            }
+
+            PuestoResponse resp = null;
+            try { resp = JsonUtility.FromJson<PuestoResponse>(req.downloadHandler.text); }
+            catch (Exception e) { Debug.LogWarning("Error parseando puesto: " + e.Message); }
+
+            if (resp == null || resp.puesto <= 0 || txtResult == null)
+            {
+                if (txtResult != null) txtResult.text = "Puesto: no disponible";
+                yield break;
+            }
+
+            txtResult.text = resp.puesto <= 5
+                ? $"Tu score entra en el puesto #{resp.puesto} del Top 5"
+                : $"Tu puesto estimado: #{resp.puesto}";
+        }
+    }
 
     private void Awake()
     {
@@ -160,47 +197,6 @@ public class GuardarScoreCartelUI : MonoBehaviour
         onFinalizadoCallback?.Invoke();
     }
 
-    private IEnumerator CalcularPuesto()
-    {
-        Debug.Log("[GuardarScoreCartelUI] Consultando API para calcular puesto...");
-
-        using (UnityWebRequest req = UnityWebRequest.Get(apiUrl))
-        {
-            req.timeout = 10;
-            yield return req.SendWebRequest();
-
-            if (req.result != UnityWebRequest.Result.Success)
-            {
-                Debug.LogWarning($"[GuardarScoreCartelUI] Error al obtener ranking: {req.error}");
-                if (txtResult != null) txtResult.text = "Puesto: no disponible (sin conexión)";
-                yield break;
-            }
-
-            RankingEntry[] lista = null;
-            try
-            {
-                lista = JsonHelper.FromJson<RankingEntry>(req.downloadHandler.text);
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning("[GuardarScoreCartelUI] Error parseando JSON: " + e.Message);
-            }
-
-            if (lista == null || txtResult == null)
-            {
-                if (txtResult != null) txtResult.text = "Puesto: no disponible";
-                yield break;
-            }
-
-            int puesto = lista.Count(j => j.puntos > scoreJugador) + 1;
-            Debug.Log($"<color=cyan>[GuardarScoreCartelUI] Puesto calculado: #{puesto}</color>");
-
-            txtResult.text = puesto <= 10
-                ? $"Tu score entra en el puesto #{puesto} del Top 10"
-                : $"Tu puesto estimado: #{puesto}";
-        }
-    }
-
     private void OnOkClicked()
     {
         Debug.Log("<color=green>[GuardarScoreCartelUI] Clic en OK / Reintentar...</color>");
@@ -267,6 +263,7 @@ public class GuardarScoreCartelUI : MonoBehaviour
 
         ScorePayload payload = new ScorePayload
         {
+            user_id = PlayerIdentity.GetUserId(), // <-- ID persistente inmutable
             username = nombreJugador,
             puntos = scoreJugador,
             modo = modoJugador,
