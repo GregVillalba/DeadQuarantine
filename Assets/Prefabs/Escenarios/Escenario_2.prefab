@@ -99,6 +99,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9202492823541464766}
+  - component: {fileID: 8391385495223168061}
   m_Layer: 0
   m_Name: Escenario_2
   m_TagString: Untagged
@@ -129,6 +130,38 @@ Transform:
   - {fileID: 4479963563021221244}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8391385495223168061
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 213846406928866725}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a5ac11cc976e418e8d13136b07e1f52, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.AI.Navigation::Unity.AI.Navigation.NavMeshSurface
+  m_SerializedVersion: 0
+  m_AgentTypeID: 0
+  m_CollectObjects: 0
+  m_Size: {x: 10, y: 10, z: 10}
+  m_Center: {x: 0, y: 2, z: 0}
+  m_LayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_UseGeometry: 0
+  m_DefaultArea: 0
+  m_GenerateLinks: 0
+  m_IgnoreNavMeshAgent: 1
+  m_IgnoreNavMeshObstacle: 1
+  m_OverrideTileSize: 0
+  m_TileSize: 256
+  m_OverrideVoxelSize: 0
+  m_VoxelSize: 0.13333334
+  m_MinRegionArea: 2
+  m_NavMeshData: {fileID: 23800000, guid: 3a175f7a1377cf14ca3dbe353e7e7213, type: 2}
+  m_BuildHeightMesh: 0
 --- !u!1 &234708286924084387
 GameObject:
   m_ObjectHideFlags: 0
@@ -2821,7 +2854,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 569e4975a63d4044bb66cfc7c2d70534, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 629702139495641728, guid: 380532d3abf5c4965bbe57f01a44b6f7, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -2977,7 +3011,8 @@ PrefabInstance:
       propertyPath: areLightsOn
       value: 1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 2185148053815863110, guid: ae820dc655ea1441f9d147da791ae4ff, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -3511,7 +3546,8 @@ PrefabInstance:
       propertyPath: areLightsOn
       value: 1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 7179192095245955083, guid: b8b48fd9575c34dde9410dee78a4ff72, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -5323,7 +5359,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[2]'
       value: 
       objectReference: {fileID: 2100000, guid: d6818e1d766b10543b030fcd02fd74bb, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 4637303494214805684, guid: b7606478af2ba44b28e13ccd39a13373, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -6169,7 +6206,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 569e4975a63d4044bb66cfc7c2d70534, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: -8696957684565017488, guid: 0c7f1786f206a4f149506fbb91114ee7, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -6271,7 +6309,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[4]'
       value: 
       objectReference: {fileID: 2100000, guid: 0fc013817d14cb14c90840674ae7bd37, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1610895502443687768, guid: 3251c781defe1407c8f424ea546826e9, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -6481,7 +6520,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_6
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -6563,7 +6603,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 2fbaeab477b25244398f9006de5c9bee, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8900202455907467469, guid: 7b5e1eea516134af4811125beb2c0716, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -7479,7 +7520,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[2]'
       value: 
       objectReference: {fileID: 2100000, guid: 4312ffd2735e82c4daec1afb45591795, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: -1027697542866564130, guid: 92c740a39a2114a0585c8786bd34a4b6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -8201,7 +8243,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 1437cb5853106b543b56315de5286626, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 5531880010298688868, guid: 31ec228187ddd4313a8c9b564df8200a, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -8275,7 +8318,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: suburban-house-E
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 4332143488822806756, guid: 7e1e1e5641b7b430e9cff12b237d76cf, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -8377,16 +8421,91 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[4]'
       value: 
       objectReference: {fileID: 2100000, guid: 0fc013817d14cb14c90840674ae7bd37, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1610895502443687768, guid: 3251c781defe1407c8f424ea546826e9, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4295274194826119264, guid: 3251c781defe1407c8f424ea546826e9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6086159843633281096}
+    - targetCorrespondingSourceObject: {fileID: 5011144230331511338, guid: 3251c781defe1407c8f424ea546826e9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1380020332143842035}
   m_SourcePrefab: {fileID: 100100000, guid: 3251c781defe1407c8f424ea546826e9, type: 3}
+--- !u!1 &1804139901426624851 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4295274194826119264, guid: 3251c781defe1407c8f424ea546826e9, type: 3}
+  m_PrefabInstance: {fileID: 2491184046708039987}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6086159843633281096
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1804139901426624851}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!4 &5687995682687642887 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7817588554257288244, guid: 3251c781defe1407c8f424ea546826e9, type: 3}
   m_PrefabInstance: {fileID: 2491184046708039987}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &7429074139267158809 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5011144230331511338, guid: 3251c781defe1407c8f424ea546826e9, type: 3}
+  m_PrefabInstance: {fileID: 2491184046708039987}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1380020332143842035
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7429074139267158809}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!1001 &2526625254329616390
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8537,7 +8656,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 4312ffd2735e82c4daec1afb45591795, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: -7992126540864303076, guid: c003e24639b7949cf8abbaaf6ba7f4c5, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -8615,7 +8735,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 4312ffd2735e82c4daec1afb45591795, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: -7992126540864303076, guid: c003e24639b7949cf8abbaaf6ba7f4c5, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -8693,7 +8814,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: cb-apartment-B
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: -4905736551188232195, guid: f154d8e56ba3c48c18e04e119cc1c9cd, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -9193,7 +9315,8 @@ PrefabInstance:
       propertyPath: areLightsOn
       value: 1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 7179192095245955083, guid: b8b48fd9575c34dde9410dee78a4ff72, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -9419,7 +9542,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 2fbaeab477b25244398f9006de5c9bee, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8900202455907467469, guid: 7b5e1eea516134af4811125beb2c0716, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -9497,7 +9621,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_5
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -9575,7 +9700,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_25
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -9813,7 +9939,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[3]'
       value: 
       objectReference: {fileID: 2100000, guid: 9b4053e51089a8f4ca2c0a1c6f6ece2f, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 2347743963897379291, guid: 93d7a27ba43054391bdd266859e9c0a0, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -9895,7 +10022,8 @@ PrefabInstance:
       propertyPath: areLightsOn
       value: 1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 7314617350776258440, guid: 80b7f4a5711d54ec2962815e76b809f6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -10125,7 +10253,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[3]'
       value: 
       objectReference: {fileID: 2100000, guid: 9b4053e51089a8f4ca2c0a1c6f6ece2f, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 2347743963897379291, guid: 93d7a27ba43054391bdd266859e9c0a0, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -10671,7 +10800,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[3]'
       value: 
       objectReference: {fileID: 2100000, guid: 9b4053e51089a8f4ca2c0a1c6f6ece2f, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 2347743963897379291, guid: 93d7a27ba43054391bdd266859e9c0a0, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -10847,7 +10977,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[4]'
       value: 
       objectReference: {fileID: 2100000, guid: 0fc013817d14cb14c90840674ae7bd37, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1610895502443687768, guid: 3251c781defe1407c8f424ea546826e9, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -11291,7 +11422,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 2fbaeab477b25244398f9006de5c9bee, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8900202455907467469, guid: 7b5e1eea516134af4811125beb2c0716, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -11779,7 +11911,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 492506531598836749, guid: ae143931a5435412bb49667fb5750a3b, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -11857,7 +11990,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_20
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -11935,7 +12069,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_28
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -12157,7 +12292,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_27
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -12235,7 +12371,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_12
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -12313,7 +12450,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_26
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -12395,7 +12533,8 @@ PrefabInstance:
       propertyPath: areLightsOn
       value: 1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 4024372236849730909, guid: b52c4b9c54a5946499f05e297a4fc6f3, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -12691,7 +12830,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_21
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -13345,7 +13485,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[3]'
       value: 
       objectReference: {fileID: 2100000, guid: 9b4053e51089a8f4ca2c0a1c6f6ece2f, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 2347743963897379291, guid: 93d7a27ba43054391bdd266859e9c0a0, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -13809,7 +13950,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[4]'
       value: 
       objectReference: {fileID: 2100000, guid: 0fc013817d14cb14c90840674ae7bd37, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1610895502443687768, guid: 3251c781defe1407c8f424ea546826e9, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -14196,7 +14338,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_24
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -14356,7 +14499,8 @@ PrefabInstance:
       propertyPath: areLightsOn
       value: 1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 7179192095245955083, guid: b8b48fd9575c34dde9410dee78a4ff72, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -14570,7 +14714,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 4312ffd2735e82c4daec1afb45591795, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 863725953392773676, guid: 10d98aad7ab824bc7835210e42e32f3d, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -14796,7 +14941,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 2fbaeab477b25244398f9006de5c9bee, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8900202455907467469, guid: 7b5e1eea516134af4811125beb2c0716, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -15112,7 +15258,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -15416,7 +15563,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[4]'
       value: 
       objectReference: {fileID: 2100000, guid: 0fc013817d14cb14c90840674ae7bd37, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1610895502443687768, guid: 3251c781defe1407c8f424ea546826e9, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -15918,7 +16066,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_11
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -16246,7 +16395,8 @@ PrefabInstance:
       propertyPath: areLightsOn
       value: 1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 2185148053815863110, guid: ae820dc655ea1441f9d147da791ae4ff, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -16336,7 +16486,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 4312ffd2735e82c4daec1afb45591795, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: -7992126540864303076, guid: c003e24639b7949cf8abbaaf6ba7f4c5, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -16414,7 +16565,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: -6847321918087619303, guid: 47eba24edd6844f9ca3ad6953170ab1c, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -16640,7 +16792,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_8
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -17336,7 +17489,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: commercial-building-coffee-shop
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: -3149321796277699223, guid: bf1f5bdc441574cccb97bc77d94cccac, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -17972,7 +18126,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[3]'
       value: 
       objectReference: {fileID: 2100000, guid: 9b4053e51089a8f4ca2c0a1c6f6ece2f, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 2347743963897379291, guid: 93d7a27ba43054391bdd266859e9c0a0, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -18120,7 +18275,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_3
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -18686,7 +18842,8 @@ PrefabInstance:
       propertyPath: areLightsOn
       value: 1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 7699319086900149840, guid: 8be760067bfd64276b6a98998751e48c, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -19134,7 +19291,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_10
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -20192,7 +20350,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_9
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -20516,7 +20675,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 4312ffd2735e82c4daec1afb45591795, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8509825097306061032, guid: 447bc9ea0a8ce4ae2b32e5bd0ada19aa, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -20952,7 +21112,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: traffic-lights-curved_1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1194130132, guid: 7e568744be8aa4731b0c70b6e4588dff, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -21030,7 +21191,8 @@ PrefabInstance:
       propertyPath: areLightsOn
       value: 1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 5923828956970941728, guid: c08d2f0796d7f46ff9aec99b16839bb0, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -21108,7 +21270,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -21198,7 +21361,8 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8900202455907467469, guid: 7b5e1eea516134af4811125beb2c0716, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -21280,7 +21444,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: -62697027956495222, guid: 5426e7f86b5b74ec0a38dd992399a5b0, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -21424,7 +21589,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_23
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -22370,7 +22536,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_22
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -23430,7 +23597,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_4
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -23508,7 +23676,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_29
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -23917,7 +24086,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 2fbaeab477b25244398f9006de5c9bee, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8900202455907467469, guid: 7b5e1eea516134af4811125beb2c0716, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -24061,7 +24231,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 4312ffd2735e82c4daec1afb45591795, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 863725953392773676, guid: 10d98aad7ab824bc7835210e42e32f3d, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -24496,7 +24667,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: street-light-single_2
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 70069686, guid: 6acdc19f4d56b4b649b7c0ba24c307a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -24570,7 +24742,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: suburban-house-D
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: -8983639538592354322, guid: 2738b587b9bcf431b89364c9b96631ac, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
