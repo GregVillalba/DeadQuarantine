@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using Unity.Netcode;
+using UnityEngine;
 
 /// <summary>
 /// Inventario de recursos del jugador (Pila de latas, Cantimplora y Bidón) y compras en la tienda
@@ -27,6 +29,49 @@ public class PlayerRecursos : NetworkBehaviour
     );
 
     public event Action<string, bool> OnPurchaseResult;
+
+    // Jugadores spawneados en la partida: los recorre RecursoDrop para saber quién lo atrae.
+    private static readonly List<PlayerRecursos> jugadores = new List<PlayerRecursos>();
+
+    public static IReadOnlyList<PlayerRecursos> Jugadores => jugadores;
+
+    // Con "Enter Play Mode Options" (sin recargar dominio) los estaticos sobreviven entre partidas.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticState()
+    {
+        jugadores.Clear();
+    }
+
+    private PlayerHealth playerHealth;
+
+    /// <summary>Abatido o espectando no junta recursos.</summary>
+    public bool PuedeRecolectar
+    {
+        get
+        {
+            if (playerHealth == null)
+                playerHealth = transform.root.GetComponentInChildren<PlayerHealth>(true);
+
+            return playerHealth == null || playerHealth.IsAlive;
+        }
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        if (!jugadores.Contains(this))
+            jugadores.Add(this);
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        jugadores.Remove(this);
+    }
+
+    public override void OnDestroy()
+    {
+        jugadores.Remove(this);
+        base.OnDestroy();
+    }
 
     /// <summary>Variable de red de un recurso. Sirve para escuchar sus cambios (OnValueChanged).</summary>
     public NetworkVariable<int> RecursoNetwork(TipoRecurso tipo)
