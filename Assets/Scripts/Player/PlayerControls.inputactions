@@ -165,6 +165,16 @@
                     "interactions": "",
                     "initialStateCheck": false,
                     "priority": 0
+                },
+                {
+                    "name": "SkipShop",
+                    "type": "Button",
+                    "id": "b7e2c4d1-5f3a-4c8e-9a61-3d2f7e8b9c04",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
                 }
             ],
             "bindings": [
@@ -385,6 +395,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "UseSlot1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "e4a9d2c7-1b6f-4e3a-8c52-7f9e0a1b2d35",
+                    "path": "<Keyboard>/p",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SkipShop",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
