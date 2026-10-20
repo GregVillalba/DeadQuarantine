@@ -6,6 +6,7 @@ public class MenuPrincipalAcciones : MonoBehaviour
     [Header("Paneles Principales")]
     [SerializeField] private GameObject menuPrincipalPanel;
     [SerializeField] private GameObject comoJugarPanel;
+    [SerializeField] private GameObject RANKINGPanel;
     [SerializeField] private GameObject elegirModoPanel;
     [SerializeField] private GameObject configuracionesPanel;
     [SerializeField] private GameObject logrosPanel;
@@ -59,6 +60,13 @@ public class MenuPrincipalAcciones : MonoBehaviour
     {
         OcultarTodosLosPaneles();
         if (comoJugarPanel != null) comoJugarPanel.SetActive(true);
+    }
+
+    // Bot�n "ranking"
+    public void MostrarRANKING()
+    {
+        OcultarTodosLosPaneles();
+        if (RANKINGPanel != null) RANKINGPanel.SetActive(true);
     }
 
     // Bot�n "CONFIGURACIONES"
@@ -120,8 +128,11 @@ public class MenuPrincipalAcciones : MonoBehaviour
 
     // Cierra todos los paneles activos de la pantalla
     private void OcultarTodosLosPaneles()
+
     {
         if (menuPrincipalPanel != null) menuPrincipalPanel.SetActive(false);
+
+        if (RANKINGPanel != null) RANKINGPanel.SetActive(false);
         if (comoJugarPanel != null) comoJugarPanel.SetActive(false);
         if (elegirModoPanel != null) elegirModoPanel.SetActive(false);
         if (configuracionesPanel != null) configuracionesPanel.SetActive(false);
