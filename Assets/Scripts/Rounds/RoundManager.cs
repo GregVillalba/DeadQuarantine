@@ -49,6 +49,13 @@ public class RoundManager : NetworkBehaviour
     [Header("Pruebas (dejar en 1 para jugar normal)")]
     [SerializeField] private int debugStartRound = 10;
 
+    [Header("Modo Historia")]
+    [SerializeField] private int maxZombiesHistoria = 25;
+
+    private bool historiaPartidaIniciada;
+    private bool historiaSpawningActivo;
+    private Coroutine historiaSpawnRoutine;
+
 
     // =========================================================
     // VARIABLES DE RED
@@ -242,10 +249,26 @@ public class RoundManager : NetworkBehaviour
 
         ConfigurarSpawnPointsDelEscenario();
 
-        if (SceneManager.GetActiveScene().name == "MainSceneSinglePlayer")
-            return;
+       string nombreEscena = SceneManager.GetActiveScene().name;
 
-        StartCoroutine(WaitForAllPlayersAtSpawnThenStart(1));
+if (EsModoHistoria)
+{
+    if (nombreEscena == "MainSceneSinglePlayer")
+    {
+        IniciarHistoria();
+    }
+    else
+    {
+        StartCoroutine(WaitForPlayersThenStartHistoria());
+    }
+
+    return;
+}
+
+if (nombreEscena == "MainSceneSinglePlayer")
+    return;
+
+StartCoroutine(WaitForAllPlayersAtSpawnThenStart(1));
     }
     private void ConfigurarSpawnPointsDelEscenario()
 {
@@ -904,6 +927,182 @@ public class RoundManager : NetworkBehaviour
     }
 
     // =========================================================
+// MODO HISTORIA: SPAWN CONTINUO
+// =========================================================
+
+private IEnumerator WaitForPlayersThenStartHistoria()
+{
+    float elapsed = 0f;
+
+    while (elapsed < maxWaitForPlayersTime)
+    {
+        if (AllPlayersAtSpawn())
+            break;
+
+        elapsed += Time.deltaTime;
+        yield return null;
+    }
+
+    if (!AllPlayersAtSpawn())
+    {
+        Debug.LogWarning(
+            "[RoundManager] Historia: se agotó el tiempo de espera. " +
+            "Iniciando de todas formas."
+        );
+    }
+
+    IniciarHistoria();
+}
+
+public void IniciarHistoria()
+{
+    if (!IsServer || !EsModoHistoria || historiaPartidaIniciada)
+        return;
+
+    if (zombiePrefab == null)
+    {
+        Debug.LogError(
+            "[RoundManager] Historia: falta asignar Zombie Prefab."
+        );
+        return;
+    }
+
+    if (spawnPoints == null || spawnPoints.Length == 0)
+    {
+        Debug.LogError(
+            "[RoundManager] Historia: no hay Spawn Points configurados."
+        );
+        return;
+    }
+
+    historiaPartidaIniciada = true;
+    historiaSpawningActivo = true;
+
+    // Se mantiene activo para que PlayerDied conserve
+    // el control de la derrota por muerte de los jugadores.
+    roundInProgress = true;
+
+    AliveZombiesNetwork.Value = 0;
+    ZombiesThisRoundNetwork.Value = 0;
+    CurrentRoundNetwork.Value = 0;
+    CountdownNetwork.Value = 0;
+
+    if (roundStartHUD != null)
+        roundStartHUD.Hide();
+
+    Debug.Log(
+        "[RoundManager] Modo Historia iniciado. Límite de zombies vivos: " +
+        maxZombiesHistoria
+    );
+
+    historiaSpawnRoutine = StartCoroutine(
+        HistoriaSpawnRoutine()
+    );
+}
+
+private IEnumerator HistoriaSpawnRoutine()
+{
+    if (initialSpawnDelay > 0f)
+        yield return new WaitForSeconds(initialSpawnDelay);
+
+    while (historiaSpawningActivo &&
+           !GameLostNetwork.Value &&
+           AliveZombiesNetwork.Value < maxZombiesHistoria)
+    {
+        Transform spawnPoint = ObtenerSpawnAleatorioHistoria();
+
+        if (spawnPoint == null)
+        {
+            Debug.LogError(
+                "[RoundManager] Historia: no hay Spawn Points válidos."
+            );
+            break;
+        }
+
+        // Mantiene una dificultad inicial equivalente a la primera ronda.
+        int saludZombie = Mathf.Max(
+            1,
+            Mathf.RoundToInt(
+                shotsIncreasePerRound *
+                damagePerShot *
+                healthMultiplier
+            )
+        );
+
+        bool willRun = Random.value < Mathf.Clamp01(runChanceBonus);
+
+        if (SpawnZombie(
+            zombiePrefab,
+            spawnPoint,
+            saludZombie,
+            willRun
+        ))
+        {
+            AliveZombiesNetwork.Value++;
+
+            Debug.Log(
+                "[RoundManager] Historia: zombie generado. Vivos: " +
+                AliveZombiesNetwork.Value + "/" + maxZombiesHistoria
+            );
+        }
+
+        if (!historiaSpawningActivo ||
+            AliveZombiesNetwork.Value >= maxZombiesHistoria)
+        {
+            break;
+        }
+
+        float intervalo = Random.Range(
+            round1MinSpawnInterval,
+            round1MaxSpawnInterval
+        );
+
+        yield return new WaitForSeconds(intervalo);
+    }
+
+    historiaSpawnRoutine = null;
+}
+
+private Transform ObtenerSpawnAleatorioHistoria()
+{
+    if (spawnPoints == null || spawnPoints.Length == 0)
+        return null;
+
+    // Se intenta encontrar un punto válido al azar.
+    for (int i = 0; i < spawnPoints.Length; i++)
+    {
+        Transform punto = spawnPoints[
+            Random.Range(0, spawnPoints.Length)
+        ];
+
+        if (punto != null)
+            return punto;
+    }
+
+    return null;
+}
+
+// Llamar cuando se cumpla el objetivo de la misión.
+public void DetenerSpawnsHistoria()
+{
+    if (!IsServer || !historiaPartidaIniciada)
+        return;
+
+    historiaSpawningActivo = false;
+
+    if (historiaSpawnRoutine != null)
+    {
+        StopCoroutine(historiaSpawnRoutine);
+        historiaSpawnRoutine = null;
+    }
+
+    Debug.Log(
+        "[RoundManager] Historia: objetivo cumplido. " +
+        "Se detienen los nuevos spawns."
+    );
+}
+
+    // =========================================================
     // CREAR ZOMBIE
     // =========================================================
 
@@ -1066,39 +1265,52 @@ public class RoundManager : NetworkBehaviour
     // =========================================================
 
     public void ZombieDied()
+{
+    if (!IsServer)
+        return;
+
+    if (EsModoHistoria && historiaPartidaIniciada)
     {
-        if (!IsServer)
-            return;
-
-        if (!roundInProgress)
-            return;
-
-        AliveZombiesNetwork.Value--;
-        zombiesKilledThisRound++;
-
-        if (
-            AliveZombiesNetwork.Value <
-            0
-        )
-        {
-            AliveZombiesNetwork.Value =
-                0;
-        }
+        AliveZombiesNetwork.Value = Mathf.Max(
+            0,
+            AliveZombiesNetwork.Value - 1
+        );
 
         Debug.Log(
-            "Zombie muerto. Restantes: " +
+            "[RoundManager] Historia: zombie muerto. Restantes: " +
             AliveZombiesNetwork.Value
         );
 
-        if (
-            AliveZombiesNetwork.Value <=
-            0
-        )
+        if (historiaSpawningActivo &&
+            !GameLostNetwork.Value &&
+            historiaSpawnRoutine == null)
         {
-            EndRound();
+            historiaSpawnRoutine = StartCoroutine(
+                HistoriaSpawnRoutine()
+            );
         }
+
+        return;
     }
 
+    // Comportamiento original de los modos por rondas.
+    if (!roundInProgress)
+        return;
+
+    AliveZombiesNetwork.Value--;
+    zombiesKilledThisRound++;
+
+    if (AliveZombiesNetwork.Value < 0)
+        AliveZombiesNetwork.Value = 0;
+
+    Debug.Log(
+        "Zombie muerto. Restantes: " +
+        AliveZombiesNetwork.Value
+    );
+
+    if (AliveZombiesNetwork.Value <= 0)
+        EndRound();
+}
     // =========================================================
     // JUGADOR MUERE
     // =========================================================
@@ -1599,4 +1811,23 @@ public class RoundManager : NetworkBehaviour
         if (ConfiguracionPartidaSeleccionada.Instancia != null)
             ModoNetwork.Value = (int)ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado;
     }
+
+    //RECONOCER SI ES MODO HISTORIA
+    public bool EsModoHistoria =>
+    ModoNetwork.Value ==
+    (int)ConfiguracionPartidaSeleccionada.ModoJuego.Historia;
+
+    public void IniciarRondaHistoria(int numeroRonda = 1)
+{
+    if (!IsServer)
+        return;
+
+    if (!EsModoHistoria)
+    {
+        Debug.LogWarning("RoundManager: se intentó iniciar una ronda de Historia fuera de ese modo.");
+        return;
+    }
+
+    StartCoroutine(WaitForAllPlayersAtSpawnThenStart(numeroRonda));
+}
 }

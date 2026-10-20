@@ -68,12 +68,12 @@ public class MultiplayerMenuManager : MonoBehaviour
         ConfiguracionPartidaSeleccionada.Dificultad.Ninguna;
 
     // Modos que ya se pueden jugar (Historia todavia no).
-    private bool ModoHabilitado()
-    {
-        return modoActual == ModoSeleccionado.Ronda5 ||
-               modoActual == ModoSeleccionado.Infinitas;
-    }
-
+   private bool ModoHabilitado()
+{
+    return modoActual == ModoSeleccionado.Historia ||
+           modoActual == ModoSeleccionado.Ronda5 ||
+           modoActual == ModoSeleccionado.Infinitas;
+}
     private bool jugador1Listo = false;
 
     // Laboratorio y Cabaña están disponibles.
