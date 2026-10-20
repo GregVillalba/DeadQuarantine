@@ -1,20 +1,51 @@
 using UnityEngine;
 
-public class OpenWebLink : MonoBehaviour
+public class CreditosLinks : MonoBehaviour
 {
-    [Header("Configuración del Enlace")]
-    [Tooltip("URL a la que redirigirá el botón")]
-    [SerializeField] private string targetUrl = "https://dead-quarentine-web.wasmer.app/";
+    private const string URL_LUCIANA = "https://www.linkedin.com/in/lucianaoviedowanuffelen/";
+    private const string URL_MARTINA = "https://www.linkedin.com/in/marsoria/";
+    private const string URL_GREGORIO = "https://www.linkedin.com/in/gregorio-villalba/";
+    private const string URL_ALAN = "https://www.linkedin.com/in/alan-riggio-78ab22225/";
+    private const string URL_FRANCO = "https://www.linkedin.com/in/franco-lencina-b20397282/";
 
-    public void AbrirSitioWeb()
+    // --- MÉTODOS PARA CADA PERFIL ---
+
+    public void AbrirLinkedInLuciana()
     {
-        if (!string.IsNullOrEmpty(targetUrl))
+        AbrirURL(URL_LUCIANA);
+    }
+
+    public void AbrirLinkedInMartina()
+    {
+        AbrirURL(URL_MARTINA);
+    }
+
+    public void AbrirLinkedInGregorio()
+    {
+        AbrirURL(URL_GREGORIO);
+    }
+
+    public void AbrirLinkedInAlan()
+    {
+        AbrirURL(URL_ALAN);
+    }
+
+    public void AbrirLinkedInFranco()
+    {
+        AbrirURL(URL_FRANCO);
+    }
+
+    // --- MÉTODO AUXILIAR ---
+
+    private void AbrirURL(string url)
+    {
+        if (!string.IsNullOrEmpty(url))
         {
-            Application.OpenURL(targetUrl);
+            Application.OpenURL(url);
         }
         else
         {
-            Debug.LogWarning("[OpenWebLink] La URL está vacía.");
+            Debug.LogWarning("[CreditosLinks] La URL especificada no es válida.");
         }
     }
 }
