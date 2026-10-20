@@ -20,7 +20,6 @@ public class NPCShopUITests
     private GameObject shopPanelGO;
     private Button closeButton;
     private AudioSource audioSource;
-    private TextMeshProUGUI scoreText;
     private Image iconoDetalle;
     private TextMeshProUGUI nombreDetalleText;
     private TextMeshProUGUI descripcionDetalleText;
@@ -47,9 +46,6 @@ public class NPCShopUITests
         GameObject audioSourceGO = CrearGameObject("AudioSource", typeof(AudioSource));
         audioSource = audioSourceGO.GetComponent<AudioSource>();
  
-        GameObject scoreTextGO = CrearGameObject("ScoreText", typeof(TextMeshProUGUI));
-        scoreText = scoreTextGO.GetComponent<TextMeshProUGUI>();
- 
         GameObject iconoDetalleGO = CrearGameObject("IconoDetalle", typeof(Image));
         iconoDetalle = iconoDetalleGO.GetComponent<Image>();
  
@@ -72,7 +68,6 @@ public class NPCShopUITests
         SetPrivateField("shopPanel", shopPanelGO);
         SetPrivateField("closeButton", closeButton);
         SetPrivateField("audioSource", audioSource);
-        SetPrivateField("scoreText", scoreText);
         SetPrivateField("iconoDetalle", iconoDetalle);
         SetPrivateField("nombreDetalleText", nombreDetalleText);
         SetPrivateField("descripcionDetalleText", descripcionDetalleText);
@@ -218,7 +213,7 @@ public class NPCShopUITests
         GameObject childGO = CrearGameObject("PlayerParts");
         childGO.transform.SetParent(host.transform);
  
-        var score = childGO.AddComponent<PlayerScore>();
+        var recursos = childGO.AddComponent<PlayerRecursos>();
         var switcher = childGO.AddComponent<WeaponSwitcher>();
         var movement = childGO.AddComponent<PlayerMovement>();
         var look = childGO.AddComponent<PlayerLook>();
@@ -226,7 +221,7 @@ public class NPCShopUITests
  
         InvokePrivateMethod("CachearReferenciasJugador");
  
-        Assert.AreEqual(score, GetPrivateField("playerScore"));
+        Assert.AreEqual(recursos, GetPrivateField("playerRecursos"));
         Assert.AreEqual(switcher, GetPrivateField("weaponSwitcher"));
         Assert.AreEqual(movement, GetPrivateField("playerMovement"));
         Assert.AreEqual(look, GetPrivateField("playerLook"));
@@ -300,7 +295,7 @@ public class NPCShopUITests
     // rowPrefab queda sin asignar a propósito: eso hace que CrearFilas() corte
     // por su guard clause ANTES de tocar currentVendor.Offers, así que estos
     // tests no necesitan conocer la forma real de NPCWeaponVendor.Offers ni de
-    // WeaponOffer. Por la misma razón playerScore/playerMovement/playerLook/
+    // WeaponOffer. Por la misma razón playerRecursos/playerMovement/playerLook/
     // weaponSwitcher/playerHealth quedan en null: así se ejercitan los caminos
     // "sin referencia" de BloquearJugador()/RestaurarJugador().
  
@@ -670,7 +665,65 @@ public class NPCShopUITests
         float timeScaleOriginal = Time.timeScale;
  
         InvokePrivateMethod("OnDestroy");
- 
+
         Assert.AreEqual(timeScaleOriginal, Time.timeScale);
+    }
+
+    // --- Bloque de compra con recursos ---
+    //
+    // El precio se ve en la tarjeta: el bloque solo dice si alcanza o no.
+
+    [Test]
+    public void ActualizarTextoCompra_ConRecursosSuficientes_DiceComprar()
+    {
+        TextMeshProUGUI textoCompra = PrepararBloqueDeCompra(latasDelJugador: 3, precioEnLatas: 3);
+
+        InvokePrivateMethod("ActualizarTextoCompra");
+
+        Assert.AreEqual("COMPRAR", textoCompra.text);
+    }
+
+    [Test]
+    public void ActualizarTextoCompra_SinRecursosSuficientes_DiceFaltanRecursos()
+    {
+        TextMeshProUGUI textoCompra = PrepararBloqueDeCompra(latasDelJugador: 2, precioEnLatas: 3);
+
+        InvokePrivateMethod("ActualizarTextoCompra");
+
+        Assert.AreEqual("FALTAN RECURSOS", textoCompra.text);
+    }
+
+    [Test]
+    public void ActualizarTextoCompra_ConPrecioCero_DiceComprar()
+    {
+        TextMeshProUGUI textoCompra = PrepararBloqueDeCompra(latasDelJugador: 0, precioEnLatas: 0);
+
+        InvokePrivateMethod("ActualizarTextoCompra");
+
+        Assert.AreEqual("COMPRAR", textoCompra.text);
+    }
+
+    [Test]
+    public void Alcanza_SinPlayerRecursos_EsFalse()
+    {
+        bool alcanza = (bool)InvokePrivateMethod("Alcanza", new PrecioRecursos(0, 0, 0));
+
+        Assert.IsFalse(alcanza);
+    }
+
+    // Arma seleccionada que pide solo latas. Sin weaponSwitcher ni playerHealth no queda
+    // "comprada" ni con el inventario lleno, así que el bloque muestra si alcanza o no.
+    private TextMeshProUGUI PrepararBloqueDeCompra(int latasDelJugador, int precioEnLatas)
+    {
+        TextMeshProUGUI textoCompra = CrearGameObject("TextoCompra", typeof(TextMeshProUGUI)).GetComponent<TextMeshProUGUI>();
+        SetPrivateField("textoCompra", textoCompra);
+
+        PlayerRecursos recursos = CrearGameObject("Recursos").AddComponent<PlayerRecursos>();
+        recursos.PilaDeLatasNetwork.Value = latasDelJugador;
+        SetPrivateField("playerRecursos", recursos);
+
+        SetPrivateField("ofertaSeleccionada", new WeaponOffer { weaponId = "rifle", precioPilaDeLatas = precioEnLatas });
+
+        return textoCompra;
     }
 }
