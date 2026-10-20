@@ -31,25 +31,34 @@ public class InteraccionJugadorHistoria : MonoBehaviour
 }
 
     private void Update()
+{
+    if (jugadorNetworkObject == null ||
+        !jugadorNetworkObject.IsSpawned ||
+        !jugadorNetworkObject.IsOwner)
     {
-        // Solo el jugador local puede usar la interacción.
-        if (jugadorNetworkObject == null ||
-            !jugadorNetworkObject.IsSpawned ||
-            !jugadorNetworkObject.IsOwner)
-        {
-            return;
-        }
-
-        RegistrarHUD();
-
-        if (Keyboard.current == null ||
-            !Keyboard.current.eKey.wasPressedThisFrame)
-        {
-            return;
-        }
-
-        InteractuarConObjetoCercano();
+        return;
     }
+
+    ConfigurarHUDPorModo();
+
+    if (ConfiguracionPartidaSeleccionada.Instancia == null ||
+        ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado !=
+        ConfiguracionPartidaSeleccionada.ModoJuego.Historia)
+    {
+        return;
+    }
+
+    RegistrarHUD();
+
+    if (Keyboard.current == null ||
+        !Keyboard.current.eKey.wasPressedThisFrame)
+    {
+        return;
+    }
+
+    InteractuarConObjetoCercano();
+}
+
 private void RegistrarHUD()
 {
     if (hudRegistrado)
@@ -187,4 +196,19 @@ private string ObtenerRuta(Transform elemento)
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, radioInteraccion);
     }
+
+    private void ConfigurarHUDPorModo()
+{
+    Transform hud = BuscarHijo(transform, "HistoriaHUD");
+
+    if (hud == null)
+        return;
+
+    bool esHistoria =
+        ConfiguracionPartidaSeleccionada.Instancia != null &&
+        ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado ==
+        ConfiguracionPartidaSeleccionada.ModoJuego.Historia;
+
+    hud.gameObject.SetActive(esHistoria);
+}
 }
