@@ -299,6 +299,10 @@ public class SingleplayerMenuManager : MonoBehaviour
         if (panelEscenario != null)
             panelEscenario.SetActive(true);
 
+         // NUEVO: al mostrar escenarios, se oculta la selección de personaje
+        if (panelPersonaje != null)
+            panelPersonaje.SetActive(false);
+
         ValidarComenzar();
     }
 
