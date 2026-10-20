@@ -2979,6 +2979,7 @@ GameObject:
   - component: {fileID: 1408592114313194350}
   - component: {fileID: 6659319089867208946}
   - component: {fileID: 5607981109692506505}
+  - component: {fileID: 7500000000000004003}
   m_Layer: 12
   m_Name: ZombieBoss02
   m_TagString: Untagged
@@ -3759,3 +3760,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &7500000000000004003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1960997148460282}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56f86d9f5386404da3b56db345ed94e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::DropRecursosZombie
+  tabla: {fileID: 11400000, guid: 4a52f8e03dec4db8aaa35a47a731c50f, type: 2}
+  prefabRecurso: {fileID: 7500000000000003003, guid: 1c84733243a847f9a92a4cb928321719, type: 3}
+  escenaSinDrops: TutorialScene
+  alturaSobreElPiso: 0.35
+  alturaBusquedaPiso: 1.5
+  distanciaBusquedaPiso: 6

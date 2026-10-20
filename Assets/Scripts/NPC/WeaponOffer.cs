@@ -30,6 +30,8 @@ public class WeaponOffer
 {
     public string weaponId;
     public string weaponName;
+
+    [Tooltip("Precio viejo en puntos. La tienda ya no lo usa: cobra el Precio en recursos de abajo.")]
     public int cost;
     public Sprite weaponIcon;
 
@@ -49,6 +51,16 @@ public class WeaponOffer
 
     [Tooltip("Desmarcalo para mostrar la oferta en la tienda sin que todavía se pueda comprar (ej: arma en desarrollo).")]
     public bool disponible = true;
+
+    [Header("Precio en recursos")]
+    [Tooltip("Pilas de latas que pide el mercader por esta oferta. 0 = no pide.")]
+    [Min(0)] public int precioPilaDeLatas;
+
+    [Tooltip("Cantimploras que pide el mercader por esta oferta. 0 = no pide.")]
+    [Min(0)] public int precioCantimplora;
+
+    [Tooltip("Bidones que pide el mercader por esta oferta. 0 = no pide.")]
+    [Min(0)] public int precioBidon;
 
     [Header("En qué partidas aparece")]
     [Tooltip("Dificultades en las que la oferta aparece en la tienda. En las demás directamente no se muestra.")]
@@ -101,6 +113,15 @@ public class WeaponOffer
 
     /// <summary>La compra equipa (o repara) un chaleco / casco en vez de desbloquear un arma.</summary>
     public bool EsBlindaje => piezaBlindaje != PiezaBlindaje.Ninguna && armadura > 0;
+
+    /// <summary>Lo que pide el mercader por esta oferta, en recursos.</summary>
+    public PrecioRecursos Precio => new PrecioRecursos(precioPilaDeLatas, precioCantimplora, precioBidon);
+
+    /// <summary>Cuánto pide la oferta de un recurso (0 = no lo pide).</summary>
+    public int PrecioEnRecursos(TipoRecurso tipo)
+    {
+        return Precio.Cantidad(tipo);
+    }
 
     public bool SeMuestraEnDificultad(DifficultyLevel nivel)
     {

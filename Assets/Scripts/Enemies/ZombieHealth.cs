@@ -495,6 +495,12 @@ public class ZombieHealth : NetworkBehaviour
 
         SumarPuntoAlJugador(shooterClientId);
 
+        // Recurso en el piso según la tabla de drop del zombie (en el tutorial no suelta nada).
+        DropRecursosZombie dropRecursos = GetComponent<DropRecursosZombie>();
+
+        if (dropRecursos != null)
+            dropRecursos.Soltar();
+
         if (RoundManager.Instance != null)
         {
             RoundManager.Instance.ZombieDied();
