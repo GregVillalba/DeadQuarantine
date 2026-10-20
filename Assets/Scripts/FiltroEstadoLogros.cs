@@ -1,22 +1,27 @@
 using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using TMPro;
 
 public class FiltroLogros : MonoBehaviour
 {
     [Header("Referencias")]
-    public Transform contenedorContent;  // El objeto "Content" del Scroll View
+    public Transform contenedorContent;  
     public TMP_Dropdown dropdownModo;    // Todos / Singleplayer / Multiplayer
-    public TMP_Dropdown dropdownTipo;    // Todos / Bajas / Supervivencia / Minijuego / Historia / Rondas / Easter Egg
-    public TMP_Dropdown dropdownEstado;  // Todos / Bloqueado / Desbloqueado
-    public GameObject textoNoItems;      // "sin_items"
+    public TMP_Dropdown dropdownTipo;    // Todos / Bajas / Supervivencia / Minijuego / Historia / Rondas / Easter Eggs
+    public TMP_Dropdown dropdownEstado;  // Todos / Bloqueados / En progreso / Desbloqueado
+    public GameObject textoNoItems;      
 
-    [Header("Etiquetas de modo (texto exacto, en minusculas)")]
+    [Header("Etiquetas de Modo (en minusculas)")]
     public string[] palabrasSingleplayer = { "singleplayer", "un jugador" };
     public string[] palabrasMultiplayer = { "multiplayer", "multijugador" };
 
     [Header("Depuracion")]
     public bool depurar = true;
+
+    private bool iniciado;
 
     private void Start()
     {
@@ -26,6 +31,15 @@ public class FiltroLogros : MonoBehaviour
 
         if (textoNoItems != null)
             textoNoItems.SetActive(false);
+
+        iniciado = true;
+        AplicarFiltros();
+    }
+
+    private void OnEnable()
+    {
+        // Al volver a abrir la pantalla se reaplican los filtros
+        if (iniciado) AplicarFiltros();
     }
 
     private void Conectar(TMP_Dropdown d)
@@ -35,7 +49,7 @@ public class FiltroLogros : MonoBehaviour
         d.onValueChanged.AddListener(_ => AplicarFiltros());
     }
 
-    // Llamalo tambien despues de generar/actualizar las tarjetas
+    // Llamalo tambien despues de crear/actualizar tarjetas por codigo
     public void AplicarFiltros()
     {
         if (contenedorContent == null)
@@ -44,9 +58,9 @@ public class FiltroLogros : MonoBehaviour
             return;
         }
 
-        int modo = dropdownModo != null ? dropdownModo.value : 0;
-        int estado = dropdownEstado != null ? dropdownEstado.value : 0;
-        string tipo = ObtenerTipoSeleccionado();
+        int grupoModo = ObtenerGrupoModo();                                   // 0 = todos, 1 = single, 2 = multi
+        string tipo = Singular(SeleccionCanonica(dropdownTipo));              // "" = todos
+        string estado = EstadoDesdeDropdown(SeleccionCanonica(dropdownEstado)); // "" = todos
 
         List<Transform> tarjetas = ObtenerTarjetas();
         int visibles = 0;
@@ -55,38 +69,135 @@ public class FiltroLogros : MonoBehaviour
         {
             TextMeshProUGUI[] textos = tarjeta.GetComponentsInChildren<TextMeshProUGUI>(true);
 
-            bool okModo = CumpleModo(textos, modo);
+            bool okModo = CumpleModo(textos, grupoModo);
             bool okTipo = CumpleTipo(textos, tipo);
-            bool okEstado = CumpleEstado(textos, estado);
-            bool mostrar = okModo && okTipo && okEstado;
+            bool okEstado = CumpleEstado(tarjeta, textos, estado);
 
+            bool mostrar = okModo && okTipo && okEstado;
             tarjeta.gameObject.SetActive(mostrar);
             if (mostrar) visibles++;
 
             if (depurar)
-                Debug.Log($"[FiltroLogros] '{tarjeta.name}' modo={okModo} tipo={okTipo} estado={okEstado} -> {(mostrar ? "VISIBLE" : "oculta")}");
+                Debug.Log($"[FiltroLogros] '{tarjeta.name}' -> Estado detectado: {EstadoDeTarjeta(tarjeta, textos)} | Modo:{okModo} | Tipo:{okTipo} | Estado:{okEstado} ==> {(mostrar ? "VISIBLE" : "OCULTO")}");
         }
 
         if (depurar)
-            Debug.Log($"[FiltroLogros] tarjetas detectadas={tarjetas.Count} | filtro modo={modo} tipo='{tipo}' estado={estado} | visibles={visibles}");
-
-        if (tarjetas.Count == 0)
-            Debug.LogWarning("[FiltroLogros] No se detecto ninguna tarjeta. Revisa que las etiquetas de modo digan exactamente 'Singleplayer' o 'Multiplayer'.");
+            Debug.Log($"[FiltroLogros] Tarjetas: {tarjetas.Count} | Visibles: {visibles} | Modo: {grupoModo} | Tipo: '{tipo}' | Estado: '{estado}'");
 
         if (textoNoItems != null)
+        {
             textoNoItems.SetActive(visibles == 0);
+            if (visibles == 0)
+                textoNoItems.transform.SetAsLastSibling();
+        }
     }
 
-    // Detecta las tarjetas sin depender de la jerarquia (filas, grids, etc.):
-    // a partir de cada etiqueta de modo, sube hasta el contenedor mas grande que tenga UNA sola etiqueta.
+    // Interpreta la opcion elegida en el dropdown (acepta plural, "En progreso", etc.)
+    private static string EstadoDesdeDropdown(string c)
+    {
+        if (c == "") return "";
+        if (c.StartsWith("desbloq")) return "desbloqueado";
+        if (c.StartsWith("bloq")) return "bloqueado";
+        if (c.StartsWith("en pro")) return "en progreso";
+        return c;
+    }
+
+    // ---------------------------------------------------------
+    // MODO
+    // ---------------------------------------------------------
+    private int ObtenerGrupoModo()
+    {
+        string sel = SeleccionCanonica(dropdownModo);
+        if (sel == "") return 0;
+
+        if (ContienePalabra(palabrasSingleplayer, sel)) return 1;
+        if (ContienePalabra(palabrasMultiplayer, sel)) return 2;
+
+        // Si el texto de la opcion no coincide con las etiquetas, se usa la posicion
+        return dropdownModo.value;
+    }
+
+    private bool CumpleModo(TextMeshProUGUI[] textos, int grupoModo)
+    {
+        if (grupoModo == 0) return true;
+        string[] palabras = (grupoModo == 1) ? palabrasSingleplayer : palabrasMultiplayer;
+
+        foreach (var txt in textos)
+        {
+            if (txt == null) continue;
+            if (ContienePalabra(palabras, Canon(txt.text))) return true;
+        }
+        return false;
+    }
+
+    // ---------------------------------------------------------
+    // TIPO
+    // ---------------------------------------------------------
+    private bool CumpleTipo(TextMeshProUGUI[] textos, string tipo)
+    {
+        if (string.IsNullOrEmpty(tipo)) return true;
+
+        foreach (var txt in textos)
+        {
+            if (txt == null) continue;
+            if (Singular(Canon(txt.text)) == tipo) return true;
+        }
+        return false;
+    }
+
+    // ---------------------------------------------------------
+    // ESTADO
+    // ---------------------------------------------------------
+    private bool CumpleEstado(Transform tarjeta, TextMeshProUGUI[] textos, string estadoFiltro)
+    {
+        if (string.IsNullOrEmpty(estadoFiltro)) return true;
+        return EstadoDeTarjeta(tarjeta, textos) == estadoFiltro;
+    }
+
+    // Lee el estado solo de los textos que realmente se ven en la tarjeta
+    private string EstadoDeTarjeta(Transform tarjeta, TextMeshProUGUI[] textos)
+    {
+        foreach (var txt in textos)
+        {
+            if (txt == null || string.IsNullOrWhiteSpace(txt.text)) continue;
+            if (!EsVisibleDentroDeTarjeta(txt, tarjeta)) continue;
+
+            string c = Canon(txt.text);
+
+            if (c == "desbloqueado" || c == "desbloqueados") return "desbloqueado";
+            if (c == "bloqueado" || c == "bloqueados") return "bloqueado";
+            if (c == "en progreso" || c.StartsWith("en progreso ")) return "en progreso";
+        }
+        return "desconocido";
+    }
+
+    // El texto cuenta solo si su componente y todos sus padres hasta la tarjeta están activos.
+    // No se mira la propia tarjeta, porque el filtro la activa y desactiva.
+    private static bool EsVisibleDentroDeTarjeta(TextMeshProUGUI txt, Transform tarjeta)
+    {
+        if (!txt.enabled) return false;
+
+        Transform t = txt.transform;
+        while (t != null && t != tarjeta)
+        {
+            if (!t.gameObject.activeSelf) return false;
+            t = t.parent;
+        }
+        return true;
+    }
+    // ---------------------------------------------------------
+    // TARJETAS
+    // ---------------------------------------------------------
     private List<Transform> ObtenerTarjetas()
     {
         var lista = new List<Transform>();
+        if (contenedorContent == null) return lista;
+
         var todos = contenedorContent.GetComponentsInChildren<TextMeshProUGUI>(true);
 
         foreach (var t in todos)
         {
-            if (!EsEtiquetaModo(Normalizar(t.text))) continue;
+            if (!EsEtiquetaModo(Canon(t.text))) continue;
 
             Transform tarjeta = t.transform;
             while (tarjeta.parent != null
@@ -107,65 +218,62 @@ public class FiltroLogros : MonoBehaviour
         int n = 0;
         foreach (var t in raiz.GetComponentsInChildren<TextMeshProUGUI>(true))
         {
-            if (EsEtiquetaModo(Normalizar(t.text))) n++;
+            if (EsEtiquetaModo(Canon(t.text))) n++;
         }
         return n;
     }
 
     private bool EsEtiquetaModo(string contenido)
     {
-        foreach (string p in palabrasSingleplayer) if (contenido == p) return true;
-        foreach (string p in palabrasMultiplayer) if (contenido == p) return true;
-        return false;
+        return ContienePalabra(palabrasSingleplayer, contenido)
+            || ContienePalabra(palabrasMultiplayer, contenido);
     }
 
-    private string ObtenerTipoSeleccionado()
+    // ---------------------------------------------------------
+    // UTILIDADES
+    // ---------------------------------------------------------
+    private static bool ContienePalabra(string[] palabras, string canonico)
     {
-        if (dropdownTipo == null || dropdownTipo.value == 0) return ""; // Todos
-        return Normalizar(dropdownTipo.options[dropdownTipo.value].text);
-    }
-
-    private bool CumpleModo(TextMeshProUGUI[] textos, int modo)
-    {
-        if (modo == 0) return true;
-        string[] palabras = (modo == 1) ? palabrasSingleplayer : palabrasMultiplayer;
-
-        foreach (var txt in textos)
+        if (palabras == null || string.IsNullOrEmpty(canonico)) return false;
+        foreach (string p in palabras)
         {
-            string c = Normalizar(txt.text);
-            foreach (string p in palabras) if (c == p) return true;
+            if (Canon(p) == canonico) return true;
         }
         return false;
     }
 
-    private bool CumpleTipo(TextMeshProUGUI[] textos, string tipo)
+    // Devuelve "" si el dropdown esta en "Todos"
+    private static string SeleccionCanonica(TMP_Dropdown d)
     {
-        if (string.IsNullOrEmpty(tipo)) return true;
+        if (d == null || d.options.Count == 0 || d.value <= 0) return "";
 
-        foreach (var txt in textos)
-        {
-            if (Normalizar(txt.text) == tipo) return true;
-        }
-        return false;
+        string c = Canon(d.options[d.value].text);
+        return (c == "todos" || c == "todo" || c == "all") ? "" : c;
     }
 
-    private bool CumpleEstado(TextMeshProUGUI[] textos, int estado)
+    private static string Singular(string s)
     {
-        if (estado == 0) return true;
-
-        bool esBloqueado = false;
-        foreach (var txt in textos)
-        {
-            string c = Normalizar(txt.text);
-            if (c == "desbloqueado" || c == "completado") { esBloqueado = false; break; }
-            if (c == "bloqueado") { esBloqueado = true; break; }
-        }
-
-        return (estado == 1 && esBloqueado) || (estado == 2 && !esBloqueado);
+        return (!string.IsNullOrEmpty(s) && s.Length > 3 && s.EndsWith("s"))
+            ? s.Substring(0, s.Length - 1)
+            : s;
     }
 
-    private static string Normalizar(string s)
+    // Minusculas, sin acentos, sin etiquetas TMP y con espacios normalizados
+    private static string Canon(string s)
     {
-        return s == null ? "" : s.Trim().ToLower();
+        if (string.IsNullOrEmpty(s)) return "";
+
+        s = Regex.Replace(s, "<.*?>", string.Empty);
+        s = s.Replace("\u00A0", " ").Trim().ToLowerInvariant();
+
+        string descompuesto = s.Normalize(NormalizationForm.FormD);
+        var sb = new StringBuilder(descompuesto.Length);
+        foreach (char ch in descompuesto)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark)
+                sb.Append(ch);
+        }
+
+        return Regex.Replace(sb.ToString().Normalize(NormalizationForm.FormC), @"\s+", " ");
     }
 }
