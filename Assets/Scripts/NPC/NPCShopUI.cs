@@ -18,9 +18,6 @@ public class NPCShopUI : MonoBehaviour
     [SerializeField] private Transform rowsContainer;
     [SerializeField] private GameObject rowPrefab;
     [SerializeField] private Button closeButton;
-    [SerializeField] private TextMeshProUGUI scoreText;
-    [Tooltip("{0} se reemplaza por los puntos del jugador.")]
-    [SerializeField] private string formatoPuntos = "Tus puntos: {0}";
 
     [Header("Secciones (pestañas de la izquierda)")]
     [Tooltip("Un elemento por pestaña: su categoría y el botón que la abre. Las ofertas se filtran por WeaponOffer.categoria.")]
@@ -100,8 +97,10 @@ public class NPCShopUI : MonoBehaviour
     [Tooltip("Opcional. Bloque de compra (abajo a la derecha). Se muestra solo mientras hay un objeto seleccionado.")]
     [SerializeField] private GameObject panelCompra;
     [SerializeField] private TextMeshProUGUI textoCompra;
-    [Tooltip("{0} se reemplaza por el costo.")]
-    [SerializeField] private string formatoComprar = "COMPRAR - {0} pts";
+    [Tooltip("Se muestra cuando al jugador le alcanzan los recursos. El precio se ve en la tarjeta.")]
+    [SerializeField] private string textoComprar = "COMPRAR";
+    [Tooltip("Se muestra cuando al jugador no le alcanzan los recursos para comprar o reparar.")]
+    [SerializeField] private string textoFaltanRecursos = "FALTAN RECURSOS";
     [SerializeField] private string textoYaComprado = "COMPRADO";
     [SerializeField] private string textoNoDisponibleCompra = "PRÓXIMAMENTE";
     [Tooltip("Se muestra en las curas cuando no queda lugar para ellas en el inventario.")]
@@ -110,12 +109,8 @@ public class NPCShopUI : MonoBehaviour
     [SerializeField] private string textoMunicionLlena = "MUNICIÓN LLENA";
     [Tooltip("Chaleco / casco comprado y con el escudo lleno.")]
     [SerializeField] private string textoEquipado = "EQUIPADO";
-    [Tooltip("Chaleco / casco dañado o roto. {0} se reemplaza por el costo de reparación.")]
-    [SerializeField] private string formatoReparar = "REPARAR - {0} pts";
-    [Tooltip("Precio en la tarjeta de un chaleco / casco dañado. {0} = costo de reparación.")]
-    [SerializeField] private string formatoRepararTarjeta = "Reparar: {0} pts";
-    [Tooltip("Precio en la tarjeta de un chaleco / casco roto (0 de escudo). {0} = costo de reparación.")]
-    [SerializeField] private string formatoRotoTarjeta = "Roto - Reparar: {0} pts";
+    [Tooltip("Chaleco / casco dañado o roto, cuando al jugador le alcanzan los recursos para repararlo.")]
+    [SerializeField] private string textoReparar = "REPARAR";
     [SerializeField] private Image progresoCompraFill;
     [SerializeField] private float tiempoMantenerParaComprar = 2f;
 
@@ -139,7 +134,7 @@ public class NPCShopUI : MonoBehaviour
     private PlayerControls controls;
     private Camera playerCamera;
     private NPCWeaponVendor currentVendor;
-    private PlayerScore playerScore;
+    private PlayerRecursos playerRecursos;
     private WeaponSwitcher weaponSwitcher;
     private PlayerMovement playerMovement;
     private PlayerLook playerLook;
@@ -192,6 +187,7 @@ public class NPCShopUI : MonoBehaviour
         public Image fondo;
         public TextMeshProUGUI etiquetaNombre;
         public TextMeshProUGUI etiquetaCosto;
+        public PrecioRecursosUI precioRecursos;
     }
 
     private readonly List<OfertaFila> filas = new List<OfertaFila>();
@@ -373,8 +369,11 @@ public class NPCShopUI : MonoBehaviour
         if (currentVendor != null)
             currentVendor.OnPurchaseResult += OnCompraTerminada;
 
-        if (playerScore != null)
-            playerScore.ScoreNetwork.OnValueChanged += OnScoreChanged;
+        if (playerRecursos != null)
+        {
+            foreach (TipoRecurso tipo in Enum.GetValues(typeof(TipoRecurso)))
+                playerRecursos.RecursoNetwork(tipo).OnValueChanged += OnRecursoCambiado;
+        }
 
         if (playerHealth != null)
         {
@@ -412,8 +411,11 @@ public class NPCShopUI : MonoBehaviour
         if (currentVendor != null)
             currentVendor.OnPurchaseResult -= OnCompraTerminada;
 
-        if (playerScore != null)
-            playerScore.ScoreNetwork.OnValueChanged -= OnScoreChanged;
+        if (playerRecursos != null)
+        {
+            foreach (TipoRecurso tipo in Enum.GetValues(typeof(TipoRecurso)))
+                playerRecursos.RecursoNetwork(tipo).OnValueChanged -= OnRecursoCambiado;
+        }
 
         if (playerHealth != null)
         {
@@ -485,7 +487,8 @@ public class NPCShopUI : MonoBehaviour
                 icono = icono,
                 fondo = fondo,
                 etiquetaNombre = etiquetaNombre,
-                etiquetaCosto = etiquetaCosto
+                etiquetaCosto = etiquetaCosto,
+                precioRecursos = fila.GetComponentInChildren<PrecioRecursosUI>(true)
             });
         }
     }
@@ -666,10 +669,9 @@ public class NPCShopUI : MonoBehaviour
         }
         else
         {
-            int costo = CostoActual(ofertaSeleccionada);
-            bool alcanza = playerScore != null && playerScore.ScoreNetwork.Value >= costo;
-            string formato = BlindajeReparable(ofertaSeleccionada) ? formatoReparar : formatoComprar;
-            textoCompra.text = string.Format(formato, costo);
+            bool alcanza = Alcanza(PrecioActual(ofertaSeleccionada));
+            string textoAlcanza = BlindajeReparable(ofertaSeleccionada) ? textoReparar : textoComprar;
+            textoCompra.text = alcanza ? textoAlcanza : textoFaltanRecursos;
             textoCompra.color = alcanza ? colorAlcanza : colorNoAlcanza;
         }
     }
@@ -708,8 +710,7 @@ public class NPCShopUI : MonoBehaviour
             !EstaComprada(ofertaSeleccionada) &&
             !InventarioLlenoPara(ofertaSeleccionada) &&
             !MunicionLlenaPara(ofertaSeleccionada) &&
-            playerScore != null &&
-            playerScore.ScoreNetwork.Value >= CostoActual(ofertaSeleccionada);
+            Alcanza(PrecioActual(ofertaSeleccionada));
 
         bool teclaPresionada = Keyboard.current != null && Keyboard.current.spaceKey.isPressed;
 
@@ -750,7 +751,7 @@ public class NPCShopUI : MonoBehaviour
         ActualizarFilas();
     }
 
-    private void OnScoreChanged(int previousValue, int currentValue)
+    private void OnRecursoCambiado(int previousValue, int currentValue)
     {
         if (estaAbierta)
             ActualizarFilas();
@@ -821,24 +822,21 @@ public class NPCShopUI : MonoBehaviour
                playerHealth.NecesitaReparacion(oferta.piezaBlindaje);
     }
 
-    private bool BlindajeRoto(WeaponOffer oferta)
-    {
-        return BlindajeReparable(oferta) && playerHealth.EscudoDe(oferta.piezaBlindaje) <= 0;
-    }
-
-    // Lo que cuesta ahora: la reparación si la pieza está dañada o rota, si no el precio de compra.
-    private int CostoActual(WeaponOffer oferta)
+    // Lo que cuesta ahora en recursos: la reparación si la pieza está dañada o rota, si no el precio de compra.
+    private PrecioRecursos PrecioActual(WeaponOffer oferta)
     {
         return BlindajeReparable(oferta) && currentVendor != null
-            ? currentVendor.CostoReparacion(oferta)
-            : oferta.cost;
+            ? currentVendor.PrecioReparacion(oferta)
+            : oferta.Precio;
+    }
+
+    private bool Alcanza(PrecioRecursos precio)
+    {
+        return playerRecursos != null && playerRecursos.Alcanza(precio);
     }
 
     private void ActualizarFilas()
     {
-        if (playerScore != null && scoreText != null)
-            scoreText.text = string.Format(formatoPuntos, playerScore.ScoreNetwork.Value);
-
         foreach (OfertaFila fila in filas)
         {
             bool disponible = fila.oferta.disponible;
@@ -847,11 +845,8 @@ public class NPCShopUI : MonoBehaviour
             bool inventarioLleno = disponible && InventarioLlenoPara(fila.oferta);
             bool municionLlena = disponible && MunicionLlenaPara(fila.oferta);
 
-            bool reparable = disponible && BlindajeReparable(fila.oferta);
-            int costo = CostoActual(fila.oferta);
-
-            bool alcanza = playerScore != null &&
-                           playerScore.ScoreNetwork.Value >= costo;
+            PrecioRecursos precio = PrecioActual(fila.oferta);
+            bool alcanza = Alcanza(precio);
 
             if (fila.icono != null)
             {
@@ -893,20 +888,23 @@ public class NPCShopUI : MonoBehaviour
 
                 colorFila = colorComprado;
             }
-            else if (reparable)
+            else
             {
+                // Se puede comprar (o reparar): el precio en recursos lo muestra PrecioRecursosUI.
                 if (fila.etiquetaCosto != null)
-                    fila.etiquetaCosto.text = string.Format(
-                        BlindajeRoto(fila.oferta) ? formatoRotoTarjeta : formatoRepararTarjeta, costo);
+                    fila.etiquetaCosto.text = string.Empty;
 
                 colorFila = alcanza ? colorAlcanza : colorNoAlcanza;
             }
-            else
-            {
-                if (fila.etiquetaCosto != null)
-                    fila.etiquetaCosto.text = costo + " pts";
 
-                colorFila = alcanza ? colorAlcanza : colorNoAlcanza;
+            bool conPrecioEnRecursos = disponible && !inventarioLleno && !municionLlena && !comprada;
+
+            if (fila.precioRecursos != null)
+            {
+                fila.precioRecursos.gameObject.SetActive(conPrecioEnRecursos);
+
+                if (conPrecioEnRecursos)
+                    MostrarPrecioEnRecursos(fila.precioRecursos, precio);
             }
 
             if (fila.etiquetaNombre != null)
@@ -919,8 +917,20 @@ public class NPCShopUI : MonoBehaviour
                 fila.fondo.color = fila.oferta == ofertaSeleccionada ? colorFilaSeleccionada : colorFilaNormal;
         }
 
-        // Los puntos o la compra cambiaron: el bloque de compra también.
+        // Los recursos o la compra cambiaron: el bloque de compra también.
         ActualizarTextoCompra();
+    }
+
+    // Cada recurso en verde si al jugador le alcanza y en rojo si no.
+    private void MostrarPrecioEnRecursos(PrecioRecursosUI precioUI, PrecioRecursos precio)
+    {
+        foreach (TipoRecurso tipo in Enum.GetValues(typeof(TipoRecurso)))
+        {
+            int cantidad = precio.Cantidad(tipo);
+            int tiene = playerRecursos != null ? playerRecursos.Cantidad(tipo) : 0;
+
+            precioUI.MostrarPrecio(tipo, cantidad, tiene >= cantidad ? colorAlcanza : colorNoAlcanza);
+        }
     }
 
     private void BloquearJugador()
@@ -978,7 +988,7 @@ public class NPCShopUI : MonoBehaviour
     {
         Transform root = transform.root;
 
-        playerScore = root.GetComponentInChildren<PlayerScore>(true);
+        playerRecursos = root.GetComponentInChildren<PlayerRecursos>(true);
         weaponSwitcher = root.GetComponentInChildren<WeaponSwitcher>(true);
         playerMovement = root.GetComponentInChildren<PlayerMovement>(true);
         playerLook = root.GetComponentInChildren<PlayerLook>(true);
