@@ -69,11 +69,10 @@ public class SingleplayerMenuManager : MonoBehaviour
 
     // Modos que ya se pueden jugar (Historia todavia no).
     private bool ModoHabilitado()
-{
-    return modoActual == ModoSeleccionado.Historia ||
-           modoActual == ModoSeleccionado.Ronda5 ||
-           modoActual == ModoSeleccionado.Infinitas;
-}
+    {
+        return modoActual == ModoSeleccionado.Ronda5 ||
+               modoActual == ModoSeleccionado.Infinitas;
+    }
 
     private bool jugador1Listo = false;
 
@@ -285,47 +284,27 @@ public class SingleplayerMenuManager : MonoBehaviour
     // 3. APARIENCIA - PERSONAJES
     // =========================================================
 
-    
-
-public void SeleccionarJugador1()
-{
-    jugador1Listo = true;
-
-    if (jugador1_select != null)
-        jugador1_select.SetActive(true);
-
-    if (jugador2_select != null)
-        jugador2_select.SetActive(false);
-
-    OcultarAvisoInhabilitado();
-
-    if (modoActual == ModoSeleccionado.Historia)
+    public void SeleccionarJugador1()
     {
-        // Historia empieza directamente en el Laboratorio.
-        escenarioSeleccionado = true;
+        jugador1Listo = true;
 
-        if (panelEscenario != null)
-            panelEscenario.SetActive(false);
+        if (jugador1_select != null)
+            jugador1_select.SetActive(true);
 
-        if (panelPersonaje != null)
-            panelPersonaje.SetActive(true);
-    }
-    else
-    {
-        // Los demás modos conservan la selección de escenario.
-        escenarioSeleccionado = false;
+        if (jugador2_select != null)
+            jugador2_select.SetActive(false);
+
+        OcultarAvisoInhabilitado();
 
         if (panelEscenario != null)
             panelEscenario.SetActive(true);
 
+         // NUEVO: al mostrar escenarios, se oculta la selección de personaje
         if (panelPersonaje != null)
             panelPersonaje.SetActive(false);
+
+        ValidarComenzar();
     }
-
-    ValidarComenzar();
-}
-
-
 
 
     public void SeleccionarJugador2()
@@ -449,42 +428,36 @@ public void SeleccionarJugador1()
     // =========================================================
     // 6. COMENZAR PARTIDA
     // =========================================================
-
 public void OnClick_ComenzarAJugar()
 {
-    bool puedeComenzar =
-        jugador1Listo &&
-        (modoActual == ModoSeleccionado.Historia ||
-         escenarioSeleccionado) &&
-        !cargandoPartida;
-
-    if (!puedeComenzar)
-        return;
-
-    Debug.Log("========================================");
-    Debug.Log("INICIANDO PARTIDA");
-    Debug.Log("Modo seleccionado: " + modoActual);
-    Debug.Log("========================================");
-
-    GuardarConfiguracionPartida();
-
-    if (ConfiguracionPartidaSeleccionada.Instancia == null)
+    if (jugador1Listo && escenarioSeleccionado && !cargandoPartida)
     {
-        Debug.LogError(
-            "NO EXISTE ConfiguracionPartidaSeleccionada."
-        );
-        return;
+        Debug.Log("========================================");
+        Debug.Log("INICIANDO PARTIDA");
+        Debug.Log("Escenario seleccionado en el menú: " + ObtenerEscenarioSeleccionado());
+        Debug.Log("========================================");
+
+        GuardarConfiguracionPartida();
+
+        if (ConfiguracionPartidaSeleccionada.Instancia != null)
+        {
+            Debug.Log(
+                "Configuración guardada correctamente. Escenario: " +
+                ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado
+            );
+        }
+        else
+        {
+            Debug.LogError(
+                "NO EXISTE ConfiguracionPartidaSeleccionada."
+            );
+        }
+
+        cargandoPartida = true;
+
+        StartCoroutine(CargarEscenarioRutina());
     }
-
-    Debug.Log(
-        "Configuración guardada. Escenario: " +
-        ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado
-    );
-
-    cargandoPartida = true;
-    StartCoroutine(CargarEscenarioRutina());
 }
-
 
 
     private IEnumerator CargarEscenarioRutina()
@@ -636,19 +609,19 @@ public void OnClick_ComenzarAJugar()
     }
 
 
-private void ValidarComenzar()
-{
-    bool escenarioValido =
-        modoActual == ModoSeleccionado.Historia ||
-        escenarioSeleccionado;
+    private void ValidarComenzar()
+    {
+        bool todoSeleccionado =
+            jugador1Listo &&
+            escenarioSeleccionado;
 
-    bool todoSeleccionado = jugador1Listo && escenarioValido;
+        if (botonComenzarJuego != null && !cargandoPartida)
+        {
+            botonComenzarJuego.SetActive(todoSeleccionado);
+        }
 
-    if (botonComenzarJuego != null && !cargandoPartida)
-        botonComenzarJuego.SetActive(todoSeleccionado);
-
-    SetBotonHomeHabilitado(!todoSeleccionado);
-}
+        SetBotonHomeHabilitado(!todoSeleccionado);
+    }
 
 
     private void SetBotonHomeHabilitado(bool habilitado)
@@ -698,35 +671,29 @@ private void ValidarComenzar()
     // ESCENARIO
     // =========================================================
 
-    
-if (modoActual == ModoSeleccionado.Historia)
-{
-    ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado =
-        ConfiguracionPartidaSeleccionada.Escenario.Laboratorio;
-}
-else if (selectorEscenario1 != null && selectorEscenario1.activeSelf)
-{
-    ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado =
-        ConfiguracionPartidaSeleccionada.Escenario.Laboratorio;
-}
-else if (selectorEscenario2 != null && selectorEscenario2.activeSelf)
-{
-    ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado =
-        ConfiguracionPartidaSeleccionada.Escenario.Ciudad;
-}
-else if (selectorEscenario3 != null && selectorEscenario3.activeSelf)
-{
-    ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado =
-        ConfiguracionPartidaSeleccionada.Escenario.Cabana;
-}
-else
-{
-    Debug.LogError(
-        "SingleplayerMenuManager: No se pudo determinar el escenario seleccionado."
-    );
-    return;
-}
+    if (selectorEscenario1 != null && selectorEscenario1.activeSelf)
+    {
+        ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado =
+            ConfiguracionPartidaSeleccionada.Escenario.Laboratorio;
+    }
+    else if (selectorEscenario2 != null && selectorEscenario2.activeSelf)
+    {
+        ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado =
+            ConfiguracionPartidaSeleccionada.Escenario.Ciudad;
+    }
+    else if (selectorEscenario3 != null && selectorEscenario3.activeSelf)
+    {
+        ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado =
+            ConfiguracionPartidaSeleccionada.Escenario.Cabana;
+    }
+    else
+    {
+        Debug.LogError(
+            "SingleplayerMenuManager: No se pudo determinar el escenario seleccionado."
+        );
 
+        return;
+    }
 
 
     // =========================================================

@@ -68,12 +68,12 @@ public class MultiplayerMenuManager : MonoBehaviour
         ConfiguracionPartidaSeleccionada.Dificultad.Ninguna;
 
     // Modos que ya se pueden jugar (Historia todavia no).
-   private bool ModoHabilitado()
-{
-    return modoActual == ModoSeleccionado.Historia ||
-           modoActual == ModoSeleccionado.Ronda5 ||
-           modoActual == ModoSeleccionado.Infinitas;
-}
+    private bool ModoHabilitado()
+    {
+        return modoActual == ModoSeleccionado.Ronda5 ||
+               modoActual == ModoSeleccionado.Infinitas;
+    }
+
     private bool jugador1Listo = false;
 
     // Laboratorio y Cabaña están disponibles.
@@ -275,47 +275,23 @@ public class MultiplayerMenuManager : MonoBehaviour
     // PERSONAJES
     // =========================================================
 
-    
-
-public void SeleccionarJugador1()
-{
-    jugador1Listo = true;
-
-    if (jugador1_select != null)
-        jugador1_select.SetActive(true);
-
-    if (jugador2_select != null)
-        jugador2_select.SetActive(false);
-
-    OcultarAvisoInhabilitado();
-
-    if (modoActual == ModoSeleccionado.Historia)
+    public void SeleccionarJugador1()
     {
-        // Historia empieza directamente en el Laboratorio.
-        escenarioLista = true;
+        jugador1Listo = true;
 
-        if (panelEscenario != null)
-            panelEscenario.SetActive(false);
+        if (jugador1_select != null)
+            jugador1_select.SetActive(true);
 
-        if (panelPersonaje != null)
-            panelPersonaje.SetActive(true);
-    }
-    else
-    {
-        // Los demás modos conservan la selección de escenario.
-        escenarioLista = false;
+        if (jugador2_select != null)
+            jugador2_select.SetActive(false);
+
+        OcultarAvisoInhabilitado();
 
         if (panelEscenario != null)
             panelEscenario.SetActive(true);
 
-        if (panelPersonaje != null)
-            panelPersonaje.SetActive(false);
+        ValidarComenzar();
     }
-
-    ValidarComenzar();
-}
-
-
 
     public void SeleccionarJugador2()
     {
@@ -400,44 +376,54 @@ public void SeleccionarJugador1()
     // COMENZAR PARTIDA
     // =========================================================
 
-public void OnClick_ComenzarAJugar()
-{
-    bool puedeComenzar =
-        jugador1Listo &&
-        (modoActual == ModoSeleccionado.Historia ||
-         escenarioLista);
-
-    if (!puedeComenzar)
-        return;
-
-    Debug.Log("========================================");
-    Debug.Log("INICIANDO PARTIDA MULTIPLAYER");
-    Debug.Log("Modo seleccionado: " + modoActual);
-    Debug.Log("========================================");
-
-    GuardarConfiguracionPartida();
-
-    if (ConfiguracionPartidaSeleccionada.Instancia == null)
+    public void OnClick_ComenzarAJugar()
     {
-        Debug.LogError(
-            "MultiplayerMenuManager: NO EXISTE ConfiguracionPartidaSeleccionada."
-        );
-        return;
+        if (jugador1Listo && escenarioLista)
+        {
+            Debug.Log("========================================");
+            Debug.Log("INICIANDO PARTIDA MULTIPLAYER");
+            Debug.Log("========================================");
+
+            GuardarConfiguracionPartida();
+
+            if (ConfiguracionPartidaSeleccionada.Instancia != null)
+            {
+                Debug.Log(
+                    "Configuración MULTIPLAYER guardada correctamente: " +
+                    "Escenario = " +
+                    ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado +
+                    " | Modo = " +
+                    ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado +
+                    " | Dificultad = " +
+                    ConfiguracionPartidaSeleccionada.Instancia.dificultadSeleccionada +
+                    " | Personaje = " +
+                    ConfiguracionPartidaSeleccionada.Instancia.personajeSeleccionado
+                );
+            }
+            else
+            {
+                Debug.LogError(
+                    "MultiplayerMenuManager: NO EXISTE ConfiguracionPartidaSeleccionada."
+                );
+
+                return;
+            }
+
+            if (panelRedirigiendo != null)
+            {
+                panelRedirigiendo.SetActive(true);
+                panelRedirigiendo.transform.SetAsLastSibling();
+
+                foreach (Transform t in panelRedirigiendo.transform)
+                {
+                    t.gameObject.SetActive(true);
+                }
+            }
+
+            if (botonComenzarJuego != null)
+                botonComenzarJuego.SetActive(false);
+        }
     }
-
-    if (panelRedirigiendo != null)
-    {
-        panelRedirigiendo.SetActive(true);
-        panelRedirigiendo.transform.SetAsLastSibling();
-
-        foreach (Transform t in panelRedirigiendo.transform)
-            t.gameObject.SetActive(true);
-    }
-
-    if (botonComenzarJuego != null)
-        botonComenzarJuego.SetActive(false);
-}
-
 
     // =========================================================
     // GUARDAR CONFIGURACIÓN
@@ -458,35 +444,29 @@ public void OnClick_ComenzarAJugar()
         // ESCENARIO
         // -----------------------------------------------------
 
-        
-if (modoActual == ModoSeleccionado.Historia)
-{
-    ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado =
-        ConfiguracionPartidaSeleccionada.Escenario.Laboratorio;
-}
-else if (selectorEscenario1 != null && selectorEscenario1.activeSelf)
-{
-    ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado =
-        ConfiguracionPartidaSeleccionada.Escenario.Laboratorio;
-}
-else if (selectorEscenario2 != null && selectorEscenario2.activeSelf)
-{
-    ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado =
-        ConfiguracionPartidaSeleccionada.Escenario.Ciudad;
-}
-else if (selectorEscenario3 != null && selectorEscenario3.activeSelf)
-{
-    ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado =
-        ConfiguracionPartidaSeleccionada.Escenario.Cabana;
-}
-else
-{
-    Debug.LogError(
-        "MultiplayerMenuManager: No se pudo determinar el escenario seleccionado."
-    );
-    return;
-}
+        if (selectorEscenario1 != null && selectorEscenario1.activeSelf)
+        {
+            ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado =
+                ConfiguracionPartidaSeleccionada.Escenario.Laboratorio;
+        }
+        else if (selectorEscenario2 != null && selectorEscenario2.activeSelf)
+        {
+            ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado =
+                ConfiguracionPartidaSeleccionada.Escenario.Ciudad;
+        }
+        else if (selectorEscenario3 != null && selectorEscenario3.activeSelf)
+        {
+            ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado =
+                ConfiguracionPartidaSeleccionada.Escenario.Cabana;
+        }
+        else
+        {
+            Debug.LogError(
+                "MultiplayerMenuManager: No se pudo determinar el escenario seleccionado."
+            );
 
+            return;
+        }
 
         // -----------------------------------------------------
         // MODO
@@ -737,20 +717,17 @@ else
             vistaCabana.SetActive(false);
     }
 
-private void ValidarComenzar()
-{
-    bool escenarioValido =
-        modoActual == ModoSeleccionado.Historia ||
-        escenarioLista;
+    private void ValidarComenzar()
+    {
+        bool todoSeleccionado =
+            jugador1Listo &&
+            escenarioLista;
 
-    bool todoSeleccionado = jugador1Listo && escenarioValido;
+        if (botonComenzarJuego != null)
+            botonComenzarJuego.SetActive(todoSeleccionado);
 
-    if (botonComenzarJuego != null)
-        botonComenzarJuego.SetActive(todoSeleccionado);
-
-    SetBotonHomeHabilitado(!todoSeleccionado);
-}
-
+        SetBotonHomeHabilitado(!todoSeleccionado);
+    }
 
     private void SetBotonHomeHabilitado(bool habilitado)
     {
