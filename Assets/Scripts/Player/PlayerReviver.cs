@@ -59,10 +59,30 @@ public class PlayerReviver : NetworkBehaviour
         Cancelar();
     }
 
-    public override void OnNetworkDespawn()
+    public override void OnNetworkSpawn()
+{
+    if (!IsOwner || playerHealth == null)
+        return;
+
+    playerHealth.OnHealthChanged += AlCambiarVida;
+    playerHealth.OnEscudoDanado += InterrumpirReanimacion;
+}
+
+public override void OnNetworkDespawn()
+{
+    if (playerHealth != null)
+    {
+        playerHealth.OnHealthChanged -= AlCambiarVida;
+        playerHealth.OnEscudoDanado -= InterrumpirReanimacion;
+    }
+
+    Cancelar();
+}
+
+   /* public override void OnNetworkDespawn()
     {
         Cancelar();
-    }
+    }*/
 
     private void Update()
     {
@@ -206,6 +226,18 @@ public class PlayerReviver : NetworkBehaviour
 
         if (progresoFill != null)
             progresoFill.fillAmount = 0f;
+    }
+
+    private void AlCambiarVida(int vidaAnterior, int vidaNueva)
+    {
+        // La regeneración también cambia la vida: solo cuenta si bajó.
+        if (vidaNueva < vidaAnterior)
+            InterrumpirReanimacion();
+    }
+
+    private void InterrumpirReanimacion()
+    {
+        ReiniciarProgreso();
     }
 
     private void Cancelar()

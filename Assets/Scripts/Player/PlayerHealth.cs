@@ -26,7 +26,7 @@ public partial class PlayerHealth : NetworkBehaviour
     [SerializeField] private int startingLives = 1;
 
     [Header("Estado abatido")]
-    [SerializeField] private float downedDuration = 10f;    //Valor original: 5f
+    [SerializeField] private float downedDuration = 20f;    //Valor original: 5f
 
     [Header("Regeneración")]
     [SerializeField] private float regenerationDelay = 5f;
@@ -513,11 +513,11 @@ public partial class PlayerHealth : NetworkBehaviour
         PlayerScore playerScore =
         transform.root.GetComponentInChildren<PlayerScore>();
 
-    if (playerScore != null)
-        playerScore.SumarCaida();
+        if (playerScore != null)
+            playerScore.SumarCaida();
 
-    if (downedCoroutine != null)
-        StopCoroutine(downedCoroutine);
+        if (downedCoroutine != null)
+            StopCoroutine(downedCoroutine);
 
         if (downedCoroutine != null)
         {
@@ -530,6 +530,13 @@ public partial class PlayerHealth : NetworkBehaviour
             StartCoroutine(
                 DownedRoutine()
             );
+
+        // Multijugador: si ya no queda nadie de pie que pueda revivirlo,
+        // se pierde la partida sin esperar el temporizador.
+        if (!EsSingleplayer && !HayOtroJugadorVivo())
+        {
+            EliminatePlayer();
+        }
     }
 
     private IEnumerator DownedRoutine()
@@ -583,7 +590,7 @@ public partial class PlayerHealth : NetworkBehaviour
     // LEVANTARSE
     // =========================================================
 
-    private void RecoverFromDowned()
+    private void RecoverFromDowned(bool consumirVida = true)
     {
         if (!IsServer)
             return;
@@ -596,12 +603,14 @@ public partial class PlayerHealth : NetworkBehaviour
             return;
         }
 
-        Lives.Value =
-            Mathf.Max(
-                Lives.Value - 1,
-                0
-            );
-
+        if (consumirVida)
+        {
+            Lives.Value =
+                Mathf.Max(
+                    Lives.Value - 1,
+                    0
+                );
+        }
         CurrentHealth.Value =
             maxHealth;
 
@@ -656,8 +665,35 @@ public partial class PlayerHealth : NetworkBehaviour
         DownedTimeRemaining.Value =
             0f;
 
-        RecoverFromDowned();
+        RecoverFromDowned(false);
     }
+
+    private bool HayOtroJugadorVivo()
+{
+    if (NetworkManager.Singleton == null)
+        return false;
+
+    foreach (NetworkClient client in
+             NetworkManager.Singleton.ConnectedClientsList)
+    {
+        if (client.PlayerObject == null)
+            continue;
+
+        if (client.PlayerObject.NetworkObjectId ==
+            NetworkObject.NetworkObjectId)
+        {
+            continue;
+        }
+
+        PlayerHealth otro =
+            client.PlayerObject.GetComponent<PlayerHealth>();
+
+        if (otro != null && otro.IsAlive)
+            return true;
+    }
+
+    return false;
+}
 
     // =========================================================
     // ELIMINAR
