@@ -26,7 +26,7 @@ public partial class PlayerHealth : NetworkBehaviour
     [SerializeField] private int startingLives = 1;
 
     [Header("Estado abatido")]
-    [SerializeField] private float downedDuration = 5f;
+    [SerializeField] private float downedDuration = 10f;    //Valor original: 5f
 
     [Header("Regeneración")]
     [SerializeField] private float regenerationDelay = 5f;
@@ -114,6 +114,11 @@ public partial class PlayerHealth : NetworkBehaviour
     public bool IsDead =>
         State.Value ==
         PlayerState.Dead;
+
+     // En singleplayer no hay compañero que revivir: el abatido se levanta solo.
+    private bool EsSingleplayer =>
+        SceneManager.GetActiveScene().name ==
+        "MainSceneSinglePlayer";
 
     // Solo se cura estando de pie y sin la vida llena.
     public bool PuedeCurarse =>
@@ -557,7 +562,21 @@ public partial class PlayerHealth : NetworkBehaviour
         DownedTimeRemaining.Value =
             0f;
 
-        RecoverFromDowned();
+        //RecoverFromDowned();
+
+        downedCoroutine = null;
+
+        // Singleplayer: se levanta solo.
+        // Multijugador: si nadie lo revivió, queda eliminado
+        // (Spectating si hay otro vivo, Dead si no).
+        if (EsSingleplayer)
+        {
+            RecoverFromDowned();
+        }
+        else
+        {
+            EliminatePlayer();
+        }
     }
 
     // =========================================================
@@ -610,6 +629,34 @@ public partial class PlayerHealth : NetworkBehaviour
             "Vidas restantes: " +
             Lives.Value
         );
+    }
+
+    // =========================================================
+    // REVIVIDO POR UN COMPAÑERO
+    // =========================================================
+
+    /// <summary>
+    /// Solo servidor. Lo llama PlayerReviver tras validar la reanimación.
+    /// Reutiliza RecoverFromDowned (resta una vida, restaura la salud, vuelve a Alive).
+    /// </summary>
+    public void ReviveFromTeammate()
+    {
+        if (!IsServer)
+            return;
+
+        if (State.Value != PlayerState.Downed)
+            return;
+
+        if (downedCoroutine != null)
+        {
+            StopCoroutine(downedCoroutine);
+            downedCoroutine = null;
+        }
+
+        DownedTimeRemaining.Value =
+            0f;
+
+        RecoverFromDowned();
     }
 
     // =========================================================
