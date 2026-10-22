@@ -93,7 +93,7 @@ LightmapSettings:
     m_ExportTrainingData: 0
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
-  m_LightingDataAsset: {fileID: 112000000, guid: 8a0c3b1bb3d342144a655182de68834e, type: 2}
+  m_LightingDataAsset: {fileID: 0}
   m_LightingSettings: {fileID: 4890085278179872738, guid: b1613a32fd27bec42b6a836ed98f4aa5, type: 2}
 --- !u!196 &4
 NavMeshSettings:
@@ -54950,11 +54950,13 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   tarjetaPrefab: {fileID: 8118330680350265407}
   puntoSpawnTarjeta: {fileID: 8118330680350265406}
+  distanciaRecogida: 3
   puntoLectorPuerta: {fileID: 8118330680350265405}
   hojaPuerta: {fileID: 8118330680350265403}
   rotacionAbiertaLocal: {x: 0, y: 90, z: 0}
   distanciaInteraccion: 3
-  textoObjetivo: {fileID: 0}
+  textoTituloObjetivo: {fileID: 0}
+  textoDescripcionObjetivo: {fileID: 0}
   EstadoMisionNetwork:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
@@ -65203,6 +65205,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4626840600676633176, guid: 38ca414adb0dcf44f909967e24afacf0, type: 3}
+      propertyPath: m_NavMeshData
+      value: 
+      objectReference: {fileID: 23800000, guid: 950ab446f5b699843b4b8a48fec62624, type: 2}
     - target: {fileID: 4792066306496931057, guid: 38ca414adb0dcf44f909967e24afacf0, type: 3}
       propertyPath: m_Name
       value: Escenario_2
