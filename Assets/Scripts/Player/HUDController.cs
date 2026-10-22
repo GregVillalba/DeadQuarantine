@@ -125,6 +125,8 @@ public class HUDController : MonoBehaviour
     [Header("Hit Marker")]
     [SerializeField] private GameObject hitMarker;
     [SerializeField] private float hitMarkerDuration = 0.10f;
+    [SerializeField] private float headshotHitMarkerDuration = 1.5f;
+    [SerializeField] private Color headshotHitMarkerColor = new Color(1f, 0.84f, 0f); // dorado
 
     private Image[] hitMarkerImages;
 
@@ -1029,8 +1031,8 @@ public class HUDController : MonoBehaviour
     // =========================================================
     // HIT MARKER
     // =========================================================
-
-    public void ShowHitMarker(bool killedZombie)
+//================================= VIEJO =========================================================
+ /*   public void ShowHitMarker(bool killedZombie)
     {
         if (hitMarker == null)
             return;
@@ -1085,5 +1087,67 @@ public class HUDController : MonoBehaviour
         hitMarker.SetActive(false);
 
         hitMarkerCoroutine = null;
+    }*/
+//============================================================================================
+
+//======================================== NUEVO =========================================================
+public void ShowHitMarker(bool killedZombie, bool headshot = false)
+{
+    if (hitMarker == null)
+        return;
+
+    if (hitMarkerImages == null ||
+        hitMarkerImages.Length == 0)
+    {
+        hitMarkerImages =
+            hitMarker.GetComponentsInChildren<Image>(
+                true
+            );
     }
+
+    // Prioridad: headshot (dorado) > muerte (rojo) > impacto (blanco).
+    Color markerColor =
+        headshot
+            ? headshotHitMarkerColor
+            : (killedZombie ? Color.red : Color.white);
+
+    foreach (Image image in hitMarkerImages)
+    {
+        if (image != null)
+        {
+            image.color =
+                markerColor;
+        }
+    }
+
+    if (hitMarkerCoroutine != null)
+    {
+        StopCoroutine(
+            hitMarkerCoroutine
+        );
+    }
+
+    hitMarkerCoroutine =
+        StartCoroutine(
+            HitMarkerRoutine(
+                headshot
+                    ? headshotHitMarkerDuration
+                    : hitMarkerDuration
+            )
+        );
+}
+
+private IEnumerator HitMarkerRoutine(float duration)
+{
+    hitMarker.SetActive(true);
+
+    yield return new WaitForSecondsRealtime(
+        duration
+    );
+
+    hitMarker.SetActive(false);
+
+    hitMarkerCoroutine = null;
+}
+//============================================================================================
 }
