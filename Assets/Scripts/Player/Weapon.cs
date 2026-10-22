@@ -1094,8 +1094,8 @@ public class Weapon : MonoBehaviour
                 Debug.DrawLine(firePoint.position, hit.point, Color.red, 1f);
 
             SpawnBulletTrail(hit.point);
-
-            // Daño a zombies.
+//===================================== VIEJO ================================================================
+ /*           // Daño a zombies.
             ZombieHealth zombieHealth =
                 hit.collider.GetComponentInParent<ZombieHealth>();
 
@@ -1117,8 +1117,48 @@ public class Weapon : MonoBehaviour
                     playerScore.RegistrarImpactoServerRpc();
 
                 return;
-            }
+            }*/
+//==============================================================================================================
 
+//======================================== NUEVO ===============================================================
+            // Daño a zombies.
+            ZombieHealth zombieHealth =
+                hit.collider.GetComponentInParent<ZombieHealth>();
+
+            if (zombieHealth != null)
+            {
+             // Headshot: el rayo atravesó el hitbox de la cabeza de ESTE zombie.
+            // (El collider del cuerpo suele ser el primer impacto, por eso se revisan todos.)
+                bool esHeadshot = false;
+
+                foreach (RaycastHit h in hits)
+                {
+                    ZombieHeadHitbox head = h.collider.GetComponent<ZombieHeadHitbox>();
+
+                    if (head != null && head.Owner == zombieHealth)
+                    {
+                        esHeadshot = true;
+                        break;
+                    }
+                }
+                int finalDamage = Mathf.Max(
+                    1,
+                    Mathf.RoundToInt(DanoBasePorImpacto * DistanceFalloffMultiplier(hit.distance))
+                );
+
+                zombieHealth.TakeDamage(
+                    finalDamage,
+                    hit.point,
+                    hit.normal,
+                    esHeadshot
+                );
+
+                if (playerScore != null)
+                    playerScore.RegistrarImpactoServerRpc();
+
+                return;
+            }
+//==============================================================================================================
             
             // EASTER EGG: permite que los disparos dañen los objetos
             // sin otorgar puntos por impacto.

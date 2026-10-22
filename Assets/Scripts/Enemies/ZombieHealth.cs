@@ -49,6 +49,8 @@ public class ZombieHealth : NetworkBehaviour
     private ZombieAI zombieAI;
     private ZombieAudio zombieAudio;
 
+    private ZombieHeadshot zombieHeadshot;
+
     // Colliders del objeto raíz del zombie.
     // Se desactivan al morir para dejar solamente
     // los colliders de los huesos del ragdoll.
@@ -67,6 +69,7 @@ public class ZombieHealth : NetworkBehaviour
         agent = GetComponent<NavMeshAgent>();
         zombieAI = GetComponent<ZombieAI>();
         zombieAudio = GetComponent<ZombieAudio>();
+        zombieHeadshot = GetComponent<ZombieHeadshot>();
 
         rootColliders = GetComponents<Collider>();
 
@@ -250,7 +253,8 @@ public class ZombieHealth : NetworkBehaviour
     public void TakeDamage(
         int amount,
         Vector3 hitPoint,
-        Vector3 hitNormal
+        Vector3 hitNormal,
+        bool esHeadshot = false
     )
     {
         if (IsDead)
@@ -259,7 +263,8 @@ public class ZombieHealth : NetworkBehaviour
         TakeDamageServerRpc(
             amount,
             hitPoint,
-            hitNormal
+            hitNormal,
+            esHeadshot
         );
     }
 
@@ -268,6 +273,7 @@ public class ZombieHealth : NetworkBehaviour
         int amount,
         Vector3 hitPoint,
         Vector3 hitNormal,
+        bool esHeadshot,
         ServerRpcParams rpcParams = default
     )
     {
@@ -276,6 +282,27 @@ public class ZombieHealth : NetworkBehaviour
 
         ulong shooterClientId =
             rpcParams.Receive.SenderClientId;
+//======================= NUEVO =========================
+        // Headshot: ZombieHeadshot decide cuánto daño hace.
+    bool headshotAplicado = false;
+
+    if (esHeadshot && zombieHeadshot != null)
+    {
+       /* amount = zombieHeadshot.CalcularDano(
+            amount,
+            currentHealthNetwork.Value
+        );*/
+
+        amount = zombieHeadshot.CalcularDano(
+                amount,
+                currentHealthNetwork.Value,
+                maxHealthNetwork.Value
+        );
+
+        headshotAplicado = true;
+    }
+
+//=========================================================
 
         currentHealthNetwork.Value -=
             amount;
@@ -286,7 +313,8 @@ public class ZombieHealth : NetworkBehaviour
 
             ShowHitMarkerClientRpc(
                 shooterClientId,
-                true
+                true,
+                headshotAplicado
             );
 
             Die(shooterClientId);
@@ -297,9 +325,13 @@ public class ZombieHealth : NetworkBehaviour
 
             ShowHitMarkerClientRpc(
                 shooterClientId,
-                false
+                false,
+                headshotAplicado
             );
         }
+
+        if (headshotAplicado)
+            zombieHeadshot.OtorgarPuntosExtra(shooterClientId);
 
         PlayBloodEffectClientRpc(
             hitPoint,
@@ -345,7 +377,8 @@ public class ZombieHealth : NetworkBehaviour
     [ClientRpc]
     private void ShowHitMarkerClientRpc(
         ulong shooterClientId,
-        bool killedZombie
+        bool killedZombie,
+        bool headshot
     )
     {
         if (NetworkManager.Singleton == null)
@@ -374,7 +407,8 @@ public class ZombieHealth : NetworkBehaviour
         if (hud != null)
         {
             hud.ShowHitMarker(
-                killedZombie
+                killedZombie,
+                headshot
             );
         }
     }
@@ -520,7 +554,10 @@ public class ZombieHealth : NetworkBehaviour
     private void PlayDeathEffectsClientRpc()
     {
         ActivateRagdoll();
-
+//======================== NUEVO =========================
+        if (zombieHeadshot != null)
+            zombieHeadshot.DesactivarHitbox();
+//=========================================================
         if (zombieAudio != null)
         {
             zombieAudio.PlayDeathSound();
@@ -566,7 +603,7 @@ public class ZombieHealth : NetworkBehaviour
 
         if (playerScore != null)
                 {
-                    playerScore.SumarPuntos(500);
+                    playerScore.SumarPuntos(150);
                     playerScore.SumarZombieEliminado();
                 }
     }
@@ -600,7 +637,9 @@ public class ZombieHealth : NetworkBehaviour
 
         if (agent != null) agent.enabled = true;
         if (zombieAI != null) zombieAI.enabled = true;
-
+        if (zombieHeadshot != null)
+            zombieHeadshot.ActivarHitbox();
+            
         if (animator != null)
         {
             animator.enabled = true;

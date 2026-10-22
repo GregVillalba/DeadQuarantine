@@ -105,6 +105,7 @@ Transform:
   - {fileID: 4683126729043220}
   - {fileID: 4410085635712870}
   - {fileID: 4550290560911442}
+  - {fileID: 9008563377378648779}
   m_Father: {fileID: 4464836732931512}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!135 &7913965865715621020
@@ -2408,6 +2409,7 @@ GameObject:
   - component: {fileID: 1718004323923210246}
   - component: {fileID: -6822992530280944789}
   - component: {fileID: 7500000000000004002}
+  - component: {fileID: 5777048855465510976}
   m_Layer: 12
   m_Name: ZombieBoss01
   m_TagString: Untagged
@@ -2792,6 +2794,40 @@ MonoBehaviour:
   m_EditorClassIdentifier: Scripts::ZombieAppearance
   ShowTopMostFoldoutHeaderGroup: 1
   models: {fileID: 413936895521146449}
+--- !u!114 &7500000000000004002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1658146812600542}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56f86d9f5386404da3b56db345ed94e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::DropRecursosZombie
+  tabla: {fileID: 11400000, guid: 4a52f8e03dec4db8aaa35a47a731c50f, type: 2}
+  prefabRecurso: {fileID: 7500000000000003003, guid: 1c84733243a847f9a92a4cb928321719, type: 3}
+  escenaSinDrops: TutorialScene
+  alturaSobreElPiso: 0.35
+  alturaBusquedaPiso: 1.5
+  distanciaBusquedaPiso: 6
+--- !u!114 &5777048855465510976
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1658146812600542}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1699b914376f3fa4e87207072b5e37fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::ZombieHeadshot
+  muerteInstantanea: 0
+  multiplicadorDano: 2
+  porcentajeVidaMaxima: 0.5
+  puntosExtraHeadshot: 0
 --- !u!1 &1667025595505794
 GameObject:
   m_ObjectHideFlags: 0
@@ -3865,6 +3901,72 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &2032477316805139152
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9008563377378648779}
+  - component: {fileID: 6580681979018810946}
+  - component: {fileID: 3860508781758952224}
+  m_Layer: 0
+  m_Name: HeadHitbox
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9008563377378648779
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2032477316805139152}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.035, z: -0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4556476489660434}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!135 &6580681979018810946
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2032477316805139152}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 0.17670414
+  m_Center: {x: 0.026082603, y: -0.0027867267, z: -0.0000000020263564}
+--- !u!114 &3860508781758952224
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2032477316805139152}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71941ba6960ed114982f618aed116b82, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::ZombieHeadHitbox
 --- !u!1 &3422865059564429686
 GameObject:
   m_ObjectHideFlags: 0
@@ -4277,21 +4379,3 @@ RectTransform:
   m_AnchoredPosition: {x: -5, y: 0}
   m_SizeDelta: {x: -20, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &7500000000000004002
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1658146812600542}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 56f86d9f5386404da3b56db345ed94e8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Scripts::DropRecursosZombie
-  tabla: {fileID: 11400000, guid: 4a52f8e03dec4db8aaa35a47a731c50f, type: 2}
-  prefabRecurso: {fileID: 7500000000000003003, guid: 1c84733243a847f9a92a4cb928321719, type: 3}
-  escenaSinDrops: TutorialScene
-  alturaSobreElPiso: 0.35
-  alturaBusquedaPiso: 1.5
-  distanciaBusquedaPiso: 6
