@@ -26,7 +26,7 @@ public partial class PlayerHealth : NetworkBehaviour
     [SerializeField] private int startingLives = 1;
 
     [Header("Estado abatido")]
-    [SerializeField] private float downedDuration = 5f;
+    [SerializeField] private float downedDuration = 20f;    //Valor original: 5f
 
     [Header("Regeneración")]
     [SerializeField] private float regenerationDelay = 5f;
@@ -114,6 +114,11 @@ public partial class PlayerHealth : NetworkBehaviour
     public bool IsDead =>
         State.Value ==
         PlayerState.Dead;
+
+     // En singleplayer no hay compañero que revivir: el abatido se levanta solo.
+    private bool EsSingleplayer =>
+        SceneManager.GetActiveScene().name ==
+        "MainSceneSinglePlayer";
 
     // Solo se cura estando de pie y sin la vida llena.
     public bool PuedeCurarse =>
@@ -508,11 +513,11 @@ public partial class PlayerHealth : NetworkBehaviour
         PlayerScore playerScore =
         transform.root.GetComponentInChildren<PlayerScore>();
 
-    if (playerScore != null)
-        playerScore.SumarCaida();
+        if (playerScore != null)
+            playerScore.SumarCaida();
 
-    if (downedCoroutine != null)
-        StopCoroutine(downedCoroutine);
+        if (downedCoroutine != null)
+            StopCoroutine(downedCoroutine);
 
         if (downedCoroutine != null)
         {
@@ -525,6 +530,13 @@ public partial class PlayerHealth : NetworkBehaviour
             StartCoroutine(
                 DownedRoutine()
             );
+
+        // Multijugador: si ya no queda nadie de pie que pueda revivirlo,
+        // se pierde la partida sin esperar el temporizador.
+        if (!EsSingleplayer && !HayOtroJugadorVivo())
+        {
+            EliminatePlayer();
+        }
     }
 
     private IEnumerator DownedRoutine()
@@ -557,14 +569,28 @@ public partial class PlayerHealth : NetworkBehaviour
         DownedTimeRemaining.Value =
             0f;
 
-        RecoverFromDowned();
+        //RecoverFromDowned();
+
+        downedCoroutine = null;
+
+        // Singleplayer: se levanta solo.
+        // Multijugador: si nadie lo revivió, queda eliminado
+        // (Spectating si hay otro vivo, Dead si no).
+        if (EsSingleplayer)
+        {
+            RecoverFromDowned();
+        }
+        else
+        {
+            EliminatePlayer();
+        }
     }
 
     // =========================================================
     // LEVANTARSE
     // =========================================================
 
-    private void RecoverFromDowned()
+    private void RecoverFromDowned(bool consumirVida = true)
     {
         if (!IsServer)
             return;
@@ -577,12 +603,14 @@ public partial class PlayerHealth : NetworkBehaviour
             return;
         }
 
-        Lives.Value =
-            Mathf.Max(
-                Lives.Value - 1,
-                0
-            );
-
+        if (consumirVida)
+        {
+            Lives.Value =
+                Mathf.Max(
+                    Lives.Value - 1,
+                    0
+                );
+        }
         CurrentHealth.Value =
             maxHealth;
 
@@ -611,6 +639,61 @@ public partial class PlayerHealth : NetworkBehaviour
             Lives.Value
         );
     }
+
+    // =========================================================
+    // REVIVIDO POR UN COMPAÑERO
+    // =========================================================
+
+    /// <summary>
+    /// Solo servidor. Lo llama PlayerReviver tras validar la reanimación.
+    /// Reutiliza RecoverFromDowned (resta una vida, restaura la salud, vuelve a Alive).
+    /// </summary>
+    public void ReviveFromTeammate()
+    {
+        if (!IsServer)
+            return;
+
+        if (State.Value != PlayerState.Downed)
+            return;
+
+        if (downedCoroutine != null)
+        {
+            StopCoroutine(downedCoroutine);
+            downedCoroutine = null;
+        }
+
+        DownedTimeRemaining.Value =
+            0f;
+
+        RecoverFromDowned(false);
+    }
+
+    private bool HayOtroJugadorVivo()
+{
+    if (NetworkManager.Singleton == null)
+        return false;
+
+    foreach (NetworkClient client in
+             NetworkManager.Singleton.ConnectedClientsList)
+    {
+        if (client.PlayerObject == null)
+            continue;
+
+        if (client.PlayerObject.NetworkObjectId ==
+            NetworkObject.NetworkObjectId)
+        {
+            continue;
+        }
+
+        PlayerHealth otro =
+            client.PlayerObject.GetComponent<PlayerHealth>();
+
+        if (otro != null && otro.IsAlive)
+            return true;
+    }
+
+    return false;
+}
 
     // =========================================================
     // ELIMINAR
