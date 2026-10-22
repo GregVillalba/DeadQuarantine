@@ -251,6 +251,16 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""interactions"": """",
                     ""initialStateCheck"": false,
                     ""priority"": 0
+                },
+                {
+                    ""name"": ""SkipShop"",
+                    ""type"": ""Button"",
+                    ""id"": ""b7e2c4d1-5f3a-4c8e-9a61-3d2f7e8b9c04"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false,
+                    ""priority"": 0
                 }
             ],
             ""bindings"": [
@@ -473,6 +483,17 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""action"": ""UseSlot1"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""e4a9d2c7-1b6f-4e3a-8c52-7f9e0a1b2d35"",
+                    ""path"": ""<Keyboard>/p"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SkipShop"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -497,6 +518,7 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         m_Player_NextWeapon = m_Player.FindAction("NextWeapon", throwIfNotFound: true);
         m_Player_PreviousWeapon = m_Player.FindAction("PreviousWeapon", throwIfNotFound: true);
         m_Player_UseSlot1 = m_Player.FindAction("UseSlot1", throwIfNotFound: true);
+        m_Player_SkipShop = m_Player.FindAction("SkipShop", throwIfNotFound: true);
     }
 
     ~@PlayerControls()
@@ -593,6 +615,7 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_NextWeapon;
     private readonly InputAction m_Player_PreviousWeapon;
     private readonly InputAction m_Player_UseSlot1;
+    private readonly InputAction m_Player_SkipShop;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -669,6 +692,10 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @UseSlot1 => m_Wrapper.m_Player_UseSlot1;
         /// <summary>
+        /// Provides access to the underlying input action "Player/SkipShop".
+        /// </summary>
+        public InputAction @SkipShop => m_Wrapper.m_Player_SkipShop;
+        /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
         public InputActionMap Get() { return m_Wrapper.m_Player; }
@@ -742,6 +769,9 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @UseSlot1.started += instance.OnUseSlot1;
             @UseSlot1.performed += instance.OnUseSlot1;
             @UseSlot1.canceled += instance.OnUseSlot1;
+            @SkipShop.started += instance.OnSkipShop;
+            @SkipShop.performed += instance.OnSkipShop;
+            @SkipShop.canceled += instance.OnSkipShop;
         }
 
         /// <summary>
@@ -801,6 +831,9 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @UseSlot1.started -= instance.OnUseSlot1;
             @UseSlot1.performed -= instance.OnUseSlot1;
             @UseSlot1.canceled -= instance.OnUseSlot1;
+            @SkipShop.started -= instance.OnSkipShop;
+            @SkipShop.performed -= instance.OnSkipShop;
+            @SkipShop.canceled -= instance.OnSkipShop;
         }
 
         /// <summary>
@@ -953,5 +986,12 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnUseSlot1(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "SkipShop" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSkipShop(InputAction.CallbackContext context);
     }
 }

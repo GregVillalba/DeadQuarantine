@@ -1045,6 +1045,10 @@ public class NPCShopUI : MonoBehaviour
                 tiempoTiendaText.text = "Tiempo restante: " + tiempo;
         }
 
+        // También cuenta si el jugador saltó la fase con la tecla (sin abrir la tienda).
+        if (faseActiva && RoundManager.Instance.JugadorLocalListoFaseCompras())
+            listoMarcado = true;
+
         if (listoButton != null)
         {
             if (listoButton.gameObject.activeSelf != faseActiva)

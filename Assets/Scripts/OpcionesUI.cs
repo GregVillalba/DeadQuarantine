@@ -41,6 +41,7 @@ public class OpcionesUI : MonoBehaviour
         ("RebindGolpe", "Melee", null),
         ("RebindSlot1", "UseSlot1", null),
         ("RebindGranada", "Grenade", null),
+        ("RebindSaltarCompras", "SkipShop", null),
     };
 
     // Nombres fijos de los controles a resolver en el editor.

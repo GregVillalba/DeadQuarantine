@@ -1586,6 +1586,15 @@ public void DetenerSpawnsHistoria()
             ShopReadyClientsNetwork.Add(clientId);
     }
 
+    // true si el jugador local ya marcó "Listo" (con el botón de la tienda o con la tecla de saltar compras).
+    public bool JugadorLocalListoFaseCompras()
+    {
+        if (!ShopPhaseActiveNetwork.Value || NetworkManager.Singleton == null)
+            return false;
+
+        return ShopReadyClientsNetwork.Contains(NetworkManager.Singleton.LocalClientId);
+    }
+
     // true si algún jugador distinto al local ya marcó "Listo".
     public bool OtroJugadorListoFaseCompras()
     {
