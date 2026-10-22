@@ -6,6 +6,8 @@ public class PuertaAnimacionHistoria : MonoBehaviour
     [SerializeField] private Animator animator;
 
     private bool animacionIniciada;
+    private static readonly int EstadoAbrirPuerta =
+        Animator.StringToHash("abrirPuerta");
 
     private void Awake()
     {
@@ -15,41 +17,22 @@ public class PuertaAnimacionHistoria : MonoBehaviour
         if (animator == null)
         {
             Debug.LogError(
-                "[Puerta] No se encontró un Animator en " + gameObject.name,
+                "[Puerta] No se encontró un Animator.",
                 this
             );
             return;
         }
 
-        Debug.Log(
-            "[Puerta] Animator encontrado en " + gameObject.name,
-            this
-        );
-
-        animator.speed = 1f;
-        animator.Play("Cerrada", 0, 0f);
-        animator.Update(0f);
+        // Mantiene el estado inicial sin avanzar la animación.
+        animator.speed = 0f;
     }
 
     public void AbrirPuerta()
     {
-        Debug.Log("[Puerta] Se recibió la orden de abrir.", this);
-
-        if (animator == null)
-        {
-            Debug.LogError("[Puerta] El Animator es nulo.", this);
+        if (animator == null || animacionIniciada)
             return;
-        }
 
-        if (animacionIniciada)
-        {
-            Debug.LogWarning("[Puerta] La animación ya fue iniciada.", this);
-            return;
-        }
-
-        int estado = Animator.StringToHash("AbrirPuerta");
-
-        if (!animator.HasState(0, estado))
+        if (!animator.HasState(0, EstadoAbrirPuerta))
         {
             Debug.LogError(
                 "[Puerta] No existe el estado AbrirPuerta en el Animator.",
@@ -60,8 +43,12 @@ public class PuertaAnimacionHistoria : MonoBehaviour
 
         animacionIniciada = true;
         animator.speed = 1f;
-        animator.Play(estado, 0, 0f);
+        animator.Play(EstadoAbrirPuerta, 0, 0f);
+        animator.Update(0f);
 
-        Debug.Log("[Puerta] Animación iniciada correctamente.", this);
+        Debug.Log(
+            "[Puerta] Animación de apertura iniciada.",
+            this
+        );
     }
 }

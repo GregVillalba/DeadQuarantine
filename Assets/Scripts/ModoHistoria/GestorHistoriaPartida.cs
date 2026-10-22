@@ -9,6 +9,7 @@ public class GestorHistoriaPartida : NetworkBehaviour
     private const int BuscarTarjeta = 1;
     private const int AbrirPuerta = 2;
     private const int MisionCompletada = 3;
+    private bool animacionAperturaEjecutada;
 
     [Header("Tarjeta de acceso")]
     [SerializeField] private GameObject tarjetaPrefab;
@@ -336,14 +337,13 @@ public class GestorHistoriaPartida : NetworkBehaviour
     }
 
    
+
 private void AplicarEstadoPuerta(bool abierta)
 {
-    Debug.Log(
-        "[Historia] AplicarEstadoPuerta recibió: " + abierta,
-        this
-    );
-
     if (!abierta)
+        return;
+
+    if (animacionAperturaEjecutada)
         return;
 
     if (animacionPuerta == null)
@@ -355,9 +355,17 @@ private void AplicarEstadoPuerta(bool abierta)
         return;
     }
 
-    Debug.Log("[Historia] Enviando orden de apertura a la puerta.", this);
+    // Evita ejecutar la animación más de una vez
+    // en esta instancia.
+    animacionAperturaEjecutada = true;
+
+    Debug.Log(
+        "[Historia] Misión completada. Reproduciendo apertura de puerta.",
+        this
+    );
 
     animacionPuerta.AbrirPuerta();
 }
+
 
 }
