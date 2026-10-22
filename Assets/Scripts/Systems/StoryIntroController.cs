@@ -1,23 +1,17 @@
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
 
 public class StoryIntroController : NetworkBehaviour
 {
-    [Header("1. Modo Historia (por Escenario)")]
-    [SerializeField] private GameObject popupHistoria_Laboratorio;
-    [SerializeField] private GameObject popupHistoria_Ciudad;
-    [SerializeField] private GameObject popupHistoria_Cabana;
-
-    [Header("2. Modo Ronda 5 / Normal (por Escenario)")]
-    [SerializeField] private GameObject popupRonda5_Laboratorio;
-    [SerializeField] private GameObject popupRonda5_Ciudad;
-    [SerializeField] private GameObject popupRonda5_Cabana;
-
-    [Header("3. Modo Supervivencia / Infinitas (por Escenario)")]
-    [SerializeField] private GameObject popupSupervivencia_Laboratorio;
-    [SerializeField] private GameObject popupSupervivencia_Ciudad;
-    [SerializeField] private GameObject popupSupervivencia_Cabana;
+    [Header("Panel Único de Historia")]
+    [SerializeField] private GameObject panelHistoria;
+    [SerializeField] private TextMeshProUGUI textoHeaderVerde; // "PUNTO DE PARTIDA", "CHECKPOINT!", etc.
+    [SerializeField] private TextMeshProUGUI textoTitulo;      // "HISTORIA: ¿Cómo..."
+    [SerializeField] private TextMeshProUGUI textoCuerpoCompleto; // Descripción + Objetivo juntos
+    [SerializeField] private Button botonContinuar;
 
     [Header("HUD del jugador")]
     [SerializeField] private GameObject hud;
@@ -30,13 +24,33 @@ public class StoryIntroController : NetworkBehaviour
     [SerializeField] private GameObject weaponCameraObject;
     private WeaponSwitcher weaponSwitcher;
 
-    private GameObject popupActivoActual;
     private bool historiaActiva;
     public bool HistoriaActiva => historiaActiva;
 
+    private struct DatosHistoria
+    {
+        public string headerVerde;
+        public string titulo;
+        public string cuerpo; // Incluye descripción y objetivo
+
+        public DatosHistoria(string header, string tit, string cuerpoTexto)
+        {
+            headerVerde = header;
+            titulo = tit;
+            cuerpo = cuerpoTexto;
+        }
+    }
+
     private void Awake()
     {
-        ApagarTodosLosPopups();
+        if (panelHistoria != null)
+            panelHistoria.SetActive(false);
+
+        if (botonContinuar != null)
+        {
+            botonContinuar.onClick.RemoveListener(ContinuarHistoria);
+            botonContinuar.onClick.AddListener(ContinuarHistoria);
+        }
 
         if (playerMovement == null)
             playerMovement = GetComponent<PlayerMovement>();
@@ -47,7 +61,7 @@ public class StoryIntroController : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        if (!IsOwner)
+        if (!IsOwner && !EsSinglePlayer())
         {
             enabled = false;
             return;
@@ -71,7 +85,6 @@ public class StoryIntroController : NetworkBehaviour
 
         BloquearJugador();
 
-        // 1. Obtener Modo y Escenario seleccionados en el menú
         ConfiguracionPartidaSeleccionada.ModoJuego modo = ConfiguracionPartidaSeleccionada.ModoJuego.Ronda5;
         ConfiguracionPartidaSeleccionada.Escenario escenario = ConfiguracionPartidaSeleccionada.Escenario.Laboratorio;
 
@@ -83,99 +96,187 @@ public class StoryIntroController : NetworkBehaviour
 
         Debug.Log($"[StoryIntro] Modo elegido: {modo} | Escenario elegido: {escenario}");
 
-        // 2. Elegir la pantalla correcta entre las 9 combinaciones
-        popupActivoActual = ObtenerPopupSegunConfiguracion(modo, escenario);
+        DatosHistoria datos = ObtenerDatosHistoria(modo, escenario);
 
-        // 3. Activar la pantalla seleccionada
-        if (popupActivoActual != null)
+        if (textoHeaderVerde != null)
         {
-            popupActivoActual.SetActive(true);
+            if (string.IsNullOrEmpty(datos.headerVerde))
+            {
+                textoHeaderVerde.gameObject.SetActive(false);
+            }
+            else
+            {
+                textoHeaderVerde.gameObject.SetActive(true);
+                textoHeaderVerde.text = datos.headerVerde;
+            }
         }
-        else
-        {
-            Debug.LogWarning("[StoryIntro] No está asignado el popup para este Modo y Escenario.");
-        }
+
+        if (textoTitulo != null)
+            textoTitulo.text = datos.titulo;
+
+        if (textoCuerpoCompleto != null)
+            textoCuerpoCompleto.text = datos.cuerpo;
+
+        if (panelHistoria != null)
+            panelHistoria.SetActive(true);
 
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
     }
+    private void LateUpdate()
+    {
+        if (!historiaActiva) return;
 
-    private GameObject ObtenerPopupSegunConfiguracion(
+        if (Cursor.lockState != CursorLockMode.None) Cursor.lockState = CursorLockMode.None;
+        if (!Cursor.visible) Cursor.visible = true;
+    }
+    private void Update()
+    {
+        if (!historiaActiva) return;
+
+        // Detectar espacio o enter para continuar automáticamente
+#if ENABLE_INPUT_SYSTEM
+        if (UnityEngine.InputSystem.Keyboard.current != null &&
+            (UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame ||
+             UnityEngine.InputSystem.Keyboard.current.enterKey.wasPressedThisFrame))
+        {
+            ContinuarHistoria();
+        }
+#else
+    if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))
+    {
+        ContinuarHistoria();
+    }
+#endif
+    }
+
+    private DatosHistoria ObtenerDatosHistoria(
         ConfiguracionPartidaSeleccionada.ModoJuego modo,
         ConfiguracionPartidaSeleccionada.Escenario esc)
     {
-        switch (modo)
+        // ------------------------- MODO HISTORIA -------------------------
+        if (modo == ConfiguracionPartidaSeleccionada.ModoJuego.Historia)
         {
-            case ConfiguracionPartidaSeleccionada.ModoJuego.Historia:
-                if (esc == ConfiguracionPartidaSeleccionada.Escenario.Ciudad) return popupHistoria_Ciudad;
-                if (esc == ConfiguracionPartidaSeleccionada.Escenario.Cabana) return popupHistoria_Cabana;
-                return popupHistoria_Laboratorio;
-
-            case ConfiguracionPartidaSeleccionada.ModoJuego.Ronda5:
-                if (esc == ConfiguracionPartidaSeleccionada.Escenario.Ciudad) return popupRonda5_Ciudad;
-                if (esc == ConfiguracionPartidaSeleccionada.Escenario.Cabana) return popupRonda5_Cabana;
-                return popupRonda5_Laboratorio;
-
-            case ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia:
-                if (esc == ConfiguracionPartidaSeleccionada.Escenario.Ciudad) return popupSupervivencia_Ciudad;
-                if (esc == ConfiguracionPartidaSeleccionada.Escenario.Cabana) return popupSupervivencia_Cabana;
-                return popupSupervivencia_Laboratorio;
-
-            default:
-                return popupRonda5_Laboratorio;
+            if (esc == ConfiguracionPartidaSeleccionada.Escenario.Laboratorio)
+            {
+                return new DatosHistoria(
+                    "PUNTO DE PARTIDA",
+                    "HISTORIA: ¿Cómo empezo todo?",
+                    "Nos encontramos en el laboratorio donde todo empezó: un virus desatado que transforma a todo aquel que lo inhala. Avanzamos sigilosamente hacia la salida, tratando de no alertar a nadie. Sin embargo, como era de esperarse, la puerta está bloqueada. Tu misión será encontrar la tarjeta magnética de la puerta principal.\n\nOBJETIVO: Encontrar la tarjeta y escapar."
+                );
+            }
+            if (esc == ConfiguracionPartidaSeleccionada.Escenario.Ciudad)
+            {
+                return new DatosHistoria(
+                    "CHECKPOINT!",
+                    "HISTORIA: ¿Cómo terminamos aqui?",
+                    "Tras escapar del laboratorio hacia una ciudad infestada, el objetivo es llegar a la antena de radio para pedir auxilio, ya que la única salida viable es por aire. Abriéndose paso entre los infectados y tras una breve parada táctica, logran entrar a la estación junto a otros refugiados para resistir hasta la evacuación militar.\n\nOBJETIVO: Comunicarte con otros sobrevivientes."
+                );
+            }
+            if (esc == ConfiguracionPartidaSeleccionada.Escenario.Cabana)
+            {
+                return new DatosHistoria(
+                    "CHECKPOINT!",
+                    "HISTORIA: ¿Cómo terminamos aqui?",
+                    "El grupo de refugiados fue dividido en distintos puntos seguros del bosque. Nos ordenaron mantener la calma, aunque nos advirtieron de un infectado mutante enorme capaz de comandar oleadas de infectados que atacan bases militares en grupo. Ese mutante es la prioridad máxima, en caso de verlo hay que eliminarlo para acabar con esta pesadilla.\n\nOBJETIVO: Acabar con el zombie mutante."
+                );
+            }
         }
+
+        // ------------------------- MODO RONDA 5 -------------------------
+        if (modo == ConfiguracionPartidaSeleccionada.ModoJuego.Ronda5)
+        {
+            if (esc == ConfiguracionPartidaSeleccionada.Escenario.Laboratorio)
+            {
+                return new DatosHistoria(
+                    "",
+                    "HISTORIA: ¿Cómo salimos de esta?",
+                    "Nos encontramos en el laboratorio donde todo empezó: un virus desatado que transforma a todo aquel que lo tenga una mordida zombie. Debemos escapar de esta instalación antes de que los infectados nos conviertan. Tenemos que acabar con todos, incluyendo a Billy, un infectado mutante enorme capaz de comandar oleadas de infectados.\n\nOBJETIVO: Acabar con las hordas y zombie mutante."
+                );
+            }
+            if (esc == ConfiguracionPartidaSeleccionada.Escenario.Ciudad)
+            {
+                return new DatosHistoria(
+                    "",
+                    "HISTORIA: ¿Cómo seguimos?",
+                    "Estamos ante un panorama aterrador: el virus se ha propagado por la ciudad. Nos ordenaron mantener la calma, aunque nos advirtieron de un infectado mutante enorme capaz de comandar oleadas de infectados que atacan bases militares en grupo. Ese mutante es la prioridad máxima, en caso de verlo hay que eliminarlo para acabar con esta pesadilla.\n\nOBJETIVO: Acabar con las hordas y zombie mutante."
+                );
+            }
+            if (esc == ConfiguracionPartidaSeleccionada.Escenario.Cabana)
+            {
+                return new DatosHistoria(
+                    "",
+                    "HISTORIA: ¿Cómo terminamos aqui?",
+                    "El grupo de refugiados fue dividido en distintos puntos seguros del bosque. Nos ordenaron mantener la calma, aunque nos advirtieron de un infectado mutante enorme capaz de comandar oleadas de infectados que atacan bases militares en grupo. Ese mutante es la prioridad máxima, en caso de verlo hay que eliminarlo para acabar con esta pesadilla.\n\nOBJETIVO: Acabar con las hordas y zombie mutante."
+                );
+            }
+        }
+
+        // ------------------------- MODO SUPERVIVENCIA -------------------------
+        if (modo == ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia)
+        {
+            if (esc == ConfiguracionPartidaSeleccionada.Escenario.Laboratorio)
+            {
+                return new DatosHistoria(
+                    "",
+                    "HISTORIA: ¿Cómo salimos de esta?",
+                    "Nos encontramos en el laboratorio donde todo empezó: un virus desatado que transforma a todo aquel que lo tenga una mordida zombie. Tenemos que aguantar lo maximo posible, acabar con hordas y mutantes.\n\nOBJETIVO: Acabar con las hordas y zombies mutantes."
+                );
+            }
+            if (esc == ConfiguracionPartidaSeleccionada.Escenario.Ciudad)
+            {
+                return new DatosHistoria(
+                    "",
+                    "HISTORIA: ¿Cómo seguimos?",
+                    "Estamos ante un panorama aterrador: el virus se ha propagado por la ciudad. Nos ordenaron mantener la calma y sobrevivir lo maximo posible, aunque nos advirtieron de un infectado mutante enorme capaz de comandar oleadas de infectados que atacan bases militares en grupo.\n\nOBJETIVO: Sobrevivir a los mutantes y hordas."
+                );
+            }
+            if (esc == ConfiguracionPartidaSeleccionada.Escenario.Cabana)
+            {
+                return new DatosHistoria(
+                    "",
+                    "HISTORIA: ¿Cómo terminamos aqui?",
+                    "El grupo de refugiados fue dividido en distintos puntos seguros del bosque. Nos ordenaron mantener la calma y sobrevivir lo mas que podamos, nos advirtieron de un infectado mutante enorme capaz de comandar oleadas de infectados que atacan bases militares en grupo.\n\nOBJETIVO: Sobrevivir lo maximo posible."
+                );
+            }
+        }
+
+        return new DatosHistoria(
+            "",
+            "HISTORIA: ¿Cómo salimos de esta?",
+            "Nos encontramos en el laboratorio donde todo empezó: un virus desatado.\n\nOBJETIVO: Sobrevivir a las oleadas enemigas."
+        );
     }
 
-    /// <summary>
-    /// Asignar este método en el OnClick() del botón Aceptar/Continuar de cada una de las 9 historias.
-    /// </summary>
     public void ContinuarHistoria()
     {
-        Debug.Log("[StoryIntro] ContinuarHistoria() INICIO. IsOwner=" + IsOwner + " | historiaActiva=" + historiaActiva);
+        Debug.Log($"[StoryIntro] Botón presionado. Estado previo: historiaActiva={historiaActiva}, IsOwner={IsOwner}");
 
-        if (!IsOwner || !historiaActiva)
-            return;
-
+        // Desactivamos la bandera
         historiaActiva = false;
 
-        // Ocultar el popup que estaba visible
-        if (popupActivoActual != null)
-        {
-            popupActivoActual.SetActive(false);
-            popupActivoActual = null;
-        }
-        else
-        {
-            ApagarTodosLosPopups();
-        }
+        // 1. Apagar panel de historia
+        if (panelHistoria != null)
+            panelHistoria.SetActive(false);
 
+        // 2. Reactivar HUD
         if (hud != null)
             hud.SetActive(true);
 
+        // 3. Reactivar movimiento, cámara y armas del jugador
         HabilitarJugador();
 
+        // 4. Bloquear y ocultar cursor para jugar
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
-        if (IsServer && RoundManager.Instance != null)
+        // 5. Iniciar la ronda si corresponde
+        if (RoundManager.Instance != null)
+        {
             RoundManager.Instance.StartRound(1);
+        }
 
-        Debug.Log("[StoryIntro] ContinuarHistoria() FIN.");
-    }
-
-    private void ApagarTodosLosPopups()
-    {
-        if (popupHistoria_Laboratorio != null) popupHistoria_Laboratorio.SetActive(false);
-        if (popupHistoria_Ciudad != null) popupHistoria_Ciudad.SetActive(false);
-        if (popupHistoria_Cabana != null) popupHistoria_Cabana.SetActive(false);
-
-        if (popupRonda5_Laboratorio != null) popupRonda5_Laboratorio.SetActive(false);
-        if (popupRonda5_Ciudad != null) popupRonda5_Ciudad.SetActive(false);
-        if (popupRonda5_Cabana != null) popupRonda5_Cabana.SetActive(false);
-
-        if (popupSupervivencia_Laboratorio != null) popupSupervivencia_Laboratorio.SetActive(false);
-        if (popupSupervivencia_Ciudad != null) popupSupervivencia_Ciudad.SetActive(false);
-        if (popupSupervivencia_Cabana != null) popupSupervivencia_Cabana.SetActive(false);
+        Debug.Log("[StoryIntro] ¡Jugador desbloqueado con éxito!");
     }
 
     private void BloquearJugador()
@@ -204,9 +305,6 @@ public class StoryIntroController : NetworkBehaviour
         if (weaponSwitcher == null)
             weaponSwitcher = transform.root.GetComponentInChildren<WeaponSwitcher>(true);
 
-        Debug.Log("[StoryIntro] HabilitarJugador() INICIO. weaponSwitcher=" + (weaponSwitcher != null) +
-            " | CurrentWeapon=" + (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null ? weaponSwitcher.CurrentWeapon.name : "NULL"));
-
         if (playerMovement != null)
         {
             playerMovement.enabled = true;
@@ -220,11 +318,6 @@ public class StoryIntroController : NetworkBehaviour
         {
             weaponSwitcher.CurrentWeapon.enabled = true;
             weaponSwitcher.CurrentWeapon.InputLocked = false;
-            Debug.Log("[StoryIntro] Arma desbloqueada: " + weaponSwitcher.CurrentWeapon.name);
-        }
-        else
-        {
-            Debug.LogWarning("[StoryIntro] Seguimos sin encontrar weaponSwitcher ni con el lookup manual.");
         }
     }
 }

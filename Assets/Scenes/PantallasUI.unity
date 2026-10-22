@@ -15562,7 +15562,7 @@ GameObject:
   - component: {fileID: 281455409}
   - component: {fileID: 281455408}
   m_Layer: 5
-  m_Name: PORCENTAJE
+  m_Name: PORCENTAJE_Me_Duele_La_Cabeza
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -45089,6 +45089,66 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 780081095}
   m_CullTransparentMesh: 1
+--- !u!1 &780265140
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 780265141}
+  - component: {fileID: 780265142}
+  m_Layer: 0
+  m_Name: LogrosGlobalesManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &780265141
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 780265140}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 373.21252, y: -133.4345, z: -9.248318}
+  m_LocalScale: {x: 0.75, y: 0.75, z: 0.75}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1098545880}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &780265142
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 780265140}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2aabf923d95f4749970e6aac9b6f18c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::LogrosGlobalesManager
+  urlApi: https://dead-quarentine-web.wasmer.app/api/logros
+  listaTarjetas:
+  - idLogro: 0
+    textoPorcentaje: {fileID: 1275010457}
+  - idLogro: 0
+    textoPorcentaje: {fileID: 0}
+  - idLogro: 0
+    textoPorcentaje: {fileID: 0}
+  - idLogro: 0
+    textoPorcentaje: {fileID: 0}
+  - idLogro: 0
+    textoPorcentaje: {fileID: 0}
+  - idLogro: 0
+    textoPorcentaje: {fileID: 0}
+  - idLogro: 0
+    textoPorcentaje: {fileID: 0}
 --- !u!1 &781129442
 GameObject:
   m_ObjectHideFlags: 0
@@ -52262,7 +52322,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 550, y: -105.9999}
+  m_AnchoredPosition: {x: 550, y: -106}
   m_SizeDelta: {x: 1000, y: 40}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &926133501
@@ -61655,6 +61715,7 @@ RectTransform:
   - {fileID: 1557879358}
   - {fileID: 582124909}
   - {fileID: 1869470579}
+  - {fileID: 780265141}
   - {fileID: 210487671}
   - {fileID: 1747648090}
   - {fileID: 1214686685}
@@ -71081,7 +71142,7 @@ GameObject:
   - component: {fileID: 1275010458}
   - component: {fileID: 1275010457}
   m_Layer: 5
-  m_Name: PORCENTAJE
+  m_Name: PORCENTAJE_derrotador_supremo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -84202,7 +84263,7 @@ GameObject:
   - component: {fileID: 1520101204}
   - component: {fileID: 1520101203}
   m_Layer: 5
-  m_Name: PORCENTAJE
+  m_Name: PORCENTAJE_Dondes_esta_Wally
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -90859,7 +90920,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1622614606
 Transform:
   m_ObjectHideFlags: 0
@@ -96323,7 +96384,7 @@ GameObject:
   - component: {fileID: 1736262134}
   - component: {fileID: 1736262133}
   m_Layer: 5
-  m_Name: PORCENTAJE
+  m_Name: PORCENTAJE_No_es_mi_primer_Rodeo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -110794,7 +110855,7 @@ GameObject:
   - component: {fileID: 1973272845}
   - component: {fileID: 1973272844}
   m_Layer: 5
-  m_Name: PORCENTAJE
+  m_Name: PORCENTAJE_Superviviente_del_infierno
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -116738,7 +116799,7 @@ GameObject:
   - component: {fileID: 2079685883}
   - component: {fileID: 2079685882}
   m_Layer: 5
-  m_Name: PORCENTAJE
+  m_Name: PORCENTAJE_MinijuegoDeTiro
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
