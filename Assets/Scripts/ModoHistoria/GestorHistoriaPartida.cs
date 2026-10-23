@@ -436,4 +436,83 @@ private void AplicarEstadoPuerta(bool abierta)
 }
 
 
+public void CompletarMisionLaboratorioParaPruebas()
+{
+    if (!Application.isEditor && !Debug.isDebugBuild)
+        return;
+
+    if (!IsSpawned)
+    {
+        Debug.LogError(
+            "[Historia Debug] GestorHistoriaPartida todavía no está iniciado."
+        );
+        return;
+    }
+
+    CompletarMisionLaboratorioPruebaRpc();
+}
+
+[Rpc(
+    SendTo.Server,
+    InvokePermission = RpcInvokePermission.Everyone
+)]
+private void CompletarMisionLaboratorioPruebaRpc(
+    RpcParams rpcParams = default
+)
+{
+    if (!IsServer)
+        return;
+
+    if (!Application.isEditor && !Debug.isDebugBuild)
+        return;
+
+    if (!EsHistoriaLaboratorio())
+    {
+        Debug.LogWarning(
+            "[Historia Debug] La prueba corresponde al modo Historia del Laboratorio."
+        );
+        return;
+    }
+
+    if (EstadoMisionNetwork.Value == MisionCompletada)
+    {
+        Debug.LogWarning(
+            "[Historia Debug] La misión ya está completada."
+        );
+        return;
+    }
+
+    if (animacionPuerta == null)
+    {
+        Debug.LogError(
+            "[Historia Debug] No hay una animación de puerta asignada."
+        );
+        return;
+    }
+
+    ulong clientId = rpcParams.Receive.SenderClientId;
+
+    PuertaAbiertaNetwork.Value = true;
+    EstadoMisionNetwork.Value = MisionCompletada;
+
+    if (RoundManager.Instance != null)
+        RoundManager.Instance.DetenerSpawnsHistoria();
+
+    Debug.Log(
+        "[Historia Debug] Misión completada manualmente. " +
+        "Se probará la animación de la puerta."
+    );
+
+    if (SceneManager.GetActiveScene().name == "MainSceneSinglePlayer"
+        && !transicionSafeZoneIniciada)
+    {
+        transicionSafeZoneIniciada = true;
+        StartCoroutine(
+            EsperarAnimacionYActivarSafeZone1(clientId)
+        );
+
+    }
+    
+}
+
 }
