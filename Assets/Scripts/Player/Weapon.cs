@@ -631,14 +631,7 @@ public class Weapon : MonoBehaviour
             nextSpreadLog = Time.unscaledTime + 0.5f;
 
             Vector3 v = characterController.velocity;
-            Debug.Log("[Spread] " + weaponName +
-                      " | velHoriz=" + new Vector2(v.x, v.z).magnitude.ToString("F2") +
-                      " | agachado=" + (playerMovement != null && playerMovement.IsCrouching) +
-                      " | moviendose=" + IsMovingOnGround() +
-                      " | objetivo=" + targetSpread.ToString("F1") +
-                      " | actual=" + currentSpread.ToString("F1") +
-                      " | idle=" + spreadIdle + " moving=" + spreadMoving + " crouch=" + spreadCrouching +
-                      " | recuperacion=" + spreadRecoverySpeed, this);
+           
         }
 
         float recoverySpeed = landingRecoveryTimer > 0f

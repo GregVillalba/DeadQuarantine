@@ -1,7 +1,7 @@
 
 using UnityEngine;
-using Unity.Netcode;
 using UnityEngine.InputSystem;
+using Unity.Netcode;
 using TMPro;
 
 public class InteraccionJugadorHistoria : MonoBehaviour
@@ -14,140 +14,95 @@ public class InteraccionJugadorHistoria : MonoBehaviour
     [SerializeField] private TMP_Text textoTituloObjetivo;
     [SerializeField] private TMP_Text textoDescripcionObjetivo;
 
+    [Header("Cartel de interacción")]
+    [SerializeField] private GameObject interactPrompt;
+    [SerializeField] private TMP_Text interactText;
+
     private NetworkObject jugadorNetworkObject;
     private bool hudRegistrado;
 
-    private void Awake()
-{
-    jugadorNetworkObject = GetComponentInParent<NetworkObject>();
+    private PlayerControls controls;
+    private bool tieneObjetoEnfocado;
+    private TarjetaAccesoHistoria tarjetaEnfocada;
+    private LectorTarjetaHistoria lectorEnfocado;
+    private RadioHistoriaCiudad radioEnfocada;
 
-    if (jugadorNetworkObject == null)
+    private void Awake()
     {
-        Debug.LogError(
-            "[Historia] No se encontró un NetworkObject en el objeto " +
-            "ni en sus padres. Revisá el prefab del jugador."
-        );
+        jugadorNetworkObject = GetComponentInParent<NetworkObject>();
+
+        controls = new PlayerControls();
+        ConfiguracionesJuego.CargarRebinds(controls.asset);
+
+        if (jugadorNetworkObject == null)
+        {
+            Debug.LogError(
+                "[Historia] No se encontró un NetworkObject en el jugador."
+            );
+        }
+
+        OcultarCartel();
     }
-}
+
+    private void OnEnable()
+    {
+        controls?.Player.Enable();
+    }
+
+    private void OnDisable()
+    {
+        controls?.Player.Disable();
+        OcultarCartel();
+    }
+
+    private void OnDestroy()
+    {
+        controls?.Dispose();
+    }
 
     private void Update()
-{
-    if (jugadorNetworkObject == null ||
-        !jugadorNetworkObject.IsSpawned ||
-        !jugadorNetworkObject.IsOwner)
     {
-        return;
+        if (jugadorNetworkObject == null ||
+            !jugadorNetworkObject.IsSpawned ||
+            !jugadorNetworkObject.IsOwner)
+        {
+            OcultarCartel();
+            return;
+        }
+
+        ConfigurarHUDPorModo();
+
+        if (ConfiguracionPartidaSeleccionada.Instancia == null ||
+            ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado !=
+            ConfiguracionPartidaSeleccionada.ModoJuego.Historia)
+        {
+            OcultarCartel();
+            return;
+        }
+
+        RegistrarHUD();
+
+        // Actualiza el cartel continuamente, independientemente
+        // de si el jugador pulsa la tecla de interacción.
+        ActualizarObjetoEnfocado();
+
+        if (controls != null &&
+            controls.Player.Interact.WasPressedThisFrame())
+        {
+            InteractuarConObjetoEnfocado();
+        }
     }
 
-    ConfigurarHUDPorModo();
-
-    if (ConfiguracionPartidaSeleccionada.Instancia == null ||
-        ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado !=
-        ConfiguracionPartidaSeleccionada.ModoJuego.Historia)
+    private void ActualizarObjetoEnfocado()
     {
-        return;
-    }
+        tarjetaEnfocada = null;
+        lectorEnfocado = null;
+        radioEnfocada = null;
+        tieneObjetoEnfocado = false;
 
-    RegistrarHUD();
+        if (interactPrompt == null)
+            return;
 
-    if (Keyboard.current == null ||
-        !Keyboard.current.eKey.wasPressedThisFrame)
-    {
-        return;
-    }
-
-    InteractuarConObjetoCercano();
-}
-
-private void RegistrarHUD()
-{
-    if (hudRegistrado)
-        return;
-
-    GestorHistoriaPartida gestor = GestorHistoriaPartida.Instance;
-
-    if (gestor == null || !gestor.IsSpawned)
-        return;
-
-    if (ConfiguracionPartidaSeleccionada.Instancia == null ||
-        ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado !=
-        ConfiguracionPartidaSeleccionada.ModoJuego.Historia)
-    {
-        return;
-    }
-
-    Transform hud = BuscarHijo(transform, "HistoriaHUD");
-
-    if (hud == null)
-    {
-        Debug.LogError("[Historia] No se encontró HistoriaHUD en el jugador.");
-        return;
-    }
-
-    TMP_Text[] textos = hud.GetComponentsInChildren<TMP_Text>(true);
-
-    TMP_Text titulo = null;
-    TMP_Text descripcion = null;
-
-    foreach (TMP_Text texto in textos)
-    {
-        if (texto.name == "Objetivo")
-            titulo = texto;
-        else if (texto.name == "Descripcion")
-            descripcion = texto;
-    }
-
-    if (titulo == null || descripcion == null)
-    {
-        Debug.LogError(
-            "[Historia] Faltan los textos Objetivo o Descripcion en HistoriaHUD."
-        );
-        return;
-    }
-
-    hud.gameObject.SetActive(true);
-
-    gestor.RegistrarHUDLocal(titulo, descripcion);
-
-    hudRegistrado = true;
-
-    Debug.Log("[Historia] HUD registrado correctamente.");
-}
-
-private Transform BuscarHijo(Transform padre, string nombre)
-{
-    foreach (Transform hijo in padre)
-    {
-        if (hijo.name == nombre)
-            return hijo;
-
-        Transform encontrado = BuscarHijo(hijo, nombre);
-
-        if (encontrado != null)
-            return encontrado;
-    }
-
-    return null;
-}
-private string ObtenerRuta(Transform elemento)
-{
-    string ruta = elemento.name;
-
-    while (elemento.parent != null)
-    {
-        elemento = elemento.parent;
-
-        if (elemento == transform)
-            break;
-
-        ruta = elemento.name + "/" + ruta;
-    }
-
-    return ruta;
-}
-
-    private void InteractuarConObjetoCercano()
-    {
         Collider[] colliders = Physics.OverlapSphere(
             transform.position,
             radioInteraccion,
@@ -155,40 +110,290 @@ private string ObtenerRuta(Transform elemento)
             QueryTriggerInteraction.Collide
         );
 
-        // 1. Buscar una tarjeta cercana.
+        TarjetaAccesoHistoria tarjetaCercana = null;
+        LectorTarjetaHistoria lectorCercano = null;
+        RadioHistoriaCiudad radioCercana = null;
+
+        float distanciaTarjeta = float.MaxValue;
+        float distanciaLector = float.MaxValue;
+
         foreach (Collider col in colliders)
         {
+
+            RadioHistoriaCiudad radio =
+            col.GetComponentInParent<RadioHistoriaCiudad>();
+
+            if (radio != null && radio.IsSpawned &&
+                radio.gameObject.activeInHierarchy)
+            {
+                // La distancia se mide desde el jugador.
+                float distancia = Vector3.Distance(
+                    transform.position,
+                    radio.transform.position
+                );
+
+                if (distancia < distanciaTarjeta)
+                {
+                    distanciaTarjeta = distancia;
+                    radioCercana = radio;
+                }
+
+                continue;
+            }
             TarjetaAccesoHistoria tarjeta =
                 col.GetComponentInParent<TarjetaAccesoHistoria>();
 
-            if (tarjeta == null)
+            if (tarjeta != null &&
+                tarjeta.IsSpawned &&
+                tarjeta.gameObject.activeInHierarchy)
+            {
+                float distancia = Vector3.Distance(
+                    transform.position,
+                    tarjeta.transform.position
+                );
+
+                if (distancia < distanciaTarjeta)
+                {
+                    distanciaTarjeta = distancia;
+                    tarjetaCercana = tarjeta;
+                }
+
                 continue;
+            }
 
-            if (!tarjeta.IsSpawned)
-                continue;
-
-            Debug.Log("[Historia] Solicitando recoger tarjeta.");
-
-            tarjeta.IntentarRecoger();
-            return;
-        }
-
-        // 2. Si no hay tarjeta, buscar un lector cercano.
-        foreach (Collider col in colliders)
-        {
             LectorTarjetaHistoria lector =
                 col.GetComponentInParent<LectorTarjetaHistoria>();
 
-            if (lector == null)
-                continue;
+            if (lector != null)
+            {
+                float distancia = Vector3.Distance(
+                    transform.position,
+                    lector.transform.position
+                );
 
-            Debug.Log("[Historia] Solicitando usar lector de tarjeta.");
+                if (distancia < distanciaLector)
+                {
+                    distanciaLector = distancia;
+                    lectorCercano = lector;
+                }
+            }
+        }
 
-            lector.IntentarInteractuar();
+        // Si hay una tarjeta cerca y la misión todavía permite recogerla,
+        // priorizamos la tarjeta sobre el lector.
+        GestorHistoriaPartida gestor = GestorHistoriaPartida.Instance;
+
+        if (gestor == null || !gestor.IsSpawned)
+        {
+            OcultarCartel();
             return;
         }
 
-        Debug.Log("[Historia] No hay objetos interactuables cerca.");
+        if (gestor == null || !gestor.IsSpawned)
+        {
+            OcultarCartel();
+            return;
+        }
+
+        // Detectar la radio de Ciudad.
+        if (radioCercana != null &&
+            gestor.EstadoMisionNetwork.Value == 4)
+        {
+            radioEnfocada = radioCercana;
+            tieneObjetoEnfocado = true;
+
+            MostrarCartel(ObtenerTecla() + " para recoger la radio");
+            return;
+        }
+
+        if (tarjetaCercana != null &&
+            gestor.EstadoMisionNetwork.Value == 1)
+        {
+            tarjetaEnfocada = tarjetaCercana;
+            tieneObjetoEnfocado = true;
+
+            MostrarCartel(ObtenerTecla() + " para agarrar");
+            return;
+        }
+
+        if (lectorCercano != null &&
+    (gestor.EstadoMisionNetwork.Value == 1 ||
+     gestor.EstadoMisionNetwork.Value == 2))
+{
+    lectorEnfocado = lectorCercano;
+    tieneObjetoEnfocado = true;
+
+    bool tieneTarjeta =
+        NetworkManager.Singleton != null &&
+        gestor.ClienteConTarjetaNetwork.Value ==
+        NetworkManager.Singleton.LocalClientId;
+
+    if (tieneTarjeta &&
+        gestor.EstadoMisionNetwork.Value == 2)
+    {
+        MostrarCartel(ObtenerTecla() + " para usar lector");
+    }
+    else
+    {
+        MostrarCartel("Requiere una tarjeta magnética");
+    }
+
+    return;
+}
+
+        OcultarCartel();
+    }
+
+    private void InteractuarConObjetoEnfocado()
+    {
+        if (!tieneObjetoEnfocado)
+            return;
+
+        if (tarjetaEnfocada != null &&
+            tarjetaEnfocada.IsSpawned)
+        {
+            tarjetaEnfocada.IntentarRecoger();
+            return;
+        }
+
+        if (radioEnfocada != null && radioEnfocada.IsSpawned)
+        {
+            radioEnfocada.IntentarRecoger();
+            return;
+        }
+
+        if (lectorEnfocado != null)
+        {
+            GestorHistoriaPartida gestor = GestorHistoriaPartida.Instance;
+
+            if (gestor == null)
+                return;
+
+            // Sin tarjeta, no se intenta abrir la puerta.
+            if (gestor.ClienteConTarjetaNetwork.Value !=
+                NetworkManager.Singleton.LocalClientId)
+            {
+                return;
+            }
+
+            lectorEnfocado.IntentarInteractuar();
+        }
+    }
+
+    private string ObtenerTecla()
+    {
+        if (controls == null)
+            return "E";
+
+        string tecla =
+            controls.Player.Interact.GetBindingDisplayString();
+
+        return string.IsNullOrEmpty(tecla) ? "E" : tecla;
+    }
+
+    private void MostrarCartel(string mensaje)
+    {
+        if (interactPrompt == null)
+            return;
+
+        if (interactText != null)
+            interactText.text = mensaje;
+
+        if (!interactPrompt.activeSelf)
+            interactPrompt.SetActive(true);
+    }
+
+    private void OcultarCartel()
+    {
+        tieneObjetoEnfocado = false;
+        tarjetaEnfocada = null;
+        lectorEnfocado = null;
+        radioEnfocada = null;
+
+        if (interactPrompt != null &&
+            interactPrompt.activeSelf)
+        {
+            interactPrompt.SetActive(false);
+        }
+    }
+
+    private void RegistrarHUD()
+    {
+        if (hudRegistrado)
+            return;
+
+        GestorHistoriaPartida gestor = GestorHistoriaPartida.Instance;
+
+        if (gestor == null || !gestor.IsSpawned)
+            return;
+
+        Transform hud = BuscarHijo(transform, "HistoriaHUD");
+
+        if (hud == null)
+        {
+            Debug.LogError(
+                "[Historia] No se encontró HistoriaHUD en el jugador."
+            );
+            return;
+        }
+
+        TMP_Text[] textos = hud.GetComponentsInChildren<TMP_Text>(true);
+
+        TMP_Text titulo = null;
+        TMP_Text descripcion = null;
+
+        foreach (TMP_Text texto in textos)
+        {
+            if (texto.name == "Objetivo")
+                titulo = texto;
+            else if (texto.name == "Descripcion")
+                descripcion = texto;
+        }
+
+        if (titulo == null || descripcion == null)
+        {
+            Debug.LogError(
+                "[Historia] Faltan los textos Objetivo o Descripcion."
+            );
+            return;
+        }
+
+        hud.gameObject.SetActive(true);
+
+        gestor.RegistrarHUDLocal(titulo, descripcion);
+
+        hudRegistrado = true;
+    }
+
+    private Transform BuscarHijo(Transform padre, string nombre)
+    {
+        foreach (Transform hijo in padre)
+        {
+            if (hijo.name == nombre)
+                return hijo;
+
+            Transform encontrado = BuscarHijo(hijo, nombre);
+
+            if (encontrado != null)
+                return encontrado;
+        }
+
+        return null;
+    }
+
+    private void ConfigurarHUDPorModo()
+    {
+        Transform hud = BuscarHijo(transform, "HistoriaHUD");
+
+        if (hud == null)
+            return;
+
+        bool esHistoria =
+            ConfiguracionPartidaSeleccionada.Instancia != null &&
+            ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado ==
+            ConfiguracionPartidaSeleccionada.ModoJuego.Historia;
+
+        hud.gameObject.SetActive(esHistoria);
     }
 
     private void OnDrawGizmosSelected()
@@ -196,19 +401,4 @@ private string ObtenerRuta(Transform elemento)
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, radioInteraccion);
     }
-
-    private void ConfigurarHUDPorModo()
-{
-    Transform hud = BuscarHijo(transform, "HistoriaHUD");
-
-    if (hud == null)
-        return;
-
-    bool esHistoria =
-        ConfiguracionPartidaSeleccionada.Instancia != null &&
-        ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado ==
-        ConfiguracionPartidaSeleccionada.ModoJuego.Historia;
-
-    hud.gameObject.SetActive(esHistoria);
-}
 }

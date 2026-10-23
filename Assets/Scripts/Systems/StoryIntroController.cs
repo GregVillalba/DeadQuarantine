@@ -1,6 +1,7 @@
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem;
 
 public class StoryIntroController : NetworkBehaviour
 {
@@ -28,6 +29,10 @@ public class StoryIntroController : NetworkBehaviour
 
     [Header("Cámara del arma (FPS Arms)")]
     [SerializeField] private GameObject weaponCameraObject;
+    [Header("Transición desde zona segura")]
+    [SerializeField] private GameObject popupContinuarSafeZone;
+
+    private bool esperandoContinuarSafeZone;
     private WeaponSwitcher weaponSwitcher;
 
     private GameObject popupActivoActual;
@@ -44,6 +49,115 @@ public class StoryIntroController : NetworkBehaviour
         if (playerLook == null)
             playerLook = GetComponentInChildren<PlayerLook>(true);
     }
+
+    private void Update()
+{
+    if (!IsOwner || Keyboard.current == null)
+        return;
+
+    if (!Keyboard.current.enterKey.wasPressedThisFrame &&
+        !Keyboard.current.numpadEnterKey.wasPressedThisFrame)
+        return;
+
+    if (esperandoContinuarSafeZone)
+    {
+        IniciarTransicionACiudad();
+        return;
+    }
+
+    if (historiaActiva)
+        ContinuarHistoria();
+}
+
+public void MostrarAvisoContinuarSafeZone()
+{
+    if (!IsOwner)
+        return;
+
+    esperandoContinuarSafeZone = true;
+
+    if (popupContinuarSafeZone != null)
+        popupContinuarSafeZone.SetActive(true);
+
+    Debug.Log("[StoryIntro] Esperando Enter para continuar a Ciudad.");
+}
+
+private void IniciarTransicionACiudad()
+{
+    esperandoContinuarSafeZone = false;
+
+    if (popupContinuarSafeZone != null)
+        popupContinuarSafeZone.SetActive(false);
+
+    GestorEscenariosPartida gestor = GestorEscenariosPartida.Instance;
+
+    if (gestor == null)
+    {
+        Debug.LogError("[StoryIntro] No se encontró GestorEscenariosPartida.");
+        return;
+    }
+
+    if (popupHistoria_Ciudad == null)
+    {
+        Debug.LogError("[StoryIntro] No está asignado popupHistoria_Ciudad.");
+        return;
+    }
+
+    historiaActiva = true;
+
+    if (hud != null)
+        hud.SetActive(false);
+
+    BloquearJugador();
+
+    // Activar el escenario de Ciudad.
+    gestor.ActivarEscenario(
+        ConfiguracionPartidaSeleccionada.Escenario.Ciudad
+    );
+
+    // Actualizar los puntos de aparición para el escenario recién activado.
+    if (IsServer)
+    {
+        if (RoundManager.Instance != null)
+        {
+            RoundManager.Instance.ActualizarSpawnPointsDelEscenario();
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[StoryIntro] No se encontró RoundManager para actualizar los spawn points."
+            );
+        }
+
+        // Iniciar la misión de Ciudad y crear la radio.
+        if (GestorHistoriaPartida.Instance != null)
+        {
+            GestorHistoriaPartida.Instance.IniciarMisionCiudad();
+        }
+        else
+        {
+            Debug.LogError(
+                "[StoryIntro] No se encontró GestorHistoriaPartida."
+            );
+        }
+    }
+
+    // Trasladar al jugador al punto inicial de Ciudad.
+    gestor.TrasladarJugadorAInicioDeEscenario(transform.root);
+
+    // Mostrar la introducción de Ciudad.
+    ApagarTodosLosPopups();
+
+    popupActivoActual = popupHistoria_Ciudad;
+    popupActivoActual.SetActive(true);
+
+    Cursor.visible = true;
+    Cursor.lockState = CursorLockMode.None;
+
+    Debug.Log(
+        "[StoryIntro] Ciudad activada. Introducción mostrada y transición completada."
+    );
+}
 
     public override void OnNetworkSpawn()
     {
@@ -138,6 +252,11 @@ public class StoryIntroController : NetworkBehaviour
 
         historiaActiva = false;
 
+        if (popupContinuarSafeZone != null)
+        popupContinuarSafeZone.SetActive(false);
+
+        esperandoContinuarSafeZone = false;
+
         // Ocultar el popup que estaba visible
         if (popupActivoActual != null)
         {
@@ -157,8 +276,6 @@ public class StoryIntroController : NetworkBehaviour
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
-        if (IsServer && RoundManager.Instance != null)
-            RoundManager.Instance.StartRound(1);
 
         Debug.Log("[StoryIntro] ContinuarHistoria() FIN.");
     }

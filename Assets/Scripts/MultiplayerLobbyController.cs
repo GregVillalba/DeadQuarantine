@@ -50,6 +50,11 @@ public class MultiplayerLobbyController : MonoBehaviour
     [SerializeField] private Image p2ConexionIcon;
     [SerializeField] private Image p2EstadoIcon;
 
+    [Header("--- SLOTS CON PERSONAJE 3D (reemplazan a JUGADOR 1/2 de arriba si se asignan) ---")]
+    [SerializeField] private LobbyPlayerSlot[] slots;
+    [SerializeField] private CharacterCatalog catalogoPersonajes;
+    [SerializeField] private CharacterPreviewStage escenarioPersonajes;
+
     [Header("--- BOTÓN LISTO ---")]
     [SerializeField] private Button btnPlayMultiplayer;
     [SerializeField] private TMP_Text btnPlayMultiplayerText;
@@ -85,6 +90,12 @@ public class MultiplayerLobbyController : MonoBehaviour
     private const string MODO_PROPERTY = "Modo";
     private const string DIFICULTAD_PROPERTY = "Dificultad";
 
+    // Personaje elegido por cada jugador (número del catálogo). Viaja junto al Ready.
+    private const string CHARACTER_PROPERTY = "Character";
+
+    private int ultimoPersonajePublicado = -1;
+    private float proximoPublicarPersonaje = 0f;
+
     private void Awake()
     {
         if (network == null)
@@ -108,6 +119,8 @@ public class MultiplayerLobbyController : MonoBehaviour
 
     private void Start()
     {
+        ConfigurarSlots();
+
         if (AbrirDirectoEnSalaEspera)
         {
             AbrirDirectoEnSalaEspera = false;
@@ -174,6 +187,7 @@ public class MultiplayerLobbyController : MonoBehaviour
             return;
 
         ActualizarEstadoSala();
+        PublicarPersonajeSiCambio();
         AplicarConfiguracionDeSesion();
         LeerCountdownDeSesion();
         ActualizarCountdownVisual();
@@ -413,6 +427,16 @@ public class MultiplayerLobbyController : MonoBehaviour
             )
         );
 
+        // El personaje viaja en el mismo guardado que el Ready.
+        ultimoPersonajePublicado = CharacterSelection.SelectedIndex;
+
+        player.SetProperty(
+            CHARACTER_PROPERTY,
+            new PlayerProperty(
+                ultimoPersonajePublicado.ToString()
+            )
+        );
+
         await network.CurrentSession
             .SaveCurrentPlayerDataAsync();
     }
@@ -460,19 +484,32 @@ public class MultiplayerLobbyController : MonoBehaviour
                 );
         }
 
-        ActualizarUI(
-            jugador1Conectado,
-            jugador2Conectado,
-            jugador1Listo,
-            jugador2Listo
-        );
+        if (slots != null && slots.Length > 0)
+        {
+            ActualizarSlots(jugadores);
+        }
+        else
+        {
+            ActualizarUI(
+                jugador1Conectado,
+                jugador2Conectado,
+                jugador1Listo,
+                jugador2Listo
+            );
+        }
+
+        // Empieza cuando hay al menos 2 jugadores y TODOS los conectados están listos.
+        bool todosListos = jugadores.Count >= 2;
+
+        for (int i = 0; todosListos && i < jugadores.Count; i++)
+        {
+            if (!ObtenerReadyJugador(jugadores[i]))
+                todosListos = false;
+        }
 
         // Solo el host inicia la cuenta.
         if (network.CurrentSession.IsHost &&
-            jugador1Conectado &&
-            jugador2Conectado &&
-            jugador1Listo &&
-            jugador2Listo &&
+            todosListos &&
             !countdownIniciado)
         {
             countdownIniciado = true;
@@ -592,6 +629,106 @@ public class MultiplayerLobbyController : MonoBehaviour
                     ? iconoVerde
                     : iconoRojo;
         }
+    }
+
+    // =========================================================
+    // SLOTS CON PERSONAJE
+    // =========================================================
+
+    private void ConfigurarSlots()
+    {
+        if (slots == null)
+            return;
+
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (slots[i] == null)
+                continue;
+
+            slots[i].Configure(
+                catalogoPersonajes,
+                escenarioPersonajes,
+                colorRojo,
+                iconoVerde,
+                iconoRojo
+            );
+
+            slots[i].SetEmpty();
+        }
+    }
+
+    private void ActualizarSlots(IReadOnlyList<IReadOnlyPlayer> jugadores)
+    {
+        string miId = network.CurrentSession.CurrentPlayer.Id;
+        string hostId = network.CurrentSession.Host;
+
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (slots[i] == null)
+                continue;
+
+            if (i >= jugadores.Count)
+            {
+                slots[i].SetEmpty();
+                continue;
+            }
+
+            IReadOnlyPlayer p = jugadores[i];
+
+            slots[i].SetPlayer(
+                p.Id == miId,
+                p.Id == hostId,
+                ObtenerReadyJugador(p),
+                ObtenerPersonajeJugador(p)
+            );
+        }
+    }
+
+    private int ObtenerPersonajeJugador(IReadOnlyPlayer player)
+    {
+        if (player != null &&
+            player.Properties.TryGetValue(CHARACTER_PROPERTY, out var propiedad) &&
+            int.TryParse(propiedad.Value, out int indice))
+        {
+            return indice;
+        }
+
+        return 0;
+    }
+
+    // Si el jugador local cambió de personaje en el selector, lo publica (máx. 1 vez cada 0.5 s para no saturar el servicio).
+    private void PublicarPersonajeSiCambio()
+    {
+        if (CharacterSelection.SelectedIndex == ultimoPersonajePublicado)
+            return;
+
+        if (Time.unscaledTime < proximoPublicarPersonaje)
+            return;
+
+        proximoPublicarPersonaje = Time.unscaledTime + 0.5f;
+
+        _ = PublicarPersonaje();
+    }
+
+    private async Task PublicarPersonaje()
+    {
+        if (network == null ||
+            network.CurrentSession == null)
+        {
+            return;
+        }
+
+        ultimoPersonajePublicado = CharacterSelection.SelectedIndex;
+
+        network.CurrentSession.CurrentPlayer.SetProperty(
+            CHARACTER_PROPERTY,
+            new PlayerProperty(
+                ultimoPersonajePublicado.ToString()
+            )
+        );
+
+        await network.CurrentSession
+            .SaveCurrentPlayerDataAsync();
     }
 
     private void ActualizarBotonReady(bool listo)

@@ -984,11 +984,6 @@ public class HUDController : MonoBehaviour
         if (debugCrosshair && Time.unscaledTime >= proximoLogCrosshair)
         {
             proximoLogCrosshair = Time.unscaledTime + 0.5f;
-            Debug.Log("[Crosshair] arma=" + weapon.WeaponName + " (" + weapon.gameObject.name + ")" +
-                      " | weaponEnabled=" + weapon.enabled +
-                      " | angulo=" + weapon.CurrentSpreadAngle.ToString("F1") +
-                      " | gap=" + gap.ToString("F0") +
-                      " | dashTop=" + (dashTop != null ? "ok" : "NULL"), this);
         }
 
         if (dashTop != null)

@@ -1839,4 +1839,11 @@ public void DetenerSpawnsHistoria()
 
     StartCoroutine(WaitForAllPlayersAtSpawnThenStart(numeroRonda));
 }
+public void ActualizarSpawnPointsDelEscenario()
+{
+    if (!IsServer)
+        return;
+
+    ConfigurarSpawnPointsDelEscenario();
+}
 }
