@@ -47133,6 +47133,51 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 844208581}
   m_CullTransparentMesh: 1
+--- !u!1 &846966367
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 846966369}
+  - component: {fileID: 846966368}
+  m_Layer: 0
+  m_Name: LogrosDebugger
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &846966368
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 846966367}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fd522dd823e3d544bfa082e38885d94, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::LogrosDebugger
+  teclaInspeccionar: 289
+--- !u!4 &846966369
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 846966367}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &846968625
 GameObject:
   m_ObjectHideFlags: 0
@@ -50125,6 +50170,7 @@ MonoBehaviour:
   usernameJugador: UserUnity
   achievementDatabase: {fileID: 11400000, guid: aee82f342d507f84a89470267979563e, type: 2}
   escenaSinLogros: TutorialScene
+  idLocalJugador: 
 --- !u!4 &905045627
 Transform:
   m_ObjectHideFlags: 0
@@ -75245,7 +75291,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9509e11c9193d3d4389655103198c9d2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Scripts::LogrosGlobalesOrdenados
-  urlApi: https://dead-quarentine-web.wasmer.app/api/logros
+  url: https://dead-quarentine-web.wasmer.app/api/logros/globales
   listaTarjetas:
   - idLogro: 1
     textoPorcentaje: {fileID: 1275010457}
@@ -116119,3 +116165,4 @@ SceneRoots:
   - {fileID: 28482999}
   - {fileID: 891222283}
   - {fileID: 1690446658}
+  - {fileID: 846966369}

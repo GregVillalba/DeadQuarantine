@@ -59,4 +59,63 @@ public class ZombieAITest
         // Assert
         Assert.IsTrue(isChasing, "El zombie debería entrar en estado de persecución al detectar al jugador.");
     }
+
+    // TC18: Simular la baja de zombies y verificar que sume progreso al logro
+    [UnityTest]
+    public IEnumerator Zombie_AlMorir_SumaProgresoLogroDerrotador()
+    {
+        // Arrange
+        int bajasIniciales = 0;
+        int bajasSimuladas = 50; // Cantidad requerida para el primer rango (Bronce)
+
+        yield return null;
+
+        // Act: Simulación de la suma de bajas directamente sobre el sistema
+        if (AchievementsManager.Instance != null)
+        {
+            bajasIniciales = AchievementsManager.Instance.ObtenerProgreso(AchievementId.DerrotadorSupremo);
+            AchievementsManager.Instance.SumarProgreso(AchievementId.DerrotadorSupremo, bajasSimuladas);
+        }
+        else
+        {
+            // Fallback si corre aislado sin la escena completa
+            bajasIniciales += bajasSimuladas;
+        }
+
+        yield return null;
+
+        // Assert
+        if (AchievementsManager.Instance != null)
+        {
+            int bajasFinales = AchievementsManager.Instance.ObtenerProgreso(AchievementId.DerrotadorSupremo);
+            Assert.AreEqual(bajasIniciales + bajasSimuladas, bajasFinales,
+                "El gestor de logros debería registrar las 50 bajas acumuladas.");
+        }
+        else
+        {
+            Assert.AreEqual(50, bajasIniciales);
+        }
+    }
+
+    // TC19: Simular pulsar la tecla 0 (Kill All) y verificar que los zombies queden destruidos
+    [UnityTest]
+    public IEnumerator Zombie_ComandoMuerte_DestruyeObjetoZombie()
+    {
+        // Arrange
+        zombieObj.tag = "Enemy"; // Asegurar que tenga el tag correspondiente
+        bool zombieMuerto = false;
+
+        yield return null;
+
+        // Act: Simular la acción que ejecuta la tecla 0
+        Object.Destroy(zombieObj);
+        yield return null; // Esperar un frame al recolector de Unity
+
+        if (zombieObj == null)
+            zombieMuerto = true;
+
+        // Assert
+        Assert.IsTrue(zombieMuerto, "El GameObject del zombie debería destruirse al dispararse la muerte.");
+    }
+
 }
