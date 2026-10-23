@@ -168,6 +168,73 @@ public class GestorEscenariosPartida : MonoBehaviour
         Debug.Log("[Escenarios] SafeZone2 activada.");
     }
 
+    // La zona segura queda pegada a la salida del laboratorio: se muestra sin apagar
+    // el laboratorio, así el jugador la cruza caminando al abrirse la puerta.
+    public void MostrarSafeZone1()
+    {
+        if (safeZone1 == null)
+        {
+            Debug.LogError(
+                "[Escenarios] No asignaste SafeZone1 en el Inspector."
+            );
+            return;
+        }
+
+        if (safeZone1.activeSelf)
+            return;
+
+        safeZone1.SetActive(true);
+        Debug.Log("[Escenarios] SafeZone1 visible tras la puerta.");
+    }
+
+    // La llama EntradaZonaSegura cuando el jugador local cruza el trigger de la zona.
+    public void EntrarSafeZone1(Transform jugador)
+    {
+        StoryIntroController intro =
+            jugador.GetComponentInChildren<StoryIntroController>(true);
+
+        if (intro != null)
+        {
+            intro.MostrarAvisoContinuarSafeZone();
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[Escenarios] No se encontró StoryIntroController en el jugador."
+            );
+        }
+    }
+
+    // Volvió al laboratorio: ENTER deja de llevarlo a la Ciudad hasta que vuelva a entrar.
+    public void SalirSafeZone1(Transform jugador)
+    {
+        StoryIntroController intro =
+            jugador.GetComponentInChildren<StoryIntroController>(true);
+
+        if (intro != null)
+            intro.OcultarAvisoContinuarSafeZone();
+    }
+
+    // true si el objeto cuelga de una zona segura que está activa (ej. el mercader).
+    public bool EstaEnZonaSeguraActiva(Transform objeto)
+    {
+        if (objeto == null)
+            return false;
+
+        return EstaDentroDeZonaActiva(objeto, safeZone1)
+            || EstaDentroDeZonaActiva(objeto, safeZone2);
+    }
+
+    private static bool EstaDentroDeZonaActiva(
+        Transform objeto,
+        GameObject zona
+    )
+    {
+        return zona != null
+            && zona.activeInHierarchy
+            && objeto.IsChildOf(zona.transform);
+    }
+
     public void TransicionarASafeZone1(Transform jugador)
 {
     if (safeZone1 == null || spawnSafeZone1 == null)

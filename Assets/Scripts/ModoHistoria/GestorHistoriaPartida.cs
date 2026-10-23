@@ -2,7 +2,7 @@
 using UnityEngine;
 using Unity.Netcode;
 using TMPro;
-using System.Collections;
+using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
 public class GestorHistoriaPartida : NetworkBehaviour
@@ -15,9 +15,10 @@ public class GestorHistoriaPartida : NetworkBehaviour
     private const int BuscarSenal = 5;
     private const int ContactarSobrevivientes = 6;
     private const int HistoriaCiudadCompletada = 7;
+    private const int EnZonaSegura = 8;
     private bool animacionAperturaEjecutada;
-    private bool transicionSafeZoneIniciada;
     private bool misionCiudadInicializada;
+    private readonly HashSet<ulong> jugadoresEnZonaSegura = new HashSet<ulong>();
 
     [Header("Tarjeta de acceso")]
     [SerializeField] private GameObject tarjetaPrefab;
@@ -262,6 +263,13 @@ public override void OnNetworkSpawn()
             "Encontraste a los sobrevivientes. Prepárate para continuar.";
         break;
 
+    case EnZonaSegura:
+        textoTituloObjetivo.color = Color.green;
+        textoTituloObjetivo.text = "ZONA SEGURA";
+        textoDescripcionObjetivo.text =
+            "Compra lo que necesites. Presiona ENTER para avanzar.";
+        break;
+
             default:
                 textoTituloObjetivo.text = "";
                 textoDescripcionObjetivo.text = "";
@@ -381,73 +389,78 @@ private void SolicitarAbrirPuertaRpc(
         RoundManager.Instance.DetenerSpawnsHistoria();
 
     Debug.Log(
-        "[Historia] Misión completada. Esperando la animación de la puerta."
+        "[Historia] Misión completada. La zona segura queda detrás de la puerta."
     );
-
-    if (SceneManager.GetActiveScene().name == "MainSceneSinglePlayer"
-        && !transicionSafeZoneIniciada)
-    {
-        transicionSafeZoneIniciada = true;
-        StartCoroutine(EsperarAnimacionYActivarSafeZone1(clientId));
-    }
 }
 
-private IEnumerator EsperarAnimacionYActivarSafeZone1(
-    ulong clientId
+// Solo lo usa el servidor: ZombieAI ignora a estos jugadores, igual que a uno abatido.
+public bool JugadorEnZonaSegura(ulong clientId)
+{
+    return jugadoresEnZonaSegura.Contains(clientId);
+}
+
+public void NotificarZonaSegura(bool dentro)
+{
+    CambiarZonaSeguraRpc(dentro);
+}
+
+[Rpc(
+    SendTo.Server,
+    InvokePermission = RpcInvokePermission.Everyone
+)]
+private void CambiarZonaSeguraRpc(
+    bool dentro,
+    RpcParams rpcParams = default
 )
 {
-    // Esperar hasta que la animación termine.
-    float tiempoMaximoEspera = 15f;
-    float tiempoTranscurrido = 0f;
+    if (!IsServer || !EsHistoriaLaboratorio())
+        return;
 
-    while (!animacionPuerta.AnimacionFinalizada
-        && tiempoTranscurrido < tiempoMaximoEspera)
+    if (EstadoMisionNetwork.Value != MisionCompletada &&
+        EstadoMisionNetwork.Value != EnZonaSegura)
+        return;
+
+    ulong clientId = rpcParams.Receive.SenderClientId;
+
+    if (dentro)
+        jugadoresEnZonaSegura.Add(clientId);
+    else
+        jugadoresEnZonaSegura.Remove(clientId);
+
+    EstadoMisionNetwork.Value = jugadoresEnZonaSegura.Count > 0
+        ? EnZonaSegura
+        : MisionCompletada;
+
+    // Con todos en la zona segura no aparecen zombies; si alguien vuelve
+    // al laboratorio, siguen apareciendo a medida que los matan.
+    if (RoundManager.Instance != null)
     {
-        tiempoTranscurrido += Time.deltaTime;
-        yield return null;
+        if (TodosEnZonaSegura())
+            RoundManager.Instance.DetenerSpawnsHistoria();
+        else
+            RoundManager.Instance.ReanudarSpawnsHistoria();
     }
-
-    if (!animacionPuerta.AnimacionFinalizada)
-    {
-        Debug.LogError(
-            "[Historia] No se pudo confirmar el final de la animación. " +
-            "No se realizará la transición."
-        );
-        transicionSafeZoneIniciada = false;
-        yield break;
-    }
-
-    if (NetworkManager.Singleton == null
-        || !NetworkManager.Singleton.ConnectedClients.TryGetValue(
-            clientId,
-            out NetworkClient cliente)
-        || cliente.PlayerObject == null)
-    {
-        Debug.LogError(
-            "[Historia] No se encontró el jugador para trasladarlo."
-        );
-        yield break;
-    }
-
-    GestorEscenariosPartida gestorEscenarios =
-        GestorEscenariosPartida.Instance;
-
-    if (gestorEscenarios == null)
-    {
-        Debug.LogError(
-            "[Historia] No se encontró GestorEscenariosPartida."
-        );
-        yield break;
-    }
-
-    gestorEscenarios.TransicionarASafeZone1(
-        cliente.PlayerObject.transform
-    );
 
     Debug.Log(
-        "[Historia] Puerta abierta. Jugador trasladado a SafeZone1."
+        "[Historia] Jugador " + clientId +
+        (dentro ? " entró a" : " salió de") + " la zona segura."
     );
 }
+
+private bool TodosEnZonaSegura()
+{
+    if (NetworkManager.Singleton == null)
+        return false;
+
+    foreach (NetworkClient cliente in NetworkManager.Singleton.ConnectedClientsList)
+    {
+        if (!jugadoresEnZonaSegura.Contains(cliente.ClientId))
+            return false;
+    }
+
+    return true;
+}
+
 private void AlCambiarEstadoPuerta(
     bool estadoAnterior,
     bool estadoNuevo)
@@ -486,6 +499,13 @@ private void AplicarEstadoPuerta(bool abierta)
 
     Debug.Log("[Historia] Llamando a AbrirPuerta().", this);
     animacionPuerta.AbrirPuerta();
+
+    // La zona segura aparece mientras se abre la puerta, para cruzarla caminando.
+    if (SceneManager.GetActiveScene().name == "MainSceneSinglePlayer"
+        && GestorEscenariosPartida.Instance != null)
+    {
+        GestorEscenariosPartida.Instance.MostrarSafeZone1();
+    }
 }
 
 
@@ -552,20 +572,9 @@ private void CompletarMisionLaboratorioPruebaRpc(
         RoundManager.Instance.DetenerSpawnsHistoria();
 
     Debug.Log(
-        "[Historia Debug] Misión completada manualmente. " +
-        "Se probará la animación de la puerta."
+        "[Historia Debug] Misión completada manualmente por el cliente " +
+        clientId + ". Se probará la animación de la puerta."
     );
-
-    if (SceneManager.GetActiveScene().name == "MainSceneSinglePlayer"
-        && !transicionSafeZoneIniciada)
-    {
-        transicionSafeZoneIniciada = true;
-        StartCoroutine(
-            EsperarAnimacionYActivarSafeZone1(clientId)
-        );
-
-    }
-    
 }
 
 private bool EsHistoriaCiudad()
@@ -736,6 +745,9 @@ public void IniciarMisionCiudad()
 
     if (misionCiudadInicializada)
         return;
+
+    // La zona segura se apaga al pasar a la Ciudad: nadie queda adentro.
+    jugadoresEnZonaSegura.Clear();
 
     if (!CrearRadio())
     {

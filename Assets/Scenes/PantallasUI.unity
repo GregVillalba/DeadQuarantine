@@ -27411,9 +27411,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "La dificultad aumenta por ronda: los zombies ser\xE1n CADA VEZ m\xE1s r\xE1pidos,
-    agresivos y resistentes. \nLa ronda final presenta un infectado de clase superior:
-    \ BOSS MUTANTE de da\xF1o masivo."
+  m_text: "La dificultad aumenta por ronda: los zombies ser\xE1n CADA VEZ m\xE1s
+    r\xE1pidos, agresivos y resistentes. \nLa ronda final presenta un infectado de
+    clase superior:  BOSS MUTANTE de da\xF1o masivo."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -32507,8 +32507,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Al comenzar cada nueva ronda, revives autom\xE1ticamente con la barra de
-    salud completamente restablecida."
+  m_text: "Al comenzar cada nueva ronda, revives autom\xE1ticamente con la barra
+    de salud completamente restablecida."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -34959,27 +34959,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 576107544}
   m_CullTransparentMesh: 1
---- !u!114 &577857166
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 577857159}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f42c0d2b2fad25b40a2b197ea9525942, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Scripts::ButtonHoverMenuPrincipal
-  textoTMP: {fileID: 0}
-  targetRect: {fileID: 0}
-  colorNormal: {r: 0.47058824, g: 0.5686275, b: 0.64705884, a: 1}
-  colorHover: {r: 0, g: 1, b: 0.4, a: 1}
-  colorPressed: {r: 0, g: 0.78431374, b: 0.3137255, a: 1}
-  hoverScale: 1.06
-  clickScale: 0.94
-  pressYOffset: -4
-  transitionSpeed: 14
 --- !u!1 &578221463
 GameObject:
   m_ObjectHideFlags: 0
@@ -38927,7 +38906,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Sobrevivir la mayor cantidad de rondas y batir r\xE9cords mundiales y personales."
+  m_text: "Sobrevivir la mayor cantidad de rondas y batir r\xE9cords mundiales y
+    personales."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -52154,9 +52134,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_text: "Nos encontramos en el laboratorio donde todo empez\xF3: un virus desatado
-    que transforma a todo aquel que lo tenga una mordida zombie. Debemos escapar de
-    esta instalaci\xF3n antes de que los infectados nos conviertan. Tenemos que acabar
-    con todos, inclutyendo a Billy, un infectado mutante enorme capaz de comandar
+    que transforma a todo aquel que lo tenga una mordida zombie. Debemos escapar
+    de esta instalaci\xF3n antes de que los infectados nos conviertan. Tenemos que
+    acabar con todos, inclutyendo a Billy, un infectado mutante enorme capaz de comandar
     oleadas de infectados.\n\nOBJETIVO: Acabar con las hordas y zombie mutante."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -54802,6 +54782,127 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 945409350}
   m_CullTransparentMesh: 1
+--- !u!1 &945438207
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 945438208}
+  - component: {fileID: 945438211}
+  - component: {fileID: 945438210}
+  - component: {fileID: 945438209}
+  m_Layer: 5
+  m_Name: ok
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &945438208
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 945438207}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1877416655}
+  m_Father: {fileID: 1869470579}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: -40}
+  m_SizeDelta: {x: 200, y: 50}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &945438209
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 945438207}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 1
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 945438210}
+  m_OnClick:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &945438210
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 945438207}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 0.086274505, g: 1, b: 0.16361144, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+  m_Type: 1
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &945438211
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 945438207}
+  m_CullTransparentMesh: 1
 --- !u!1 &946404593
 GameObject:
   m_ObjectHideFlags: 0
@@ -54939,127 +55040,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 946404593}
   m_CullTransparentMesh: 1
---- !u!1 &945438207
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 945438208}
-  - component: {fileID: 945438211}
-  - component: {fileID: 945438210}
-  - component: {fileID: 945438209}
-  m_Layer: 5
-  m_Name: ok
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &945438208
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 945438207}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1877416655}
-  m_Father: {fileID: 1869470579}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -40}
-  m_SizeDelta: {x: 200, y: 50}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &945438209
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 945438207}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
-  m_Navigation:
-    m_Mode: 3
-    m_WrapAround: 0
-    m_SelectOnUp: {fileID: 0}
-    m_SelectOnDown: {fileID: 0}
-    m_SelectOnLeft: {fileID: 0}
-    m_SelectOnRight: {fileID: 0}
-  m_Transition: 1
-  m_Colors:
-    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
-    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
-    m_ColorMultiplier: 1
-    m_FadeDuration: 0.1
-  m_SpriteState:
-    m_HighlightedSprite: {fileID: 0}
-    m_PressedSprite: {fileID: 0}
-    m_SelectedSprite: {fileID: 0}
-    m_DisabledSprite: {fileID: 0}
-  m_AnimationTriggers:
-    m_NormalTrigger: Normal
-    m_HighlightedTrigger: Highlighted
-    m_PressedTrigger: Pressed
-    m_SelectedTrigger: Selected
-    m_DisabledTrigger: Disabled
-  m_Interactable: 1
-  m_TargetGraphic: {fileID: 945438210}
-  m_OnClick:
-    m_PersistentCalls:
-      m_Calls: []
---- !u!114 &945438210
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 945438207}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
-  m_Material: {fileID: 0}
-  m_Color: {r: 0.086274505, g: 1, b: 0.16361144, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
---- !u!222 &945438211
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 945438207}
-  m_CullTransparentMesh: 1
 --- !u!1 &947277439
 GameObject:
   m_ObjectHideFlags: 0
@@ -55143,49 +55123,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 947277439}
   m_CullTransparentMesh: 1
---- !u!1 &951389686
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 951389687}
-  m_Layer: 5
-  m_Name: Botones
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &951389687
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 951389686}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 2143276358}
-  - {fileID: 1684063634}
-  - {fileID: 1953480729}
-  - {fileID: 1866727815}
-  - {fileID: 790070169}
-  - {fileID: 2029835219}
-  - {fileID: 1578419229}
-  - {fileID: 306585864}
-  m_Father: {fileID: 772373286}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 128.1741, y: 24.999985}
-  m_SizeDelta: {x: 100, y: 150}
-  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &948668359
 GameObject:
   m_ObjectHideFlags: 0
@@ -55261,6 +55198,49 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 948668359}
   m_CullTransparentMesh: 1
+--- !u!1 &951389686
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 951389687}
+  m_Layer: 5
+  m_Name: Botones
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &951389687
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 951389686}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2143276358}
+  - {fileID: 1684063634}
+  - {fileID: 1953480729}
+  - {fileID: 1866727815}
+  - {fileID: 790070169}
+  - {fileID: 2029835219}
+  - {fileID: 1578419229}
+  - {fileID: 306585864}
+  m_Father: {fileID: 772373286}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 128.1741, y: 24.999985}
+  m_SizeDelta: {x: 100, y: 150}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &951754165
 GameObject:
   m_ObjectHideFlags: 0
@@ -57791,9 +57771,9 @@ MonoBehaviour:
       m_Calls: []
   m_text: "El grupo de refugiados fue dividido en distintos puntos seguros del bosque.
     Nos ordenaron mantener la calma, aunque nos advirtieron de un infectado mutante
-    enorme capaz de comandar oleadas de infectados que atacan bases militares en grupo.
-    Ese mutante es la prioridad m\xE1xima, en caso de verlo hay que eliminarlo para
-    acabar con esta pesadilla.\n\nOBJETIVO: Acabar con el zombie mutante."
+    enorme capaz de comandar oleadas de infectados que atacan bases militares en
+    grupo. Ese mutante es la prioridad m\xE1xima, en caso de verlo hay que eliminarlo
+    para acabar con esta pesadilla.\n\nOBJETIVO: Acabar con el zombie mutante."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -65309,6 +65289,82 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1147031292}
   m_CullTransparentMesh: 1
+--- !u!1 &1148216401
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1148216402}
+  - component: {fileID: 1148216404}
+  - component: {fileID: 1148216403}
+  m_Layer: 5
+  m_Name: scoreUI
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &1148216402
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1148216401}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 137771596}
+  m_Father: {fileID: 1098545880}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1148216403
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1148216401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.392}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
+  m_Type: 1
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &1148216404
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1148216401}
+  m_CullTransparentMesh: 1
 --- !u!1 &1151040022
 GameObject:
   m_ObjectHideFlags: 0
@@ -65445,82 +65501,6 @@ CanvasRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1151040022}
-  m_CullTransparentMesh: 1
---- !u!1 &1148216401
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1148216402}
-  - component: {fileID: 1148216404}
-  - component: {fileID: 1148216403}
-  m_Layer: 5
-  m_Name: scoreUI
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!224 &1148216402
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1148216401}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 137771596}
-  m_Father: {fileID: 1098545880}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1148216403
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1148216401}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.392}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
---- !u!222 &1148216404
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1148216401}
   m_CullTransparentMesh: 1
 --- !u!1 &1155039219
 GameObject:
@@ -70362,9 +70342,9 @@ MonoBehaviour:
       m_Calls: []
   m_text: "Tras escapar del laboratorio hacia una ciudad infestada, el objetivo es
     llegar a la antena de radio para pedir auxilio, ya que la \xFAnica salida viable
-    es por aire. Abri\xE9ndose paso entre los infectados y tras una breve parada t\xE1ctica,
-    logran entrar a la estaci\xF3n junto a otros refugiados para resistir hasta la
-    evacuaci\xF3n militar.\n\nOBJETIVO: Comunicarte con otros sobrevivientes."
+    es por aire. Abri\xE9ndose paso entre los infectados y tras una breve parada
+    t\xE1ctica, logran entrar a la estaci\xF3n junto a otros refugiados para resistir
+    hasta la evacuaci\xF3n militar.\n\nOBJETIVO: Comunicarte con otros sobrevivientes."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -98017,8 +97997,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\xBFTe atreves a enfrentarte al zombie Boss? \nJuega a este modo de 5 rondas
-    y derrotalo en la ronda final\n\n\n"
+  m_text: "\xBFTe atreves a enfrentarte al zombie Boss? \nJuega a este modo de 5
+    rondas y derrotalo en la ronda final\n\n\n"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: a6a09d93cb2d0774dad16b4a0431fa8a, type: 2}
   m_sharedMaterial: {fileID: 8237633580310523954, guid: a6a09d93cb2d0774dad16b4a0431fa8a, type: 2}
@@ -99935,9 +99915,9 @@ MonoBehaviour:
       m_Calls: []
   m_text: "El grupo de refugiados fue dividido en distintos puntos seguros del bosque.
     Nos ordenaron mantener la calma, aunque nos advirtieron de un infectado mutante
-    enorme capaz de comandar oleadas de infectados que atacan bases militares en grupo.
-    Ese mutante es la prioridad m\xE1xima, en caso de verlo hay que eliminarlo para
-    acabar con esta pesadilla.\n\nOBJETIVO: Acabar con las hordas y zombie mutante."
+    enorme capaz de comandar oleadas de infectados que atacan bases militares en
+    grupo. Ese mutante es la prioridad m\xE1xima, en caso de verlo hay que eliminarlo
+    para acabar con esta pesadilla.\n\nOBJETIVO: Acabar con las hordas y zombie mutante."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -101747,8 +101727,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\xBFTe atreves a enfrentarte al zombie Boss? \nJuega a este modo de 5 rondas
-    y derrotalo en la ronda final\n\n\n"
+  m_text: "\xBFTe atreves a enfrentarte al zombie Boss? \nJuega a este modo de 5
+    rondas y derrotalo en la ronda final\n\n\n"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: a6a09d93cb2d0774dad16b4a0431fa8a, type: 2}
   m_sharedMaterial: {fileID: 8237633580310523954, guid: a6a09d93cb2d0774dad16b4a0431fa8a, type: 2}
@@ -121336,8 +121316,8 @@ MonoBehaviour:
   m_text: "Nos encontramos en el laboratorio donde todo empez\xF3: un virus desatado
     que transforma a todo aquel que lo inhala. Avanzamos sigilosamente hacia la salida,
     tratando de no alertar a nadie. Sin embargo, como era de esperarse, la puerta
-    est\xE1 bloqueada. Tu misi\xF3n sera encontrar la tarjeta magn\xE9tica de la puerta
-    principal.\n\nOBJETIVO: Encontrar la tarjeta y escapar."
+    est\xE1 bloqueada. Tu misi\xF3n sera encontrar la tarjeta magn\xE9tica de la
+    puerta principal.\n\nOBJETIVO: Encontrar la tarjeta y escapar."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -123030,9 +123010,9 @@ MonoBehaviour:
       m_Calls: []
   m_text: "Estamos ante un panorama aterrador: el virus se ha propagado por la ciudad.
     Nos ordenaron mantener la calma, aunque nos advirtieron de un infectado mutante
-    enorme capaz de comandar oleadas de infectados que atacan bases militares en grupo.
-    Ese mutante es la prioridad m\xE1xima, en caso de verlo hay que eliminarlo para
-    acabar con esta pesadilla.\n\nOBJETIVO: Acabar con las hordas y zombie mutante."
+    enorme capaz de comandar oleadas de infectados que atacan bases militares en
+    grupo. Ese mutante es la prioridad m\xE1xima, en caso de verlo hay que eliminarlo
+    para acabar con esta pesadilla.\n\nOBJETIVO: Acabar con las hordas y zombie mutante."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

@@ -61,7 +61,7 @@ public static class DisponibilidadTienda
         return null;
     }
 
-    private static ConfiguracionPartidaSeleccionada.ModoJuego ModoActual()
+    public static ConfiguracionPartidaSeleccionada.ModoJuego ModoActual()
     {
         RoundManager rm = RoundManager.Instance;
         if (rm != null && rm.IsSpawned && rm.ModoNetwork.Value != (int)ConfiguracionPartidaSeleccionada.ModoJuego.Ninguno)

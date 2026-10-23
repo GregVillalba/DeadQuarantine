@@ -6,6 +6,10 @@ public class PuertaAnimacionHistoria : MonoBehaviour
 {
     [SerializeField] private Animator animator;
 
+    [Tooltip("Colliders que tapan el hueco de la puerta mientras está cerrada (ej. el BoxCollider de " +
+             "\"Tunnel Window wall001\"). Se desactivan al terminar de abrirse para poder cruzarla.")]
+    [SerializeField] private Collider[] collidersBloqueoPaso;
+
     private bool animacionIniciada;
     private bool animacionFinalizada;
     private Coroutine comprobacionActual;
@@ -135,6 +139,7 @@ public class PuertaAnimacionHistoria : MonoBehaviour
 
                     // Mantiene la puerta en su pose final.
                     animator.speed = 0f;
+                    LiberarPaso();
 
                     Debug.Log(
                         "[Puerta] Animación finalizada correctamente.",
@@ -166,6 +171,30 @@ public class PuertaAnimacionHistoria : MonoBehaviour
             this
         );
 
+        // Aunque la animación falle, el jugador no puede quedar encerrado.
+        LiberarPaso();
+
         comprobacionActual = null;
+    }
+
+    private void LiberarPaso()
+    {
+        if (collidersBloqueoPaso == null || collidersBloqueoPaso.Length == 0)
+        {
+            Debug.LogWarning(
+                "[Puerta] No hay colliders de bloqueo asignados: " +
+                "si algo tapa el hueco de la puerta, el jugador no va a poder pasar.",
+                this
+            );
+            return;
+        }
+
+        foreach (Collider colliderBloqueo in collidersBloqueoPaso)
+        {
+            if (colliderBloqueo != null)
+                colliderBloqueo.enabled = false;
+        }
+
+        Debug.Log("[Puerta] Paso liberado.", this);
     }
 }
