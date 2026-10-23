@@ -8,7 +8,7 @@ using TMPro;
 public class LogrosGlobalesOrdenados : MonoBehaviour
 {
     [Header("Configuraci�n de API")]
-    public string urlApi = "https://dead-quarentine-web.wasmer.app/api/logros";
+    string url = "https://dead-quarentine-web.wasmer.app/api/logros/globales";
 
     [System.Serializable]
     public class TarjetaLogroItem
@@ -16,7 +16,7 @@ public class LogrosGlobalesOrdenados : MonoBehaviour
 
         [Tooltip("El ID exacto del logro en la base de datos (1, 2, 3...)")]
         public int idLogro;
-        [Tooltip("El componente TextMeshPro que muestra el porcentaje (ej: GLOBAL 87.5%)")]
+        [Tooltip("El componente TextMeshPro que muestra el porcentaje (ej: 87.5%)")]
         public TextMeshProUGUI textoPorcentaje;
     }
 
@@ -151,7 +151,7 @@ public class LogrosGlobalesOrdenados : MonoBehaviour
 }
     private IEnumerator ObtenerDatosApi()
     {
-        using (UnityWebRequest request = UnityWebRequest.Get(urlApi))
+        using (UnityWebRequest request = UnityWebRequest.Get(url))
         {
             request.timeout = 8;
             yield return request.SendWebRequest();
@@ -160,7 +160,7 @@ public class LogrosGlobalesOrdenados : MonoBehaviour
             if (request.result != UnityWebRequest.Result.Success)
             {
                 Debug.LogError($"[Logros] Error al contactar la API: {request.error}");
-                PonerErrorEnTodas("GLOBAL --%");
+                PonerErrorEnTodas("--%");
                 yield break;
             }
 
@@ -174,13 +174,13 @@ public class LogrosGlobalesOrdenados : MonoBehaviour
             catch (Exception ex)
             {
                 Debug.LogError($"[Logros] Error parseando respuesta: {ex.Message}");
-                PonerErrorEnTodas("GLOBAL --%");
+                PonerErrorEnTodas("--%");
                 yield break;
             }
 
             if (data == null || data.logros == null || data.logros.Count == 0)
             {
-                PonerErrorEnTodas("GLOBAL --%");
+                PonerErrorEnTodas("--%");
                 yield break;
             }
 
@@ -198,11 +198,11 @@ public class LogrosGlobalesOrdenados : MonoBehaviour
 
                 if (porcentajePorId.TryGetValue(item.idLogro, out float pct))
                 {
-                    item.textoPorcentaje.text = $"GLOBAL {pct:0.#}%";
+                    item.textoPorcentaje.text = $"{pct:0.#}% OBTENIDO";
                 }
                 else
                 {
-                    item.textoPorcentaje.text = "GLOBAL --%";
+                    item.textoPorcentaje.text = "--%";
                 }
             }
         }
