@@ -29,6 +29,7 @@ public class ZombieAI : NetworkBehaviour
 
     private float nextAttackTime;
     private Transform target;
+    private bool hayJugadorEnZonaSegura;
 
     private bool isAttacking;
 
@@ -133,7 +134,12 @@ public class ZombieAI : NetworkBehaviour
         FindClosestPlayer();
 
         if (target == null)
+        {
+            if (hayJugadorEnZonaSegura)
+                QuedarseQuieto();
+
             return;
+        }
 
         float distanceToTarget =
             Vector3.Distance(
@@ -180,6 +186,8 @@ public class ZombieAI : NetworkBehaviour
         if (NetworkManager.Singleton == null)
             return;
 
+        hayJugadorEnZonaSegura = false;
+
         float closestDistance =
             Mathf.Infinity;
 
@@ -204,6 +212,13 @@ public class ZombieAI : NetworkBehaviour
             if (!playerHealth.IsAlive)
                 continue;
 
+            // Modo Historia: igual que a un abatido, se ignora al que está en la zona segura.
+            if (EstaEnZonaSegura(client.ClientId))
+            {
+                hayJugadorEnZonaSegura = true;
+                continue;
+            }
+
             Transform player =
                 client.PlayerObject.transform;
 
@@ -221,6 +236,25 @@ public class ZombieAI : NetworkBehaviour
         }
 
         target = closestPlayer;
+    }
+
+    private static bool EstaEnZonaSegura(ulong clientId)
+    {
+        return GestorHistoriaPartida.Instance != null &&
+            GestorHistoriaPartida.Instance.JugadorEnZonaSegura(clientId);
+    }
+
+    // Sin esto seguiría caminando hasta la última posición del jugador
+    // y se juntarían todos en la puerta de la zona segura.
+    private void QuedarseQuieto()
+    {
+        if (agent != null && agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.ResetPath();
+        }
+
+        UpdateAnimator();
     }
 
     // =========================================================

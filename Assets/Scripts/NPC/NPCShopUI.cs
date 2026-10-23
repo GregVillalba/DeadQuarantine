@@ -123,6 +123,8 @@ public class NPCShopUI : MonoBehaviour
     [SerializeField] private string textoListo = "Listo";
     [SerializeField] private string textoEsperandoListo = "Esperando...";
     [SerializeField] private string formatoMensajeBloqueado = "Se habilitará un tiempo para comerciar luego de las rondas {0}";
+    [Tooltip("Modo Historia: el mercader está fuera de una zona segura activa.")]
+    [SerializeField] private string mensajeBloqueadoHistoria = "Solo se puede comerciar en la zona segura";
     [SerializeField] private float duracionMensajeBloqueado = 3f;
 
     [Header("Audio")]
@@ -264,7 +266,7 @@ public class NPCShopUI : MonoBehaviour
         if (estaAbierta)
         {
             // Al llegar el temporizador a 0:00 (o si todos marcaron Listo) la tienda se cierra.
-            if (!TiendaHabilitada())
+            if (!TiendaHabilitada(currentVendor))
             {
                 CerrarTienda();
                 return;
@@ -303,7 +305,7 @@ public class NPCShopUI : MonoBehaviour
             {
                 if (controls.Player.Interact.triggered)
                 {
-                    if (TiendaHabilitada())
+                    if (TiendaHabilitada(vendor))
                     {
                         AbrirTienda(vendor);
                         return;
@@ -1001,13 +1003,34 @@ public class NPCShopUI : MonoBehaviour
     // =========================================================
 
     // Sin RoundManager (ej. escenas de prueba) el mercader queda siempre habilitado.
-    private bool TiendaHabilitada()
+    // En Historia no hay rondas: se comercia en la zona segura que separa un escenario del siguiente.
+    private bool TiendaHabilitada(NPCWeaponVendor vendor)
     {
-        return RoundManager.Instance == null || RoundManager.Instance.IsShopPhaseActive;
+        if (RoundManager.Instance == null)
+            return true;
+
+        if (RoundManager.Instance.EsModoHistoria)
+            return MercaderEnZonaSegura(vendor);
+
+        return RoundManager.Instance.IsShopPhaseActive;
+    }
+
+    // Sin GestorEscenariosPartida (escena sin zonas seguras) no hay forma de saberlo: queda habilitado.
+    private static bool MercaderEnZonaSegura(NPCWeaponVendor vendor)
+    {
+        if (vendor == null)
+            return false;
+
+        GestorEscenariosPartida gestor = GestorEscenariosPartida.Instance;
+
+        return gestor == null || gestor.EstaEnZonaSeguraActiva(vendor.transform);
     }
 
     private string ConstruirMensajeBloqueado()
     {
+        if (RoundManager.Instance != null && RoundManager.Instance.EsModoHistoria)
+            return mensajeBloqueadoHistoria;
+
         string rondas = RoundManager.Instance != null
             ? RoundManager.Instance.GetShopRoundsDescription()
             : string.Empty;

@@ -1102,6 +1102,47 @@ public void DetenerSpawnsHistoria()
     );
 }
 
+// Al volver de la zona segura al laboratorio, o al entrar a la ciudad, vuelven a aparecer zombies.
+public void ReanudarSpawnsHistoria()
+{
+    if (!IsServer || !historiaPartidaIniciada || historiaSpawningActivo)
+        return;
+
+    historiaSpawningActivo = true;
+
+    if (historiaSpawnRoutine == null)
+    {
+        historiaSpawnRoutine = StartCoroutine(
+            HistoriaSpawnRoutine()
+        );
+    }
+
+    Debug.Log("[RoundManager] Historia: se reanudan los spawns.");
+}
+
+// Despawnea los zombies vivos (ej. los que quedaron en el laboratorio al pasar a la Ciudad).
+public void EliminarZombiesHistoria()
+{
+    if (!IsServer)
+        return;
+
+    ZombieHealth[] zombies = FindObjectsByType<ZombieHealth>(
+        FindObjectsSortMode.None
+    );
+
+    foreach (ZombieHealth zombie in zombies)
+    {
+        if (zombie.NetworkObject != null && zombie.NetworkObject.IsSpawned)
+            zombie.NetworkObject.Despawn(true);
+    }
+
+    AliveZombiesNetwork.Value = 0;
+
+    Debug.Log(
+        "[RoundManager] Historia: zombies eliminados (" + zombies.Length + ")."
+    );
+}
+
     // =========================================================
     // CREAR ZOMBIE
     // =========================================================

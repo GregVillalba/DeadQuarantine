@@ -10393,6 +10393,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Scripts::PuertaAnimacionHistoria
   animator: {fileID: 2110182670299240478}
+  collidersBloqueoPaso:
+  - {fileID: 3670618983993554487}
 --- !u!1 &5893373715770440612
 GameObject:
   m_ObjectHideFlags: 0
@@ -37506,6 +37508,11 @@ PrefabInstance:
       addedObject: {fileID: 2360585101415069901}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4f1819ea97fb2c147a2281df45df2ea7, type: 3}
+--- !u!65 &3670618983993554487 stripped
+BoxCollider:
+  m_CorrespondingSourceObject: {fileID: 152647758484586971, guid: 4f1819ea97fb2c147a2281df45df2ea7, type: 3}
+  m_PrefabInstance: {fileID: 3526029162634967020}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &6271279636753637450 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7486943341193533350, guid: 4f1819ea97fb2c147a2281df45df2ea7, type: 3}

@@ -55,6 +55,13 @@ public class StoryIntroController : NetworkBehaviour
     if (!IsOwner || Keyboard.current == null)
         return;
 
+    // Con la tienda del mercader (o la pausa) abierta el aviso se oculta y ENTER no avanza.
+    if (esperandoContinuarSafeZone && popupContinuarSafeZone != null)
+        popupContinuarSafeZone.SetActive(!PlayerInputGate.ActionsBlocked);
+
+    if (PlayerInputGate.ActionsBlocked)
+        return;
+
     if (!Keyboard.current.enterKey.wasPressedThisFrame &&
         !Keyboard.current.numpadEnterKey.wasPressedThisFrame)
         return;
@@ -80,6 +87,17 @@ public void MostrarAvisoContinuarSafeZone()
         popupContinuarSafeZone.SetActive(true);
 
     Debug.Log("[StoryIntro] Esperando Enter para continuar a Ciudad.");
+}
+
+public void OcultarAvisoContinuarSafeZone()
+{
+    if (!IsOwner)
+        return;
+
+    esperandoContinuarSafeZone = false;
+
+    if (popupContinuarSafeZone != null)
+        popupContinuarSafeZone.SetActive(false);
 }
 
 private void IniciarTransicionACiudad()
@@ -121,6 +139,13 @@ private void IniciarTransicionACiudad()
         if (RoundManager.Instance != null)
         {
             RoundManager.Instance.ActualizarSpawnPointsDelEscenario();
+
+            // Los que quedaron en el laboratorio no pasan a la Ciudad
+            // ni ocupan lugar en el máximo de zombies vivos.
+            RoundManager.Instance.EliminarZombiesHistoria();
+
+            // En la zona segura no aparecían zombies: vuelven en la Ciudad.
+            RoundManager.Instance.ReanudarSpawnsHistoria();
         }
         else
         {
