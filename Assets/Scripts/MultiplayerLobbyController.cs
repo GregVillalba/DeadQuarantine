@@ -26,6 +26,10 @@ public class MultiplayerLobbyController : MonoBehaviour
     [Header("--- AVISO SIN INTERNET ---")]
     [SerializeField] private GameObject panelSinInternet;
 
+    [Header("--- AVISO CÓDIGO INVÁLIDO ---")]
+    [SerializeField] private GameObject panelCodigoInvalido;
+
+
     [Header("--- INGRESAR CÓDIGO ---")]
     [SerializeField] private TMP_InputField codigoInputField;
 
@@ -92,6 +96,14 @@ public class MultiplayerLobbyController : MonoBehaviour
                 OnClick_CopiarCodigo
             );
         }
+
+        if (codigoInputField != null)
+        {
+            codigoInputField.onValidateInput =
+                (texto, indice, caracter) => char.ToUpperInvariant(caracter);
+
+            codigoInputField.onValueChanged.AddListener(OcultarCodigoInvalidoSiVacio);
+        }
     }
 
     private void Start()
@@ -143,6 +155,9 @@ public class MultiplayerLobbyController : MonoBehaviour
         }
         if (panelSinInternet != null)
             panelSinInternet.SetActive(false);
+
+        if (panelCodigoInvalido != null)
+            panelCodigoInvalido.SetActive(false);
 
         ActualizarUI(
             jugador1Conectado: false,
@@ -269,8 +284,10 @@ public class MultiplayerLobbyController : MonoBehaviour
         if (codigoInputField == null)
             return;
 
-        string codigo =
-            codigoInputField.text.Trim();
+       /* string codigo =
+            codigoInputField.text.Trim();*/
+
+        string codigo = codigoInputField.text.Trim().ToUpperInvariant();
 
         if (string.IsNullOrEmpty(codigo))
         {
@@ -303,6 +320,7 @@ public class MultiplayerLobbyController : MonoBehaviour
                 Debug.LogError(
                     "[Lobby] No se pudo conectar."
                 );
+                MostrarCodigoInvalido();
 
                 return;
             }
@@ -335,6 +353,8 @@ public class MultiplayerLobbyController : MonoBehaviour
                 "[Lobby] Error uniéndose: " +
                 e.Message
             );
+
+            MostrarCodigoInvalido();
         }
     }
 
@@ -964,6 +984,9 @@ public class MultiplayerLobbyController : MonoBehaviour
                 OnClick_CopiarCodigo
             );
         }
+
+        if (codigoInputField != null)
+            codigoInputField.onValueChanged.RemoveListener(OcultarCodigoInvalidoSiVacio);
     }
 
     private void MostrarSinInternet()
@@ -989,4 +1012,17 @@ public class MultiplayerLobbyController : MonoBehaviour
 
         
     }
+
+    private void MostrarCodigoInvalido()
+    {
+        if (panelCodigoInvalido != null)
+            panelCodigoInvalido.SetActive(true);
+    }
+
+    private void OcultarCodigoInvalidoSiVacio(string texto)
+{
+    if (panelCodigoInvalido != null)
+        panelCodigoInvalido.SetActive(false);
+}
+    
 }
