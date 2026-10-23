@@ -169,18 +169,32 @@ public class GestorEscenariosPartida : MonoBehaviour
     }
 
     public void TransicionarASafeZone1(Transform jugador)
+{
+    if (safeZone1 == null || spawnSafeZone1 == null)
     {
-        if (safeZone1 == null || spawnSafeZone1 == null)
-        {
-            Debug.LogError(
-                "[Escenarios] Asigná SafeZone1 y su punto de aparición."
-            );
-            return;
-        }
-
-        ActivarSafeZone1();
-        TrasladarJugador(jugador, spawnSafeZone1);
+        Debug.LogError(
+            "[Escenarios] Asigná SafeZone1 y su punto de aparición."
+        );
+        return;
     }
+
+    ActivarSafeZone1();
+    TrasladarJugador(jugador, spawnSafeZone1);
+
+    StoryIntroController intro =
+        jugador.GetComponentInChildren<StoryIntroController>(true);
+
+    if (intro != null)
+    {
+        intro.MostrarAvisoContinuarSafeZone();
+    }
+    else
+    {
+        Debug.LogWarning(
+            "[Escenarios] No se encontró StoryIntroController en el jugador."
+        );
+    }
+}
 
     public void TransicionarASafeZone2(Transform jugador)
     {
