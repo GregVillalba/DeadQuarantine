@@ -8316,6 +8316,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 320186190}
   m_CullTransparentMesh: 1
+--- !u!4 &320211152 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6213112990847404461, guid: 38ca414adb0dcf44f909967e24afacf0, type: 3}
+  m_PrefabInstance: {fileID: 2410686765571131097}
+  m_PrefabAsset: {fileID: 0}
 --- !u!64 &321069778
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -55313,6 +55318,9 @@ MonoBehaviour:
   puntoLectorPuerta: {fileID: 8118330680350265405}
   animacionPuerta: {fileID: 8118330680350265403}
   distanciaInteraccion: 3
+  radioPrefab: {fileID: 7538897277733069475, guid: 9768d9ad6a4b4384aa660b9d4bd80dd4, type: 3}
+  puntoSpawnRadio: {fileID: 320211152}
+  distanciaRecogidaRadio: 3
   textoTituloObjetivo: {fileID: 0}
   textoDescripcionObjetivo: {fileID: 0}
   EstadoMisionNetwork:
@@ -55357,7 +55365,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12842b18098cda843884104e6c89dcd8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Scripts::DebugMisionHistoria
-  tecla: 289
 --- !u!64 &1727346743
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -65598,7 +65605,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5142375841164322401, guid: 38ca414adb0dcf44f909967e24afacf0, type: 3}
       propertyPath: m_InScenePlacedDisabledByDefault
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

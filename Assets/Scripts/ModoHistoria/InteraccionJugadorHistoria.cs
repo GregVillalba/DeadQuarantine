@@ -25,6 +25,7 @@ public class InteraccionJugadorHistoria : MonoBehaviour
     private bool tieneObjetoEnfocado;
     private TarjetaAccesoHistoria tarjetaEnfocada;
     private LectorTarjetaHistoria lectorEnfocado;
+    private RadioHistoriaCiudad radioEnfocada;
 
     private void Awake()
     {
@@ -96,6 +97,7 @@ public class InteraccionJugadorHistoria : MonoBehaviour
     {
         tarjetaEnfocada = null;
         lectorEnfocado = null;
+        radioEnfocada = null;
         tieneObjetoEnfocado = false;
 
         if (interactPrompt == null)
@@ -110,12 +112,34 @@ public class InteraccionJugadorHistoria : MonoBehaviour
 
         TarjetaAccesoHistoria tarjetaCercana = null;
         LectorTarjetaHistoria lectorCercano = null;
+        RadioHistoriaCiudad radioCercana = null;
 
         float distanciaTarjeta = float.MaxValue;
         float distanciaLector = float.MaxValue;
 
         foreach (Collider col in colliders)
         {
+
+            RadioHistoriaCiudad radio =
+            col.GetComponentInParent<RadioHistoriaCiudad>();
+
+            if (radio != null && radio.IsSpawned &&
+                radio.gameObject.activeInHierarchy)
+            {
+                // La distancia se mide desde el jugador.
+                float distancia = Vector3.Distance(
+                    transform.position,
+                    radio.transform.position
+                );
+
+                if (distancia < distanciaTarjeta)
+                {
+                    distanciaTarjeta = distancia;
+                    radioCercana = radio;
+                }
+
+                continue;
+            }
             TarjetaAccesoHistoria tarjeta =
                 col.GetComponentInParent<TarjetaAccesoHistoria>();
 
@@ -162,6 +186,23 @@ public class InteraccionJugadorHistoria : MonoBehaviour
         if (gestor == null || !gestor.IsSpawned)
         {
             OcultarCartel();
+            return;
+        }
+
+        if (gestor == null || !gestor.IsSpawned)
+        {
+            OcultarCartel();
+            return;
+        }
+
+        // Detectar la radio de Ciudad.
+        if (radioCercana != null &&
+            gestor.EstadoMisionNetwork.Value == 4)
+        {
+            radioEnfocada = radioCercana;
+            tieneObjetoEnfocado = true;
+
+            MostrarCartel(ObtenerTecla() + " para recoger la radio");
             return;
         }
 
@@ -215,6 +256,12 @@ public class InteraccionJugadorHistoria : MonoBehaviour
             return;
         }
 
+        if (radioEnfocada != null && radioEnfocada.IsSpawned)
+        {
+            radioEnfocada.IntentarRecoger();
+            return;
+        }
+
         if (lectorEnfocado != null)
         {
             GestorHistoriaPartida gestor = GestorHistoriaPartida.Instance;
@@ -261,6 +308,7 @@ public class InteraccionJugadorHistoria : MonoBehaviour
         tieneObjetoEnfocado = false;
         tarjetaEnfocada = null;
         lectorEnfocado = null;
+        radioEnfocada = null;
 
         if (interactPrompt != null &&
             interactPrompt.activeSelf)

@@ -33905,6 +33905,7 @@ GameObject:
   - component: {fileID: 3557552334336705410}
   - component: {fileID: 1072591765279787009}
   - component: {fileID: 5583728946969645795}
+  - component: {fileID: 2882670168681983299}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -34656,6 +34657,28 @@ MonoBehaviour:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
+--- !u!114 &2882670168681983299
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5539736354694109012}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36e9ab017a9ab9844b7518ec4f8e29cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::DetectorAlturaRadioHistoria
+  alturaMinima: 3
+  tiempoEnAltura: 1.5
+  capasSuelo:
+    serializedVersion: 2
+    m_Bits: 0
+  distanciaMaximaSuelo: 50
+  origenRaycastExtra: 0.2
+  alEncontrarSenal:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &5543655065308972545
 GameObject:
   m_ObjectHideFlags: 0

@@ -11,8 +11,13 @@ public class GestorHistoriaPartida : NetworkBehaviour
     private const int BuscarTarjeta = 1;
     private const int AbrirPuerta = 2;
     private const int MisionCompletada = 3;
+    private const int BuscarRadio = 4;
+    private const int BuscarSenal = 5;
+    private const int ContactarSobrevivientes = 6;
+    private const int HistoriaCiudadCompletada = 7;
     private bool animacionAperturaEjecutada;
     private bool transicionSafeZoneIniciada;
+    private bool misionCiudadInicializada;
 
     [Header("Tarjeta de acceso")]
     [SerializeField] private GameObject tarjetaPrefab;
@@ -23,6 +28,11 @@ public class GestorHistoriaPartida : NetworkBehaviour
     [SerializeField] private Transform puntoLectorPuerta;
     [SerializeField] private PuertaAnimacionHistoria animacionPuerta;
     [SerializeField] private float distanciaInteraccion = 3f;
+
+    [Header("Radio de Ciudad")]
+    [SerializeField] private GameObject radioPrefab;
+    [SerializeField] private Transform puntoSpawnRadio;
+    [SerializeField] private float distanciaRecogidaRadio = 3f;
 
     [Header("HUD local")]
     [SerializeField] private TMP_Text textoTituloObjetivo;
@@ -64,39 +74,48 @@ public class GestorHistoriaPartida : NetworkBehaviour
         Instance = this;
     }
 
-    public override void OnNetworkSpawn()
+public override void OnNetworkSpawn()
+{
+    base.OnNetworkSpawn();
+
+    EstadoMisionNetwork.OnValueChanged += AlCambiarEstadoMision;
+    PuertaAbiertaNetwork.OnValueChanged += AlCambiarEstadoPuerta;
+
+    ActualizarTextoObjetivo();
+
+    if (!IsServer)
     {
-        base.OnNetworkSpawn();
+        AplicarEstadoPuerta(PuertaAbiertaNetwork.Value);
+        return;
+    }
 
-        EstadoMisionNetwork.OnValueChanged += AlCambiarEstadoMision;
-        PuertaAbiertaNetwork.OnValueChanged += AlCambiarEstadoPuerta;
-
-        ActualizarTextoObjetivo();
-
-        if (!IsServer)
-        {
-            AplicarEstadoPuerta(PuertaAbiertaNetwork.Value);
-            return;
-        }
-
-        if (!EsHistoriaLaboratorio())
-        {
-            EstadoMisionNetwork.Value = MisionInactiva;
-            ClienteConTarjetaNetwork.Value = ulong.MaxValue;
-            PuertaAbiertaNetwork.Value = false;
-
-            AplicarEstadoPuerta(false);
-            return;
-        }
-
+    if (EsHistoriaLaboratorio())
+    {
         EstadoMisionNetwork.Value = BuscarTarjeta;
         ClienteConTarjetaNetwork.Value = ulong.MaxValue;
         PuertaAbiertaNetwork.Value = false;
 
         AplicarEstadoPuerta(false);
-
         CrearTarjeta();
     }
+    else if (EsHistoriaCiudad())
+    {
+        EstadoMisionNetwork.Value = BuscarRadio;
+        ClienteConTarjetaNetwork.Value = ulong.MaxValue;
+        PuertaAbiertaNetwork.Value = false;
+
+        if (CrearRadio())
+            misionCiudadInicializada = true;
+    }
+    else
+    {
+        EstadoMisionNetwork.Value = MisionInactiva;
+        ClienteConTarjetaNetwork.Value = ulong.MaxValue;
+        PuertaAbiertaNetwork.Value = false;
+
+        AplicarEstadoPuerta(false);
+    }
+}
 
     public override void OnNetworkDespawn()
     {
@@ -215,6 +234,33 @@ public class GestorHistoriaPartida : NetworkBehaviour
                 textoDescripcionObjetivo.text =
                     "La puerta está abierta.";
                 break;
+                case BuscarRadio:
+    textoTituloObjetivo.color = Color.white;
+    textoTituloObjetivo.text = "OBJETIVO";
+    textoDescripcionObjetivo.text =
+        "Busca una radio en la comisaría.";
+    break;
+
+    case BuscarSenal:
+        textoTituloObjetivo.color = Color.white;
+        textoTituloObjetivo.text = "OBJETIVO";
+        textoDescripcionObjetivo.text =
+            "Busca un lugar elevado para encontrar señal de radio.";
+        break;
+
+    case ContactarSobrevivientes:
+        textoTituloObjetivo.color = Color.white;
+        textoTituloObjetivo.text = "OBJETIVO";
+        textoDescripcionObjetivo.text =
+            "Intenta comunicarte con los sobrevivientes.";
+        break;
+
+    case HistoriaCiudadCompletada:
+        textoTituloObjetivo.color = Color.green;
+        textoTituloObjetivo.text = "OBJETIVO COMPLETADO";
+        textoDescripcionObjetivo.text =
+            "Encontraste a los sobrevivientes. Prepárate para continuar.";
+        break;
 
             default:
                 textoTituloObjetivo.text = "";
@@ -223,22 +269,29 @@ public class GestorHistoriaPartida : NetworkBehaviour
         }
     }
 
-    public void RegistrarTarjeta(
-        ulong clientId,
-        TarjetaAccesoHistoria tarjeta
-    )
-    {
-        if (!IsServer || tarjeta == null)
-            return;
+    
+public bool RegistrarTarjeta(
+    ulong clientId,
+    TarjetaAccesoHistoria tarjeta)
+{
+    if (!IsServer || tarjeta == null)
+        return false;
 
-        if (EstadoMisionNetwork.Value != BuscarTarjeta)
-            return;
+    if (EstadoMisionNetwork.Value != BuscarTarjeta)
+        return false;
 
-        ClienteConTarjetaNetwork.Value = clientId;
-        EstadoMisionNetwork.Value = AbrirPuerta;
+    ClienteConTarjetaNetwork.Value = clientId;
+    EstadoMisionNetwork.Value = AbrirPuerta;
 
-        tarjeta.DespawnearTarjeta();
-    }
+    tarjeta.DespawnearTarjeta();
+
+    Debug.Log(
+        "[Historia] Tarjeta registrada para el cliente " + clientId
+    );
+
+    return true;
+}
+
 
     public bool JugadorCercaDelPunto(
         ulong clientId,
@@ -515,4 +568,249 @@ private void CompletarMisionLaboratorioPruebaRpc(
     
 }
 
+private bool EsHistoriaCiudad()
+{
+    if (ConfiguracionPartidaSeleccionada.Instancia == null)
+        return false;
+
+    return
+        ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado ==
+            ConfiguracionPartidaSeleccionada.ModoJuego.Historia
+        &&
+        ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado ==
+            ConfiguracionPartidaSeleccionada.Escenario.Ciudad;
+}
+
+private bool CrearRadio()
+{
+    if (!IsServer)
+        return false;
+
+    if (radioPrefab == null)
+    {
+        Debug.LogError(
+            "[Historia] No asignaste el prefab de la radio.",
+            this
+        );
+        return false;
+    }
+
+    if (puntoSpawnRadio == null)
+    {
+        Debug.LogError(
+            "[Historia] No asignaste el punto de aparición de la radio.",
+            this
+        );
+        return false;
+    }
+
+    GameObject objeto = Instantiate(
+        radioPrefab,
+        puntoSpawnRadio.position,
+        puntoSpawnRadio.rotation
+    );
+
+    NetworkObject networkObject =
+        objeto.GetComponent<NetworkObject>();
+
+    if (networkObject == null)
+    {
+        Debug.LogError(
+            "[Historia] El prefab de la radio necesita un NetworkObject.",
+            this
+        );
+
+        Destroy(objeto);
+        return false;
+    }
+
+    if (objeto.GetComponent<RadioHistoriaCiudad>() == null)
+    {
+        Debug.LogError(
+            "[Historia] El prefab necesita RadioHistoriaCiudad.",
+            this
+        );
+
+        Destroy(objeto);
+        return false;
+    }
+
+    networkObject.Spawn(true);
+
+    Debug.Log(
+        "[Historia] Radio creada y sincronizada: " + objeto.name,
+        this
+    );
+
+    return true;
+}
+
+public void RegistrarRadio(
+    ulong clientId,
+    RadioHistoriaCiudad radio
+)
+{
+    if (!IsServer || radio == null)
+        return;
+
+    if (!EsHistoriaCiudad() ||
+        EstadoMisionNetwork.Value != BuscarRadio)
+        return;
+
+    if (!JugadorCercaDelPunto(
+        clientId,
+        radio.transform.position,
+        distanciaRecogidaRadio))
+    {
+        Debug.LogWarning(
+            "[Historia] El jugador está demasiado lejos de la radio."
+        );
+        return;
+    }
+
+    radio.DespawnearRadio();
+
+    EstadoMisionNetwork.Value = BuscarSenal;
+
+    Debug.Log(
+        "[Historia] Radio recogida. Comienza la búsqueda de señal."
+    );
+}
+
+public void IntentarRegistrarSenalEncontrada()
+{
+    RegistrarSenalEncontradaRpc();
+}
+
+[Rpc(
+    SendTo.Server,
+    InvokePermission = RpcInvokePermission.Everyone
+)]
+private void RegistrarSenalEncontradaRpc(
+    RpcParams rpcParams = default
+)
+{
+    if (!IsServer || !EsHistoriaCiudad())
+        return;
+
+    if (EstadoMisionNetwork.Value != BuscarSenal)
+        return;
+
+    ulong clientId = rpcParams.Receive.SenderClientId;
+
+    if (!JugadorCercaDeUnJugadorConDetector(clientId))
+        return;
+
+    EstadoMisionNetwork.Value = ContactarSobrevivientes;
+
+    Debug.Log(
+        "[Historia] Señal encontrada. Inicia el contacto con sobrevivientes."
+    );
+}
+
+private bool JugadorCercaDeUnJugadorConDetector(ulong clientId)
+{
+    if (NetworkManager.Singleton == null)
+        return false;
+
+    if (!NetworkManager.Singleton.ConnectedClients.TryGetValue(
+        clientId,
+        out NetworkClient cliente))
+        return false;
+
+    if (cliente.PlayerObject == null)
+        return false;
+
+    DetectorAlturaRadioHistoria detector =
+        cliente.PlayerObject.GetComponentInChildren<
+            DetectorAlturaRadioHistoria
+        >();
+
+    return detector != null && detector.SenalEncontrada;
+}
+
+public void IniciarMisionCiudad()
+{
+    if (!IsServer || !EsHistoriaCiudad())
+        return;
+
+    if (misionCiudadInicializada)
+        return;
+
+    if (!CrearRadio())
+    {
+        Debug.LogError(
+            "[Historia] No se pudo iniciar la misión de Ciudad porque " +
+            "no se creó la radio."
+        );
+        return;
+    }
+
+    ClienteConTarjetaNetwork.Value = ulong.MaxValue;
+    EstadoMisionNetwork.Value = BuscarRadio;
+
+    misionCiudadInicializada = true;
+
+    Debug.Log(
+        "[Historia] Misión de Ciudad iniciada. Radio creada."
+    );
+}
+public void ActivarDetectorSenal(ulong clientId)
+{
+    if (!IsServer || NetworkManager.Singleton == null)
+        return;
+
+    if (!NetworkManager.Singleton.ConnectedClients.TryGetValue(
+        clientId, out NetworkClient cliente))
+    {
+        Debug.LogError(
+            "[Historia] No se encontró el cliente para activar el detector."
+        );
+        return;
+    }
+
+    if (cliente.PlayerObject == null)
+    {
+        Debug.LogError(
+            "[Historia] El cliente no tiene PlayerObject."
+        );
+        return;
+    }
+
+    ActivarDetectorSenalRpc(
+        RpcTarget.Single(clientId, RpcTargetUse.Temp)
+    );
+}
+
+[Rpc(SendTo.SpecifiedInParams)]
+private void ActivarDetectorSenalRpc(
+    RpcParams rpcParams = default)
+{
+    if (NetworkManager.Singleton == null)
+        return;
+
+    NetworkObject jugador =
+        NetworkManager.Singleton.LocalClient.PlayerObject;
+
+    if (jugador == null)
+    {
+        Debug.LogError(
+            "[Historia] No se encontró el jugador local."
+        );
+        return;
+    }
+
+    DetectorAlturaRadioHistoria detector =
+        jugador.GetComponentInChildren<DetectorAlturaRadioHistoria>(true);
+
+    if (detector == null)
+    {
+        Debug.LogError(
+            "[Historia] El jugador no tiene DetectorAlturaRadioHistoria."
+        );
+        return;
+    }
+
+    detector.ActivarBusquedaDeSenal();
+}
 }

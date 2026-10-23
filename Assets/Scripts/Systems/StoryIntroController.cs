@@ -103,7 +103,6 @@ private void IniciarTransicionACiudad()
         return;
     }
 
-    // Bloquear al jugador mientras se realiza la transición.
     historiaActiva = true;
 
     if (hud != null)
@@ -111,11 +110,39 @@ private void IniciarTransicionACiudad()
 
     BloquearJugador();
 
-    // Activar Ciudad y colocar al jugador en su punto de aparición.
+    // Activar el escenario de Ciudad.
     gestor.ActivarEscenario(
         ConfiguracionPartidaSeleccionada.Escenario.Ciudad
     );
 
+    // Actualizar los puntos de aparición para el escenario recién activado.
+    if (IsServer)
+    {
+        if (RoundManager.Instance != null)
+        {
+            RoundManager.Instance.ActualizarSpawnPointsDelEscenario();
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[StoryIntro] No se encontró RoundManager para actualizar los spawn points."
+            );
+        }
+
+        // Iniciar la misión de Ciudad y crear la radio.
+        if (GestorHistoriaPartida.Instance != null)
+        {
+            GestorHistoriaPartida.Instance.IniciarMisionCiudad();
+        }
+        else
+        {
+            Debug.LogError(
+                "[StoryIntro] No se encontró GestorHistoriaPartida."
+            );
+        }
+    }
+
+    // Trasladar al jugador al punto inicial de Ciudad.
     gestor.TrasladarJugadorAInicioDeEscenario(transform.root);
 
     // Mostrar la introducción de Ciudad.
@@ -127,7 +154,9 @@ private void IniciarTransicionACiudad()
     Cursor.visible = true;
     Cursor.lockState = CursorLockMode.None;
 
-    Debug.Log("[StoryIntro] Ciudad activada. Mostrando introducción.");
+    Debug.Log(
+        "[StoryIntro] Ciudad activada. Introducción mostrada y transición completada."
+    );
 }
 
     public override void OnNetworkSpawn()
@@ -247,8 +276,6 @@ private void IniciarTransicionACiudad()
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
-        if (IsServer && RoundManager.Instance != null)
-            RoundManager.Instance.StartRound(1);
 
         Debug.Log("[StoryIntro] ContinuarHistoria() FIN.");
     }
