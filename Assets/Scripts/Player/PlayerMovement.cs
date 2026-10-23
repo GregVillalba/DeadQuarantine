@@ -115,6 +115,22 @@ public class PlayerMovement : NetworkBehaviour
     public Vector2 MoveInput =>
         (MovementLocked || PauseController.LocalPlayerPaused) ? Vector2.zero : moveInput; // <- NUEVO: para que WeaponSway lea hacia dónde te movés
 
+    // Velocidades actuales: las fija el personaje elegido (PlayerCharacter) y las puede leer la animación de tercera persona.
+    public float MoveSpeed => moveSpeed;
+    public float SprintSpeed => sprintSpeed;
+    public float CrouchSpeed => crouchSpeed;
+
+    /// <summary>
+    /// Pone las velocidades del personaje elegido (tanque, soldado, explorador...). Lo llama PlayerCharacter.
+    /// Mientras no se aplique ningún personaje, valen los números del Inspector.
+    /// </summary>
+    public void SetMovementSpeeds(float walk, float sprint, float crouch)
+    {
+        moveSpeed = walk;
+        sprintSpeed = sprint;
+        crouchSpeed = crouch;
+    }
+
     private CharacterController characterController;
     private PlayerControls controls;
     private PlayerHealth playerHealth;

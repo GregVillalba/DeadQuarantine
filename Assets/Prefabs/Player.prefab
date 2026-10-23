@@ -33616,6 +33616,7 @@ GameObject:
   - component: {fileID: 2650549216829772385}
   - component: {fileID: 3557552334336705410}
   - component: {fileID: 1072591765279787009}
+  - component: {fileID: 5583728946969645795}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -34338,6 +34339,33 @@ MonoBehaviour:
   colorNormal: {r: 1, g: 1, b: 1, a: 1}
   colorUrgente: {r: 1, g: 0, b: 0, a: 1}
   intervaloBusqueda: 0.25
+--- !u!114 &5583728946969645795
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5539736354694109012}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32a7adcfa47cac348947baf55d26f1fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::PlayerCharacter
+  ShowTopMostFoldoutHeaderGroup: 1
+  catalog: {fileID: 11400000, guid: 0417370cbb46d8445aa531430b048b25, type: 2}
+  modelRoot: {fileID: 2906837151459838087}
+  skeletonRootName: Root
+  keepNamePrefixes:
+  - SM_Wep
+  playerMovement: {fileID: 7292988215955829792}
+  playerHealth: {fileID: 2373627705313556358}
+  useTestIndex: 1
+  testIndex: 2
+  CharacterIndex:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
 --- !u!1 &5543655065308972545
 GameObject:
   m_ObjectHideFlags: 0
