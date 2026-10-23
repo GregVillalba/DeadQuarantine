@@ -2,6 +2,8 @@
 using UnityEngine;
 using Unity.Netcode;
 using TMPro;
+using System.Collections;
+using UnityEngine.SceneManagement;
 
 public class GestorHistoriaPartida : NetworkBehaviour
 {
@@ -10,6 +12,7 @@ public class GestorHistoriaPartida : NetworkBehaviour
     private const int AbrirPuerta = 2;
     private const int MisionCompletada = 3;
     private bool animacionAperturaEjecutada;
+    private bool transicionSafeZoneIniciada;
 
     [Header("Tarjeta de acceso")]
     [SerializeField] private GameObject tarjetaPrefab;
@@ -267,84 +270,155 @@ public class GestorHistoriaPartida : NetworkBehaviour
         SolicitarAbrirPuertaRpc();
     }
 
-    [Rpc(
-        SendTo.Server,
-        InvokePermission = RpcInvokePermission.Everyone
-    )]
-    private void SolicitarAbrirPuertaRpc(
-        RpcParams rpcParams = default
-    )
+[Rpc(
+    SendTo.Server,
+    InvokePermission = RpcInvokePermission.Everyone
+)]
+private void SolicitarAbrirPuertaRpc(
+    RpcParams rpcParams = default
+)
+{
+    if (!IsServer || !EsHistoriaLaboratorio())
+        return;
+
+    if (EstadoMisionNetwork.Value != AbrirPuerta)
+        return;
+
+    ulong clientId = rpcParams.Receive.SenderClientId;
+
+    if (ClienteConTarjetaNetwork.Value != clientId)
     {
-        if (!IsServer || !EsHistoriaLaboratorio())
-            return;
-
-        if (EstadoMisionNetwork.Value != AbrirPuerta)
-            return;
-
-        ulong clientId = rpcParams.Receive.SenderClientId;
-
-        if (ClienteConTarjetaNetwork.Value != clientId)
-            return;
-
-        if (puntoLectorPuerta == null)
-        {
-            Debug.LogError(
-                "[Historia] No asignaste el punto del lector."
-            );
-            return;
-        }
-
-        if (!JugadorCercaDelPunto(
-            clientId,
-            puntoLectorPuerta.position,
-            distanciaInteraccion))
-            return;
-
-        if (animacionPuerta == null)
-        {
-            Debug.LogError(
-                "[Historia] No asignaste PuertaAnimacionHistoria."
-            );
-            return;
-        }
-
-        PuertaAbiertaNetwork.Value = true;
-        EstadoMisionNetwork.Value = MisionCompletada;
-
-        if (RoundManager.Instance != null)
-        {
-            RoundManager.Instance.DetenerSpawnsHistoria();
-        }
-        else
-        {
-            Debug.LogWarning(
-                "[Historia] No se encontró RoundManager " +
-                "para detener los spawns."
-            );
-        }
-
-        Debug.Log(
-            "[Historia] Misión completada. Iniciando apertura de la puerta."
+        Debug.LogWarning(
+            "[Historia] El jugador no tiene la tarjeta de acceso."
         );
+        return;
     }
 
-    private void AlCambiarEstadoPuerta(
-        bool estadoAnterior,
-        bool estadoNuevo
-    )
+    if (puntoLectorPuerta == null)
     {
-        AplicarEstadoPuerta(estadoNuevo);
+        Debug.LogError(
+            "[Historia] No asignaste el punto del lector."
+        );
+        return;
     }
 
+    if (!JugadorCercaDelPunto(
+        clientId,
+        puntoLectorPuerta.position,
+        distanciaInteraccion))
+    {
+        Debug.LogWarning(
+            "[Historia] El jugador está demasiado lejos del lector."
+        );
+        return;
+    }
+
+    if (animacionPuerta == null)
+    {
+        Debug.LogError(
+            "[Historia] No asignaste PuertaAnimacionHistoria."
+        );
+        return;
+    }
+
+    PuertaAbiertaNetwork.Value = true;
+    EstadoMisionNetwork.Value = MisionCompletada;
+
+    if (RoundManager.Instance != null)
+        RoundManager.Instance.DetenerSpawnsHistoria();
+
+    Debug.Log(
+        "[Historia] Misión completada. Esperando la animación de la puerta."
+    );
+
+    if (SceneManager.GetActiveScene().name == "MainSceneSinglePlayer"
+        && !transicionSafeZoneIniciada)
+    {
+        transicionSafeZoneIniciada = true;
+        StartCoroutine(EsperarAnimacionYActivarSafeZone1(clientId));
+    }
+}
+
+private IEnumerator EsperarAnimacionYActivarSafeZone1(
+    ulong clientId
+)
+{
+    // Esperar hasta que la animación termine.
+    float tiempoMaximoEspera = 15f;
+    float tiempoTranscurrido = 0f;
+
+    while (!animacionPuerta.AnimacionFinalizada
+        && tiempoTranscurrido < tiempoMaximoEspera)
+    {
+        tiempoTranscurrido += Time.deltaTime;
+        yield return null;
+    }
+
+    if (!animacionPuerta.AnimacionFinalizada)
+    {
+        Debug.LogError(
+            "[Historia] No se pudo confirmar el final de la animación. " +
+            "No se realizará la transición."
+        );
+        transicionSafeZoneIniciada = false;
+        yield break;
+    }
+
+    if (NetworkManager.Singleton == null
+        || !NetworkManager.Singleton.ConnectedClients.TryGetValue(
+            clientId,
+            out NetworkClient cliente)
+        || cliente.PlayerObject == null)
+    {
+        Debug.LogError(
+            "[Historia] No se encontró el jugador para trasladarlo."
+        );
+        yield break;
+    }
+
+    GestorEscenariosPartida gestorEscenarios =
+        GestorEscenariosPartida.Instance;
+
+    if (gestorEscenarios == null)
+    {
+        Debug.LogError(
+            "[Historia] No se encontró GestorEscenariosPartida."
+        );
+        yield break;
+    }
+
+    gestorEscenarios.TransicionarASafeZone1(
+        cliente.PlayerObject.transform
+    );
+
+    Debug.Log(
+        "[Historia] Puerta abierta. Jugador trasladado a SafeZone1."
+    );
+}
+private void AlCambiarEstadoPuerta(
+    bool estadoAnterior,
+    bool estadoNuevo)
+{
+    AplicarEstadoPuerta(estadoNuevo);
+}
    
 
 private void AplicarEstadoPuerta(bool abierta)
 {
+    Debug.Log(
+        $"[Historia] AplicarEstadoPuerta({abierta}). " +
+        $"Animator asignado: {animacionPuerta != null}.",
+        this
+    );
+
     if (!abierta)
         return;
 
     if (animacionAperturaEjecutada)
+    {
+        Debug.Log("[Historia] La apertura ya se había ejecutado.", this);
         return;
+    }
 
     if (animacionPuerta == null)
     {
@@ -355,15 +429,9 @@ private void AplicarEstadoPuerta(bool abierta)
         return;
     }
 
-    // Evita ejecutar la animación más de una vez
-    // en esta instancia.
     animacionAperturaEjecutada = true;
 
-    Debug.Log(
-        "[Historia] Misión completada. Reproduciendo apertura de puerta.",
-        this
-    );
-
+    Debug.Log("[Historia] Llamando a AbrirPuerta().", this);
     animacionPuerta.AbrirPuerta();
 }
 

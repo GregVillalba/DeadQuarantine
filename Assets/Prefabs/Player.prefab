@@ -26662,7 +26662,6 @@ GameObject:
   m_Component:
   - component: {fileID: 2883292750241744731}
   - component: {fileID: 4105371250691294993}
-  - component: {fileID: 586061314637767017}
   - component: {fileID: 7689462574803190256}
   m_Layer: 3
   m_Name: WeaponCamera
@@ -26739,14 +26738,6 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!81 &586061314637767017
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4340520466520270462}
-  m_Enabled: 1
 --- !u!114 &7689462574803190256
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -33608,7 +33599,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   playerCamera: {fileID: 8884011811728304703}
   weaponCamera: {fileID: 4105371250691294993}
-  audioListener: {fileID: 586061314637767017}
+  audioListener: {fileID: 0}
   playerBody: {fileID: 2900551992113962621}
   localBodyLayer: LocalPlayerBody
   remoteBodyLayer: ThirdPersonBody
@@ -59830,7 +59821,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Scripts::MultiplayerPlayerCamera
   ShowTopMostFoldoutHeaderGroup: 1
   playerCamera: {fileID: 8884011811728304703}
-  audioListener: {fileID: 586061314637767017}
+  audioListener: {fileID: 0}
 --- !u!1 &8473775903894595391
 GameObject:
   m_ObjectHideFlags: 0

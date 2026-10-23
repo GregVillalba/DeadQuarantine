@@ -1,13 +1,19 @@
 
 using UnityEngine;
+using System.Collections;
 
 public class PuertaAnimacionHistoria : MonoBehaviour
 {
     [SerializeField] private Animator animator;
 
     private bool animacionIniciada;
+    private bool animacionFinalizada;
+    private Coroutine comprobacionActual;
+
     private static readonly int EstadoAbrirPuerta =
-        Animator.StringToHash("abrirPuerta");
+        Animator.StringToHash("Base Layer.abrirPuerta");
+
+    public bool AnimacionFinalizada => animacionFinalizada;
 
     private void Awake()
     {
@@ -23,32 +29,143 @@ public class PuertaAnimacionHistoria : MonoBehaviour
             return;
         }
 
-        // Mantiene el estado inicial sin avanzar la animación.
-        animator.speed = 0f;
-    }
-
-    public void AbrirPuerta()
-    {
-        if (animator == null || animacionIniciada)
-            return;
-
         if (!animator.HasState(0, EstadoAbrirPuerta))
         {
             Debug.LogError(
-                "[Puerta] No existe el estado AbrirPuerta en el Animator.",
+                "[Puerta] No existe el estado Base Layer.abrirPuerta.",
                 this
             );
             return;
         }
 
-        animacionIniciada = true;
-        animator.speed = 1f;
+        // Coloca la puerta en la posición inicial del clip.
+        animator.enabled = true;
         animator.Play(EstadoAbrirPuerta, 0, 0f);
         animator.Update(0f);
+        animator.speed = 0f;
 
         Debug.Log(
-            "[Puerta] Animación de apertura iniciada.",
+            "[Puerta] Animator preparado en el inicio del clip.",
             this
         );
+    }
+
+    public void AbrirPuerta()
+    {
+        Debug.Log("[Puerta] Solicitud de apertura recibida.", this);
+
+        if (animator == null)
+        {
+            Debug.LogError("[Puerta] Animator sin asignar.", this);
+            return;
+        }
+
+        if (!animator.HasState(0, EstadoAbrirPuerta))
+        {
+            Debug.LogError(
+                "[Puerta] No se puede reproducir abrirPuerta.",
+                this
+            );
+            return;
+        }
+
+        if (comprobacionActual != null)
+            StopCoroutine(comprobacionActual);
+
+        animacionIniciada = true;
+        animacionFinalizada = false;
+
+        animator.enabled = true;
+        animator.speed = 1f;
+        animator.Play(EstadoAbrirPuerta, 0, 0f);
+
+        Debug.Log(
+            $"[Puerta] Reproducción iniciada. " +
+            $"Objeto: {animator.gameObject.name}, " +
+            $"Animator habilitado: {animator.enabled}, " +
+            $"Velocidad: {animator.speed}",
+            this
+        );
+
+        comprobacionActual = StartCoroutine(ComprobarAnimacion());
+    }
+
+    private IEnumerator ComprobarAnimacion()
+    {
+        float tiempoTranscurrido = 0f;
+        float tiempoUltimoLog = 0f;
+        const float tiempoMaximo = 12f;
+
+        // Permite que Unity actualice el estado del Animator.
+        yield return null;
+
+        while (tiempoTranscurrido < tiempoMaximo)
+        {
+            if (animator == null || !animator.enabled)
+            {
+                Debug.LogError(
+                    "[Puerta] El Animator se deshabilitó durante la animación.",
+                    this
+                );
+                yield break;
+            }
+
+            AnimatorStateInfo estado =
+                animator.GetCurrentAnimatorStateInfo(0);
+
+            bool estadoCorrecto = estado.IsName("abrirPuerta");
+
+            if (estadoCorrecto)
+            {
+                if (tiempoTranscurrido - tiempoUltimoLog >= 0.5f)
+                {
+                    Debug.Log(
+                        $"[Puerta] Animando. " +
+                        $"Progreso: {estado.normalizedTime:P0}, " +
+                        $"Velocidad: {animator.speed}",
+                        this
+                    );
+
+                    tiempoUltimoLog = tiempoTranscurrido;
+                }
+
+                if (estado.normalizedTime >= 1f)
+                {
+                    animacionFinalizada = true;
+
+                    // Mantiene la puerta en su pose final.
+                    animator.speed = 0f;
+
+                    Debug.Log(
+                        "[Puerta] Animación finalizada correctamente.",
+                        this
+                    );
+
+                    comprobacionActual = null;
+                    yield break;
+                }
+            }
+            else if (tiempoTranscurrido - tiempoUltimoLog >= 0.5f)
+            {
+                Debug.LogWarning(
+                    $"[Puerta] El estado actual no es abrirPuerta. " +
+                    $"Estado: {estado.fullPathHash}, " +
+                    $"Tiempo: {estado.normalizedTime:F2}",
+                    this
+                );
+
+                tiempoUltimoLog = tiempoTranscurrido;
+            }
+
+            tiempoTranscurrido += Time.deltaTime;
+            yield return null;
+        }
+
+        Debug.LogError(
+            "[Puerta] La animación no llegó a su final en 12 segundos.",
+            this
+        );
+
+        comprobacionActual = null;
     }
 }
