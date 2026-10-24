@@ -127,6 +127,24 @@ public class PlayerRecursos : NetworkBehaviour
     }
 
     // =========================================================
+    // RECURSOS DEL MAPA
+    // =========================================================
+
+    // Lo pide InteraccionRecursoEscenario al apretar la tecla de interacción mirando un recurso.
+    // El servidor revisa que siga en el mapa, que el jugador esté cerca y que pueda juntar.
+    [ServerRpc]
+    public void RecolectarRecursoEscenarioServerRpc(NetworkObjectReference referencia)
+    {
+        if (!referencia.TryGet(out NetworkObject objeto))
+            return;
+
+        RecursoEscenario recurso = objeto.GetComponent<RecursoEscenario>();
+
+        if (recurso != null)
+            recurso.IntentarRecolectar(this);
+    }
+
+    // =========================================================
     // COMPRAS EN LA TIENDA DEL MERCADER
     // =========================================================
 
