@@ -25,6 +25,9 @@ public class GuardarScoreCartelUI : MonoBehaviour
     [SerializeField] private string mensajeError = "No se pudo subir. Reintentá o cancelá.";
     [SerializeField] private float segundosAntesDeCerrar = 1.5f;
 
+    [Header("Reglas de Guardado")]
+    [SerializeField] private int puntajeMinimoParaGuardar = 50;
+
 
     [Serializable]
     private class RankingEntry
@@ -148,6 +151,13 @@ public class GuardarScoreCartelUI : MonoBehaviour
 
     public void AbrirCartel(string username, int puntos, string modo, Action onFinalizado, MonoBehaviour runner = null, string dificultad = "Normal")
     {
+        if (puntos < puntajeMinimoParaGuardar)
+        {
+            Debug.Log($"[GuardarScoreCartelUI] Score {puntos} menor al mínimo ({puntajeMinimoParaGuardar}). No se guarda.");
+            onFinalizado?.Invoke();
+            return;
+        }
+
         nombreJugador = string.IsNullOrWhiteSpace(username) ? "Superviviente" : username;
         scoreJugador = puntos;
         modoJugador = modo;

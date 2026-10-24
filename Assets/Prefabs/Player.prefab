@@ -12399,6 +12399,7 @@ MonoBehaviour:
   mensajeCancelado: Acceso denegado
   mensajeError: "No se pudo subir. Reintent\xE1 o cancel\xE1."
   segundosAntesDeCerrar: 1.5
+  puntajeMinimoParaGuardar: 50
 --- !u!1 &1438645878274739300
 GameObject:
   m_ObjectHideFlags: 0
@@ -16600,15 +16601,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Scripts::StoryIntroController
   ShowTopMostFoldoutHeaderGroup: 1
-  popupHistoria_Laboratorio: {fileID: 8483810448200971596}
-  popupHistoria_Ciudad: {fileID: 4863874000411306543}
-  popupHistoria_Cabana: {fileID: 7023628306486032976}
-  popupRonda5_Laboratorio: {fileID: 6302237213343363267}
-  popupRonda5_Ciudad: {fileID: 521651308430970277}
-  popupRonda5_Cabana: {fileID: 6302237213343363267}
-  popupSupervivencia_Laboratorio: {fileID: 1674061147031698570}
-  popupSupervivencia_Ciudad: {fileID: 1054505469544650475}
-  popupSupervivencia_Cabana: {fileID: 1855443285527007338}
+  popupHistoria: {fileID: 7023628306486032976}
+  textoSubtitulo: {fileID: 9165475465549621239}
+  textoTitulo: {fileID: 3384865128856622778}
+  textoDescripcion: {fileID: 538548539202833586}
   hud: {fileID: 7067101472329872928}
   playerMovement: {fileID: 7292988215955829792}
   playerLook: {fileID: 4561189841502104425}
@@ -20730,6 +20726,7 @@ MonoBehaviour:
   textoListo: Listo
   textoEsperandoListo: Esperando...
   formatoMensajeBloqueado: Abierto luego de rondas {0}
+  mensajeBloqueadoHistoria: Solo se puede comerciar en la zona segura
   duracionMensajeBloqueado: 3
   audioSource: {fileID: 0}
   openSound: {fileID: 0}
@@ -20969,7 +20966,7 @@ GameObject:
   - component: {fileID: 633521865188829514}
   - component: {fileID: 9165475465549621239}
   m_Layer: 5
-  m_Name: Text (TMP) (2)
+  m_Name: sub
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -21022,7 +21019,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: CHECKPOINT!
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -24200,7 +24197,7 @@ GameObject:
   - component: {fileID: 4243904970381434704}
   - component: {fileID: 538548539202833586}
   m_Layer: 5
-  m_Name: Text (TMP)
+  m_Name: obj+desc
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -24253,11 +24250,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "El grupo de refugiados fue dividido en distintos puntos seguros del bosque.
-    Nos ordenaron mantener la calma, aunque nos advirtieron de un infectado mutante
-    enorme capaz de comandar oleadas de infectados que atacan bases militares en
-    grupo. Ese mutante es la prioridad m\xE1xima, en caso de verlo hay que eliminarlo
-    para acabar con esta pesadilla.\n\nOBJETIVO: Acabar con el zombie mutante."
+  m_text: '
+
+'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -33983,7 +33978,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1614284941
+  GlobalObjectIdHash: 3516423437
   InScenePlacedSourceGlobalObjectIdHash: 477224611
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -34671,9 +34666,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Scripts::DetectorAlturaRadioHistoria
   alturaMinima: 3
   tiempoEnAltura: 1.5
-  capasSuelo:
-    serializedVersion: 2
-    m_Bits: 0
+  tagSuelo: SueloCiudad
   distanciaMaximaSuelo: 50
   origenRaycastExtra: 0.2
   alEncontrarSenal:
@@ -38109,7 +38102,7 @@ GameObject:
   - component: {fileID: 7205304000670463320}
   - component: {fileID: 3384865128856622778}
   m_Layer: 5
-  m_Name: Text (TMP)
+  m_Name: tit
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -38162,7 +38155,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "HISTORIA: \xBFC\xF3mo terminamos aqui?\n"
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -48354,7 +48347,7 @@ GameObject:
   - component: {fileID: 5922340859583607732}
   - component: {fileID: 3047082618113026711}
   m_Layer: 5
-  m_Name: "Historia_caba\xF1a_historia"
+  m_Name: historia_general
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

@@ -13,8 +13,8 @@ public class AchievementsManager : MonoBehaviour
     public static AchievementsManager Instance { get; private set; }
 
     [Header("Configuración Backend / Base de Datos")]
-    [SerializeField]
-    private string apiUrl = "http://localhost:3000/api/logros/desbloquear";
+  
+    private const string apiUrl = "https://dead-quarentine-web.wasmer.app/api/logros/desbloquear";
 
     [SerializeField]
     private string usernameJugador = "UserUnity";
@@ -36,6 +36,50 @@ public class AchievementsManager : MonoBehaviour
     private PlayerScore playerScore;
     private string rutaArchivo;
     private AchievementsData datos;
+
+    [System.Serializable]
+    private class LogroApiPayload
+    {
+        public string id_local;
+        public string username;
+        public string sublogro_clave;
+    }
+
+    [SerializeField]
+    private string idLocalJugador = "";
+
+    public string IdLocalJugador
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(idLocalJugador))
+            {
+                if (PlayerPrefs.HasKey("UsuarioIdLocal"))
+                    idLocalJugador = PlayerPrefs.GetString("UsuarioIdLocal");
+                else
+                {
+                    idLocalJugador = System.Guid.NewGuid().ToString();
+                    PlayerPrefs.SetString("UsuarioIdLocal", idLocalJugador);
+                    PlayerPrefs.Save();
+                }
+            }
+            return idLocalJugador;
+        }
+        set => idLocalJugador = value;
+    }
+
+    public string ObtenerUserId()
+    {
+        try
+        {
+            string id = PlayerIdentity.GetUserId();
+            if (!string.IsNullOrEmpty(id)) return id;
+        }
+        catch { }
+
+        // Fallback si corre fuera de sesión
+        return SystemInfo.deviceUniqueIdentifier;
+    }
 
     // ============================================================
     // COMPROBAR SI LOS LOGROS ESTÁN HABILITADOS
@@ -78,13 +122,6 @@ public class AchievementsManager : MonoBehaviour
     }
 
     [System.Serializable]
-    private class LogroApiPayload
-    {
-        public string username;
-        public string sublogro_clave;
-    }
-
-    [System.Serializable]
     private class LogroApiResponse
     {
         public bool success;
@@ -115,11 +152,35 @@ public class AchievementsManager : MonoBehaviour
         CargarProgreso();
         InicializarBaseDeDatos();
         InicializarLogros();
+        SincronizarLogrosPrevios();
 
         Debug.Log(
             "[ACHIEVEMENTS] Gestor inicializado. Logros habilitados: " +
             LogrosHabilitados
         );
+    }
+
+    [ContextMenu("Probar GET")]
+private void ProbarGet() => StartCoroutine(ProbarGetCoroutine());
+
+private IEnumerator ProbarGetCoroutine()
+{
+    using (UnityWebRequest r = UnityWebRequest.Get(apiUrl))
+    {
+        yield return r.SendWebRequest();
+        Debug.Log($"[TEST GET] {r.result} | HTTP {r.responseCode} | {r.error}");
+    }
+}
+    [ContextMenu("Probar Google")]
+    private void ProbarGoogle() => StartCoroutine(ProbarGoogleCoroutine());
+
+    private IEnumerator ProbarGoogleCoroutine()
+    {
+        using (UnityWebRequest r = UnityWebRequest.Get("https://www.google.com"))
+        {
+            yield return r.SendWebRequest();
+            Debug.Log($"[TEST GOOGLE] {r.result} | HTTP {r.responseCode} | {r.error}");
+        }
     }
 
     // ============================================================
@@ -662,7 +723,7 @@ public class AchievementsManager : MonoBehaviour
         StartCoroutine(EnviarSublogroCoroutine(sublogroClave));
     }
 
-    private string ObtenerClaveSublogro(
+    /*private string ObtenerClaveSublogro(
         AchievementId id,
         AchievementRank rango
     )
@@ -773,7 +834,156 @@ public class AchievementsManager : MonoBehaviour
                 );
             }
         }
+    }*/
+
+    public string ObtenerClaveSublogro(AchievementId id, AchievementRank rango)
+    {
+        switch (id)
+        {
+            case AchievementId.DerrotadorSupremo:
+                if (rango == AchievementRank.Bronce) return "derrotas_50";
+                if (rango == AchievementRank.Plata) return "derrotas_100";
+                if (rango == AchievementRank.Oro) return "derrotas_300";
+                break;
+
+            case AchievementId.MeDueleLaCabeza:
+                if (rango == AchievementRank.Bronce) return "headshots_50";
+                if (rango == AchievementRank.Plata) return "headshots_100";
+                if (rango == AchievementRank.Oro) return "headshots_300";
+                break;
+
+            case AchievementId.CompletadorDeRondas:
+                if (rango == AchievementRank.Bronce) return "rondas_normal";
+                if (rango == AchievementRank.Plata) return "rondas_dificil";
+                if (rango == AchievementRank.Oro) return "rondas_pesadilla";
+                break;
+
+            case AchievementId.SupervivienteDelInfierno:
+                if (rango == AchievementRank.Bronce) return "supervivencia_normal";
+                if (rango == AchievementRank.Plata) return "supervivencia_dificil";
+                if (rango == AchievementRank.Oro) return "supervivencia_pesadilla";
+                break;
+
+            case AchievementId.Historiador:
+                if (rango == AchievementRank.Bronce) return "historia_normal";
+                if (rango == AchievementRank.Plata) return "historia_dificil";
+                if (rango == AchievementRank.Oro) return "historia_pesadilla";
+                break;
+
+            case AchievementId.CampeonDelPoligono:
+                return "poligono_completado";
+
+            case AchievementId.DondeEstaWally:
+                if (rango == AchievementRank.Bronce) return "easter_egg_1";
+                if (rango == AchievementRank.Plata) return "easter_egg_2";
+                if (rango == AchievementRank.Oro) return "easter_egg_3";
+                break;
+        }
+        return null;
     }
+    private IEnumerator EnviarSublogroCoroutine(string sublogroClave)
+    {
+        string idUsuario = ObtenerUserId();
+        string nombre = string.IsNullOrEmpty(usernameJugador) ? "UserUnity" : usernameJugador;
+
+        LogroApiPayload payload = new LogroApiPayload
+        {
+            id_local = idUsuario,
+            username = nombre,
+            sublogro_clave = sublogroClave
+        };
+
+        string jsonPayload = JsonUtility.ToJson(payload);
+
+
+        // Aseguramos la URL sin espacios accidentales
+        string urlDestino = apiUrl.Trim();
+
+        Debug.Log($"[ACHIEVEMENTS API] Enviando '{sublogroClave}' a: {urlDestino} | Payload: {jsonPayload}");
+
+        using (UnityWebRequest request = new UnityWebRequest(urlDestino, "POST"))
+        {
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
+            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            request.downloadHandler = new DownloadHandlerBuffer();
+            request.SetRequestHeader("Content-Type", "application/json");
+            request.timeout = 10;
+
+            yield return request.SendWebRequest();
+
+            long httpCode = request.responseCode;
+
+            if (request.result == UnityWebRequest.Result.Success && (httpCode >= 200 && httpCode < 300))
+            {
+                Debug.Log($"<color=green>[ACHIEVEMENTS API] Éxito al sincronizar '{sublogroClave}' (HTTP {httpCode}).</color>");
+            }
+            else
+            {
+                Debug.LogWarning($"<color=red>[ACHIEVEMENTS API] Error al sincronizar '{sublogroClave}':</color> {request.error} (HTTP {httpCode}) | Detalle: {request.downloadHandler?.text}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Sincroniza con la base de datos todos los logros que ya fueron
+    /// completados en sesiones previas y guardados en achievements.json.
+    /// Llamar después de que el usuario inicie sesión y se conozca su IdLocal y Username.
+    /// </summary>
+    public void SincronizarLogrosPrevios()
+    {
+        if (BloqueoLogrosActivo())
+            return;
+
+        if (datos == null || datos.logros == null)
+            return;
+
+        Debug.Log("[ACHIEVEMENTS] Iniciando sincronización de progreso previo con la nube...");
+        StartCoroutine(SincronizarProgresoPrevioCoroutine());
+    }
+    private IEnumerator SincronizarProgresoPrevioCoroutine()
+    {
+        yield return new WaitForSeconds(0.5f); // Pausa inicial para estabilizar la sesión
+
+        if (datos?.logros == null) yield break;
+
+        foreach (AchievementData logro in datos.logros)
+        {
+            if (logro == null) continue;
+
+            string idLimpio = logro.id.Replace(" ", "");
+            if (!System.Enum.TryParse(idLimpio, true, out AchievementId idEnum)) continue;
+
+            // Caso 1: Logro sin rangos (ej: Campeón del Polígono) ya desbloqueado
+            if (logro.desbloqueado && logro.rangoActual == AchievementRank.Ninguno)
+            {
+                string clave = ObtenerClaveSublogro(idEnum, AchievementRank.Ninguno);
+                if (!string.IsNullOrEmpty(clave))
+                {
+                    yield return EnviarSublogroCoroutine(clave);
+                    yield return new WaitForSeconds(0.1f);
+                }
+                continue;
+            }
+
+            // Caso 2: Logros por niveles (Bronce, Plata, Oro)
+            if (logro.rangoActual >= AchievementRank.Bronce)
+            {
+                yield return EnviarSublogroCoroutine(ObtenerClaveSublogro(idEnum, AchievementRank.Bronce));
+                yield return new WaitForSeconds(0.1f);
+            }
+            if (logro.rangoActual >= AchievementRank.Plata)
+            {
+                yield return EnviarSublogroCoroutine(ObtenerClaveSublogro(idEnum, AchievementRank.Plata));
+                yield return new WaitForSeconds(0.1f);
+            }
+            if (logro.rangoActual >= AchievementRank.Oro)
+            {
+                yield return EnviarSublogroCoroutine(ObtenerClaveSublogro(idEnum, AchievementRank.Oro));
+                yield return new WaitForSeconds(0.1f);
+            }
+        }
+    }
+
 
     // ============================================================
     // OBTENER DEFINICIONES Y ESTADOS
