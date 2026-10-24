@@ -3,9 +3,15 @@ using Unity.Netcode;
 
 public class MultiplayerPlayerSpawner : NetworkBehaviour
 {
+    [Header("Jugadores")]
+    [Tooltip("Cantidad máxima de jugadores (y de lugares de spawn). El host siempre ocupa el 0.")]
+    [SerializeField] private int maxPlayers = 4;
+
     [Header("Spawns manuales de respaldo")]
     [SerializeField] private Transform playerSpawn1;
     [SerializeField] private Transform playerSpawn2;
+    [SerializeField] private Transform playerSpawn3;
+    [SerializeField] private Transform playerSpawn4;
 
     private ConfiguracionEscenarioJugable escenarioActivo;
 
@@ -97,21 +103,23 @@ public class MultiplayerPlayerSpawner : NetworkBehaviour
             return;
         }
 
-        int spawnIndex =
-            (clientId == NetworkManager.ServerClientId)
-                ? 0
-                : 1;
-
         MultiplayerPlayerSpawnAssigner assigner =
             client.PlayerObject.GetComponent<
                 MultiplayerPlayerSpawnAssigner
             >();
 
-        if (assigner != null)
-        {
-            assigner.AssignedSpawnIndex.Value =
-                spawnIndex;
-        }
+        if (assigner == null)
+            return;
+
+        // Si ya tiene lugar, no se lo cambia (podría pisar el de otro jugador).
+        if (assigner.AssignedSpawnIndex.Value >= 0)
+            return;
+
+        int spawnIndex =
+            GetFreeSpawnIndex(clientId);
+
+        assigner.AssignedSpawnIndex.Value =
+            spawnIndex;
 
         Debug.Log(
             "[Spawner] ClientId " +
@@ -119,6 +127,53 @@ public class MultiplayerPlayerSpawner : NetworkBehaviour
             " asignado a SpawnIndex " +
             spawnIndex
         );
+    }
+
+    // El host siempre toma el 0. Los demás toman el lugar libre más bajo (1, 2, 3...).
+    // Se calcula con los jugadores conectados, así si alguien se va su lugar se reutiliza.
+    private int GetFreeSpawnIndex(ulong clientId)
+    {
+        if (clientId == NetworkManager.ServerClientId)
+            return 0;
+
+        int slots = Mathf.Max(2, maxPlayers);
+        bool[] used = new bool[slots];
+
+        // El 0 queda reservado para el host aunque todavía no haya aparecido.
+        used[0] = true;
+
+        foreach (NetworkClient other in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            if (other.ClientId == clientId || other.PlayerObject == null)
+                continue;
+
+            MultiplayerPlayerSpawnAssigner otherAssigner =
+                other.PlayerObject.GetComponent<
+                    MultiplayerPlayerSpawnAssigner
+                >();
+
+            if (otherAssigner == null)
+                continue;
+
+            int index = otherAssigner.AssignedSpawnIndex.Value;
+
+            if (index >= 0 && index < slots)
+                used[index] = true;
+        }
+
+        for (int i = 1; i < slots; i++)
+        {
+            if (!used[i])
+                return i;
+        }
+
+        // Más jugadores que lugares: se repite uno antes que dejar a alguien sin spawn.
+        Debug.LogWarning(
+            "[Spawner] No quedan lugares libres (Max Players = " + slots +
+            "). Se repite un spawn para ClientId " + clientId
+        );
+
+        return 1 + (int)(clientId % (ulong)(slots - 1));
     }
 
     public Transform GetSpawnPoint(int index)
@@ -169,9 +224,30 @@ public class MultiplayerPlayerSpawner : NetworkBehaviour
             "del escenario activo. Se utilizará el spawn manual."
         );
 
-        return index == 0
-            ? playerSpawn1
-            : playerSpawn2;
+        return GetBackupSpawn(index);
+    }
+
+    private Transform GetBackupSpawn(int index)
+    {
+        Transform[] backups =
+        {
+            playerSpawn1,
+            playerSpawn2,
+            playerSpawn3,
+            playerSpawn4
+        };
+
+        if (index >= 0 && index < backups.Length && backups[index] != null)
+            return backups[index];
+
+        // Falta el punto de ese lugar: se usa el primero que exista para que nadie quede sin spawn.
+        for (int i = 0; i < backups.Length; i++)
+        {
+            if (backups[i] != null)
+                return backups[i];
+        }
+
+        return null;
     }
 
     public override void OnDestroy()

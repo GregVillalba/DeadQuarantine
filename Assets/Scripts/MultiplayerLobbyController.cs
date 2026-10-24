@@ -58,6 +58,11 @@ public class MultiplayerLobbyController : MonoBehaviour
     [Tooltip("Botón PERSONAJE: se desactiva al marcar LISTO (la elección queda fija).")]
     [SerializeField] private Button btnPersonaje;
 
+    [Header("--- MENSAJE EMERGENTE (sala llena, sala cerrada...) ---")]
+    [SerializeField] private GameObject popupMensaje;
+    [SerializeField] private TMP_Text popupMensajeTitulo;
+    [SerializeField] private TMP_Text popupMensajeTexto;
+
     [Header("--- BOTÓN LISTO ---")]
     [SerializeField] private Button btnPlayMultiplayer;
     [SerializeField] private TMP_Text btnPlayMultiplayerText;
@@ -98,6 +103,12 @@ public class MultiplayerLobbyController : MonoBehaviour
 
     private int ultimoPersonajePublicado = -1;
     private float proximoPublicarPersonaje = 0f;
+
+    // Presencia: detecta a los que cerraron el juego sin salir de la sala.
+    private readonly LobbyPresence presence = new LobbyPresence();
+    private readonly HashSet<string> removiendo = new HashSet<string>();
+    private bool presenciaActiva;
+    private bool saliendoPorCierre;
 
     private void Awake()
     {
@@ -187,7 +198,17 @@ public class MultiplayerLobbyController : MonoBehaviour
     private void Update()
     {
         if (!estoyEnSala)
+        {
+            presenciaActiva = false;
             return;
+        }
+
+        if (!presenciaActiva)
+        {
+            presenciaActiva = true;
+            presence.Reset();
+            removiendo.Clear();
+        }
 
         ActualizarEstadoSala();
         PublicarPersonajeSiCambio();
@@ -339,6 +360,30 @@ public class MultiplayerLobbyController : MonoBehaviour
                 );
                 MostrarCodigoInvalido();
 
+                switch (network.LastJoinFailReason)
+                {
+                    case NetworkBootstrap.JoinFailReason.SessionFull:
+                        MostrarMensaje(
+                            "SALA LLENA",
+                            "La sala ya tiene el máximo de " + NetworkBootstrap.MaxPlayersPerRoom + " jugadores."
+                        );
+                        break;
+
+                    case NetworkBootstrap.JoinFailReason.NotFound:
+                        MostrarMensaje(
+                            "SALA NO ENCONTRADA",
+                            "No existe una sala con ese código. Revisalo e intentá de nuevo."
+                        );
+                        break;
+
+                    default:
+                        MostrarMensaje(
+                            "NO SE PUDO ENTRAR",
+                            "No se pudo conectar a la sala. Intentá de nuevo."
+                        );
+                        break;
+                }
+
                 return;
             }
 
@@ -459,8 +504,14 @@ public class MultiplayerLobbyController : MonoBehaviour
             return;
         }
 
-        var jugadores =
-            network.CurrentSession.Players;
+        // Presencia: latido propio + detectar jugadores que ya no dan señales (cerraron el juego sin salir).
+        presence.Tick(network.CurrentSession);
+
+        if (RevisarCierreDeSala())
+            return;
+
+        List<IReadOnlyPlayer> jugadores =
+            FiltrarJugadoresVivos(network.CurrentSession.Players);
 
         bool jugador1Conectado =
             jugadores.Count >= 1;
@@ -1076,7 +1127,11 @@ public class MultiplayerLobbyController : MonoBehaviour
         {
             try
             {
-                await network.CurrentSession.LeaveAsync();
+                // El anfitrión que sale cierra la sala (avisa a los demás); un invitado solo sale.
+                if (network.CurrentSession.IsHost)
+                    await network.CerrarSalaComoHost();
+                else
+                    await network.CurrentSession.LeaveAsync();
             }
             catch (Exception e)
             {
@@ -1087,10 +1142,132 @@ public class MultiplayerLobbyController : MonoBehaviour
             }
         }
 
+        LimpiarSlots();
+
         if (countdownPanel != null)
         {
             countdownPanel.SetActive(false);
         }
+    }
+
+    // =========================================================
+    // PRESENCIA, SALA CERRADA Y MENSAJES
+    // =========================================================
+
+    // Deja solo a los jugadores que siguen en la sala. Si soy el anfitrión, libero el lugar de los que no dan señales.
+    private List<IReadOnlyPlayer> FiltrarJugadoresVivos(IReadOnlyList<IReadOnlyPlayer> todos)
+    {
+        ISession sesion = network.CurrentSession;
+        List<IReadOnlyPlayer> vivos = new List<IReadOnlyPlayer>(todos.Count);
+
+        for (int i = 0; i < todos.Count; i++)
+        {
+            IReadOnlyPlayer p = todos[i];
+
+            if (presence.IsAlive(p, sesion))
+            {
+                vivos.Add(p);
+            }
+            else if (sesion.IsHost && removiendo.Add(p.Id))
+            {
+                _ = QuitarJugador(p.Id);
+            }
+        }
+
+        return vivos;
+    }
+
+    private async Task QuitarJugador(string playerId)
+    {
+        try
+        {
+            await network.CurrentSession.AsHost().RemovePlayerAsync(playerId);
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning("[Lobby] No pude quitar al jugador desconectado: " + e.Message);
+
+            // Se reintenta más adelante.
+            await Task.Delay(5000);
+            removiendo.Remove(playerId);
+        }
+    }
+
+    // INVITADO: ¿el anfitrión cerró la sala o dejó de dar señales? Devuelve true si ya se está saliendo.
+    private bool RevisarCierreDeSala()
+    {
+        ISession sesion = network.CurrentSession;
+
+        if (sesion.IsHost || saliendoPorCierre)
+            return saliendoPorCierre;
+
+        // 1) El anfitrión avisó que cierra.
+        if (sesion.Properties.TryGetValue(NetworkBootstrap.CerradaProperty, out var cerrada) &&
+            cerrada.Value == "1")
+        {
+            ManejarSalaCerrada("SALA CERRADA", "El anfitrión cerró la sala.");
+            return true;
+        }
+
+        // 2) El anfitrión cerró el juego sin avisar: dejó de latir.
+        string hostId = sesion.Host;
+        IReadOnlyList<IReadOnlyPlayer> todos = sesion.Players;
+
+        for (int i = 0; i < todos.Count; i++)
+        {
+            if (todos[i].Id == hostId && !presence.IsAlive(todos[i], sesion))
+            {
+                ManejarSalaCerrada("SALA CERRADA", "Se perdió la conexión con el anfitrión.");
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private async void ManejarSalaCerrada(string titulo, string texto)
+    {
+        if (saliendoPorCierre)
+            return;
+
+        saliendoPorCierre = true;
+
+        await SalirDeSala();
+
+        MostrarPanel(modoMultiplayerPanel);
+        MostrarMensaje(titulo, texto);
+
+        saliendoPorCierre = false;
+    }
+
+    private void LimpiarSlots()
+    {
+        if (slots == null)
+            return;
+
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (slots[i] != null)
+                slots[i].SetEmpty();
+        }
+    }
+
+    // Ventana emergente genérica con un botón ACEPTAR (que cierra la ventana).
+    private void MostrarMensaje(string titulo, string texto)
+    {
+        if (popupMensaje == null)
+        {
+            Debug.LogWarning("[Lobby] " + titulo + ": " + texto + " (asigná 'Popup Mensaje' en el controlador para mostrarlo en pantalla)");
+            return;
+        }
+
+        if (popupMensajeTitulo != null)
+            popupMensajeTitulo.text = titulo;
+
+        if (popupMensajeTexto != null)
+            popupMensajeTexto.text = texto;
+
+        popupMensaje.SetActive(true);
     }
 
     // =========================================================

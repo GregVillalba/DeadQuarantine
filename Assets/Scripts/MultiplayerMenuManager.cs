@@ -215,6 +215,40 @@ public class MultiplayerMenuManager : MonoBehaviour
             aparienciaPanel.SetActive(true);
 
         ResetearApariencia();
+
+        // El personaje ya no se elige acá (se elige en la ventana PERSONAJE del lobby): se salta ese paso.
+        AvanzarSinSeleccionDePersonaje();
+    }
+
+    // Reemplaza al paso viejo "elegir Jugador1 / Jugador2": va directo a elegir el escenario (o a comenzar en Historia).
+    private void AvanzarSinSeleccionDePersonaje()
+    {
+        // El sistema viejo necesita un personaje "elegido" para poder comenzar (se guarda como Jugador1).
+        jugador1Listo = true;
+
+        OcultarAvisoInhabilitado();
+
+        if (panelPersonaje != null)
+            panelPersonaje.SetActive(false);
+
+        if (modoActual == ModoSeleccionado.Historia)
+        {
+            // Historia empieza directamente en el Laboratorio.
+            escenarioLista = true;
+
+            if (panelEscenario != null)
+                panelEscenario.SetActive(false);
+        }
+        else
+        {
+            // Los demás modos eligen escenario.
+            escenarioLista = false;
+
+            if (panelEscenario != null)
+                panelEscenario.SetActive(true);
+        }
+
+        ValidarComenzar();
     }
 
     public void SeleccionarDificultadNormal(GameObject marcoSeleccionado)
