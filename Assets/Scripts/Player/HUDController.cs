@@ -127,6 +127,7 @@ public class HUDController : MonoBehaviour
     [SerializeField] private float hitMarkerDuration = 0.10f;
     [SerializeField] private float headshotHitMarkerDuration = 1.5f;
     [SerializeField] private Color headshotHitMarkerColor = new Color(1f, 0.84f, 0f); // dorado
+    [SerializeField] private GameObject headshotSkull;
 
     private Image[] hitMarkerImages;
 
@@ -1115,6 +1116,9 @@ public void ShowHitMarker(bool killedZombie, bool headshot = false)
         }
     }
 
+    if (headshotSkull != null)
+        headshotSkull.SetActive(headshot && killedZombie);
+
     if (hitMarkerCoroutine != null)
     {
         StopCoroutine(
@@ -1141,6 +1145,9 @@ private IEnumerator HitMarkerRoutine(float duration)
     );
 
     hitMarker.SetActive(false);
+
+    if (headshotSkull != null)
+        headshotSkull.SetActive(false);
 
     hitMarkerCoroutine = null;
 }

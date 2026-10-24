@@ -580,9 +580,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1699b914376f3fa4e87207072b5e37fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Scripts::ZombieHeadshot
-  muerteInstantanea: 1
+  muerteInstantanea: 0
   multiplicadorDano: 2
-  puntosExtraHeadshot: 0
+  porcentajeVidaMaxima: 0
+  puntosExtraHeadshot: 50
+  usarEscaladoPorDificultad: 1
+  porcentajeBase:
+  - 0.8
+  - 0.65
+  - 0.5
+  reduccionPorRonda: 0.01
+  porcentajeMinimo: 0.4
 --- !u!1 &1084862080733014
 GameObject:
   m_ObjectHideFlags: 0

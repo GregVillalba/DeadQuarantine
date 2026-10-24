@@ -3086,7 +3086,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 257178927
+  GlobalObjectIdHash: 1411454161
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -3385,7 +3385,14 @@ MonoBehaviour:
   muerteInstantanea: 0
   multiplicadorDano: 2
   porcentajeVidaMaxima: 0.5
-  puntosExtraHeadshot: 0
+  puntosExtraHeadshot: 50
+  usarEscaladoPorDificultad: 1
+  porcentajeBase:
+  - 0.5
+  - 0.4
+  - 0.3
+  reduccionPorRonda: 0.01
+  porcentajeMinimo: 0.2
 --- !u!1 &1972321633568710
 GameObject:
   m_ObjectHideFlags: 0
