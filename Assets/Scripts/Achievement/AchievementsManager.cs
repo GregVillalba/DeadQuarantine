@@ -13,10 +13,8 @@ public class AchievementsManager : MonoBehaviour
     public static AchievementsManager Instance { get; private set; }
 
     [Header("Configuración Backend / Base de Datos")]
-    [SerializeField]
-    //private string apiUrl = http://
-    //localhost:3000/api/logros/desbloquear
-    private string apiUrl = "https://dead-quarentine-web.wasmer.app/api/logros/desbloquear";
+  
+    private const string apiUrl = "https://dead-quarentine-web.wasmer.app/api/logros/desbloquear";
 
     [SerializeField]
     private string usernameJugador = "UserUnity";
@@ -68,6 +66,19 @@ public class AchievementsManager : MonoBehaviour
             return idLocalJugador;
         }
         set => idLocalJugador = value;
+    }
+
+    public string ObtenerUserId()
+    {
+        try
+        {
+            string id = PlayerIdentity.GetUserId();
+            if (!string.IsNullOrEmpty(id)) return id;
+        }
+        catch { }
+
+        // Fallback si corre fuera de sesión
+        return SystemInfo.deviceUniqueIdentifier;
     }
 
     // ============================================================
@@ -147,6 +158,29 @@ public class AchievementsManager : MonoBehaviour
             "[ACHIEVEMENTS] Gestor inicializado. Logros habilitados: " +
             LogrosHabilitados
         );
+    }
+
+    [ContextMenu("Probar GET")]
+private void ProbarGet() => StartCoroutine(ProbarGetCoroutine());
+
+private IEnumerator ProbarGetCoroutine()
+{
+    using (UnityWebRequest r = UnityWebRequest.Get(apiUrl))
+    {
+        yield return r.SendWebRequest();
+        Debug.Log($"[TEST GET] {r.result} | HTTP {r.responseCode} | {r.error}");
+    }
+}
+    [ContextMenu("Probar Google")]
+    private void ProbarGoogle() => StartCoroutine(ProbarGoogleCoroutine());
+
+    private IEnumerator ProbarGoogleCoroutine()
+    {
+        using (UnityWebRequest r = UnityWebRequest.Get("https://www.google.com"))
+        {
+            yield return r.SendWebRequest();
+            Debug.Log($"[TEST GOOGLE] {r.result} | HTTP {r.responseCode} | {r.error}");
+        }
     }
 
     // ============================================================
@@ -802,118 +836,90 @@ public class AchievementsManager : MonoBehaviour
         }
     }*/
 
-
-    private string ObtenerClaveSublogro(AchievementId id, AchievementRank rango)
+    public string ObtenerClaveSublogro(AchievementId id, AchievementRank rango)
     {
         switch (id)
         {
-            // 1. Derrotador supremo (Bajas)
             case AchievementId.DerrotadorSupremo:
                 if (rango == AchievementRank.Bronce) return "derrotas_50";
                 if (rango == AchievementRank.Plata) return "derrotas_100";
                 if (rango == AchievementRank.Oro) return "derrotas_300";
                 break;
 
-            // 2. Me duele la cabeza (Headshots)
             case AchievementId.MeDueleLaCabeza:
                 if (rango == AchievementRank.Bronce) return "headshots_50";
                 if (rango == AchievementRank.Plata) return "headshots_100";
                 if (rango == AchievementRank.Oro) return "headshots_300";
                 break;
 
-            // 3. No es mi primer Rodeo (Completador de rondas)
             case AchievementId.CompletadorDeRondas:
                 if (rango == AchievementRank.Bronce) return "rondas_normal";
                 if (rango == AchievementRank.Plata) return "rondas_dificil";
                 if (rango == AchievementRank.Oro) return "rondas_pesadilla";
                 break;
 
-            // 4. Superviviente del infierno (Supervivencia)
             case AchievementId.SupervivienteDelInfierno:
                 if (rango == AchievementRank.Bronce) return "supervivencia_normal";
                 if (rango == AchievementRank.Plata) return "supervivencia_dificil";
                 if (rango == AchievementRank.Oro) return "supervivencia_pesadilla";
                 break;
 
-            // 5. Historiador (Historia)
             case AchievementId.Historiador:
                 if (rango == AchievementRank.Bronce) return "historia_normal";
                 if (rango == AchievementRank.Plata) return "historia_dificil";
                 if (rango == AchievementRank.Oro) return "historia_pesadilla";
                 break;
 
-            // 6. Campeón del Polígono (Minijuego - Sin rangos)
             case AchievementId.CampeonDelPoligono:
                 return "poligono_completado";
 
-            // 7. Donde esta Wally (Easter Eggs)
             case AchievementId.DondeEstaWally:
                 if (rango == AchievementRank.Bronce) return "easter_egg_1";
                 if (rango == AchievementRank.Plata) return "easter_egg_2";
                 if (rango == AchievementRank.Oro) return "easter_egg_3";
                 break;
         }
-
         return null;
     }
-
     private IEnumerator EnviarSublogroCoroutine(string sublogroClave)
     {
-        if (BloqueoLogrosActivo())
-            yield break;
+        string idUsuario = ObtenerUserId();
+        string nombre = string.IsNullOrEmpty(usernameJugador) ? "UserUnity" : usernameJugador;
 
         LogroApiPayload payload = new LogroApiPayload
         {
-            id_local = this.IdLocalJugador,
-            username = this.usernameJugador,
+            id_local = idUsuario,
+            username = nombre,
             sublogro_clave = sublogroClave
         };
 
         string jsonPayload = JsonUtility.ToJson(payload);
 
-        using (UnityWebRequest request = new UnityWebRequest(apiUrl, "POST"))
+
+        // Aseguramos la URL sin espacios accidentales
+        string urlDestino = apiUrl.Trim();
+
+        Debug.Log($"[ACHIEVEMENTS API] Enviando '{sublogroClave}' a: {urlDestino} | Payload: {jsonPayload}");
+
+        using (UnityWebRequest request = new UnityWebRequest(urlDestino, "POST"))
         {
             byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
-
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
-
             request.SetRequestHeader("Content-Type", "application/json");
-            request.SetRequestHeader("Accept", "application/json");
+            request.timeout = 10;
 
             yield return request.SendWebRequest();
 
-            if (request.result == UnityWebRequest.Result.Success)
+            long httpCode = request.responseCode;
+
+            if (request.result == UnityWebRequest.Result.Success && (httpCode >= 200 && httpCode < 300))
             {
-                LogroApiResponse respuesta =
-                    JsonUtility.FromJson<LogroApiResponse>(
-                        request.downloadHandler.text
-                    );
-
-                Debug.Log(
-                    "[ACHIEVEMENTS API] Servidor actualizó sublogro '" +
-                    sublogroClave + "' para " + usernameJugador + "."
-                );
-
-                if (respuesta != null &&
-                    !string.IsNullOrEmpty(
-                        respuesta.logro_padre_desbloqueado
-                    ))
-                {
-                    Debug.Log(
-                        "[ACHIEVEMENTS API] ¡LOGRO GLOBAL COMPLETADO " +
-                        "EN BASE DE DATOS: " +
-                        respuesta.logro_padre_desbloqueado + "!"
-                    );
-                }
+                Debug.Log($"<color=green>[ACHIEVEMENTS API] Éxito al sincronizar '{sublogroClave}' (HTTP {httpCode}).</color>");
             }
             else
             {
-                Debug.LogWarning(
-                    "[ACHIEVEMENTS API] Falló al sincronizar en la nube " +
-                    "(" + request.error + " - " + request.downloadHandler.text +
-                    "). Progreso guardado únicamente en local."
-                );
+                Debug.LogWarning($"<color=red>[ACHIEVEMENTS API] Error al sincronizar '{sublogroClave}':</color> {request.error} (HTTP {httpCode}) | Detalle: {request.downloadHandler?.text}");
             }
         }
     }
@@ -934,43 +940,49 @@ public class AchievementsManager : MonoBehaviour
         Debug.Log("[ACHIEVEMENTS] Iniciando sincronización de progreso previo con la nube...");
         StartCoroutine(SincronizarProgresoPrevioCoroutine());
     }
-
     private IEnumerator SincronizarProgresoPrevioCoroutine()
     {
+        yield return new WaitForSeconds(0.5f); // Pausa inicial para estabilizar la sesión
+
+        if (datos?.logros == null) yield break;
+
         foreach (AchievementData logro in datos.logros)
         {
-            if (logro == null || logro.rangoActual == AchievementRank.Ninguno)
-                continue;
+            if (logro == null) continue;
 
-            // Si el enum AchievementId coincide con el string guardado
-            if (!System.Enum.TryParse(logro.id, out AchievementId idEnum))
-                continue;
+            string idLimpio = logro.id.Replace(" ", "");
+            if (!System.Enum.TryParse(idLimpio, true, out AchievementId idEnum)) continue;
 
-            // Si tiene Bronce o superior, enviamos Bronce
+            // Caso 1: Logro sin rangos (ej: Campeón del Polígono) ya desbloqueado
+            if (logro.desbloqueado && logro.rangoActual == AchievementRank.Ninguno)
+            {
+                string clave = ObtenerClaveSublogro(idEnum, AchievementRank.Ninguno);
+                if (!string.IsNullOrEmpty(clave))
+                {
+                    yield return EnviarSublogroCoroutine(clave);
+                    yield return new WaitForSeconds(0.1f);
+                }
+                continue;
+            }
+
+            // Caso 2: Logros por niveles (Bronce, Plata, Oro)
             if (logro.rangoActual >= AchievementRank.Bronce)
             {
                 yield return EnviarSublogroCoroutine(ObtenerClaveSublogro(idEnum, AchievementRank.Bronce));
-                yield return new WaitForSeconds(0.1f); // Pequeña pausa para no saturar la red
+                yield return new WaitForSeconds(0.1f);
             }
-
-            // Si tiene Plata o superior, enviamos Plata
             if (logro.rangoActual >= AchievementRank.Plata)
             {
                 yield return EnviarSublogroCoroutine(ObtenerClaveSublogro(idEnum, AchievementRank.Plata));
                 yield return new WaitForSeconds(0.1f);
             }
-
-            // Si tiene Oro, enviamos Oro
             if (logro.rangoActual >= AchievementRank.Oro)
             {
                 yield return EnviarSublogroCoroutine(ObtenerClaveSublogro(idEnum, AchievementRank.Oro));
                 yield return new WaitForSeconds(0.1f);
             }
         }
-
-        Debug.Log("[ACHIEVEMENTS] Sincronización de progreso previo completada.");
     }
-
 
 
     // ============================================================
