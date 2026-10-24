@@ -131,6 +131,35 @@ public class PlayerMovement : NetworkBehaviour
         crouchSpeed = crouch;
     }
 
+    // Valores base del Inspector (se guardan la primera vez); el personaje elegido los multiplica.
+    private bool classBaseCaptured;
+    private float baseMoveSpeed, baseSprintSpeed, baseCrouchSpeed, baseMaxStamina, baseStaminaRegenRate;
+
+    /// <summary>
+    /// Aplica los modificadores de la clase elegida (Ligero / Normal / Pesado) sobre los valores del Inspector.
+    /// 1 = igual que el Inspector. Lo llama PlayerCharacter.
+    /// </summary>
+    public void ApplyClassModifiers(float moveMultiplier, float staminaMultiplier, float staminaRegenMultiplier)
+    {
+        if (!classBaseCaptured)
+        {
+            classBaseCaptured = true;
+            baseMoveSpeed = moveSpeed;
+            baseSprintSpeed = sprintSpeed;
+            baseCrouchSpeed = crouchSpeed;
+            baseMaxStamina = maxStamina;
+            baseStaminaRegenRate = staminaRegenRate;
+        }
+
+        moveSpeed = baseMoveSpeed * moveMultiplier;
+        sprintSpeed = baseSprintSpeed * moveMultiplier;
+        crouchSpeed = baseCrouchSpeed * moveMultiplier;
+
+        maxStamina = baseMaxStamina * staminaMultiplier;
+        CurrentStamina = maxStamina;
+        staminaRegenRate = baseStaminaRegenRate * staminaRegenMultiplier;
+    }
+
     private CharacterController characterController;
     private PlayerControls controls;
     private PlayerHealth playerHealth;

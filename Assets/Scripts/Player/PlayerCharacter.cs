@@ -45,6 +45,9 @@ public class PlayerCharacter : NetworkBehaviour
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Owner);
 
+    /// <summary>Multiplicador del tiempo de recarga de la clase (0.9 Ligero, 1 Normal, 1.2 Pesado). El script del arma lo multiplica por su tiempo de recarga.</summary>
+    public float ReloadTimeMultiplier { get; private set; } = 1f;
+
     public CharacterCatalog Catalog => catalog;
     public int AppliedIndex => appliedIndex;
 
@@ -146,8 +149,11 @@ public class PlayerCharacter : NetworkBehaviour
         if (data == null)
             return;
 
+        // Velocidad y estamina se aplican como % sobre los valores del Inspector de PlayerMovement (Normal = 100%).
         if (playerMovement != null)
-            playerMovement.SetMovementSpeeds(data.walkSpeed, data.sprintSpeed, data.crouchSpeed);
+            playerMovement.ApplyClassModifiers(data.MoveMultiplier, data.StaminaMultiplier, data.StaminaRegenMultiplier);
+
+        ReloadTimeMultiplier = data.ReloadMultiplier;
 
         if (playerHealth != null)
             playerHealth.SetMaxHealth(data.maxHealth, true);
@@ -386,6 +392,9 @@ public class PlayerCharacter : NetworkBehaviour
         if (catalog == null)
             return 0;
 
-        return Mathf.Clamp(index, 0, Mathf.Max(0, catalog.VariantCount - 1));
+        int clamped = Mathf.Clamp(index, 0, Mathf.Max(0, catalog.VariantCount - 1));
+
+        // Si apunta a una variante sin modelo (Tanque mujer), usa la jugable de su clase.
+        return catalog.ResolveIndex(clamped);
     }
 }
