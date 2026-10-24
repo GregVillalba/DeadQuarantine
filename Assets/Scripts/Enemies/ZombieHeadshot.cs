@@ -20,6 +20,19 @@ public class ZombieHeadshot : MonoBehaviour
     [Tooltip("Puntos extra por headshot, además de los 50 por impacto y los 500 por eliminación. En 0 no suma nada.")]
     [SerializeField] private int puntosExtraHeadshot = 0;
 
+    [Header("--- HEADSHOT SEGÚN DIFICULTAD Y RONDA ---")]
+    [Tooltip("Si está activo, el daño es un porcentaje de la vida máxima que depende de la dificultad y la ronda. Para que funcione, desactivá Muerte Instantánea.")]
+    [SerializeField] private bool usarEscaladoPorDificultad = true;
+
+    [Tooltip("Porcentaje de la vida máxima que quita el headshot en la ronda 1. Orden: Normal, Difícil, Pesadilla.")]
+    [SerializeField] private float[] porcentajeBase = { 0.80f, 0.65f, 0.50f };
+
+    [Tooltip("Cuánto baja ese porcentaje por cada ronda que avanza (0.01 = 1%).")]
+    [SerializeField] private float reduccionPorRonda = 0.01f;
+
+    [Tooltip("El porcentaje nunca baja de este valor.")]
+    [SerializeField] private float porcentajeMinimo = 0.40f;
+
     private ZombieHeadHitbox[] hitboxes;
 
     private void Awake()
@@ -31,20 +44,52 @@ public class ZombieHeadshot : MonoBehaviour
     // DAÑO (se llama desde el servidor)
     // =========================================================
 
+    private float ObtenerPorcentajeActual()
+    {
+    if (porcentajeBase == null || porcentajeBase.Length == 0)
+        return 0.5f;
+
+    int dificultad = 0;
+    int ronda = 1;
+
+    if (RoundManager.Instance != null)
+        {
+            dificultad = Mathf.Clamp(
+                RoundManager.Instance.DifficultyNetwork.Value,
+                0,
+                porcentajeBase.Length - 1
+            );
+
+            ronda = Mathf.Max(1, RoundManager.Instance.CurrentRound);
+        }
+
+        float porcentaje = porcentajeBase[dificultad] - reduccionPorRonda * (ronda - 1);
+
+        return Mathf.Max(porcentaje, porcentajeMinimo);
+    }
+
+
     public int CalcularDano(int danoBase, int vidaActual, int vidaMaxima)
     {
         // 1) Muerte instantánea (zombie común).
         if (muerteInstantanea)
             return Mathf.Max(danoBase, vidaActual);
 
-        // 2) Porcentaje de la vida máxima (jefes). Nunca hace menos que un impacto normal.
+        // 2) Según dificultad y ronda (porcentaje de la vida máxima).
+        if (usarEscaladoPorDificultad)
+        {
+            int danoEscalado = Mathf.RoundToInt(vidaMaxima * ObtenerPorcentajeActual());
+            return Mathf.Max(danoBase, danoEscalado);
+        }
+
+        // 3) Porcentaje de la vida máxima (jefes). Nunca hace menos que un impacto normal.
         if (porcentajeVidaMaxima > 0f)
         {
             int danoPorcentaje = Mathf.RoundToInt(vidaMaxima * porcentajeVidaMaxima);
             return Mathf.Max(danoBase, danoPorcentaje);
         }
 
-        // 3) Multiplicador de daño (C.A 2: x2).
+        // 4) Multiplicador de daño (C.A 2: x2).
         return Mathf.Max(1, Mathf.RoundToInt(danoBase * multiplicadorDano));
     }
 

@@ -59,7 +59,9 @@ public class NetworkLobbyUI : MonoBehaviour
 
     private async void OnJoinButtonClicked()
     {
-        string joinCode = joinCodeInput.text.Trim();
+       /* string joinCode = joinCodeInput.text.Trim();*/
+
+       string joinCode = joinCodeInput.text.Trim().ToUpperInvariant();
 
         if (string.IsNullOrEmpty(joinCode))
         {
