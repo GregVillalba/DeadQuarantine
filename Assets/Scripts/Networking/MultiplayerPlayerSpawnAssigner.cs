@@ -15,6 +15,9 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
         NetworkVariableWritePermission.Owner
     );
 
+    /// <summary>Número de jugador (1 a 4) según su lugar de spawn. 0 mientras el servidor no le asignó uno.</summary>
+    public int PlayerNumber => AssignedSpawnIndex.Value + 1;
+
     private float proximoReintento;
 
     private void Update()

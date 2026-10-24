@@ -854,7 +854,7 @@ public class Weapon : MonoBehaviour
             return;
         }
 
-        if (
+       /* if (
             EventSystem.current != null &&
             EventSystem.current.currentSelectedGameObject != null
         )
@@ -865,6 +865,40 @@ public class Weapon : MonoBehaviour
             );
 
             return;
+        }*/
+
+       /* if (EventSystem.current != null)
+        {
+            GameObject seleccionado = EventSystem.current.currentSelectedGameObject;
+
+            if (seleccionado != null)
+            {
+                if (!seleccionado.activeInHierarchy)
+                {
+                    EventSystem.current.SetSelectedGameObject(null);
+                }
+                else
+                {
+                    Debug.Log("[Weapon] TryFire bloqueado: hay un objeto de UI seleccionado -> " + seleccionado.name);
+                    return;
+                }
+            }
+        }*/
+
+        if (EventSystem.current != null)
+        {
+            GameObject seleccionado = EventSystem.current.currentSelectedGameObject;
+
+            if (seleccionado != null)
+            {
+                if (Cursor.lockState != CursorLockMode.Locked)
+                {
+                    Debug.Log("[Weapon] TryFire bloqueado: UI abierta -> " + seleccionado.name);
+                    return;
+                }
+
+            EventSystem.current.SetSelectedGameObject(null);
+            }
         }
 
         if (isReloading)

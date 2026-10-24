@@ -7,10 +7,10 @@ public class SceneLoader : MonoBehaviour
     {
         Ninguna,
         Modalidad,
-        ElegirPersonaje
+        ElegirPersonaje   // ya no se usa: el personaje se elige en la ventana PERSONAJE del lobby
     }
 
-    // Esta variable est�tica sobrevive al cambio de escenas
+    // Esta variable estática sobrevive al cambio de escenas
     public static PantallaApertura pantallaSolicitada = PantallaApertura.Ninguna;
 
     [Header("Paneles / Sub-pantallas en PantallasUI")]
@@ -18,9 +18,10 @@ public class SceneLoader : MonoBehaviour
     [SerializeField] private GameObject pantallaModalidad;
     [SerializeField] private GameObject pantallaElegirPersonaje;
 
+
     private void Start()
     {
-        // Al arrancar PantallasUI, verifica si ven�as de NetworkLobby pidiendo abrir una pantalla
+        // Al arrancar PantallasUI, verifica si venías de NetworkLobby pidiendo abrir una pantalla
         if (SceneManager.GetActiveScene().name == "PantallasUI")
         {
             if (pantallaSolicitada == PantallaApertura.Modalidad)
@@ -30,8 +31,9 @@ public class SceneLoader : MonoBehaviour
             }
             else if (pantallaSolicitada == PantallaApertura.ElegirPersonaje)
             {
-                MostrarPantallaElegirPersonaje();
-                pantallaSolicitada = PantallaApertura.Ninguna; // Se reinicia
+                // Pedido viejo: ya no hay selección de personaje acá, se va al menú principal.
+                MostrarMenuPrincipal();
+                pantallaSolicitada = PantallaApertura.Ninguna;
             }
             else
             {
@@ -52,15 +54,9 @@ public class SceneLoader : MonoBehaviour
         SceneManager.LoadScene("PantallasUI");
     }
 
-    // --- M�TODOS PARA LLAMAR DESDE NETWORK LOBBY ---
+    // --- MÉTODOS PARA LLAMAR DESDE NETWORK LOBBY ---
 
-    // Llamar al presionar CREAR en NetworkLobby
-    /*public void IrACrearSalaModalidad()
-    {
-        pantallaSolicitada = PantallaApertura.Modalidad;
-        SceneManager.LoadScene("PantallasUI");
-    }*/
-
+    // Botón CREAR de NetworkLobby: va DIRECTO a elegir modalidad / mapa / dificultad (sin selección de personaje).
     public void IrACrearSalaModalidad()
     {
         MultiplayerLobbyController lobbyController =
@@ -81,31 +77,31 @@ public class SceneLoader : MonoBehaviour
         SceneManager.LoadScene("PantallasUI");
     }
 
-    // Llamar al presionar UNIRSE en NetworkLobby
+    // Botón UNIRSE de NetworkLobby: va DIRECTO a poner el código (sin selección de personaje).
+    // Se conserva el nombre del método para no perder el enlace del botón en el Inspector.
     public void IrAUnirseElegirPersonaje()
     {
-       /* pantallaSolicitada = PantallaApertura.ElegirPersonaje;
-        SceneManager.LoadScene("PantallasUI");*/
+        IrAUnirseIngresarCodigo();
+    }
 
+    public void IrAUnirseIngresarCodigo()
+    {
         MultiplayerLobbyController lobbyController =
-        FindFirstObjectByType<MultiplayerLobbyController>();
+            FindFirstObjectByType<MultiplayerLobbyController>();
 
         if (lobbyController == null)
         {
             Debug.LogError(
                 "[SceneLoader] No se encontró MultiplayerLobbyController en NetworkLobby."
-        );
-        return;
+            );
+            return;
         }
 
-        if (!lobbyController.VerificarInternet())
-            return;
-
-        pantallaSolicitada = PantallaApertura.ElegirPersonaje;
-        SceneManager.LoadScene("PantallasUI");
+        // Verifica internet y muestra el panel de ingresar código (en NetworkLobby no cambia de escena).
+        lobbyController.OnClick_IrAIngresarCodigo();
     }
 
-    // --- NAVEGACI�N DENTRO DE PANTALLAS UI ---
+    // --- NAVEGACIÓN DENTRO DE PANTALLAS UI ---
 
     public void MostrarPantallaModalidad()
     {
@@ -140,4 +136,5 @@ public class SceneLoader : MonoBehaviour
         if (pantallaModalidad != null) pantallaModalidad.SetActive(false);
         if (pantallaElegirPersonaje != null) pantallaElegirPersonaje.SetActive(false);
     }
+
 }

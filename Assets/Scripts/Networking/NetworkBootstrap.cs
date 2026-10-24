@@ -12,7 +12,17 @@ using UnityEngine.SceneManagement;
 
 public class NetworkBootstrap : MonoBehaviour
 {
-    [SerializeField] private int maxConnections = 4;
+    // Máximo de jugadores por sala. Es una constante (y no un campo del Inspector) a propósito: la escena tenía guardado
+    // "maxConnections: 2" y eso pisaba el valor del script.
+    public const int MaxPlayersPerRoom = 4;
+
+    // Propiedad de sesión con la que el anfitrión avisa que cierra la sala.
+    public const string CerradaProperty = "SalaCerrada";
+
+    public enum JoinFailReason { None, SessionFull, NotFound, Other }
+
+    /// <summary>Por qué falló el último StartClient (para mostrar "Sala llena", etc.).</summary>
+    public JoinFailReason LastJoinFailReason { get; private set; }
 
     public static NetworkBootstrap Instance { get; private set; }
 
@@ -51,6 +61,18 @@ public class NetworkBootstrap : MonoBehaviour
         Instance = this;
 
         DontDestroyOnLoad(gameObject);
+
+        // Que el latido de la sala siga aunque la ventana pierda el foco (si no, parecería que el jugador se fue).
+        Application.runInBackground = true;
+
+        // Al cerrar el juego, salir de la sala antes (si no, el jugador queda "fantasma" en la sala).
+        Application.wantsToQuit += OnWantsToQuit;
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Application.wantsToQuit -= OnWantsToQuit;
     }
 
 
@@ -118,7 +140,7 @@ public class NetworkBootstrap : MonoBehaviour
             SessionOptions options =
                 new SessionOptions
                 {
-                    MaxPlayers = maxConnections
+                    MaxPlayers = MaxPlayersPerRoom
                 };
 
             currentSession =
@@ -160,9 +182,13 @@ public class NetworkBootstrap : MonoBehaviour
     public async Task<bool> StartClient(string joinCode)
     {
         isIntentionalLeave = false;
+        LastJoinFailReason = JoinFailReason.None;
 
         if (!await EnsureServicesInitialized())
+        {
+            LastJoinFailReason = JoinFailReason.Other;
             return false;
+        }
 
         try
         {
@@ -204,6 +230,8 @@ public class NetworkBootstrap : MonoBehaviour
                 "[Network] Error al unirse: " +
                 e.Message
             );
+
+            LastJoinFailReason = Classify(e);
 
             return false;
         }
@@ -427,6 +455,16 @@ public class NetworkBootstrap : MonoBehaviour
 
                 if (esperaClientes >= 15f)
                 {
+                    // Si ya hay al menos 2 conectados se sigue con los que están (alguien pudo haberse ido).
+                    if (NetworkManager.Singleton.ConnectedClientsIds.Count >= 2)
+                    {
+                        Debug.LogWarning(
+                            "[Network] No todos los invitados se conectaron: sigo con los que están."
+                        );
+
+                        break;
+                    }
+
                     Debug.LogError(
                         "[Network] Los invitados no se conectaron a tiempo."
                     );
@@ -562,6 +600,123 @@ public class NetworkBootstrap : MonoBehaviour
         CurrentJoinCode = null;
 
         SceneManager.LoadScene("PantallasUI");
+    }
+
+    // ============================================================
+    // CERRAR SALA (HOST) Y CERRAR EL JUEGO
+    // ============================================================
+
+    /// <summary>
+    /// El anfitrión cierra la sala: primero avisa a los demás (propiedad "SalaCerrada"), les da un instante para
+    /// enterarse y después borra la sesión.
+    /// </summary>
+    public async Task CerrarSalaComoHost()
+    {
+        if (currentSession == null || !currentSession.IsHost)
+            return;
+
+        try
+        {
+            var host = currentSession.AsHost();
+
+            host.SetProperty(CerradaProperty, new SessionProperty("1"));
+            await host.SavePropertiesAsync();
+
+            await Task.Delay(1200);
+
+            await host.DeleteAsync();
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning("[Network] Error cerrando la sala: " + e.Message);
+        }
+
+        currentSession = null;
+        CurrentJoinCode = null;
+    }
+
+    private bool quitAllowed;
+    private bool quitInProgress;
+
+    // Se llama cuando se intenta cerrar el juego (o salir de Play en el editor).
+    private bool OnWantsToQuit()
+    {
+        if (quitAllowed || currentSession == null)
+            return true;
+
+        if (!quitInProgress)
+        {
+            quitInProgress = true;
+            _ = LeaveThenQuit();
+        }
+
+        return false; // se pospone el cierre hasta haber salido de la sala
+    }
+
+    private async Task LeaveThenQuit()
+    {
+        try
+        {
+            Task salir = IsHost
+                ? CerrarSalaComoHost()
+                : currentSession.LeaveAsync();
+
+            // Tope de 4 segundos para no trabar el cierre si no hay internet.
+            await Task.WhenAny(salir, Task.Delay(4000));
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning("[Network] Error saliendo de la sala al cerrar: " + e.Message);
+        }
+
+        currentSession = null;
+        quitAllowed = true;
+
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
+    }
+
+    // Traduce el error de unirse a una causa entendible (sala llena, no existe...).
+    private static JoinFailReason Classify(Exception e)
+    {
+        string text = Describe(e);
+
+        if (text.Contains("full"))
+            return JoinFailReason.SessionFull;
+
+        if (text.Contains("not found") || text.Contains("notfound") || text.Contains("404"))
+            return JoinFailReason.NotFound;
+
+        return JoinFailReason.Other;
+    }
+
+    private static string Describe(Exception e)
+    {
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+
+        for (Exception ex = e; ex != null; ex = ex.InnerException)
+        {
+            sb.Append(ex.GetType().Name).Append(' ').Append(ex.Message).Append(' ');
+
+            // SessionException.Error / LobbyServiceException.Reason traen la causa exacta (ej: SessionFull, LobbyFull).
+            foreach (string propName in new[] { "Error", "Reason", "ErrorCode" })
+            {
+                var prop = ex.GetType().GetProperty(propName);
+
+                if (prop == null)
+                    continue;
+
+                object value = prop.GetValue(ex);
+
+                if (value != null)
+                    sb.Append(value).Append(' ');
+            }
+        }
+
+        return sb.ToString().ToLowerInvariant();
     }
 
     public void NotifyIntentionalLeave()

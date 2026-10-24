@@ -133,7 +133,10 @@ public class LobbyUIBuilder : EditorWindow
         Canvas rootCanvas = panel.GetComponentInParent<Canvas>();
 
         if (rootCanvas != null)
+        {
             DestroyByName(rootCanvas.transform, "ConfigurarPartidaPopup");
+            DestroyByName(rootCanvas.transform, "MensajePopup");
+        }
 
         GameObject oldStage = GameObject.Find("LobbyCharacterStage");
 
@@ -298,6 +301,12 @@ public class LobbyUIBuilder : EditorWindow
         // Resumen de la partida + ventana CONFIGURAR PARTIDA
         BuildGameSettingsUI(panel, listo);
 
+        // Ventana de mensajes (sala llena, sala cerrada...)
+        GameObject msgPopup;
+        TMP_Text msgTitle;
+        TMP_Text msgText;
+        BuildMessagePopup(panel, listo, out msgPopup, out msgTitle, out msgText);
+
         // Tarjetas viejas con la foto
         HideByName(panel, "player");
         HideByName(panel, "player2");
@@ -324,6 +333,13 @@ public class LobbyUIBuilder : EditorWindow
 
                 if (cso.FindProperty("btnPersonaje") != null)
                     SetObj(cso, "btnPersonaje", personajeBtn);
+
+                if (cso.FindProperty("popupMensaje") != null)
+                {
+                    SetObj(cso, "popupMensaje", msgPopup);
+                    SetObj(cso, "popupMensajeTitulo", msgTitle);
+                    SetObj(cso, "popupMensajeTexto", msgText);
+                }
 
                 cso.ApplyModifiedProperties();
             }
@@ -424,6 +440,50 @@ public class LobbyUIBuilder : EditorWindow
 
             Button close = CloneButton(listo, window.transform, "Btn_Cerrar", "CERRAR", BC, BC, new Vector2(0f, 24f), new Vector2(300f, 64f));
             UnityEventTools.AddBoolPersistentListener(close.onClick, popup.SetActive, false);
+        }
+
+        popup.SetActive(false);
+    }
+
+    // Ventana emergente genérica de mensajes (la usa el controlador para "SALA LLENA", "SALA CERRADA", etc.).
+    private void BuildMessagePopup(Transform panel, Transform listo, out GameObject popup, out TMP_Text title, out TMP_Text text)
+    {
+        Canvas canvas = panel.GetComponentInParent<Canvas>();
+        Transform canvasT = canvas != null ? canvas.rootCanvas.transform : panel.parent;
+
+        popup = NewUIObject("MensajePopup", canvasT);
+        Undo.RegisterCreatedObjectUndo(popup, "Construir mensaje");
+        Stretch((RectTransform)popup.transform, 0f);
+
+        Image dim = popup.AddComponent<Image>();
+        dim.color = new Color(0f, 0f, 0f, 0.82f);
+        dim.raycastTarget = true;
+
+        Image window = NewImage("Ventana", popup.transform, new Color(0.04f, 0.07f, 0.11f, 0.98f), true);
+        Place(window.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(760f, 380f));
+
+        Image line = NewImage("LineaSuperior", window.transform, Red, false);
+        line.rectTransform.anchorMin = new Vector2(0f, 1f);
+        line.rectTransform.anchorMax = new Vector2(1f, 1f);
+        line.rectTransform.pivot = new Vector2(0.5f, 1f);
+        line.rectTransform.anchoredPosition = Vector2.zero;
+        line.rectTransform.sizeDelta = new Vector2(0f, 4f);
+
+        title = NewText("Titulo", window.transform, "SALA LLENA", 48f, new Color(0.70f, 0.79f, 0.71f, 1f), TextAlignmentOptions.Center, titleFont, 26f);
+        Place(title.rectTransform, TL, TL, new Vector2(30f, -40f), new Vector2(700f, 64f));
+
+        text = NewText("Mensaje", window.transform, "", 24f, Color.white, TextAlignmentOptions.Top, monoFont, 14f);
+        // El mensaje puede ocupar varias líneas.
+#pragma warning disable 618
+        text.enableWordWrapping = true;
+#pragma warning restore 618
+        text.enableAutoSizing = false;
+        Place(text.rectTransform, TL, TL, new Vector2(40f, -130f), new Vector2(680f, 130f));
+
+        if (listo != null)
+        {
+            Button ok = CloneButton(listo, window.transform, "Btn_Aceptar", "ACEPTAR", BC, BC, new Vector2(0f, 30f), new Vector2(300f, 64f));
+            UnityEventTools.AddBoolPersistentListener(ok.onClick, popup.SetActive, false);
         }
 
         popup.SetActive(false);
