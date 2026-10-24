@@ -47,7 +47,7 @@ public class RoundManager : NetworkBehaviour
     [SerializeField] private float maxWaitForPlayersTime = 15f;
 
     [Header("Pruebas (dejar en 1 para jugar normal)")]
-    [SerializeField] private int debugStartRound = 10;
+    [SerializeField] private int debugStartRound = 1;
 
     [Header("Modo Historia")]
     [SerializeField] private int maxZombiesHistoria = 25;
@@ -265,10 +265,16 @@ if (EsModoHistoria)
     return;
 }
 
-if (nombreEscena == "MainSceneSinglePlayer")
+/*if (nombreEscena == "MainSceneSinglePlayer")
     return;
 
-StartCoroutine(WaitForAllPlayersAtSpawnThenStart(1));
+StartCoroutine(WaitForAllPlayersAtSpawnThenStart(1));*/
+
+    if (nombreEscena == "MainSceneSinglePlayer")
+       StartCoroutine(StartSingleplayerRound(1));
+   else
+       StartCoroutine(WaitForAllPlayersAtSpawnThenStart(1));
+
     }
     private void ConfigurarSpawnPointsDelEscenario()
 {
@@ -303,6 +309,26 @@ StartCoroutine(WaitForAllPlayersAtSpawnThenStart(1));
         "Cantidad: " + spawnPoints.Length
     );
 }
+
+private IEnumerator StartSingleplayerRound(int round)
+   {
+       float elapsed = 0f;
+
+       while (elapsed < maxWaitForPlayersTime)
+       {
+           NetworkManager nm = NetworkManager.Singleton;
+
+           if (nm != null &&
+               nm.LocalClient != null &&
+               nm.LocalClient.PlayerObject != null)
+               break;
+
+           elapsed += Time.deltaTime;
+           yield return null;
+       }
+
+       StartRound(round);
+   }
 
     private IEnumerator WaitForAllPlayersAtSpawnThenStart(int round)
     {

@@ -266,7 +266,11 @@ public class PauseController : NetworkBehaviour
         if (popupMenuHome != null)
             popupMenuHome.SetActive(false);
 
+        if (UnityEngine.EventSystems.EventSystem.current != null)
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+
         ConfiguracionesJuego.AplicarCambios();
+
 
         RestaurarEstadoJugador();
         HabilitarJugador();

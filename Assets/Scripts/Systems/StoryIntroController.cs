@@ -429,6 +429,18 @@ public class StoryIntroController : NetworkBehaviour
         }
     }
 
+   /* private void HabilitarJugador()
+    {
+        if (playerMovement != null)
+        {
+            playerMovement.enabled = true;
+            playerMovement.MovementLocked = false;
+        }
+
+        if (playerLook != null)
+            playerLook.enabled = true;
+    }*/
+
     private void HabilitarJugador()
     {
         if (playerMovement != null)
@@ -439,5 +451,15 @@ public class StoryIntroController : NetworkBehaviour
 
         if (playerLook != null)
             playerLook.enabled = true;
+
+        // Restaurar armas: se desbloquean todas y se vuelve a habilitar solo la actual
+        foreach (Weapon arma in transform.root.GetComponentsInChildren<Weapon>(true))
+            arma.InputLocked = false;
+
+        if (weaponSwitcher == null)
+            weaponSwitcher = transform.root.GetComponentInChildren<WeaponSwitcher>(true);
+
+        if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null)
+            weaponSwitcher.CurrentWeapon.enabled = true;
     }
 }
