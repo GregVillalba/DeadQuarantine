@@ -2281,6 +2281,10 @@ MonoBehaviour:
   escenarioLaboratorio: {fileID: 1624495900}
   escenarioCiudad: {fileID: 0}
   escenarioCabana: {fileID: 1654844672}
+  safeZone1: {fileID: 0}
+  safeZone2: {fileID: 0}
+  spawnSafeZone1: {fileID: 0}
+  spawnSafeZone2: {fileID: 0}
 --- !u!4 &190034324
 Transform:
   m_ObjectHideFlags: 0
@@ -16912,6 +16916,7 @@ MonoBehaviour:
   expectedPlayerCount: 2
   maxWaitForPlayersTime: 15
   debugStartRound: 1
+  maxZombiesHistoria: 25
   CurrentRoundNetwork:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
@@ -20857,7 +20862,7 @@ PrefabInstance:
       objectReference: {fileID: 1624495899}
     - target: {fileID: 6418137582840007524, guid: bf1b05a4eb7c34a4f9fcde2271db0791, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -11.8
+      value: 10.599
       objectReference: {fileID: 0}
     - target: {fileID: 6507633851166165011, guid: bf1b05a4eb7c34a4f9fcde2271db0791, type: 3}
       propertyPath: m_InScenePlaced
