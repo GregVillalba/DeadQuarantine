@@ -1,32 +1,24 @@
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
-using TMPro;
-
-[System.Serializable]
-public struct DatosHistoria
-{
-    public string subtitulo;
-    public string titulo;
-    public string descripcionConObjetivo;
-
-    public DatosHistoria(string subtitulo, string titulo, string descripcionConObjetivo)
-    {
-        this.subtitulo = subtitulo;
-        this.titulo = titulo;
-        this.descripcionConObjetivo = descripcionConObjetivo;
-    }
-}
+using UnityEngine.InputSystem;
 
 public class StoryIntroController : NetworkBehaviour
 {
-    [Header("Panel Principal")]
-    [SerializeField] private GameObject popupHistoria; // Asignar el GameObject 'popUpHistoria'
+    [Header("1. Modo Historia (por Escenario)")]
+    [SerializeField] private GameObject popupHistoria_Laboratorio;
+    [SerializeField] private GameObject popupHistoria_Ciudad;
+    [SerializeField] private GameObject popupHistoria_Cabana;
 
-    [Header("Campos de Texto (TextMeshPro)")]
-    [SerializeField] private TextMeshProUGUI textoSubtitulo;   // Asignar 'chekpoint}'
-    [SerializeField] private TextMeshProUGUI textoTitulo;      // Asignar 'tit'
-    [SerializeField] private TextMeshProUGUI textoDescripcion; // Asignar 'desc+obj'
+    [Header("2. Modo Ronda 5 / Normal (por Escenario)")]
+    [SerializeField] private GameObject popupRonda5_Laboratorio;
+    [SerializeField] private GameObject popupRonda5_Ciudad;
+    [SerializeField] private GameObject popupRonda5_Cabana;
+
+    [Header("3. Modo Supervivencia / Infinitas (por Escenario)")]
+    [SerializeField] private GameObject popupSupervivencia_Laboratorio;
+    [SerializeField] private GameObject popupSupervivencia_Ciudad;
+    [SerializeField] private GameObject popupSupervivencia_Cabana;
 
     [Header("HUD del jugador")]
     [SerializeField] private GameObject hud;
@@ -37,15 +29,19 @@ public class StoryIntroController : NetworkBehaviour
 
     [Header("Cámara del arma (FPS Arms)")]
     [SerializeField] private GameObject weaponCameraObject;
+    [Header("Transición desde zona segura")]
+    [SerializeField] private GameObject popupContinuarSafeZone;
+
+    private bool esperandoContinuarSafeZone;
     private WeaponSwitcher weaponSwitcher;
 
+    private GameObject popupActivoActual;
     private bool historiaActiva;
     public bool HistoriaActiva => historiaActiva;
 
     private void Awake()
     {
-        if (popupHistoria != null)
-            popupHistoria.SetActive(false);
+        ApagarTodosLosPopups();
 
         if (playerMovement == null)
             playerMovement = GetComponent<PlayerMovement>();
@@ -53,6 +49,140 @@ public class StoryIntroController : NetworkBehaviour
         if (playerLook == null)
             playerLook = GetComponentInChildren<PlayerLook>(true);
     }
+
+    private void Update()
+{
+    if (!IsOwner || Keyboard.current == null)
+        return;
+
+    // Con la tienda del mercader (o la pausa) abierta el aviso se oculta y ENTER no avanza.
+    if (esperandoContinuarSafeZone && popupContinuarSafeZone != null)
+        popupContinuarSafeZone.SetActive(!PlayerInputGate.ActionsBlocked);
+
+    if (PlayerInputGate.ActionsBlocked)
+        return;
+
+    if (!Keyboard.current.enterKey.wasPressedThisFrame &&
+        !Keyboard.current.numpadEnterKey.wasPressedThisFrame)
+        return;
+
+    if (esperandoContinuarSafeZone)
+    {
+        IniciarTransicionACiudad();
+        return;
+    }
+
+    if (historiaActiva)
+        ContinuarHistoria();
+}
+
+public void MostrarAvisoContinuarSafeZone()
+{
+    if (!IsOwner)
+        return;
+
+    esperandoContinuarSafeZone = true;
+
+    if (popupContinuarSafeZone != null)
+        popupContinuarSafeZone.SetActive(true);
+
+    Debug.Log("[StoryIntro] Esperando Enter para continuar a Ciudad.");
+}
+
+public void OcultarAvisoContinuarSafeZone()
+{
+    if (!IsOwner)
+        return;
+
+    esperandoContinuarSafeZone = false;
+
+    if (popupContinuarSafeZone != null)
+        popupContinuarSafeZone.SetActive(false);
+}
+
+private void IniciarTransicionACiudad()
+{
+    esperandoContinuarSafeZone = false;
+
+    if (popupContinuarSafeZone != null)
+        popupContinuarSafeZone.SetActive(false);
+
+    GestorEscenariosPartida gestor = GestorEscenariosPartida.Instance;
+
+    if (gestor == null)
+    {
+        Debug.LogError("[StoryIntro] No se encontró GestorEscenariosPartida.");
+        return;
+    }
+
+    if (popupHistoria_Ciudad == null)
+    {
+        Debug.LogError("[StoryIntro] No está asignado popupHistoria_Ciudad.");
+        return;
+    }
+
+    historiaActiva = true;
+
+    if (hud != null)
+        hud.SetActive(false);
+
+    BloquearJugador();
+
+    // Activar el escenario de Ciudad.
+    gestor.ActivarEscenario(
+        ConfiguracionPartidaSeleccionada.Escenario.Ciudad
+    );
+
+    // Actualizar los puntos de aparición para el escenario recién activado.
+    if (IsServer)
+    {
+        if (RoundManager.Instance != null)
+        {
+            RoundManager.Instance.ActualizarSpawnPointsDelEscenario();
+
+            // Los que quedaron en el laboratorio no pasan a la Ciudad
+            // ni ocupan lugar en el máximo de zombies vivos.
+            RoundManager.Instance.EliminarZombiesHistoria();
+
+            // En la zona segura no aparecían zombies: vuelven en la Ciudad.
+            RoundManager.Instance.ReanudarSpawnsHistoria();
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[StoryIntro] No se encontró RoundManager para actualizar los spawn points."
+            );
+        }
+
+        // Iniciar la misión de Ciudad y crear la radio.
+        if (GestorHistoriaPartida.Instance != null)
+        {
+            GestorHistoriaPartida.Instance.IniciarMisionCiudad();
+        }
+        else
+        {
+            Debug.LogError(
+                "[StoryIntro] No se encontró GestorHistoriaPartida."
+            );
+        }
+    }
+
+    // Trasladar al jugador al punto inicial de Ciudad.
+    gestor.TrasladarJugadorAInicioDeEscenario(transform.root);
+
+    // Mostrar la introducción de Ciudad.
+    ApagarTodosLosPopups();
+
+    popupActivoActual = popupHistoria_Ciudad;
+    popupActivoActual.SetActive(true);
+
+    Cursor.visible = true;
+    Cursor.lockState = CursorLockMode.None;
+
+    Debug.Log(
+        "[StoryIntro] Ciudad activada. Introducción mostrada y transición completada."
+    );
+}
 
     public override void OnNetworkSpawn()
     {
@@ -80,7 +210,7 @@ public class StoryIntroController : NetworkBehaviour
 
         BloquearJugador();
 
-        // 1. Obtener Modo y Escenario
+        // 1. Obtener Modo y Escenario seleccionados en el menú
         ConfiguracionPartidaSeleccionada.ModoJuego modo = ConfiguracionPartidaSeleccionada.ModoJuego.Ronda5;
         ConfiguracionPartidaSeleccionada.Escenario escenario = ConfiguracionPartidaSeleccionada.Escenario.Laboratorio;
 
@@ -90,145 +220,54 @@ public class StoryIntroController : NetworkBehaviour
             escenario = ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado;
         }
 
-        Debug.Log($"[StoryIntro] Modo: {modo} | Escenario: {escenario}");
+        Debug.Log($"[StoryIntro] Modo elegido: {modo} | Escenario elegido: {escenario}");
 
-        // 2. Obtener los textos correspondientes
-        DatosHistoria datos = ObtenerDatosHistoria(modo, escenario);
+        // 2. Elegir la pantalla correcta entre las 9 combinaciones
+        popupActivoActual = ObtenerPopupSegunConfiguracion(modo, escenario);
 
-        // 3. Asignar la información a la UI
-        if (textoSubtitulo != null)
+        // 3. Activar la pantalla seleccionada
+        if (popupActivoActual != null)
         {
-            textoSubtitulo.text = datos.subtitulo;
-            textoSubtitulo.gameObject.SetActive(!string.IsNullOrEmpty(datos.subtitulo));
-        }
-
-        if (textoTitulo != null)
-            textoTitulo.text = datos.titulo;
-
-        if (textoDescripcion != null)
-            textoDescripcion.text = datos.descripcionConObjetivo;
-
-        // 4. Asegurar que los padres estén encendidos y mostrar el popup
-        if (popupHistoria != null)
-        {
-            // Enciende a los ancestros por si 'Historia' o 'pop_up_historia' estaban apagados
-            Transform current = popupHistoria.transform.parent;
-            while (current != null)
-            {
-                current.gameObject.SetActive(true);
-                current = current.parent;
-            }
-
-            popupHistoria.SetActive(true);
+            popupActivoActual.SetActive(true);
         }
         else
         {
-            Debug.LogWarning("[StoryIntro] No está asignado el popupHistoria en el Inspector.");
+            Debug.LogWarning("[StoryIntro] No está asignado el popup para este Modo y Escenario.");
         }
 
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
     }
 
-    private DatosHistoria ObtenerDatosHistoria(
+    private GameObject ObtenerPopupSegunConfiguracion(
         ConfiguracionPartidaSeleccionada.ModoJuego modo,
         ConfiguracionPartidaSeleccionada.Escenario esc)
     {
-        // ------------------------- MODO HISTORIA -------------------------
-        if (modo == ConfiguracionPartidaSeleccionada.ModoJuego.Historia)
+        switch (modo)
         {
-            if (esc == ConfiguracionPartidaSeleccionada.Escenario.Laboratorio)
-            {
-                return new DatosHistoria(
-                    "PUNTO DE PARTIDA",
-                    "HISTORIA: ¿Cómo empezó todo?",
-                    "Nos encontramos en el complejo donde ocurrió la brecha biológica: un patógeno experimental que muta violentamente a cualquiera que entre en contacto con él. Intentamos avanzar hacia la salida sin llamar la atención, pero el sistema de contención selló las instalaciones. Tu misión consiste en localizar la tarjeta de acceso principal para desbloquear la salida.\n\nOBJETIVO: Encontrar la tarjeta magnética y escapar del laboratorio."
-                );
-            }
-            if (esc == ConfiguracionPartidaSeleccionada.Escenario.Ciudad)
-            {
-                return new DatosHistoria(
-                    "CHECKPOINT",
-                    "HISTORIA: La superficie",
-                    "Tras lograr salir del laboratorio, el escenario exterior es desolador: las calles están tomadas y el perímetro urbano colapsó por completo. La única ruta de escape factible es aérea. Debemos cruzar el distrito hasta la torre de comunicaciones para emitir una señal de auxilio militar y coordinar la extracción con otros supervivientes.\n\nOBJETIVO: Alcanzar la antena de radio y solicitar apoyo de evacuación."
-                );
-            }
-            if (esc == ConfiguracionPartidaSeleccionada.Escenario.Cabana)
-            {
-                return new DatosHistoria(
-                    "ENCLAVE FINAL",
-                    "HISTORIA: Punto de reunión",
-                    "El convoy de evacuación se dispersó en los bosques periféricos. Mientras nos reagrupamos en una cabaña táctica, el mando informa de una amenaza crítica: un espécimen mutante alfa capaz de coordinar los ataques de la horda. Para asegurar el aterrizaje del rescate y frenar la propagación, el mutante debe ser neutralizado a toda costa.\n\nOBJETIVO: Proteger el perímetro y eliminar al infectado mutante."
-                );
-            }
-        }
+            case ConfiguracionPartidaSeleccionada.ModoJuego.Historia:
+                if (esc == ConfiguracionPartidaSeleccionada.Escenario.Ciudad) return popupHistoria_Ciudad;
+                if (esc == ConfiguracionPartidaSeleccionada.Escenario.Cabana) return popupHistoria_Cabana;
+                return popupHistoria_Laboratorio;
 
-        // ------------------------- MODO RONDA 5 -------------------------
-        if (modo == ConfiguracionPartidaSeleccionada.ModoJuego.Ronda5)
-        {
-            if (esc == ConfiguracionPartidaSeleccionada.Escenario.Laboratorio)
-            {
-                return new DatosHistoria(
-                    "",
-                    "OPERACIÓN: Falla de contención",
-                    "El laboratorio ha sido tomado por oleadas de sujetos infectados. Las lecturas confirman la presencia de un espécimen alfa mutado liderando las acometidas. Asegura la zona, gestiona tus municiones y resiste el embate de cinco asaltos antes de intentar cualquier repliegue.\n\nOBJETIVO: Sobrevivir a 5 oleadas y abatir al líder mutante."
-                );
-            }
-            if (esc == ConfiguracionPartidaSeleccionada.Escenario.Ciudad)
-            {
-                return new DatosHistoria(
-                    "",
-                    "OPERACIÓN: Asalto urbano",
-                    "Las barricadas de la ciudad no resistirán por mucho tiempo. Múltiples grupos de infectados avanzan por las avenidas coordinados por una variante mutada de gran resistencia. Debemos mantener la posición y limpiar la zona durante las próximas oleadas hostiles.\n\nOBJETIVO: Sobrevivir a 5 oleadas y eliminar la amenaza mutante."
-                );
-            }
-            if (esc == ConfiguracionPartidaSeleccionada.Escenario.Cabana)
-            {
-                return new DatosHistoria(
-                    "",
-                    "OPERACIÓN: Aislamiento",
-                    "El refugio en el bosque quedó rodeado por las hordas que emergieron de la espesura. Un enorme mutante está dirigiendo los ataques contra la estructura. Mantén la defensa del perímetro y contiene los cinco asaltos consecutivos para asegurar el sector.\n\nOBJETIVO: Sobrevivir a 5 oleadas y erradicar al mutante alfa."
-                );
-            }
-        }
+            case ConfiguracionPartidaSeleccionada.ModoJuego.Ronda5:
+                if (esc == ConfiguracionPartidaSeleccionada.Escenario.Ciudad) return popupRonda5_Ciudad;
+                if (esc == ConfiguracionPartidaSeleccionada.Escenario.Cabana) return popupRonda5_Cabana;
+                return popupRonda5_Laboratorio;
 
-        // ------------------------- MODO SUPERVIVENCIA -------------------------
-        if (modo == ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia)
-        {
-            if (esc == ConfiguracionPartidaSeleccionada.Escenario.Laboratorio)
-            {
-                return new DatosHistoria(
-                    "",
-                    "SUPERVIVENCIA: Zona cero",
-                    "No hay vías de escape ni refuerzos en camino dentro del laboratorio subterráneo. El aire está cargado y las hordas continúan llegando sin descanso. La única directiva es aguantar en pie todo el tiempo que sea posible ante oleadas incesantes y especímenes mutantes.\n\nOBJETIVO: Resistir tantas oleadas de infectados como puedas."
-                );
-            }
-            if (esc == ConfiguracionPartidaSeleccionada.Escenario.Ciudad)
-            {
-                return new DatosHistoria(
-                    "",
-                    "SUPERVIVENCIA: Ruinas urbanas",
-                    "La metrópoli cayó por completo y las oleadas de infectados convergen hacia tu posición. En este punto la evacuación es imposible; solo queda resistir, administrar los recursos y contener los constantes ataques de la horda y sus mutaciones.\n\nOBJETIVO: Sobrevivir el mayor número de rondas posible."
-                );
-            }
-            if (esc == ConfiguracionPartidaSeleccionada.Escenario.Cabana)
-            {
-                return new DatosHistoria(
-                    "",
-                    "SUPERVIVENCIA: Último bastión",
-                    "La cabaña en lo profundo del bosque está completamente asediada. La noche avanza y los infectados emergen de la oscuridad en números incontables, comandados por mutantes que no darán tregua. Lucha hasta el último cartucho.\n\nOBJETIVO: Aguantar y resistir oleadas continuas sin límite."
-                );
-            }
-        }
+            case ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia:
+                if (esc == ConfiguracionPartidaSeleccionada.Escenario.Ciudad) return popupSupervivencia_Ciudad;
+                if (esc == ConfiguracionPartidaSeleccionada.Escenario.Cabana) return popupSupervivencia_Cabana;
+                return popupSupervivencia_Laboratorio;
 
-        // ------------------------- VALOR POR DEFECTO -------------------------
-        return new DatosHistoria(
-            "",
-            "COMBATE TÁCTICO",
-            "El área de despliegue ha sido comprometida por fuerzas hostiles no identificadas. Mantén la posición, neutraliza las amenazas en el sector y procura no caer.\n\nOBJETIVO: Sobrevivir a las oleadas enemigas."
-        );
+            default:
+                return popupRonda5_Laboratorio;
+        }
     }
 
+    /// <summary>
+    /// Asignar este método en el OnClick() del botón Aceptar/Continuar de cada una de las 9 historias.
+    /// </summary>
     public void ContinuarHistoria()
     {
         Debug.Log("[StoryIntro] ContinuarHistoria() INICIO. IsOwner=" + IsOwner + " | historiaActiva=" + historiaActiva);
@@ -238,8 +277,21 @@ public class StoryIntroController : NetworkBehaviour
 
         historiaActiva = false;
 
-        if (popupHistoria != null)
-            popupHistoria.SetActive(false);
+        if (popupContinuarSafeZone != null)
+        popupContinuarSafeZone.SetActive(false);
+
+        esperandoContinuarSafeZone = false;
+
+        // Ocultar el popup que estaba visible
+        if (popupActivoActual != null)
+        {
+            popupActivoActual.SetActive(false);
+            popupActivoActual = null;
+        }
+        else
+        {
+            ApagarTodosLosPopups();
+        }
 
         if (hud != null)
             hud.SetActive(true);
@@ -249,10 +301,23 @@ public class StoryIntroController : NetworkBehaviour
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
-        if (IsServer && RoundManager.Instance != null)
-            RoundManager.Instance.StartRound(1);
 
         Debug.Log("[StoryIntro] ContinuarHistoria() FIN.");
+    }
+
+    private void ApagarTodosLosPopups()
+    {
+        if (popupHistoria_Laboratorio != null) popupHistoria_Laboratorio.SetActive(false);
+        if (popupHistoria_Ciudad != null) popupHistoria_Ciudad.SetActive(false);
+        if (popupHistoria_Cabana != null) popupHistoria_Cabana.SetActive(false);
+
+        if (popupRonda5_Laboratorio != null) popupRonda5_Laboratorio.SetActive(false);
+        if (popupRonda5_Ciudad != null) popupRonda5_Ciudad.SetActive(false);
+        if (popupRonda5_Cabana != null) popupRonda5_Cabana.SetActive(false);
+
+        if (popupSupervivencia_Laboratorio != null) popupSupervivencia_Laboratorio.SetActive(false);
+        if (popupSupervivencia_Ciudad != null) popupSupervivencia_Ciudad.SetActive(false);
+        if (popupSupervivencia_Cabana != null) popupSupervivencia_Cabana.SetActive(false);
     }
 
     private void BloquearJugador()
@@ -281,6 +346,9 @@ public class StoryIntroController : NetworkBehaviour
         if (weaponSwitcher == null)
             weaponSwitcher = transform.root.GetComponentInChildren<WeaponSwitcher>(true);
 
+        Debug.Log("[StoryIntro] HabilitarJugador() INICIO. weaponSwitcher=" + (weaponSwitcher != null) +
+            " | CurrentWeapon=" + (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null ? weaponSwitcher.CurrentWeapon.name : "NULL"));
+
         if (playerMovement != null)
         {
             playerMovement.enabled = true;
@@ -294,6 +362,11 @@ public class StoryIntroController : NetworkBehaviour
         {
             weaponSwitcher.CurrentWeapon.enabled = true;
             weaponSwitcher.CurrentWeapon.InputLocked = false;
+            Debug.Log("[StoryIntro] Arma desbloqueada: " + weaponSwitcher.CurrentWeapon.name);
+        }
+        else
+        {
+            Debug.LogWarning("[StoryIntro] Seguimos sin encontrar weaponSwitcher ni con el lookup manual.");
         }
     }
 }

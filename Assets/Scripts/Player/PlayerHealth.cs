@@ -96,6 +96,30 @@ public partial class PlayerHealth : NetworkBehaviour
 
     public int MaxHealth => maxHealth;
 
+    /// <summary>
+    /// Cambia la vida máxima (la fija el personaje elegido, lo llama PlayerCharacter en TODOS los peers).
+    /// Solo el servidor escribe la vida actual: con refill = true arranca llena con el máximo nuevo.
+    /// Si se llama antes del spawn, OnNetworkSpawn ya usa el máximo nuevo.
+    /// </summary>
+    public void SetMaxHealth(int newMaxHealth, bool refill = true)
+    {
+        maxHealth = Mathf.Max(1, newMaxHealth);
+
+        if (!IsSpawned)
+            return;
+
+        if (IsServer)
+        {
+            if (refill)
+                CurrentHealth.Value = maxHealth;
+            else if (CurrentHealth.Value > maxHealth)
+                CurrentHealth.Value = maxHealth;
+        }
+
+        // Avisa a la UI (barra de vida) que el máximo cambió. Con valores iguales no dispara efectos de daño.
+        OnHealthChanged?.Invoke(CurrentHealth.Value, CurrentHealth.Value);
+    }
+
     public int StartingLives =>
         startingLives;
 
