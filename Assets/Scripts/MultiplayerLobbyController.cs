@@ -51,6 +51,9 @@ public class MultiplayerLobbyController : MonoBehaviour
     [SerializeField] private CharacterCatalog catalogoPersonajes;
     [SerializeField] private CharacterPreviewStage escenarioPersonajes;
 
+    [Tooltip("Botón PERSONAJE: se desactiva al marcar LISTO (la elección queda fija).")]
+    [SerializeField] private Button btnPersonaje;
+
     [Header("--- BOTÓN LISTO ---")]
     [SerializeField] private Button btnPlayMultiplayer;
     [SerializeField] private TMP_Text btnPlayMultiplayerText;
@@ -724,6 +727,11 @@ public class MultiplayerLobbyController : MonoBehaviour
         if (btnPlayMultiplayer != null)
         {
             btnPlayMultiplayer.interactable = true;
+        }
+
+        if (btnPersonaje != null)
+        {
+            btnPersonaje.interactable = !listo;
         }
     }
 

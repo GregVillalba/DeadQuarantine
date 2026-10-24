@@ -52,6 +52,13 @@ public class CharacterPreviewStage : MonoBehaviour
 
     public int SlotCount => slotAnchors != null ? slotAnchors.Length : 0;
 
+    /// <summary>Prende o apaga la cámara del escenario (una ventana cerrada no tiene por qué seguir renderizando).</summary>
+    public void SetRendering(bool on)
+    {
+        if (previewCamera != null)
+            previewCamera.enabled = on;
+    }
+
     private void Awake()
     {
         EnsureInit();

@@ -12,6 +12,9 @@ public class CharacterSelectScreen : MonoBehaviour
 {
     [SerializeField] private CharacterPreviewStage stage;
 
+    [Tooltip("Para la ventana emergente: la cámara del escenario solo renderiza mientras la ventana está abierta.")]
+    [SerializeField] private bool toggleStageRendering;
+
     [Header("Al confirmar / volver")]
     [Tooltip("Opcional: escena a cargar al confirmar. Vacío = solo se disparan los eventos.")]
     [SerializeField] private string sceneOnConfirm;
@@ -20,7 +23,16 @@ public class CharacterSelectScreen : MonoBehaviour
 
     private void OnEnable()
     {
+        if (toggleStageRendering && stage != null)
+            stage.SetRendering(true);
+
         ShowCurrent();
+    }
+
+    private void OnDisable()
+    {
+        if (toggleStageRendering && stage != null)
+            stage.SetRendering(false);
     }
 
     private void Update()

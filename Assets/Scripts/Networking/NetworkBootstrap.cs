@@ -12,7 +12,7 @@ using UnityEngine.SceneManagement;
 
 public class NetworkBootstrap : MonoBehaviour
 {
-    [SerializeField] private int maxConnections = 2;
+    [SerializeField] private int maxConnections = 4;
 
     public static NetworkBootstrap Instance { get; private set; }
 

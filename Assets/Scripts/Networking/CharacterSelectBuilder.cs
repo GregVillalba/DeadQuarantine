@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
@@ -17,6 +18,8 @@ public class CharacterSelectUIBuilder : EditorWindow
     private CharacterCatalog catalog;
     private TMP_FontAsset font;
     private Color accent = new Color(0.25f, 0.9f, 0.45f, 1f);
+    private bool popupMode = true;
+    private CharacterPreviewStage copyFrom;
 
     // Paleta
     private static readonly Color Dark = new Color(0.03f, 0.04f, 0.05f, 0.94f);
@@ -47,8 +50,18 @@ public class CharacterSelectUIBuilder : EditorWindow
     private void OnGUI()
     {
         EditorGUILayout.HelpBox(
-            "Construye la pantalla de selección en la escena abierta. Necesita que la escena ya tenga el CharacterStage " +
-            "(CharacterPreviewStage). Si ya habías armado un Canvas a mano, borralo después.", MessageType.Info);
+            "Ventana emergente (recomendado para el lobby): crea su propio escenario 3D de un personaje, empieza oculta, " +
+            "se abre con el botón PERSONAJE y se cierra con ATRAS / CONFIRMAR, sin cambiar de escena. " +
+            "Si la desmarcás, arma una pantalla completa usando un CharacterStage ya existente en la escena.", MessageType.Info);
+
+        popupMode = EditorGUILayout.Toggle("Ventana emergente", popupMode);
+
+        if (popupMode)
+        {
+            copyFrom = (CharacterPreviewStage)EditorGUILayout.ObjectField(
+                new GUIContent("Copiar pose y arma de (opcional)", "Si queda vacío se copia de LobbyCharacterStage cuando existe en la escena."),
+                copyFrom, typeof(CharacterPreviewStage), true);
+        }
 
         catalog = (CharacterCatalog)EditorGUILayout.ObjectField("Catálogo", catalog, typeof(CharacterCatalog), false);
         font = (TMP_FontAsset)EditorGUILayout.ObjectField("Fuente (TMP, opcional)", font, typeof(TMP_FontAsset), false);
@@ -72,22 +85,35 @@ public class CharacterSelectUIBuilder : EditorWindow
             return;
         }
 
-        CharacterPreviewStage stage = FindObjectOfType<CharacterPreviewStage>();
+        CharacterPreviewStage stage;
 
-        if (stage == null)
+        if (popupMode)
         {
-            EditorUtility.DisplayDialog("Falta el escenario 3D",
-                "No hay un CharacterPreviewStage en la escena. Armá primero el CharacterStage (paso 4 de la guía).", "OK");
-            return;
+            stage = CreatePopupStage();
+
+            if (stage == null)
+                return;
+        }
+        else
+        {
+            stage = FindObjectOfType<CharacterPreviewStage>();
+
+            if (stage == null)
+            {
+                EditorUtility.DisplayDialog("Falta el escenario 3D",
+                    "No hay un CharacterPreviewStage en la escena. Armá primero el CharacterStage (paso 4 de la guía).", "OK");
+                return;
+            }
         }
 
         F = font;
         A = accent;
 
-        GameObject old = GameObject.Find("CharacterSelectCanvas");
+        // En modo ventana emergente el Canvas queda inactivo, por eso se busca también entre los inactivos.
+        Transform old = FindInScene("CharacterSelectCanvas");
 
         if (old != null)
-            Undo.DestroyObjectImmediate(old);
+            Undo.DestroyObjectImmediate(old.gameObject);
 
         // ---- Canvas ----
         GameObject root = new GameObject("CharacterSelectCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
@@ -96,7 +122,7 @@ public class CharacterSelectUIBuilder : EditorWindow
 
         Canvas canvas = root.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 10;
+        canvas.sortingOrder = popupMode ? 20 : 10;
 
         CanvasScaler scaler = root.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -287,8 +313,17 @@ public class CharacterSelectUIBuilder : EditorWindow
         SetObj(screenSo, "stage", stage);
         screenSo.ApplyModifiedProperties();
 
-        UnityEventTools.AddPersistentListener(btnConfirm.onClick, screen.Confirm);
-        UnityEventTools.AddPersistentListener(btnAtras.onClick, screen.Back);
+        if (popupMode)
+        {
+            // Ventana emergente: confirmar y volver solo cierran la ventana (la elección ya se guarda al instante).
+            UnityEventTools.AddBoolPersistentListener(btnConfirm.onClick, root.SetActive, false);
+            UnityEventTools.AddBoolPersistentListener(btnAtras.onClick, root.SetActive, false);
+        }
+        else
+        {
+            UnityEventTools.AddPersistentListener(btnConfirm.onClick, screen.Confirm);
+            UnityEventTools.AddPersistentListener(btnAtras.onClick, screen.Back);
+        }
 
         SerializedObject dragSo = new SerializedObject(drag);
         SetObj(dragSo, "stage", stage);
@@ -300,10 +335,36 @@ public class CharacterSelectUIBuilder : EditorWindow
         stageSo.FindProperty("textureSize").vector2IntValue = new Vector2Int(900, 1000);
         stageSo.ApplyModifiedProperties();
 
+        if (popupMode)
+        {
+            SerializedObject popupScreenSo = new SerializedObject(screen);
+            popupScreenSo.FindProperty("toggleStageRendering").boolValue = true;
+            popupScreenSo.ApplyModifiedProperties();
+
+            // El botón PERSONAJE del lobby abre esta ventana.
+            Transform personaje = FindInScene("Btn_Personaje");
+            Button personajeBtn = personaje != null ? personaje.GetComponent<Button>() : null;
+
+            if (personajeBtn != null)
+            {
+                for (int i = personajeBtn.onClick.GetPersistentEventCount() - 1; i >= 0; i--)
+                    UnityEventTools.RemovePersistentListener(personajeBtn.onClick, i);
+
+                UnityEventTools.AddBoolPersistentListener(personajeBtn.onClick, root.SetActive, true);
+            }
+            else
+            {
+                Debug.LogWarning("[CharacterSelectUIBuilder] No encontré Btn_Personaje: ejecutá antes Game > Construir UI del Lobby (3D), o conectá a mano un botón que haga SetActive(true) sobre CharacterSelectCanvas.");
+            }
+
+            root.SetActive(false);
+        }
+
         Selection.activeGameObject = root;
         EditorSceneManager.MarkSceneDirty(root.scene);
 
-        Debug.Log("[CharacterSelectUIBuilder] UI construida. Si tenías un Canvas armado a mano, borralo. Asigná los iconos en el catálogo (Classes > Icon).");
+        Debug.Log("[CharacterSelectUIBuilder] UI construida" + (popupMode ? " como ventana emergente (empieza oculta; se abre con el botón PERSONAJE)." : ".") +
+                  " Si tenías un Canvas armado a mano, borralo. Asigná los iconos en el catálogo (Variants > Icon).");
     }
 
     // =========================================================
@@ -315,6 +376,211 @@ public class CharacterSelectUIBuilder : EditorWindow
     private static readonly Vector2 BL = new Vector2(0f, 0f);
     private static readonly Vector2 BR = new Vector2(1f, 0f);
     private static readonly Vector2 ML = new Vector2(0f, 0.5f);
+
+    // =========================================================
+    // ESCENARIO DE LA VENTANA EMERGENTE (un personaje, lejos del salón)
+    // =========================================================
+
+    private CharacterPreviewStage CreatePopupStage()
+    {
+        int layer = EnsureLayer("CharacterPreview");
+
+        if (layer < 0)
+        {
+            EditorUtility.DisplayDialog("Sin layers libres", "No hay un User Layer libre para 'CharacterPreview'. Liberá uno en Tags & Layers.", "OK");
+            return null;
+        }
+
+        Transform old = FindInScene("PopupCharacterStage");
+
+        if (old != null)
+            Undo.DestroyObjectImmediate(old.gameObject);
+
+        const float fov = 30f;
+        const float viewH = 2.6f;
+        const float feetMargin = 0.1f;
+        float dist = viewH / (2f * Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad));
+        float camY = viewH * 0.5f - feetMargin;
+
+        GameObject stageGO = new GameObject("PopupCharacterStage");
+        Undo.RegisterCreatedObjectUndo(stageGO, "Construir ventana de personaje");
+        stageGO.transform.position = new Vector3(0f, -600f, 0f);
+
+        GameObject anchor = new GameObject("Slot1");
+        anchor.transform.SetParent(stageGO.transform, false);
+
+        GameObject camGO = new GameObject("PreviewCamera", typeof(Camera));
+        camGO.transform.SetParent(stageGO.transform, false);
+        camGO.transform.localPosition = new Vector3(0f, camY, dist);
+        camGO.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+
+        Camera cam = camGO.GetComponent<Camera>();
+        cam.fieldOfView = fov;
+        cam.nearClipPlane = 0.3f;
+        cam.farClipPlane = 40f;
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = new Color(0f, 0f, 0f, 0f);
+        cam.depth = -20f;
+        cam.enabled = false;   // se prende al abrir la ventana (CharacterSelectScreen)
+
+        CreateLight("Luz_Frente", stageGO.transform, new Vector3(0f, 2.4f, dist - 0.6f), 28f, 16f, new Color(1f, 0.97f, 0.92f));
+        CreateLight("Luz_Borde", stageGO.transform, new Vector3(0f, 2.6f, -3.2f), 14f, 14f, new Color(0.55f, 0.8f, 1f));
+
+        Camera main = Camera.main;
+
+        if (main != null)
+        {
+            Undo.RecordObject(main, "Culling Mask");
+            main.cullingMask &= ~(1 << layer);
+        }
+        else
+        {
+            Debug.LogWarning("[CharacterSelectUIBuilder] No encontré la Main Camera: desmarcá el layer CharacterPreview de su Culling Mask a mano.");
+        }
+
+        CharacterPreviewStage stage = stageGO.AddComponent<CharacterPreviewStage>();
+        SerializedObject so = new SerializedObject(stage);
+        SetObj(so, "catalog", catalog);
+        SetObj(so, "previewCamera", cam);
+        so.FindProperty("previewLayerName").stringValue = "CharacterPreview";
+
+        SerializedProperty anchors = so.FindProperty("slotAnchors");
+        anchors.arraySize = 1;
+        anchors.GetArrayElementAtIndex(0).objectReferenceValue = anchor.transform;
+        so.ApplyModifiedProperties();
+
+        // Pose y arma: de lo que se indique, o del escenario del lobby si ya está configurado.
+        CharacterPreviewStage source = copyFrom;
+
+        if (source == null)
+        {
+            Transform lobbyStage = FindInScene("LobbyCharacterStage");
+
+            if (lobbyStage != null)
+                source = lobbyStage.GetComponent<CharacterPreviewStage>();
+        }
+
+        if (source != null)
+            CopyStageSettings(source, stage);
+
+        return stage;
+    }
+
+    private static void CopyStageSettings(CharacterPreviewStage from, CharacterPreviewStage to)
+    {
+        string[] fields =
+        {
+            "poseController", "poseClip", "extraLayersWeight",
+            "weaponPrefab", "weaponBoneName", "weaponLocalPosition", "weaponLocalEuler", "weaponLocalScale",
+            "startYaw"
+        };
+
+        SerializedObject src = new SerializedObject(from);
+        SerializedObject dst = new SerializedObject(to);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            SerializedProperty s = src.FindProperty(fields[i]);
+            SerializedProperty d = dst.FindProperty(fields[i]);
+
+            if (s != null && d != null)
+                CopyValue(s, d);
+        }
+
+        dst.ApplyModifiedProperties();
+    }
+
+    // Copia el valor de una propiedad serializada a otra del mismo tipo (sin depender de APIs que cambian entre versiones).
+    private static void CopyValue(SerializedProperty s, SerializedProperty d)
+    {
+        if (s.propertyType != d.propertyType)
+            return;
+
+        switch (s.propertyType)
+        {
+            case SerializedPropertyType.ObjectReference: d.objectReferenceValue = s.objectReferenceValue; break;
+            case SerializedPropertyType.Float: d.floatValue = s.floatValue; break;
+            case SerializedPropertyType.Integer: d.intValue = s.intValue; break;
+            case SerializedPropertyType.Boolean: d.boolValue = s.boolValue; break;
+            case SerializedPropertyType.String: d.stringValue = s.stringValue; break;
+            case SerializedPropertyType.Vector3: d.vector3Value = s.vector3Value; break;
+        }
+    }
+
+    private static int EnsureLayer(string layerName)
+    {
+        int existing = LayerMask.NameToLayer(layerName);
+
+        if (existing >= 0)
+            return existing;
+
+        Object[] assets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset");
+
+        if (assets == null || assets.Length == 0)
+            return -1;
+
+        SerializedObject tagManager = new SerializedObject(assets[0]);
+        SerializedProperty layers = tagManager.FindProperty("layers");
+
+        for (int i = 8; i < 32; i++)
+        {
+            SerializedProperty sp = layers.GetArrayElementAtIndex(i);
+
+            if (string.IsNullOrEmpty(sp.stringValue))
+            {
+                sp.stringValue = layerName;
+                tagManager.ApplyModifiedProperties();
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private static void CreateLight(string name, Transform parent, Vector3 localPos, float intensity, float range, Color color)
+    {
+        GameObject go = new GameObject(name, typeof(Light));
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = localPos;
+
+        Light l = go.GetComponent<Light>();
+        l.type = LightType.Point;
+        l.intensity = intensity;
+        l.range = range;
+        l.color = color;
+        l.shadows = LightShadows.None;
+    }
+
+    private static Transform FindInScene(string name)
+    {
+        GameObject[] roots = SceneManager.GetActiveScene().GetRootGameObjects();
+
+        for (int i = 0; i < roots.Length; i++)
+        {
+            Transform found = FindDeep(roots[i].transform, name);
+
+            if (found != null)
+                return found;
+        }
+
+        return null;
+    }
+
+    private static Transform FindDeep(Transform t, string name)
+    {
+        if (t.name == name)
+            return t;
+
+        foreach (Transform child in t)
+        {
+            Transform found = FindDeep(child, name);
+
+            if (found != null)
+                return found;
+        }
+
+        return null;
+    }
 
     private static void SetObj(SerializedObject so, string field, Object value)
     {

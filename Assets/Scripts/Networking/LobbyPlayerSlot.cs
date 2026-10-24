@@ -3,9 +3,10 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Una columna del lobby (JUGADOR N): textos y estado de conexión/listo, modelo 3D en el escenario y,
-/// solo si es el jugador local y todavía no está listo, el selector de personaje.
-/// Lo maneja MultiplayerLobbyController (Configure una vez + SetPlayer / SetEmpty en cada actualización).
+/// Una columna del lobby (JUGADOR N): el modelo 3D se muestra encima (lo dibuja CharacterPreviewStage en este slot)
+/// y este componente maneja la tarjeta de abajo: nombre del jugador, rol, personaje elegido (icono + nombre),
+/// conexión y estado de listo. Lo maneja MultiplayerLobbyController (Configure una vez + SetPlayer / SetEmpty).
+/// Lo arma solo Game > Construir UI del Lobby (ver LobbyUIBuilder).
 /// </summary>
 public class LobbyPlayerSlot : MonoBehaviour
 {
@@ -16,14 +17,18 @@ public class LobbyPlayerSlot : MonoBehaviour
     [SerializeField] private TMP_Text roleText;
     [SerializeField] private TMP_Text connectionText;
     [SerializeField] private TMP_Text readyText;
-    [SerializeField] private TMP_Text characterText;
     [SerializeField] private Image connectionIcon;
     [SerializeField] private Image readyIcon;
 
-    [Header("Solo jugador local")]
-    [Tooltip("Contiene el CharacterSelectMenu (botones de tipo/género y estadísticas).")]
-    [SerializeField] private GameObject localControls;
-    [Tooltip("Image transparente sobre el modelo, con CharacterPreviewDrag.")]
+    [Header("Personaje elegido")]
+    [SerializeField] private Image characterIcon;
+    [SerializeField] private TMP_Text characterNameText;   // EXPLORADOR
+    [SerializeField] private TMP_Text characterText;       // LIGERO - HOMBRE
+
+    [Header("Jugador local")]
+    [Tooltip("Marca que se enciende solo en tu propia columna.")]
+    [SerializeField] private GameObject localHighlight;
+    [Tooltip("Zona sobre el modelo (con CharacterPreviewDrag): solo el jugador local puede girar su modelo.")]
     [SerializeField] private GameObject dragZone;
 
     private CharacterCatalog catalog;
@@ -63,8 +68,9 @@ public class LobbyPlayerSlot : MonoBehaviour
         SetLine(connectionText, connectionIcon, false, "CONECTADO", "DESCONECTADO");
         SetLine(readyText, readyIcon, false, "ESTADO: LISTO", "ESTADO: NO LISTO");
 
-        if (characterText != null) characterText.gameObject.SetActive(false);
-        if (localControls != null) localControls.SetActive(false);
+        SetCharacterVisible(false);
+
+        if (localHighlight != null) localHighlight.SetActive(false);
         if (dragZone != null) dragZone.SetActive(false);
     }
 
@@ -94,27 +100,56 @@ public class LobbyPlayerSlot : MonoBehaviour
         SetLine(connectionText, connectionIcon, true, "CONECTADO", "DESCONECTADO");
         SetLine(readyText, readyIcon, ready, "ESTADO: LISTO", "ESTADO: NO LISTO");
 
-        // El local elige mientras no esté listo; al marcar LISTO queda bloqueado (C.A. 7).
-        bool editing = isLocal && !ready;
+        ShowCharacter(index);
 
-        if (localControls != null) localControls.SetActive(editing);
+        if (localHighlight != null) localHighlight.SetActive(isLocal);
         if (dragZone != null) dragZone.SetActive(isLocal);
+    }
+
+    private void ShowCharacter(int index)
+    {
+        if (catalog == null)
+        {
+            SetCharacterVisible(false);
+            return;
+        }
+
+        index = catalog.ResolveIndex(index);
+        CharacterCatalog.Variant v = catalog.GetVariant(index);
+
+        if (v == null)
+        {
+            SetCharacterVisible(false);
+            return;
+        }
+
+        SetCharacterVisible(true);
+
+        CharacterCatalog.ClassData data = catalog.GetClassData(v.type);
+
+        if (characterNameText != null)
+            characterNameText.text = data != null ? data.displayName.ToUpperInvariant() : v.type.ToString().ToUpperInvariant();
 
         if (characterText != null)
         {
-            characterText.gameObject.SetActive(!editing);
-            characterText.text = DescribeCharacter(index);
+            bool genderChoice = catalog.HasGenderChoice(v.type);
+            string gender = genderChoice ? " - " + (v.gender == CharacterGender.Male ? "HOMBRE" : "MUJER") : "";
+            characterText.text = CharacterSelectMenu.TierName(v.type) + gender;
+        }
+
+        if (characterIcon != null)
+        {
+            Sprite sprite = catalog.GetIcon(v.type, v.gender);
+            characterIcon.sprite = sprite;
+            characterIcon.enabled = sprite != null;
         }
     }
 
-    private string DescribeCharacter(int index)
+    private void SetCharacterVisible(bool visible)
     {
-        CharacterCatalog.Variant v = catalog != null ? catalog.GetVariant(index) : null;
-
-        if (v == null)
-            return "";
-
-        return CharacterSelectMenu.TierName(v.type) + " - " + (v.gender == CharacterGender.Male ? "HOMBRE" : "MUJER");
+        if (characterNameText != null) characterNameText.gameObject.SetActive(visible);
+        if (characterText != null) characterText.gameObject.SetActive(visible);
+        if (characterIcon != null) characterIcon.gameObject.SetActive(visible);
     }
 
     private void SetLine(TMP_Text text, Image icon, bool ok, string okText, string badText)
