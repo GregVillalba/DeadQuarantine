@@ -54,6 +54,14 @@ public class GestorHistoriaPartida : NetworkBehaviour
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Server
         );
+        
+    public NetworkVariable<ulong> ClienteConRadioNetwork =
+        new NetworkVariable<ulong>(
+            ulong.MaxValue,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+
 
     public NetworkVariable<bool> PuertaAbiertaNetwork =
         new NetworkVariable<bool>(
@@ -99,15 +107,18 @@ public override void OnNetworkSpawn()
         AplicarEstadoPuerta(false);
         CrearTarjeta();
     }
+    
     else if (EsHistoriaCiudad())
     {
         EstadoMisionNetwork.Value = BuscarRadio;
         ClienteConTarjetaNetwork.Value = ulong.MaxValue;
+        ClienteConRadioNetwork.Value = ulong.MaxValue;
         PuertaAbiertaNetwork.Value = false;
 
         if (CrearRadio())
             misionCiudadInicializada = true;
     }
+
     else
     {
         EstadoMisionNetwork.Value = MisionInactiva;
@@ -677,6 +688,7 @@ public void RegistrarRadio(
         return;
     }
 
+    ClienteConRadioNetwork.Value = clientId;
     radio.DespawnearRadio();
 
     EstadoMisionNetwork.Value = BuscarSenal;
@@ -759,6 +771,7 @@ public void IniciarMisionCiudad()
     }
 
     ClienteConTarjetaNetwork.Value = ulong.MaxValue;
+    ClienteConRadioNetwork.Value = ulong.MaxValue;
     EstadoMisionNetwork.Value = BuscarRadio;
 
     misionCiudadInicializada = true;
