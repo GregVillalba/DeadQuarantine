@@ -263,19 +263,62 @@ public class GestorEscenariosPartida : MonoBehaviour
     }
 }
 
-    public void TransicionarASafeZone2(Transform jugador)
+   public void TransicionarASafeZone2(Transform jugador)
+{
+    if (safeZone2 == null || spawnSafeZone2 == null)
     {
-        if (safeZone2 == null || spawnSafeZone2 == null)
-        {
-            Debug.LogError(
-                "[Escenarios] Asigná SafeZone2 y su punto de aparición."
-            );
-            return;
-        }
-
-        ActivarSafeZone2();
-        TrasladarJugador(jugador, spawnSafeZone2);
+        Debug.LogError("[Escenarios] Asigná SafeZone2 y su punto de aparición.");
+        return;
     }
+
+    ActivarSafeZone2();
+    TrasladarJugador(jugador, spawnSafeZone2);
+
+    StoryIntroController intro =
+        jugador.GetComponentInChildren<StoryIntroController>(true);
+
+    if (intro == null)
+    {
+        Debug.LogError(
+            "[Escenarios] No se encontró StoryIntroController en el jugador."
+        );
+        return;
+    }
+
+    Debug.Log("[Escenarios] Avisando al jugador que puede continuar a la Mansión.");
+
+    intro.MostrarAvisoContinuarAMansion();
+}
+
+    
+public void TransicionarAScenarioCabana(Transform jugador)
+{
+    if (escenarioCabana == null)
+    {
+        Debug.LogError(
+            "[Escenarios] No asignaste el escenario Cabana."
+        );
+        return;
+    }
+
+    if (jugador == null)
+    {
+        Debug.LogError(
+            "[Escenarios] No se recibió el jugador."
+        );
+        return;
+    }
+
+    // Activa la Mansión y desactiva la Ciudad y las zonas seguras.
+    ActivarEscenario(
+        ConfiguracionPartidaSeleccionada.Escenario.Cabana
+    );
+
+    // Traslada al jugador al spawn de la Mansión.
+    TrasladarJugadorAInicioDeEscenario(jugador);
+}
+
+
 
     public void TrasladarJugadorAInicioDeEscenario(Transform jugador)
     {

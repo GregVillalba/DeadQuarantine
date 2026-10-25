@@ -42,6 +42,7 @@ public class StoryIntroController : NetworkBehaviour
     [SerializeField] private GameObject popupContinuarSafeZone;
 
     private bool esperandoContinuarSafeZone;
+    private bool continuarHaciaCabana;
     private WeaponSwitcher weaponSwitcher;
 
     private bool historiaActiva;
@@ -59,34 +60,47 @@ public class StoryIntroController : NetworkBehaviour
             playerLook = GetComponentInChildren<PlayerLook>(true);
     }
 
-    private void Update()
+   
+private void Update()
+{
+    if (!IsOwner || Keyboard.current == null)
+        return;
+
+    if (!Keyboard.current.enterKey.wasPressedThisFrame &&
+        !Keyboard.current.numpadEnterKey.wasPressedThisFrame)
+        return;
+
+    Debug.Log(
+        "[StoryIntro] Enter detectado. EsperandoSafeZone=" +
+        esperandoContinuarSafeZone +
+        " | HaciaCabana=" + continuarHaciaCabana +
+        " | HistoriaActiva=" + historiaActiva +
+        " | ActionsBlocked=" + PlayerInputGate.ActionsBlocked
+    );
+
+    // La transición desde la zona segura debe poder procesarse
+    // incluso si el bloqueo de acciones está activo.
+    if (esperandoContinuarSafeZone)
     {
-        if (!IsOwner || Keyboard.current == null)
-            return;
-
-        // Con la tienda del mercader (o la pausa) abierta el aviso se oculta y ENTER no avanza.
-        if (esperandoContinuarSafeZone && popupContinuarSafeZone != null)
-            popupContinuarSafeZone.SetActive(!PlayerInputGate.ActionsBlocked);
-
-        if (PlayerInputGate.ActionsBlocked)
-            return;
-
-        if (!Keyboard.current.enterKey.wasPressedThisFrame &&
-            !Keyboard.current.numpadEnterKey.wasPressedThisFrame)
-            return;
-
-        if (esperandoContinuarSafeZone)
-        {
+        if (continuarHaciaCabana)
+            IniciarTransicionACabana();
+        else
             IniciarTransicionACiudad();
-            return;
-        }
 
-        if (historiaActiva)
-            ContinuarHistoria();
+        return;
     }
+
+    if (PlayerInputGate.ActionsBlocked)
+        return;
+
+    if (historiaActiva)
+        ContinuarHistoria();
+}
+
 
     public void MostrarAvisoContinuarSafeZone()
     {
+        continuarHaciaCabana = false;
         if (!IsOwner)
             return;
 
@@ -97,6 +111,36 @@ public class StoryIntroController : NetworkBehaviour
 
         Debug.Log("[StoryIntro] Esperando Enter para continuar a Ciudad.");
     }
+  
+public void MostrarAvisoContinuarAMansion()
+{
+    Debug.Log(
+        "[StoryIntro] Se llamó a MostrarAvisoContinuarAMansion(). IsOwner=" +
+        IsOwner
+    );
+
+    if (!IsOwner)
+        return;
+
+    continuarHaciaCabana = true;
+    esperandoContinuarSafeZone = true;
+
+    if (popupContinuarSafeZone != null)
+    {
+        popupContinuarSafeZone.SetActive(true);
+    }
+    else
+    {
+        Debug.LogError(
+            "[StoryIntro] popupContinuarSafeZone no está asignado en el Inspector."
+        );
+    }
+
+    Debug.Log(
+        "[StoryIntro] Esperando Enter para continuar a la Mansión."
+    );
+}
+
 
     public void OcultarAvisoContinuarSafeZone()
     {
@@ -462,4 +506,88 @@ public class StoryIntroController : NetworkBehaviour
         if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null)
             weaponSwitcher.CurrentWeapon.enabled = true;
     }
+
+    
+private void IniciarTransicionACabana()
+{
+    esperandoContinuarSafeZone = false;
+    continuarHaciaCabana = false;
+
+    if (popupContinuarSafeZone != null)
+        popupContinuarSafeZone.SetActive(false);
+
+    GestorEscenariosPartida gestor = GestorEscenariosPartida.Instance;
+
+    if (gestor == null)
+    {
+        Debug.LogError(
+            "[StoryIntro] No se encontró GestorEscenariosPartida."
+        );
+        return;
+    }
+
+    historiaActiva = true;
+
+    if (hud != null)
+        hud.SetActive(false);
+
+    BloquearJugador();
+
+    // Activar la Mansión y desactivar la zona segura.
+    gestor.ActivarEscenario(
+        ConfiguracionPartidaSeleccionada.Escenario.Cabana
+    );
+
+    // Actualizar los puntos de aparición de los zombis.
+    if (IsServer && RoundManager.Instance != null)
+    {
+        RoundManager.Instance.ActualizarSpawnPointsDelEscenario();
+        RoundManager.Instance.EliminarZombiesHistoria();
+        RoundManager.Instance.ReanudarSpawnsHistoria();
+    }
+
+    // Llevar al jugador al punto de aparición de la Mansión.
+    gestor.TrasladarJugadorAInicioDeEscenario(transform.root);
+
+    // Mostrar la introducción del escenario final.
+    DatosHistoria datos = ObtenerDatosHistoria(
+        ConfiguracionPartidaSeleccionada.ModoJuego.Historia,
+        ConfiguracionPartidaSeleccionada.Escenario.Cabana
+    );
+
+    if (textoSubtitulo != null)
+    {
+        textoSubtitulo.text = datos.subtitulo;
+        textoSubtitulo.gameObject.SetActive(
+            !string.IsNullOrEmpty(datos.subtitulo)
+        );
+    }
+
+    if (textoTitulo != null)
+        textoTitulo.text = datos.titulo;
+
+    if (textoDescripcion != null)
+        textoDescripcion.text = datos.descripcionConObjetivo;
+
+    if (popupHistoria != null)
+    {
+        Transform actual = popupHistoria.transform.parent;
+
+        while (actual != null)
+        {
+            actual.gameObject.SetActive(true);
+            actual = actual.parent;
+        }
+
+        popupHistoria.SetActive(true);
+    }
+
+    Cursor.visible = true;
+    Cursor.lockState = CursorLockMode.None;
+
+    Debug.Log(
+        "[StoryIntro] Mansión activada. Introducción mostrada."
+    );
+}
+
 }
