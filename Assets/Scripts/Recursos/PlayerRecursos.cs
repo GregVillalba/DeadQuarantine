@@ -126,6 +126,16 @@ public class PlayerRecursos : NetworkBehaviour
         return true;
     }
 
+    // Lo llama PlayerHealth.EliminatePlayer: eliminado (sin vidas) pierde todo. Abatido y levantado conserva todo.
+    public void PerderTodosLosRecursos()
+    {
+        if (!IsServer)
+            return;
+
+        foreach (TipoRecurso tipo in Enum.GetValues(typeof(TipoRecurso)))
+            RecursoNetwork(tipo).Value = 0;
+    }
+
     // =========================================================
     // RECURSOS DEL MAPA
     // =========================================================

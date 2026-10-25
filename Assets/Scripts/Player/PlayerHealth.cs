@@ -833,6 +833,13 @@ public partial class PlayerHealth : NetworkBehaviour
             );
         }
 
+        // Quedó eliminado: pierde todos sus recursos (y reaparece con 0 en la ronda siguiente).
+        PlayerRecursos playerRecursos =
+        transform.root.GetComponentInChildren<PlayerRecursos>();
+
+        if (playerRecursos != null)
+            playerRecursos.PerderTodosLosRecursos();
+
         if (RoundManager.Instance != null)
         {
             RoundManager.Instance.PlayerDied();
