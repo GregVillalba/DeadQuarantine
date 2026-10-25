@@ -68,6 +68,19 @@ public class PlayerRecursosTests
         Assert.AreEqual(2, playerRecursos.Cantidad(TipoRecurso.Bidon));
     }
 
+    [Test]
+    public void PerderTodosLosRecursos_SinSpawnearComoServidor_NoModificaLaCantidad()
+    {
+        // Solo el servidor vacía el inventario (lo llama PlayerHealth.EliminatePlayer).
+        playerRecursos.PilaDeLatasNetwork.Value = 3;
+        playerRecursos.BidonNetwork.Value = 1;
+
+        playerRecursos.PerderTodosLosRecursos();
+
+        Assert.AreEqual(3, playerRecursos.Cantidad(TipoRecurso.PilaDeLatas));
+        Assert.AreEqual(1, playerRecursos.Cantidad(TipoRecurso.Bidon));
+    }
+
     // ---------------------------------------------------------------
     // Alcanza
     // ---------------------------------------------------------------
