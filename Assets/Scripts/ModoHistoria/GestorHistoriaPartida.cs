@@ -19,6 +19,8 @@ public class GestorHistoriaPartida : NetworkBehaviour
     private bool animacionAperturaEjecutada;
     private bool misionCiudadInicializada;
     private readonly HashSet<ulong> jugadoresEnZonaSegura = new HashSet<ulong>();
+    private bool transicionSafeZone1Iniciada;
+    private bool transicionSafeZone2Iniciada;   
 
     [Header("Tarjeta de acceso")]
     [SerializeField] private GameObject tarjetaPrefab;
@@ -211,12 +213,17 @@ public override void OnNetworkSpawn()
     }
 
     private void AlCambiarEstadoMision(
-        int estadoAnterior,
-        int estadoNuevo
-    )
+    int estadoAnterior,
+    int estadoNuevo)
+{
+    ActualizarTextoObjetivo();
+
+    if (estadoNuevo == HistoriaCiudadCompletada &&
+        EsHistoriaCiudad())
     {
-        ActualizarTextoObjetivo();
+        IniciarTransicionASafeZone2();
     }
+}
 
     private void ActualizarTextoObjetivo()
     {
@@ -507,6 +514,11 @@ private void AplicarEstadoPuerta(bool abierta)
     }
 
     animacionAperturaEjecutada = true;
+    animacionPuerta.AlFinalizarAnimacion -=
+    AlFinalizarAperturaPuerta;
+
+    animacionPuerta.AlFinalizarAnimacion +=
+    AlFinalizarAperturaPuerta;
 
     Debug.Log("[Historia] Llamando a AbrirPuerta().", this);
     animacionPuerta.AbrirPuerta();
@@ -922,4 +934,94 @@ private void ConfirmarContactoSobrevivientesRpc(
     );
 }
 
+private void AlFinalizarAperturaPuerta()
+{
+    if (transicionSafeZone1Iniciada)
+        return;
+
+    if (SceneManager.GetActiveScene().name !=
+        "MainSceneSinglePlayer")
+        return;
+
+    if (NetworkManager.Singleton == null ||
+        NetworkManager.Singleton.LocalClient.PlayerObject == null)
+        return;
+
+    transicionSafeZone1Iniciada = true;
+
+    Transform jugador =
+        NetworkManager.Singleton.LocalClient.PlayerObject.transform;
+
+    if (FadeTransicionHistoria.Instance != null)
+    {
+        FadeTransicionHistoria.Instance.EjecutarTransicion(() =>
+        {
+            if (GestorEscenariosPartida.Instance != null)
+            {
+                GestorEscenariosPartida.Instance
+                    .TransicionarASafeZone1(jugador);
+            }
+        });
+    }
+    else
+    {
+        Debug.LogError(
+            "[Historia] No se encontró FadeTransicionHistoria."
+        );
+
+        GestorEscenariosPartida.Instance
+            ?.TransicionarASafeZone1(jugador);
+    }
+}
+
+private void IniciarTransicionASafeZone2()
+{
+    if (transicionSafeZone2Iniciada)
+        return;
+
+    if (SceneManager.GetActiveScene().name !=
+        "MainSceneSinglePlayer")
+        return;
+
+    if (NetworkManager.Singleton == null ||
+        NetworkManager.Singleton.LocalClient.PlayerObject == null)
+        return;
+
+    transicionSafeZone2Iniciada = true;
+
+    Transform jugador =
+        NetworkManager.Singleton.LocalClient.PlayerObject.transform;
+
+    System.Action trasladarJugador = () =>
+    {
+        if (GestorEscenariosPartida.Instance == null)
+        {
+            Debug.LogError(
+                "[Historia] No se encontró GestorEscenariosPartida."
+            );
+            return;
+        }
+
+        GestorEscenariosPartida.Instance
+            .TransicionarASafeZone2(jugador);
+
+        if (IsServer)
+            EstadoMisionNetwork.Value = EnZonaSegura;
+    };
+
+    if (FadeTransicionHistoria.Instance != null)
+    {
+        FadeTransicionHistoria.Instance.EjecutarTransicion(
+            trasladarJugador
+        );
+    }
+    else
+    {
+        Debug.LogError(
+            "[Historia] No se encontró FadeTransicionHistoria."
+        );
+
+        trasladarJugador();
+    }
+}
 }

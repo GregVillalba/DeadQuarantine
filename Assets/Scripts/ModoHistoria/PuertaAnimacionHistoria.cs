@@ -1,6 +1,7 @@
 
 using UnityEngine;
 using System.Collections;
+using System;
 
 public class PuertaAnimacionHistoria : MonoBehaviour
 {
@@ -12,6 +13,7 @@ public class PuertaAnimacionHistoria : MonoBehaviour
 
     private bool animacionIniciada;
     private bool animacionFinalizada;
+    public event Action AlFinalizarAnimacion;
     private Coroutine comprobacionActual;
 
     private static readonly int EstadoAbrirPuerta =
@@ -141,10 +143,12 @@ public class PuertaAnimacionHistoria : MonoBehaviour
                     animator.speed = 0f;
                     LiberarPaso();
 
+
                     Debug.Log(
                         "[Puerta] Animación finalizada correctamente.",
                         this
                     );
+                    AlFinalizarAnimacion?.Invoke();
 
                     comprobacionActual = null;
                     yield break;
