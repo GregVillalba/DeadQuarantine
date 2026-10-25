@@ -54,6 +54,14 @@ public class GestorHistoriaPartida : NetworkBehaviour
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Server
         );
+        
+    public NetworkVariable<ulong> ClienteConRadioNetwork =
+        new NetworkVariable<ulong>(
+            ulong.MaxValue,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+
 
     public NetworkVariable<bool> PuertaAbiertaNetwork =
         new NetworkVariable<bool>(
@@ -99,15 +107,18 @@ public override void OnNetworkSpawn()
         AplicarEstadoPuerta(false);
         CrearTarjeta();
     }
+    
     else if (EsHistoriaCiudad())
     {
         EstadoMisionNetwork.Value = BuscarRadio;
         ClienteConTarjetaNetwork.Value = ulong.MaxValue;
+        ClienteConRadioNetwork.Value = ulong.MaxValue;
         PuertaAbiertaNetwork.Value = false;
 
         if (CrearRadio())
             misionCiudadInicializada = true;
     }
+
     else
     {
         EstadoMisionNetwork.Value = MisionInactiva;
@@ -258,7 +269,7 @@ public override void OnNetworkSpawn()
 
     case HistoriaCiudadCompletada:
         textoTituloObjetivo.color = Color.green;
-        textoTituloObjetivo.text = "OBJETIVO COMPLETADO";
+        textoTituloObjetivo.text = "MISIÓN COMPLETADA";
         textoDescripcionObjetivo.text =
             "Encontraste a los sobrevivientes. Prepárate para continuar.";
         break;
@@ -677,6 +688,7 @@ public void RegistrarRadio(
         return;
     }
 
+    ClienteConRadioNetwork.Value = clientId;
     radio.DespawnearRadio();
 
     EstadoMisionNetwork.Value = BuscarSenal;
@@ -691,6 +703,7 @@ public void IntentarRegistrarSenalEncontrada()
     RegistrarSenalEncontradaRpc();
 }
 
+
 [Rpc(
     SendTo.Server,
     InvokePermission = RpcInvokePermission.Everyone
@@ -699,23 +712,69 @@ private void RegistrarSenalEncontradaRpc(
     RpcParams rpcParams = default
 )
 {
-    if (!IsServer || !EsHistoriaCiudad())
+    Debug.Log(
+        $"[PRUEBA HISTORIA] RPC recibida. " +
+        $"IsServer={IsServer}, IsSpawned={IsSpawned}, " +
+        $"Estado={EstadoMisionNetwork.Value}, " +
+        $"Instancia={GetEntityId()}",
+        this
+    );
+
+    if (!IsServer)
+    {
+        Debug.LogWarning("[PRUEBA HISTORIA] Se detuvo: no es servidor.", this);
         return;
+    }
+
+    if (!EsHistoriaCiudad())
+    {
+        Debug.LogWarning("[PRUEBA HISTORIA] Se detuvo: EsHistoriaCiudad() es false.", this);
+        return;
+    }
 
     if (EstadoMisionNetwork.Value != BuscarSenal)
+    {
+        Debug.LogWarning(
+            $"[PRUEBA HISTORIA] Se detuvo: el estado es {EstadoMisionNetwork.Value}, " +
+            $"pero se esperaba {BuscarSenal}.",
+            this
+        );
         return;
+    }
 
     ulong clientId = rpcParams.Receive.SenderClientId;
 
-    if (!JugadorCercaDeUnJugadorConDetector(clientId))
+    Debug.Log(
+        $"[PRUEBA HISTORIA] Cliente que encontró la señal: {clientId}.",
+        this
+    );
+
+    bool detectorValido = JugadorCercaDeUnJugadorConDetector(clientId);
+
+    Debug.Log(
+        $"[PRUEBA HISTORIA] Detector válido: {detectorValido}.",
+        this
+    );
+
+    if (!detectorValido)
+    {
+        Debug.LogWarning(
+            "[PRUEBA HISTORIA] Se detuvo: el detector no se encontró " +
+            "o su propiedad SenalEncontrada es false.",
+            this
+        );
         return;
+    }
 
     EstadoMisionNetwork.Value = ContactarSobrevivientes;
 
     Debug.Log(
-        "[Historia] Señal encontrada. Inicia el contacto con sobrevivientes."
+        $"[PRUEBA HISTORIA] Estado cambiado correctamente a " +
+        $"{EstadoMisionNetwork.Value}. Instancia={GetEntityId()}",
+        this
     );
 }
+
 
 private bool JugadorCercaDeUnJugadorConDetector(ulong clientId)
 {
@@ -759,6 +818,7 @@ public void IniciarMisionCiudad()
     }
 
     ClienteConTarjetaNetwork.Value = ulong.MaxValue;
+    ClienteConRadioNetwork.Value = ulong.MaxValue;
     EstadoMisionNetwork.Value = BuscarRadio;
 
     misionCiudadInicializada = true;
@@ -825,4 +885,41 @@ private void ActivarDetectorSenalRpc(
 
     detector.ActivarBusquedaDeSenal();
 }
+
+
+public void ConfirmarContactoSobrevivientes()
+{
+    if (!IsSpawned)
+        return;
+
+    ConfirmarContactoSobrevivientesRpc();
+}
+
+[Rpc(
+    SendTo.Server,
+    InvokePermission = RpcInvokePermission.Everyone
+)]
+private void ConfirmarContactoSobrevivientesRpc(
+    RpcParams rpcParams = default)
+{
+    if (!IsServer || !EsHistoriaCiudad())
+        return;
+
+    if (EstadoMisionNetwork.Value != ContactarSobrevivientes)
+        return;
+
+    ulong clientId = rpcParams.Receive.SenderClientId;
+
+    // Solo puede confirmar el jugador que recogio la radio.
+    if (ClienteConRadioNetwork.Value != clientId)
+        return;
+
+    EstadoMisionNetwork.Value = HistoriaCiudadCompletada;
+
+    Debug.Log(
+        "[Historia] Contacto establecido con los sobrevivientes. " +
+        "Mision de Ciudad completada."
+    );
+}
+
 }
