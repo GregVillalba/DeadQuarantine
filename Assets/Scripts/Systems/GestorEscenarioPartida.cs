@@ -1,5 +1,7 @@
 
+using System.Collections.Generic;
 using UnityEngine;
+using Unity.Netcode;
 
 public class GestorEscenariosPartida : MonoBehaviour
 {
@@ -20,6 +22,22 @@ public class GestorEscenariosPartida : MonoBehaviour
 
     private ConfiguracionEscenarioJugable escenarioActivo;
 
+    private class EstadoEscenario
+    {
+        public GameObject raiz;
+        public Renderer[] renderers;
+        public bool[] renderersActivos;
+        public Collider[] colliders;
+        public bool[] collidersActivos;
+        public Light[] luces;
+        public bool[] lucesActivas;
+        public Behaviour[] behaviours;
+        public bool[] behavioursActivos;
+    }
+
+    private readonly Dictionary<GameObject, EstadoEscenario> estados =
+        new Dictionary<GameObject, EstadoEscenario>();
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -31,6 +49,11 @@ public class GestorEscenariosPartida : MonoBehaviour
         }
 
         Instance = this;
+
+        PrepararEscenario(escenarioLaboratorio);
+        PrepararEscenario(escenarioCiudad);
+        PrepararEscenario(escenarioCabana);
+
         ConfigurarEscenarioInicial();
     }
 
@@ -38,6 +61,160 @@ public class GestorEscenariosPartida : MonoBehaviour
     {
         if (Instance == this)
             Instance = null;
+    }
+
+    private GameObject ObtenerRaiz(
+        ConfiguracionEscenarioJugable escenario
+    )
+    {
+        if (escenario == null)
+            return null;
+
+        return escenario.transform.parent != null
+            ? escenario.transform.parent.gameObject
+            : escenario.gameObject;
+    }
+
+    private void PrepararEscenario(
+        ConfiguracionEscenarioJugable escenario
+    )
+    {
+        GameObject raiz = ObtenerRaiz(escenario);
+
+        if (raiz == null || estados.ContainsKey(raiz))
+            return;
+
+        // La raíz debe estar activa desde que carga la escena para que
+        // Netcode pueda registrar los NetworkObject colocados en ella.
+        if (!raiz.activeSelf)
+        {
+            Debug.LogError(
+                $"[Escenarios] El objeto raíz '{raiz.name}' está " +
+                "desactivado en la jerarquía. Activálo en el Inspector " +
+                "antes de iniciar la partida."
+            );
+
+            raiz.SetActive(true);
+        }
+
+        EstadoEscenario estado = new EstadoEscenario();
+        estado.raiz = raiz;
+
+        estado.renderers = raiz.GetComponentsInChildren<Renderer>(true);
+        estado.renderersActivos = new bool[estado.renderers.Length];
+
+        for (int i = 0; i < estado.renderers.Length; i++)
+            estado.renderersActivos[i] = estado.renderers[i].enabled;
+
+        estado.colliders = raiz.GetComponentsInChildren<Collider>(true);
+        estado.collidersActivos = new bool[estado.colliders.Length];
+
+        for (int i = 0; i < estado.colliders.Length; i++)
+            estado.collidersActivos[i] = estado.colliders[i].enabled;
+
+        estado.luces = raiz.GetComponentsInChildren<Light>(true);
+        estado.lucesActivas = new bool[estado.luces.Length];
+
+        for (int i = 0; i < estado.luces.Length; i++)
+            estado.lucesActivas[i] = estado.luces[i].enabled;
+
+        // Los NetworkBehaviour deben permanecer habilitados para que
+        // los NetworkObject de escena puedan inicializarse.
+        Behaviour[] todosLosBehaviours =
+            raiz.GetComponentsInChildren<Behaviour>(true);
+
+        List<Behaviour> behavioursNormales = new List<Behaviour>();
+
+        foreach (Behaviour behaviour in todosLosBehaviours)
+        {
+            if (behaviour == null)
+                continue;
+
+            if (behaviour is NetworkBehaviour)
+                continue;
+
+            behavioursNormales.Add(behaviour);
+        }
+
+        estado.behaviours = behavioursNormales.ToArray();
+        estado.behavioursActivos =
+            new bool[estado.behaviours.Length];
+
+        for (int i = 0; i < estado.behaviours.Length; i++)
+            estado.behavioursActivos[i] = estado.behaviours[i].enabled;
+
+        estados.Add(raiz, estado);
+
+        OcultarEscenario(raiz);
+
+        Debug.Log(
+            $"[Escenarios] Escenario preparado para Netcode: {raiz.name}."
+        );
+    }
+
+    private void OcultarEscenario(GameObject raiz)
+    {
+        if (raiz == null || !estados.TryGetValue(raiz, out EstadoEscenario estado))
+            return;
+
+        foreach (Renderer renderer in estado.renderers)
+        {
+            if (renderer != null)
+                renderer.enabled = false;
+        }
+
+        foreach (Collider collider in estado.colliders)
+        {
+            if (collider != null)
+                collider.enabled = false;
+        }
+
+        foreach (Light luz in estado.luces)
+        {
+            if (luz != null)
+                luz.enabled = false;
+        }
+
+        foreach (Behaviour behaviour in estado.behaviours)
+        {
+            if (behaviour != null)
+                behaviour.enabled = false;
+        }
+
+        // Importante: no desactivar la raíz.
+        raiz.SetActive(true);
+    }
+
+    private void MostrarEscenario(GameObject raiz)
+    {
+        if (raiz == null || !estados.TryGetValue(raiz, out EstadoEscenario estado))
+            return;
+
+        raiz.SetActive(true);
+
+        for (int i = 0; i < estado.renderers.Length; i++)
+        {
+            if (estado.renderers[i] != null)
+                estado.renderers[i].enabled = estado.renderersActivos[i];
+        }
+
+        for (int i = 0; i < estado.colliders.Length; i++)
+        {
+            if (estado.colliders[i] != null)
+                estado.colliders[i].enabled = estado.collidersActivos[i];
+        }
+
+        for (int i = 0; i < estado.luces.Length; i++)
+        {
+            if (estado.luces[i] != null)
+                estado.luces[i].enabled = estado.lucesActivas[i];
+        }
+
+        for (int i = 0; i < estado.behaviours.Length; i++)
+        {
+            if (estado.behaviours[i] != null)
+                estado.behaviours[i].enabled = estado.behavioursActivos[i];
+        }
     }
 
     private void ConfigurarEscenarioInicial()
@@ -57,9 +234,9 @@ public class GestorEscenariosPartida : MonoBehaviour
 
     private void DesactivarTodasLasUbicaciones()
     {
-        DesactivarEscenario(escenarioLaboratorio);
-        DesactivarEscenario(escenarioCiudad);
-        DesactivarEscenario(escenarioCabana);
+        OcultarEscenario(ObtenerRaiz(escenarioLaboratorio));
+        OcultarEscenario(ObtenerRaiz(escenarioCiudad));
+        OcultarEscenario(ObtenerRaiz(escenarioCabana));
 
         if (safeZone1 != null)
             safeZone1.SetActive(false);
@@ -68,21 +245,6 @@ public class GestorEscenariosPartida : MonoBehaviour
             safeZone2.SetActive(false);
 
         escenarioActivo = null;
-    }
-
-    private void DesactivarEscenario(
-        ConfiguracionEscenarioJugable escenario
-    )
-    {
-        if (escenario == null)
-            return;
-
-        Transform padre = escenario.transform.parent;
-
-        if (padre != null)
-            padre.gameObject.SetActive(false);
-        else
-            escenario.gameObject.SetActive(false);
     }
 
     public void ActivarEscenario(
@@ -120,12 +282,7 @@ public class GestorEscenariosPartida : MonoBehaviour
             return;
         }
 
-        Transform padreEscenario = escenarioActivo.transform.parent;
-
-        if (padreEscenario != null)
-            padreEscenario.gameObject.SetActive(true);
-        else
-            escenarioActivo.gameObject.SetActive(true);
+        MostrarEscenario(ObtenerRaiz(escenarioActivo));
 
         if (ConfiguracionPartidaSeleccionada.Instancia != null)
         {
@@ -168,8 +325,6 @@ public class GestorEscenariosPartida : MonoBehaviour
         Debug.Log("[Escenarios] SafeZone2 activada.");
     }
 
-    // La zona segura queda pegada a la salida del laboratorio: se muestra sin apagar
-    // el laboratorio, así el jugador la cruza caminando al abrirse la puerta.
     public void MostrarSafeZone1()
     {
         if (safeZone1 == null)
@@ -187,25 +342,19 @@ public class GestorEscenariosPartida : MonoBehaviour
         Debug.Log("[Escenarios] SafeZone1 visible tras la puerta.");
     }
 
-    // La llama EntradaZonaSegura cuando el jugador local cruza el trigger de la zona.
     public void EntrarSafeZone1(Transform jugador)
     {
         StoryIntroController intro =
             jugador.GetComponentInChildren<StoryIntroController>(true);
 
         if (intro != null)
-        {
             intro.MostrarAvisoContinuarSafeZone();
-        }
         else
-        {
             Debug.LogWarning(
                 "[Escenarios] No se encontró StoryIntroController en el jugador."
             );
-        }
     }
 
-    // Volvió al laboratorio: ENTER deja de llevarlo a la Ciudad hasta que vuelva a entrar.
     public void SalirSafeZone1(Transform jugador)
     {
         StoryIntroController intro =
@@ -215,7 +364,6 @@ public class GestorEscenariosPartida : MonoBehaviour
             intro.OcultarAvisoContinuarSafeZone();
     }
 
-    // true si el objeto cuelga de una zona segura que está activa (ej. el mercader).
     public bool EstaEnZonaSeguraActiva(Transform objeto)
     {
         if (objeto == null)
@@ -236,89 +384,84 @@ public class GestorEscenariosPartida : MonoBehaviour
     }
 
     public void TransicionarASafeZone1(Transform jugador)
-{
-    if (safeZone1 == null || spawnSafeZone1 == null)
     {
-        Debug.LogError(
-            "[Escenarios] Asigná SafeZone1 y su punto de aparición."
+        if (safeZone1 == null || spawnSafeZone1 == null)
+        {
+            Debug.LogError(
+                "[Escenarios] Asigná SafeZone1 y su punto de aparición."
+            );
+            return;
+        }
+
+        ActivarSafeZone1();
+        TrasladarJugador(jugador, spawnSafeZone1);
+
+        StoryIntroController intro =
+            jugador.GetComponentInChildren<StoryIntroController>(true);
+
+        if (intro != null)
+            intro.MostrarAvisoContinuarSafeZone();
+        else
+            Debug.LogWarning(
+                "[Escenarios] No se encontró StoryIntroController en el jugador."
+            );
+    }
+
+    public void TransicionarASafeZone2(Transform jugador)
+    {
+        if (safeZone2 == null || spawnSafeZone2 == null)
+        {
+            Debug.LogError(
+                "[Escenarios] Asigná SafeZone2 y su punto de aparición."
+            );
+            return;
+        }
+
+        ActivarSafeZone2();
+        TrasladarJugador(jugador, spawnSafeZone2);
+
+        StoryIntroController intro =
+            jugador.GetComponentInChildren<StoryIntroController>(true);
+
+        if (intro == null)
+        {
+            Debug.LogError(
+                "[Escenarios] No se encontró StoryIntroController en el jugador."
+            );
+            return;
+        }
+
+        Debug.Log(
+            "[Escenarios] Avisando al jugador que puede continuar a la Mansión."
         );
-        return;
+
+        intro.MostrarAvisoContinuarAMansion();
     }
 
-    ActivarSafeZone1();
-    TrasladarJugador(jugador, spawnSafeZone1);
-
-    StoryIntroController intro =
-        jugador.GetComponentInChildren<StoryIntroController>(true);
-
-    if (intro != null)
+    public void TransicionarAScenarioCabana(Transform jugador)
     {
-        intro.MostrarAvisoContinuarSafeZone();
-    }
-    else
-    {
-        Debug.LogWarning(
-            "[Escenarios] No se encontró StoryIntroController en el jugador."
+        if (escenarioCabana == null)
+        {
+            Debug.LogError(
+                "[Escenarios] No asignaste el escenario Cabana."
+            );
+            return;
+        }
+
+        if (jugador == null)
+        {
+            Debug.LogError(
+                "[Escenarios] No se recibió el jugador."
+            );
+            return;
+        }
+
+        ActivarEscenario(
+            ConfiguracionPartidaSeleccionada.Escenario.Cabana
         );
+
+        TrasladarJugadorAInicioDeEscenario(jugador);
     }
-}
-
-   public void TransicionarASafeZone2(Transform jugador)
-{
-    if (safeZone2 == null || spawnSafeZone2 == null)
-    {
-        Debug.LogError("[Escenarios] Asigná SafeZone2 y su punto de aparición.");
-        return;
-    }
-
-    ActivarSafeZone2();
-    TrasladarJugador(jugador, spawnSafeZone2);
-
-    StoryIntroController intro =
-        jugador.GetComponentInChildren<StoryIntroController>(true);
-
-    if (intro == null)
-    {
-        Debug.LogError(
-            "[Escenarios] No se encontró StoryIntroController en el jugador."
-        );
-        return;
-    }
-
-    Debug.Log("[Escenarios] Avisando al jugador que puede continuar a la Mansión.");
-
-    intro.MostrarAvisoContinuarAMansion();
-}
-
-    
-public void TransicionarAScenarioCabana(Transform jugador)
-{
-    if (escenarioCabana == null)
-    {
-        Debug.LogError(
-            "[Escenarios] No asignaste el escenario Cabana."
-        );
-        return;
-    }
-
-    if (jugador == null)
-    {
-        Debug.LogError(
-            "[Escenarios] No se recibió el jugador."
-        );
-        return;
-    }
-
-    // Activa la Mansión y desactiva la Ciudad y las zonas seguras.
-    ActivarEscenario(
-        ConfiguracionPartidaSeleccionada.Escenario.Cabana
-    );
-
-    // Traslada al jugador al spawn de la Mansión.
-    TrasladarJugadorAInicioDeEscenario(jugador);
-}
-
-
 
     public void TrasladarJugadorAInicioDeEscenario(Transform jugador)
     {

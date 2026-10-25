@@ -16,6 +16,13 @@ public class Door : NetworkBehaviour
     [SerializeField] private AudioClip doorOpenSound;
     [SerializeField] private AudioClip doorCloseSound;
 
+    private bool UsarRed()
+{
+    return NetworkManager.Singleton != null
+        && NetworkManager.Singleton.IsListening
+        && IsSpawned;
+}
+
     private PlayerControls controls;
 
     private Quaternion closedRotation;
@@ -102,6 +109,20 @@ public class Door : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+
+      
+{
+    Debug.Log(
+        "[Door] OnNetworkSpawn | " + name +
+        " | IsServer=" + IsServer +
+        " | IsSpawned=" + IsSpawned
+    );
+
+    isOpenNetwork.OnValueChanged += OnDoorStateChanged;
+    openDirectionNetwork.OnValueChanged += OnOpenDirectionChanged;
+
+    AplicarEstadoActual();
+}
         isOpenNetwork.OnValueChanged +=
             OnDoorStateChanged;
 
