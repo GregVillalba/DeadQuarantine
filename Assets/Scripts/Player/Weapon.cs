@@ -11,6 +11,7 @@ public class Weapon : MonoBehaviour
     [SerializeField] private Camera weaponCamera;
     [SerializeField] private CharacterController characterController;
     [SerializeField] private PlayerMovement playerMovement;
+    [SerializeField] private PlayerCharacter playerCharacter;
     [SerializeField] private Animator weaponAnimator;
     [SerializeField] private Muzzle muzzle;
     [SerializeField] private GameObject bulletTrailPrefab;
@@ -43,6 +44,7 @@ public class Weapon : MonoBehaviour
     [Header("Pistola")]
     [SerializeField] private bool isAutomatic = false;
     [SerializeField] private float fireRate = 0.25f;
+    [Tooltip("LEGACY: la duración real de recarga la controla el clip del Animator. Se conserva para no romper prefabs existentes.")]
     [SerializeField] private float reloadTime = 1.5f;
     [SerializeField] private float range = 100f;
     [SerializeField] private int damage = 25;
@@ -190,6 +192,68 @@ public class Weapon : MonoBehaviour
 
     public bool InputLocked { get; set; }
 
+    // =========================================================
+    // VELOCIDAD DE RECARGA POR CLASE
+    // =========================================================
+
+    private bool reloadAnimatorBaseCaptured;
+    private float baseWeaponAnimatorSpeed = 1f;
+    private float basePartsAnimatorSpeed = 1f;
+
+    /// <summary>
+    /// 1 = Normal. 1.2 = 20% más rápido. 0.9 = 10% más lento.
+    /// El dato viene del personaje seleccionado.
+    /// </summary>
+    private float ClassReloadSpeedMultiplier =>
+        playerCharacter != null
+            ? Mathf.Max(0.01f, playerCharacter.ReloadSpeedMultiplier)
+            : 1f;
+
+    private void CaptureReloadAnimatorBaseSpeeds()
+    {
+        if (reloadAnimatorBaseCaptured)
+            return;
+
+        reloadAnimatorBaseCaptured = true;
+
+        if (weaponAnimator != null)
+            baseWeaponAnimatorSpeed = Mathf.Max(0.01f, weaponAnimator.speed);
+
+        Animator parts = Parts;
+
+        if (parts != null && parts != weaponAnimator)
+            basePartsAnimatorSpeed = Mathf.Max(0.01f, parts.speed);
+    }
+
+    private void ApplyReloadAnimationSpeed()
+    {
+        CaptureReloadAnimatorBaseSpeeds();
+
+        float multiplier = ClassReloadSpeedMultiplier;
+
+        if (weaponAnimator != null)
+            weaponAnimator.speed = baseWeaponAnimatorSpeed * multiplier;
+
+        Animator parts = Parts;
+
+        if (parts != null && parts != weaponAnimator)
+            parts.speed = basePartsAnimatorSpeed * multiplier;
+    }
+
+    private void ResetReloadAnimationSpeed()
+    {
+        if (!reloadAnimatorBaseCaptured)
+            return;
+
+        if (weaponAnimator != null)
+            weaponAnimator.speed = baseWeaponAnimatorSpeed;
+
+        Animator parts = Parts;
+
+        if (parts != null && parts != weaponAnimator)
+            parts.speed = basePartsAnimatorSpeed;
+    }
+
     private void Awake()
     {
         controls = new PlayerControls();
@@ -205,6 +269,9 @@ public class Weapon : MonoBehaviour
 
         if (playerMovement == null)
             playerMovement = GetComponentInParent<PlayerMovement>();
+
+        if (playerCharacter == null)
+            playerCharacter = GetComponentInParent<PlayerCharacter>();
 
         if (characterController == null)
             characterController = GetComponentInParent<CharacterController>();
@@ -223,6 +290,8 @@ public class Weapon : MonoBehaviour
 
         if (playerScore == null)
             playerScore = transform.root.GetComponentInChildren<PlayerScore>(true);
+
+        CaptureReloadAnimatorBaseSpeeds();
     }
 
     private void OnEnable()
@@ -254,6 +323,7 @@ public class Weapon : MonoBehaviour
         // el evento que bajaba 'isReloading' ya no va a llegar y el arma quedaría bloqueada.
         isReloading = false;
         shellLoading = false;
+        ResetReloadAnimationSpeed();
     }
 
     // true mientras se guarda un arma y se saca la otra. Se consulta directo al WeaponSwitcher, así el
@@ -270,6 +340,10 @@ public class Weapon : MonoBehaviour
 
         isReloading = false;
         shellLoading = false;
+
+        // Aunque la bandera ya estuviera apagada, nunca dejamos el Animator con
+        // una velocidad de clase aplicada al cambiar de arma o cancelar.
+        ResetReloadAnimationSpeed();
 
         if (!estabaRecargando)
             return;
@@ -492,6 +566,8 @@ public class Weapon : MonoBehaviour
 
         if (weaponAnimator != null)
             weaponAnimator.SetBool("ShellLoading", false);
+
+        ResetReloadAnimationSpeed();
     }
 
     public void AnimationReloadOpen()
@@ -1012,6 +1088,11 @@ public class Weapon : MonoBehaviour
 
         IsAiming = false;
         isReloading = true;
+
+        // La velocidad de recarga pertenece a la CLASE, no al arma.
+        // Se aplica al Animator completo para que también aceleren/ralenticen
+        // los Animation Events (cargar cargador, insertar cartucho, cerrar, etc.).
+        ApplyReloadAnimationSpeed();
 
         bool wasEmpty = currentAmmo == 0;
 

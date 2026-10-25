@@ -22,8 +22,8 @@ public class LobbyPlayerSlot : MonoBehaviour
 
     [Header("Personaje elegido")]
     [SerializeField] private Image characterIcon;
-    [SerializeField] private TMP_Text characterNameText;   // EXPLORADOR
-    [SerializeField] private TMP_Text characterText;       // LIGERO - HOMBRE
+    [SerializeField] private TMP_Text characterNameText;   // Nombre propio: RYDER / VEGA / NULL...
+    [SerializeField] private TMP_Text characterText;       // EXPLORADOR - HOMBRE / SOLDADO - MUJER / TANQUE
 
     [Header("Jugador local")]
     [Tooltip("Marca que se enciende solo en tu propia columna.")]
@@ -125,16 +125,35 @@ public class LobbyPlayerSlot : MonoBehaviour
 
         SetCharacterVisible(true);
 
-        CharacterCatalog.ClassData data = catalog.GetClassData(v.type);
-
         if (characterNameText != null)
-            characterNameText.text = data != null ? data.displayName.ToUpperInvariant() : v.type.ToString().ToUpperInvariant();
+        {
+            // El nombre propio pertenece a la VARIANTE, no a la clase.
+            // Ejemplo:
+            // Scout Male   -> RYDER
+            // Scout Female -> VEGA
+            // Tank         -> NULL
+            string characterName = catalog.GetCharacterNameForVariant(index);
+
+            characterNameText.text =
+                !string.IsNullOrWhiteSpace(characterName)
+                    ? characterName.ToUpperInvariant()
+                    : v.type.ToString().ToUpperInvariant();
+        }
 
         if (characterText != null)
         {
+            // El tipo/clase se mantiene fijo:
+            // EXPLORADOR / SOLDADO / TANQUE.
+            // Solo mostramos HOMBRE/MUJER cuando esa clase realmente tiene elección de género.
             bool genderChoice = catalog.HasGenderChoice(v.type);
-            string gender = genderChoice ? " - " + (v.gender == CharacterGender.Male ? "HOMBRE" : "MUJER") : "";
-            characterText.text = CharacterSelectMenu.TierName(v.type) + gender;
+
+            string gender =
+                genderChoice
+                    ? " - " + (v.gender == CharacterGender.Male ? "HOMBRE" : "MUJER")
+                    : "";
+
+            characterText.text =
+                CharacterSelectMenu.TierName(v.type) + gender;
         }
 
         if (characterIcon != null)
