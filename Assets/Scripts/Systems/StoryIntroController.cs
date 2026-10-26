@@ -538,6 +538,35 @@ private void IniciarTransicionACabana()
         ConfiguracionPartidaSeleccionada.Escenario.Cabana
     );
 
+ 
+if (IsServer)
+{
+    if (GestorHistoriaPartida.Instance != null)
+    {
+        GestorHistoriaPartida.Instance.IniciarMisionCabana();
+    }
+    else
+    {
+        Debug.LogError(
+            "[StoryIntro] No se encontró GestorHistoriaPartida " +
+            "para iniciar la misión final."
+        );
+    }
+
+    if (GestorMansionHistoria.Instance != null)
+    {
+        GestorMansionHistoria.Instance.IniciarMision();
+    }
+    else
+    {
+        Debug.LogError(
+            "[StoryIntro] No se encontró GestorMansionHistoria " +
+            "para iniciar la misión de la mansión."
+        );
+    }
+}
+
+
     // Actualizar los puntos de aparición de los zombis.
     if (IsServer && RoundManager.Instance != null)
     {

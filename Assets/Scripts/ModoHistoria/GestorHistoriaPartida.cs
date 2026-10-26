@@ -16,6 +16,7 @@ public class GestorHistoriaPartida : NetworkBehaviour
     private const int ContactarSobrevivientes = 6;
     private const int HistoriaCiudadCompletada = 7;
     private const int EnZonaSegura = 8;
+    private const int MisionFinalCabana = 9;
     private bool animacionAperturaEjecutada;
     private bool misionCiudadInicializada;
     private readonly HashSet<ulong> jugadoresEnZonaSegura = new HashSet<ulong>();
@@ -40,6 +41,7 @@ public class GestorHistoriaPartida : NetworkBehaviour
     [Header("HUD local")]
     [SerializeField] private TMP_Text textoTituloObjetivo;
     [SerializeField] private TMP_Text textoDescripcionObjetivo;
+
 
     public static GestorHistoriaPartida Instance { get; private set; }
 
@@ -287,6 +289,13 @@ public override void OnNetworkSpawn()
         textoDescripcionObjetivo.text =
             "Compra lo que necesites. Presiona ENTER para avanzar.";
         break;
+
+        case MisionFinalCabana:
+    textoTituloObjetivo.color = Color.white;
+    textoTituloObjetivo.text = "OBJETIVO FINAL";
+    textoDescripcionObjetivo.text =
+        "Elimina al Zombie Jefe  y espera la llegada del helicóptero.";
+    break;
 
             default:
                 textoTituloObjetivo.text = "";
@@ -976,16 +985,41 @@ private void AlFinalizarAperturaPuerta()
 
 private void IniciarTransicionASafeZone2()
 {
-    if (transicionSafeZone2Iniciada)
-        return;
+    Debug.Log(
+        "[Historia] IniciarTransicionASafeZone2() ejecutado. " +
+        "IsServer=" + IsServer +
+        " | TransicionIniciada=" + transicionSafeZone2Iniciada +
+        " | Escena=" + SceneManager.GetActiveScene().name,
+        this
+    );
 
-    if (SceneManager.GetActiveScene().name !=
-        "MainSceneSinglePlayer")
+    if (transicionSafeZone2Iniciada)
+    {
+        Debug.LogWarning(
+            "[Historia] La transición a SafeZone2 ya fue iniciada.",
+            this
+        );
         return;
+    }
+
+    if (SceneManager.GetActiveScene().name != "MainSceneSinglePlayer")
+    {
+        Debug.LogWarning(
+            "[Historia] La transición se canceló: no estamos en MainSceneSinglePlayer.",
+            this
+        );
+        return;
+    }
 
     if (NetworkManager.Singleton == null ||
         NetworkManager.Singleton.LocalClient.PlayerObject == null)
+    {
+        Debug.LogError(
+            "[Historia] No se encontró el jugador local para SafeZone2.",
+            this
+        );
         return;
+    }
 
     transicionSafeZone2Iniciada = true;
 
@@ -994,34 +1028,113 @@ private void IniciarTransicionASafeZone2()
 
     System.Action trasladarJugador = () =>
     {
-        if (GestorEscenariosPartida.Instance == null)
+        Debug.Log(
+            "[Historia] Ejecutando traslado a SafeZone2.",
+            this
+        );
+
+        GestorEscenariosPartida gestor =
+            GestorEscenariosPartida.Instance;
+
+        if (gestor == null)
         {
             Debug.LogError(
-                "[Historia] No se encontró GestorEscenariosPartida."
+                "[Historia] No se encontró GestorEscenariosPartida.",
+                this
             );
             return;
         }
 
-        GestorEscenariosPartida.Instance
-            .TransicionarASafeZone2(jugador);
+        // Trasladar al jugador a la zona segura.
+        gestor.TransicionarASafeZone2(jugador);
 
+        // Actualizar el objetivo permanente del HUD.
         if (IsServer)
             EstadoMisionNetwork.Value = EnZonaSegura;
+
+        Debug.Log(
+            "[Historia] Traslado a SafeZone2 ejecutado. " +
+            "Buscando StoryIntroController en el jugador.",
+            this
+        );
+
+        // Buscar el controlador en el prefab del jugador.
+        StoryIntroController intro =
+            jugador.GetComponentInChildren<StoryIntroController>(true);
+
+        if (intro == null)
+        {
+            Debug.LogError(
+                "[Historia] No se encontró StoryIntroController " +
+                "en el jugador ni en sus objetos hijos.",
+                this
+            );
+            return;
+        }
+
+        Debug.Log(
+            "[Historia] StoryIntroController encontrado. " +
+            "Mostrando aviso para continuar a la Mansión.",
+            intro
+        );
+
+        intro.MostrarAvisoContinuarAMansion();
     };
 
     if (FadeTransicionHistoria.Instance != null)
     {
+        Debug.Log(
+            "[Historia] Iniciando fade para SafeZone2.",
+            this
+        );
+
         FadeTransicionHistoria.Instance.EjecutarTransicion(
             trasladarJugador
         );
     }
     else
     {
-        Debug.LogError(
-            "[Historia] No se encontró FadeTransicionHistoria."
+        Debug.LogWarning(
+            "[Historia] No se encontró FadeTransicionHistoria. " +
+            "Se ejecutará el traslado sin fade.",
+            this
         );
 
         trasladarJugador();
     }
 }
+
+
+public void IniciarMisionCabana()
+{
+    if (!IsServer)
+    {
+        Debug.LogWarning(
+            "[Historia] No se puede iniciar la misión final: no es el servidor.",
+            this
+        );
+        return;
+    }
+
+    if (ConfiguracionPartidaSeleccionada.Instancia == null ||
+        ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado !=
+            ConfiguracionPartidaSeleccionada.ModoJuego.Historia)
+    {
+        Debug.LogWarning(
+            "[Historia] No se inició la misión final porque el modo no es Historia.",
+            this
+        );
+        return;
+    }
+
+    EstadoMisionNetwork.Value = MisionFinalCabana;
+
+    ActualizarTextoObjetivo();
+
+    Debug.Log(
+        "[Historia] Misión final iniciada. Objetivo: eliminar al mutante alfa.",
+        this
+    );
+}
+
 }

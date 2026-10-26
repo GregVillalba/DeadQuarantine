@@ -438,30 +438,56 @@ public class GestorEscenariosPartida : MonoBehaviour
         intro.MostrarAvisoContinuarAMansion();
     }
 
-    public void TransicionarAScenarioCabana(Transform jugador)
+   
+public void TransicionarAScenarioCabana(Transform jugador)
+{
+    if (escenarioCabana == null)
     {
-        if (escenarioCabana == null)
-        {
-            Debug.LogError(
-                "[Escenarios] No asignaste el escenario Cabana."
-            );
-            return;
-        }
-
-        if (jugador == null)
-        {
-            Debug.LogError(
-                "[Escenarios] No se recibió el jugador."
-            );
-            return;
-        }
-
-        ActivarEscenario(
-            ConfiguracionPartidaSeleccionada.Escenario.Cabana
-        );
-
-        TrasladarJugadorAInicioDeEscenario(jugador);
+        Debug.LogError("[Escenarios] No asignaste el escenario Cabana.");
+        return;
     }
+
+    if (jugador == null)
+    {
+        Debug.LogError("[Escenarios] No se recibió el jugador.");
+        return;
+    }
+
+    ActivarEscenario(
+        ConfiguracionPartidaSeleccionada.Escenario.Cabana
+    );
+
+    TrasladarJugadorAInicioDeEscenario(jugador);
+
+    bool esServidor =
+        NetworkManager.Singleton == null ||
+        NetworkManager.Singleton.IsServer;
+
+    bool esModoHistoria =
+        ConfiguracionPartidaSeleccionada.Instancia != null &&
+        ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado ==
+        ConfiguracionPartidaSeleccionada.ModoJuego.Historia;
+
+    if (!esServidor || !esModoHistoria)
+        return;
+
+    GestorMansionHistoria gestor = GestorMansionHistoria.Instance;
+
+    if (gestor == null)
+        gestor = FindAnyObjectByType<GestorMansionHistoria>();
+
+    if (gestor != null)
+    {
+        gestor.IniciarMision();
+    }
+    else
+    {
+        Debug.LogError(
+            "[Escenarios] No se encontró GestorMansionHistoria después de activar la mansión."
+        );
+    }
+}
+
 
     public void TrasladarJugadorAInicioDeEscenario(Transform jugador)
     {

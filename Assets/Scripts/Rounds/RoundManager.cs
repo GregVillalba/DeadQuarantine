@@ -56,6 +56,15 @@ public class RoundManager : NetworkBehaviour
     private bool historiaSpawningActivo;
     private Coroutine historiaSpawnRoutine;
 
+    
+    [Header("Misión de la mansión")]
+[SerializeField] private float tiempoResistenciaMansion = 120f;
+[SerializeField] private int saludBossMansion = 2500;
+
+private bool misionMansionActiva;
+private bool bossMansionAparecio;
+private Coroutine misionMansionRoutine;
+
 
     // =========================================================
     // VARIABLES DE RED
@@ -162,6 +171,8 @@ public class RoundManager : NetworkBehaviour
     private bool countdownInProgress;
 
     private int pendingNextRound;
+
+    public float TiempoResistenciaMansion => tiempoResistenciaMansion;
 
     // Jugadores que tocaron "Listo" durante la fase de compras. Se sincroniza
     // para que cada cliente sepa si el otro jugador ya está listo.
@@ -462,17 +473,6 @@ private IEnumerator StartSingleplayerRound(int round)
         // ZOMBIES
         // =====================================================
 
-       /* int zombiesThisRound =
-            startingZombies +
-            (round - 1) *
-            zombiesPerRound;*/
-
-      /*  int zombiesThisRound = Mathf.RoundToInt((startingZombies + (round - 1) * zombiesPerRound) * countMultiplier);
-        
-        bool spawnBoss =
-            round == bossRound &&
-            HasBossPrefab();*/
-
         int zombiesThisRound = infiniteMode
             ? Mathf.RoundToInt(activeMode.GetBaseZombieCount(round) * countMultiplier)
             : Mathf.RoundToInt((startingZombies + (round - 1) * zombiesPerRound) * countMultiplier);
@@ -526,16 +526,6 @@ private IEnumerator StartSingleplayerRound(int round)
                    bossCount
                 )
             );
-
-        Debug.Log(
-            "Ronda " +
-            CurrentRoundNetwork.Value +
-            " iniciada. Zombies: " +
-            ZombiesThisRoundNetwork.Value +
-            " | Boss: " +
-          //  (spawnBoss ? "Sí" : "No")
-          (bossCount > 0 ? "Sí (" + bossCount + ")" : "No")
-        );
     }
 
     // =========================================================
@@ -611,10 +601,6 @@ private IEnumerator StartSingleplayerRound(int round)
                 roundProgress
             );
 
-     /*   return Random.Range(
-            currentMinInterval,
-            currentMaxInterval
-        );*/
 
         return Random.Range(currentMinInterval, currentMaxInterval) * spawnIntervalMultiplier;
     }
@@ -660,24 +646,10 @@ private IEnumerator StartSingleplayerRound(int round)
             round *
             shotsIncreasePerRound;
 
-      /*  int zombieHealthThisRound =
-            shotsNeeded *
-            damagePerShot;
-
-        float runChance =
-            maxRounds > 1
-                ? Mathf.Clamp01(
-                    (round - 1f) /
-                    (maxRounds - 1f)
-                )
-                : 0f;*/
 
         int zombieHealthThisRound = 
             Mathf.RoundToInt(shotsNeeded * damagePerShot * healthMultiplier);
 
-       /* float runChance = maxRounds > 1
-            ? Mathf.Clamp01((round - 1f) / (maxRounds - 1f) + runChanceBonus)
-            : Mathf.Clamp01(runChanceBonus);*/
 
         float runChance = maxRounds > 1
             ? Mathf.Clamp01(
@@ -699,16 +671,6 @@ private IEnumerator StartSingleplayerRound(int round)
             speedMultiplier =
                 activeMode.GetZombieSpeedMultiplier(round);
         }
-
-        Debug.Log(
-            "[RoundManager] Ronda " +
-            round +
-            " | Vida normal: " +
-            zombieHealthThisRound +
-            " | Probabilidad de correr: " +
-            (runChance * 100f) +
-            "%"
-        );
 
         yield return new WaitForSeconds(
             initialSpawnDelay
@@ -763,62 +725,6 @@ private IEnumerator StartSingleplayerRound(int round)
         // =====================================================
         // BOSS
         // =====================================================
-
-       /* if (spawnBoss)
-        {
-            GameObject bossPrefab =
-                GetRandomBossPrefab();
-
-            if (bossPrefab != null)
-            {
-                Transform bossSpawnPoint =
-                    shuffledSpawnPoints[
-                        Random.Range(
-                            0,
-                            shuffledSpawnPoints.Count
-                        )
-                    ];
-
-                int bossHealth =
-                    zombieHealthThisRound *
-                    bossHealthMultiplier;
-
-                bool bossSpawned =
-                    SpawnZombie(
-                        bossPrefab,
-                        bossSpawnPoint,
-                        bossHealth,
-                        true
-                    );
-
-                if (bossSpawned)
-                {
-                    normalZombiesToSpawn--;
-
-                    Debug.Log(
-                        "[RoundManager] Boss creado." +
-                        " Vida: " +
-                        bossHealth
-                    );
-
-                    if (
-                        normalZombiesToSpawn >
-                        0
-                    )
-                    {
-                        float wait =
-                            GetRandomSpawnInterval(
-                                round
-                            );
-
-                        yield return
-                            new WaitForSeconds(
-                                wait
-                            );
-                    }
-                }
-            }
-        }*/
 
         if (bossCount > 0)
         {
@@ -1066,10 +972,6 @@ private IEnumerator HistoriaSpawnRoutine()
         {
             AliveZombiesNetwork.Value++;
 
-            Debug.Log(
-                "[RoundManager] Historia: zombie generado. Vivos: " +
-                AliveZombiesNetwork.Value + "/" + maxZombiesHistoria
-            );
         }
 
         if (!historiaSpawningActivo ||
@@ -1174,91 +1076,67 @@ public void EliminarZombiesHistoria()
     // =========================================================
 
     private bool SpawnZombie(
-        GameObject prefab,
-        Transform spawnPoint,
-        int health,
-        bool willRun,
-        float speedMultiplier = 1f
-    )
+    GameObject prefab,
+    Transform spawnPoint,
+    int health,
+    bool willRun,
+    float speedMultiplier = 1f,
+    bool esBossHistoria = false
+)
+{
+    if (prefab == null || spawnPoint == null)
+        return false;
+
+    GameObject zombieInstance = Instantiate(
+        prefab,
+        spawnPoint.position,
+        spawnPoint.rotation
+    );
+
+    ZombieAppearance zombieAppearance =
+        zombieInstance.GetComponent<ZombieAppearance>();
+
+    if (zombieAppearance != null)
+        zombieAppearance.SelectRandomModel();
+
+    ZombieHealth zombieHealthComponent =
+        zombieInstance.GetComponent<ZombieHealth>();
+
+    if (zombieHealthComponent != null)
     {
-        if (
-            prefab == null ||
-            spawnPoint == null
-        )
-        {
-            return false;
-        }
+        zombieHealthComponent.InitializeHealth(health);
 
-        GameObject zombieInstance =
-            Instantiate(
-                prefab,
-                spawnPoint.position,
-                spawnPoint.rotation
-            );
-
-        ZombieAppearance zombieAppearance =
-            zombieInstance.GetComponent<
-                ZombieAppearance
-            >();
-
-        if (zombieAppearance != null)
-        {
-            zombieAppearance
-                .SelectRandomModel();
-        }
-
-        ZombieHealth zombieHealthComponent =
-            zombieInstance.GetComponent<
-                ZombieHealth
-            >();
-
-        if (zombieHealthComponent != null)
-        {
-            zombieHealthComponent
-                .InitializeHealth(
-                    health
-                );
-        }
-
-        ZombieAI zombieAIComponent =
-            zombieInstance.GetComponent<
-                ZombieAI
-            >();
-
-        NetworkObject netObj =
-            zombieInstance.GetComponent<
-                NetworkObject
-            >();
-
-        if (netObj == null)
-        {
-            Debug.LogError(
-                "RoundManager: el prefab " +
-                prefab.name +
-                " no tiene NetworkObject."
-            );
-
-            Destroy(
-                zombieInstance
-            );
-
-            return false;
-        }
-
-        netObj.Spawn();
-
-        if (
-            zombieAIComponent != null
-        )
-        {
-            zombieAIComponent.SetSpeedMultiplier(speedMultiplier);
-            zombieAIComponent.SetRunning(
-                willRun
-            );
-        }
-
-        return true;
+        if (esBossHistoria)
+            zombieHealthComponent.MarcarComoBossHistoria();
     }
+
+    ZombieAI zombieAIComponent =
+        zombieInstance.GetComponent<ZombieAI>();
+
+    NetworkObject netObj =
+        zombieInstance.GetComponent<NetworkObject>();
+
+    if (netObj == null)
+    {
+        Debug.LogError(
+            "RoundManager: el prefab " + prefab.name +
+            " no tiene NetworkObject."
+        );
+
+        Destroy(zombieInstance);
+        return false;
+    }
+
+    netObj.Spawn();
+
+    if (zombieAIComponent != null)
+    {
+        zombieAIComponent.SetSpeedMultiplier(speedMultiplier);
+        zombieAIComponent.SetRunning(willRun);
+    }
+
+    return true;
+}
 
     // =========================================================
     // BOSS
@@ -1343,11 +1221,6 @@ public void EliminarZombiesHistoria()
             AliveZombiesNetwork.Value - 1
         );
 
-        Debug.Log(
-            "[RoundManager] Historia: zombie muerto. Restantes: " +
-            AliveZombiesNetwork.Value
-        );
-
         if (historiaSpawningActivo &&
             !GameLostNetwork.Value &&
             historiaSpawnRoutine == null)
@@ -1369,11 +1242,6 @@ public void EliminarZombiesHistoria()
 
     if (AliveZombiesNetwork.Value < 0)
         AliveZombiesNetwork.Value = 0;
-
-    Debug.Log(
-        "Zombie muerto. Restantes: " +
-        AliveZombiesNetwork.Value
-    );
 
     if (AliveZombiesNetwork.Value <= 0)
         EndRound();
@@ -1505,10 +1373,6 @@ public void EliminarZombiesHistoria()
         yield return new WaitForSeconds(
             delayAntesDePanel
         );
-
-       /* bool esRondaFinal =
-            CurrentRoundNetwork.Value >=
-            maxRounds;*/
 
         bool esRondaFinal =
             !infiniteMode &&
@@ -1912,5 +1776,173 @@ public void ActualizarSpawnPointsDelEscenario()
         return;
 
     ConfigurarSpawnPointsDelEscenario();
+}
+
+public void IniciarMisionMansion(Transform puntoSpawnBoss)
+{
+    if (!IsServer || !EsModoHistoria)
+        return;
+
+    if (misionMansionActiva)
+        return;
+
+    if (puntoSpawnBoss == null)
+    {
+        Debug.LogError(
+            "[RoundManager] Falta asignar el punto de aparición del boss."
+        );
+        return;
+    }
+
+    if (!HasBossPrefab())
+    {
+        Debug.LogError(
+            "[RoundManager] No hay prefabs de boss asignados."
+        );
+        return;
+    }
+
+    ConfigurarSpawnPointsDelEscenario();
+
+    if (spawnPoints == null || spawnPoints.Length == 0)
+    {
+        Debug.LogError(
+            "[RoundManager] La mansión no tiene puntos de aparición de zombies."
+        );
+        return;
+    }
+
+    misionMansionActiva = true;
+    bossMansionAparecio = false;
+
+    if (historiaSpawnRoutine != null)
+    {
+        StopCoroutine(historiaSpawnRoutine);
+        historiaSpawnRoutine = null;
+    }
+
+    historiaSpawningActivo = false;
+
+    if (misionMansionRoutine != null)
+        StopCoroutine(misionMansionRoutine);
+
+    misionMansionRoutine =
+        StartCoroutine(SecuenciaMisionMansion(puntoSpawnBoss));
+}
+
+private IEnumerator SecuenciaMisionMansion(
+    Transform puntoSpawnBoss
+)
+{
+    historiaSpawningActivo = true;
+
+    historiaSpawnRoutine = StartCoroutine(
+        HistoriaSpawnRoutine()
+    );
+
+    Debug.Log(
+        "[RoundManager] Mansión: comienza la fase de resistencia."
+    );
+
+    yield return new WaitForSeconds(tiempoResistenciaMansion);
+
+    if (GameLostNetwork.Value)
+    {
+        misionMansionRoutine = null;
+        yield break;
+    }
+
+    DetenerSpawnsHistoria();
+    EliminarZombiesHistoria();
+
+    yield return null;
+
+    if (GameLostNetwork.Value)
+    {
+        misionMansionRoutine = null;
+        yield break;
+    }
+
+    GameObject bossPrefab = GetRandomBossPrefab();
+
+    if (bossPrefab == null)
+    {
+        Debug.LogError(
+            "[RoundManager] No se encontró un prefab válido para el boss."
+        );
+
+        misionMansionActiva = false;
+        misionMansionRoutine = null;
+        yield break;
+    }
+
+    bool bossCreado = SpawnZombie(
+        bossPrefab,
+        puntoSpawnBoss,
+        saludBossMansion,
+        true,
+        1f,
+        true
+    );
+
+    if (!bossCreado)
+    {
+        Debug.LogError(
+            "[RoundManager] No se pudo crear el boss de la mansión."
+        );
+
+        misionMansionActiva = false;
+        misionMansionRoutine = null;
+        yield break;
+    }
+
+    bossMansionAparecio = true;
+    AliveZombiesNetwork.Value = 1;
+
+    Debug.Log(
+        "[RoundManager] Mansión: apareció el boss."
+    );
+
+if (GestorMansionHistoria.Instance != null)
+    GestorMansionHistoria.Instance.BossAparecio();
+    misionMansionRoutine = null;
+}
+
+public void BossHistoriaDerrotado()
+{
+    Debug.Log(
+        "[RoundManager DEBUG] BossHistoriaDerrotado llamado." +
+        " IsServer=" + IsServer +
+        " | EsModoHistoria=" + EsModoHistoria +
+        " | misionMansionActiva=" + misionMansionActiva +
+        " | bossMansionAparecio=" + bossMansionAparecio
+    );
+
+    if (!IsServer || !EsModoHistoria)
+        return;
+
+    if (!misionMansionActiva || !bossMansionAparecio)
+    {
+        Debug.LogWarning(
+            "[RoundManager DEBUG] Se ignoró la notificación de muerte del boss."
+        );
+        return;
+    }
+
+    bossMansionAparecio = false;
+    AliveZombiesNetwork.Value = 0;
+
+    Debug.Log("[RoundManager] Mansión: boss derrotado.");
+
+    if (GestorMansionHistoria.Instance != null)
+    {
+        GestorMansionHistoria.Instance.AlBossDerrotado();
+    }
+    else
+    {
+        Debug.LogError(
+            "[RoundManager] No se encontró GestorMansionHistoria."
+        );
+    }
 }
 }
