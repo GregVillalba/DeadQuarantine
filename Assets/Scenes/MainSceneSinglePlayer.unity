@@ -42323,7 +42323,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: e416820ece979b44dba0351006320870, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 0.017
+  m_Volume: 0.3
   m_Pitch: 1
   Loop: 1
   Mute: 0
@@ -46053,6 +46053,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Scripts::RoundManager
   ShowTopMostFoldoutHeaderGroup: 1
   zombiePrefab: {fileID: 1055470696967520, guid: bb116383f6f80bf4d90cb48aeca8e8bf, type: 3}
+  dogZombiePrefab: {fileID: 2448360648697484514, guid: c073e07eafb7143d9add67cc2544470d, type: 3}
+  dogRoundHowlClip: {fileID: 8300000, guid: dffc76626e1de324a994de3053636129, type: 3}
+  dogRoundAudioSource: {fileID: 1203940961}
+  dogRoundHowlVolume: 1
   spawnPoints:
   - {fileID: 2243162293084228834, guid: 567304ff3c8f9784f8f8e235b4550d83, type: 3}
   - {fileID: 3660300159855537990, guid: 2a4f1e1b54b74e547a2b472f1e157848, type: 3}
@@ -46098,6 +46102,8 @@ MonoBehaviour:
   maxWaitForPlayersTime: 15
   debugStartRound: 1
   maxZombiesHistoria: 25
+  tiempoResistenciaMansion: 120
+  saludBossMansion: 2500
   CurrentRoundNetwork:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0

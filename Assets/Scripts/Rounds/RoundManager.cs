@@ -10,6 +10,20 @@ public class RoundManager : NetworkBehaviour
 
     [Header("Zombie")]
     [SerializeField] private GameObject zombiePrefab;
+
+    [Tooltip("Prefab del perro zombie. Solo se usa en Supervivencia, según GameModeConfig.")]
+    [SerializeField] private GameObject dogZombiePrefab;
+
+    [Header("Audio de ronda con perros")]
+    [Tooltip("Aullido que se reproduce al comenzar una ronda en la que realmente van a aparecer perros zombie.")]
+    [SerializeField] private AudioClip dogRoundHowlClip;
+
+    [Tooltip("Opcional. Si queda vacío, RoundManager crea automáticamente un AudioSource 2D.")]
+    [SerializeField] private AudioSource dogRoundAudioSource;
+
+    [Range(0f, 1f)]
+    [SerializeField] private float dogRoundHowlVolume = 1f;
+
     [SerializeField] private Transform[] spawnPoints;
 
     [Header("Boss")]
@@ -488,6 +502,18 @@ private IEnumerator StartSingleplayerRound(int round)
 
         zombiesThisRound = Mathf.Max(zombiesThisRound, bossCount);
 
+        // Reproduce el aullido solamente si esta ronda de Supervivencia
+        // realmente va a contener al menos un perro zombie.
+        int nonBossEnemyCount = Mathf.Max(0, zombiesThisRound - bossCount);
+        bool willSpawnDogsThisRound =
+            infiniteMode &&
+            activeMode != null &&
+            dogZombiePrefab != null &&
+            activeMode.GetDogCount(round, nonBossEnemyCount) > 0;
+
+        if (willSpawnDogsThisRound)
+            PlayDogRoundHowlClientRpc();
+
         zombiesSpawnedThisRound = 0;
         zombiesKilledThisRound = 0;
 
@@ -526,6 +552,33 @@ private IEnumerator StartSingleplayerRound(int round)
                    bossCount
                 )
             );
+    }
+
+    // =========================================================
+    // AUDIO DE RONDA CON PERROS
+    // =========================================================
+
+    [ClientRpc]
+    private void PlayDogRoundHowlClientRpc()
+    {
+        if (dogRoundHowlClip == null)
+            return;
+
+        AudioSource source = dogRoundAudioSource;
+
+        if (source == null)
+            source = GetComponent<AudioSource>();
+
+        if (source == null)
+        {
+            source = gameObject.AddComponent<AudioSource>();
+            source.playOnAwake = false;
+            source.loop = false;
+            source.spatialBlend = 0f; // Sonido global/2D de inicio de ronda.
+        }
+
+        dogRoundAudioSource = source;
+        source.PlayOneShot(dogRoundHowlClip, dogRoundHowlVolume);
     }
 
     // =========================================================
@@ -762,7 +815,47 @@ private IEnumerator StartSingleplayerRound(int round)
         }
 
         // =====================================================
-        // ZOMBIES NORMALES
+        // PERROS ZOMBIE (SOLO SUPERVIVENCIA)
+        // =====================================================
+
+        int dogZombiesToSpawn = 0;
+
+        if (infiniteMode && activeMode != null && activeMode.IsDogRound(round))
+        {
+            if (dogZombiePrefab == null)
+            {
+                Debug.LogWarning(
+                    "[RoundManager] Esta es una ronda de perros, pero Dog Zombie Prefab no está asignado. " +
+                    "Se generarán zombies normales en su lugar."
+                );
+            }
+            else
+            {
+                // El porcentaje se calcula sobre los enemigos que no son boss.
+                // Así el perro reemplaza zombies normales y NO aumenta el total de la ronda.
+                dogZombiesToSpawn =
+                    activeMode.GetDogCount(round, normalZombiesToSpawn);
+            }
+        }
+
+        int normalOnlyToSpawn =
+            normalZombiesToSpawn - dogZombiesToSpawn;
+
+        int dogsRemaining = dogZombiesToSpawn;
+        int normalsRemaining = normalOnlyToSpawn;
+
+        if (dogZombiesToSpawn > 0)
+        {
+            Debug.Log(
+                "[RoundManager] Ronda " + round +
+                ": perros=" + dogZombiesToSpawn +
+                " | zombies normales=" + normalOnlyToSpawn +
+                " | bosses=" + bossCount
+            );
+        }
+
+        // =====================================================
+        // ENEMIGOS NORMALES + PERROS
         // =====================================================
 
         for (
@@ -792,20 +885,43 @@ private IEnumerator StartSingleplayerRound(int round)
                     i % shuffledSpawnPoints.Count
                 ];
 
+            int enemiesRemaining = dogsRemaining + normalsRemaining;
+
+            bool spawnDog =
+                dogsRemaining > 0 &&
+                (normalsRemaining <= 0 ||
+                 Random.value < (dogsRemaining / (float)enemiesRemaining));
+
+            GameObject prefabToSpawn =
+                spawnDog
+                    ? dogZombiePrefab
+                    : zombiePrefab;
+
+            int enemyHealth =
+                spawnDog && activeMode != null
+                    ? activeMode.GetDogHealth(round, activeDifficulty)
+                    : zombieHealthThisRound;
+
+            // El perro siempre usa su velocidad rápida configurada en el prefab.
+            // Los zombies normales conservan la probabilidad de corredor existente.
             bool willRun =
-                Random.value <
-                runChance;
+                spawnDog ||
+                Random.value < runChance;
 
-           /* SpawnZombie(
-                zombiePrefab,
+            if (SpawnZombie(
+                prefabToSpawn,
                 spawnPoint,
-                zombieHealthThisRound,
-                willRun
-            );*/
-
-            if (SpawnZombie(zombiePrefab, spawnPoint, zombieHealthThisRound, willRun, speedMultiplier))
+                enemyHealth,
+                willRun,
+                speedMultiplier
+            ))
             {
                 zombiesSpawnedThisRound++;
+
+                if (spawnDog)
+                    dogsRemaining--;
+                else
+                    normalsRemaining--;
             }
 
             if (

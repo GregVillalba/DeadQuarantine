@@ -9,6 +9,9 @@ public class ZombieAI : NetworkBehaviour
     [SerializeField] private float attackRange = 1.8f;
     [SerializeField] private int attackDamage = 10;
 
+    [Tooltip("Activado = DifficultySettings.zombieDamage puede reemplazar el daño del prefab. Para enemigos con daño propio, como el perro zombie, desactivarlo.")]
+    [SerializeField] private bool useDifficultyDamageOverride = true;
+
     [SerializeField] private float attackCooldown = 0.9f;
 
     [SerializeField] private float attackHitDelay = 0.35f;
@@ -24,6 +27,7 @@ public class ZombieAI : NetworkBehaviour
 
     private NavMeshAgent agent;
     private Animator animator;
+    private ZombieAnimationDriver animationDriver;
     private ZombieHealth zombieHealth;
     private ZombieAudio zombieAudio;
 
@@ -37,6 +41,11 @@ public class ZombieAI : NetworkBehaviour
     {
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
+
+        animationDriver = GetComponent<ZombieAnimationDriver>();
+        if (animationDriver == null)
+            animationDriver = GetComponentInChildren<ZombieAnimationDriver>(true);
+
         zombieHealth = GetComponent<ZombieHealth>();
         zombieAudio = GetComponent<ZombieAudio>();
     }
@@ -275,7 +284,11 @@ public class ZombieAI : NetworkBehaviour
             agent.isStopped = true;
         }
 
-        if (animator != null)
+        if (animationDriver != null)
+        {
+            animationDriver.PlayAttack();
+        }
+        else if (animator != null)
         {
             animator.SetTrigger("Attack");
         }
@@ -338,7 +351,7 @@ public class ZombieAI : NetworkBehaviour
                             : null;
 
                     int damage =
-                        (settings != null && settings.zombieDamage > 0)
+                        (useDifficultyDamageOverride && settings != null && settings.zombieDamage > 0)
                             ? settings.zombieDamage
                             : attackDamage;
 
@@ -363,9 +376,6 @@ public class ZombieAI : NetworkBehaviour
 
     private void UpdateAnimator()
     {
-        if (animator == null)
-            return;
-
         if (
             agent == null ||
             !agent.isOnNavMesh
@@ -376,6 +386,20 @@ public class ZombieAI : NetworkBehaviour
 
         float speed =
             agent.velocity.magnitude;
+
+        // Un enemigo con AnimationDriver puede tener el Animator en un hijo
+        // (como DemonDog), por eso se evalúa antes del Animator legacy de la raíz.
+        if (animationDriver != null)
+        {
+            animationDriver.SetMovement(
+                speed,
+                Mathf.Max(0.01f, agent.speed)
+            );
+            return;
+        }
+
+        if (animator == null)
+            return;
 
         animator.SetFloat(
             "Speed",
