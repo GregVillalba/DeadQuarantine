@@ -11820,6 +11820,7 @@ MonoBehaviour:
   triggerDescenso: Llegada
   animatorPuertaTrasera: {fileID: 4139866634422844660}
   triggerAbrirPuerta: Abrir
+  puertaTrasera: {fileID: 3624428628623322175}
 --- !u!1 &5292269210054922226
 GameObject:
   m_ObjectHideFlags: 0
@@ -251657,6 +251658,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1914394809699616, guid: e5677baa212a64e40af2f7b0124b0558, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4139866634422844660}
+    - targetCorrespondingSourceObject: {fileID: 1914394809699616, guid: e5677baa212a64e40af2f7b0124b0558, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3624428628623322175}
   m_SourcePrefab: {fileID: 100100000, guid: e5677baa212a64e40af2f7b0124b0558, type: 3}
 --- !u!4 &9102546661479597048 stripped
 Transform:
@@ -251711,6 +251715,20 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &3624428628623322175
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9104869375568755858}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1eb2c9a0451133f43bc456ad6ec86a48, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::PuertaTraseraMansionHistoria
+  animatorPuerta: {fileID: 4139866634422844660}
+  nombreEstadoApertura: Abrir
 --- !u!1001 &9110088486873919259
 PrefabInstance:
   m_ObjectHideFlags: 0
