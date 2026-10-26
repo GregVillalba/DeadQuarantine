@@ -36,6 +36,7 @@ public class GestorMansionHistoria : MonoBehaviour
     [Header("Puerta trasera")]
     [SerializeField] private Animator animatorPuertaTrasera;
     [SerializeField] private string triggerAbrirPuerta = "Abrir";
+[SerializeField] private PuertaTraseraMansionHistoria puertaTrasera;
     private bool jugadorLlegoAlHelipuerto;
     private bool helicopteroTerminoDescenso;
 
@@ -218,16 +219,17 @@ public void AlBossDerrotado()
 
     DetenerCuentaRegresiva();
 
-    if (animatorPuertaTrasera != null)
-    {
-        animatorPuertaTrasera.SetTrigger(triggerAbrirPuerta);
-    }
-    else
-    {
-        Debug.LogError(
-            "[Mansion] No hay Animator asignado a la puerta trasera."
-        );
-    }
+   if (puertaTrasera != null)
+{
+    puertaTrasera.AbrirPuerta();
+}
+else
+{
+    Debug.LogError(
+        "[Mansion] No hay una puerta trasera asignada.",
+        this
+    );
+}
 
     if (animatorHelicoptero != null)
     {
