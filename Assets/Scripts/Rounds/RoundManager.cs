@@ -1830,15 +1830,19 @@ public void IniciarMisionMansion(Transform puntoSpawnBoss)
         StartCoroutine(SecuenciaMisionMansion(puntoSpawnBoss));
 }
 
+
 private IEnumerator SecuenciaMisionMansion(
     Transform puntoSpawnBoss
 )
 {
     historiaSpawningActivo = true;
 
-    historiaSpawnRoutine = StartCoroutine(
-        HistoriaSpawnRoutine()
-    );
+    if (historiaSpawnRoutine == null)
+    {
+        historiaSpawnRoutine = StartCoroutine(
+            HistoriaSpawnRoutine()
+        );
+    }
 
     Debug.Log(
         "[RoundManager] Mansión: comienza la fase de resistencia."
@@ -1852,16 +1856,9 @@ private IEnumerator SecuenciaMisionMansion(
         yield break;
     }
 
-    DetenerSpawnsHistoria();
-    EliminarZombiesHistoria();
-
-    yield return null;
-
-    if (GameLostNetwork.Value)
-    {
-        misionMansionRoutine = null;
-        yield break;
-    }
+    // IMPORTANTE:
+    // No detenemos los spawns ni eliminamos los zombies existentes.
+    // Los zombies comunes siguen activos durante el combate contra el boss.
 
     GameObject bossPrefab = GetRandomBossPrefab();
 
@@ -1897,16 +1894,24 @@ private IEnumerator SecuenciaMisionMansion(
     }
 
     bossMansionAparecio = true;
-    AliveZombiesNetwork.Value = 1;
+
+    // El boss también cuenta como zombie vivo.
+    AliveZombiesNetwork.Value++;
 
     Debug.Log(
-        "[RoundManager] Mansión: apareció el boss."
+        "[RoundManager] Mansión: apareció el boss. " +
+        "Los spawns de zombies comunes continúan activos."
     );
 
-if (GestorMansionHistoria.Instance != null)
-    GestorMansionHistoria.Instance.BossAparecio();
+    if (GestorMansionHistoria.Instance != null)
+    {
+        GestorMansionHistoria.Instance.BossAparecio();
+    }
+
     misionMansionRoutine = null;
 }
+
+
 
 public void BossHistoriaDerrotado()
 {
@@ -1930,9 +1935,15 @@ public void BossHistoriaDerrotado()
     }
 
     bossMansionAparecio = false;
-    AliveZombiesNetwork.Value = 0;
 
-    Debug.Log("[RoundManager] Mansión: boss derrotado.");
+    // No reiniciar AliveZombiesNetwork:
+    // ZombieDied() se encarga de descontar al boss y mantener
+    // correctamente el conteo de los zombies comunes restantes.
+
+    Debug.Log(
+        "[RoundManager] Mansión: boss derrotado. " +
+        "Los spawns de zombies comunes continúan."
+    );
 
     if (GestorMansionHistoria.Instance != null)
     {
@@ -1945,4 +1956,5 @@ public void BossHistoriaDerrotado()
         );
     }
 }
+
 }

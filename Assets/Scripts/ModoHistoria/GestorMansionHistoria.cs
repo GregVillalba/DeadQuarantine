@@ -36,6 +36,8 @@ public class GestorMansionHistoria : MonoBehaviour
     [Header("Puerta trasera")]
     [SerializeField] private Animator animatorPuertaTrasera;
     [SerializeField] private string triggerAbrirPuerta = "Abrir";
+    private bool jugadorLlegoAlHelipuerto;
+    private bool helicopteroTerminoDescenso;
 
     private Coroutine cuentaRegresivaRoutine;
 
@@ -107,7 +109,8 @@ public class GestorMansionHistoria : MonoBehaviour
         }
 
         estadoActual = EstadoMision.Resistir;
-
+        MostrarTemporizador(true);
+  
         BuscarHUDJugador();
 
         if (textoObjetivo != null)
@@ -120,12 +123,11 @@ public class GestorMansionHistoria : MonoBehaviour
             textoTemporizador.gameObject.SetActive(true);
 
         ActualizarObjetivo(
-            "RESISTÍ EL ATAQUE DE LOS ZOMBIES."
+            "OBJETIVO"
         );
 
         ActualizarDescripcion(
-            "El perímetro está siendo atacado. " +
-            "Aguantá hasta que aparezca el boss."
+            "Resiste hasta que aparezca el Zombie Alfa."
         );
 
         ActualizarTemporizador(
@@ -166,10 +168,9 @@ public class GestorMansionHistoria : MonoBehaviour
         {
             ActualizarTemporizador(0);
 
-            ActualizarObjetivo("¡PREPARATE!");
+            ActualizarObjetivo("OBJETIVO");
 
             ActualizarDescripcion(
-                "El boss está por aparecer. " +
                 "Preparáte para enfrentarlo."
             );
         }
@@ -189,10 +190,10 @@ public class GestorMansionHistoria : MonoBehaviour
 
         DetenerCuentaRegresiva();
 
-        ActualizarObjetivo("¡EL BOSS APARECIÓ!");
+        ActualizarObjetivo("OBJETIVO");
 
         ActualizarDescripcion(
-            "Eliminá al mutante alfa para poder escapar."
+            "Elimina al Zombie alfa para poder escapar."
         );
 
         if (textoTemporizador != null)
@@ -201,86 +202,171 @@ public class GestorMansionHistoria : MonoBehaviour
         Debug.Log("[Mansion] El boss apareció.");
     }
 
-    public void AlBossDerrotado()
+   
+public void AlBossDerrotado()
+{
+    if (!EsServidor ||
+        estadoActual != EstadoMision.EsperandoBoss)
     {
-        if (!EsServidor ||
-            estadoActual != EstadoMision.EsperandoBoss)
-        {
-            return;
-        }
+        return;
+    }
 
-        estadoActual = EstadoMision.IrAlHelipuerto;
+    estadoActual = EstadoMision.IrAlHelipuerto;
 
-        DetenerCuentaRegresiva();
+    jugadorLlegoAlHelipuerto = false;
+    helicopteroTerminoDescenso = false;
 
-        if (animatorPuertaTrasera != null)
-        {
-            animatorPuertaTrasera.SetTrigger(
-                triggerAbrirPuerta
-            );
-        }
-        else
-        {
-            Debug.LogWarning(
-                "[Mansion] No hay Animator asignado a la puerta trasera."
-            );
-        }
+    DetenerCuentaRegresiva();
 
-        if (animatorHelicoptero != null)
-        {
-            animatorHelicoptero.SetTrigger(
-                triggerDescenso
-            );
-        }
-        else
-        {
-            Debug.LogWarning(
-                "[Mansion] No hay Animator asignado al helicóptero."
-            );
-        }
-
-        ActualizarObjetivo("¡BOSS DERROTADO!");
-
-        ActualizarDescripcion(
-            "Corré hacia el helipuerto y alcanzá " +
-            "el punto de extracción."
-        );
-
-        if (textoTemporizador != null)
-            textoTemporizador.gameObject.SetActive(false);
-
-        Debug.Log(
-            "[Mansion] Boss derrotado. Objetivo: ir al helipuerto."
+    if (animatorPuertaTrasera != null)
+    {
+        animatorPuertaTrasera.SetTrigger(triggerAbrirPuerta);
+    }
+    else
+    {
+        Debug.LogError(
+            "[Mansion] No hay Animator asignado a la puerta trasera."
         );
     }
 
-    public void CompletarMision()
+    if (animatorHelicoptero != null)
     {
-        if (!EsServidor ||
-            estadoActual == EstadoMision.Completada ||
-            estadoActual == EstadoMision.Inactiva)
+        animatorHelicoptero.SetTrigger(triggerDescenso);
+    }
+    else
+    {
+        Debug.LogError(
+            "[Mansion] No hay Animator asignado al helicóptero."
+        );
+    }
+
+    ActualizarObjetivo("OBJETIVO");
+
+    ActualizarDescripcion(
+        "Corré hacia el helipuerto y alcanzá el punto de extracción."
+    );
+
+    if (textoTemporizador != null)
+        textoTemporizador.gameObject.SetActive(false);
+
+    Debug.Log(
+        "[Mansion] Boss derrotado. Esperando llegada al helipuerto y fin del descenso."
+    );
+}
+
+public void RegistrarLlegadaAlHelipuerto()
+{
+    if (!EsServidor ||
+        estadoActual != EstadoMision.IrAlHelipuerto)
+    {
+        return;
+    }
+
+    jugadorLlegoAlHelipuerto = true;
+
+    Debug.Log(
+        "[Helipuerto] Llegada registrada. " +
+        $"Descenso terminado: {helicopteroTerminoDescenso}."
+    );
+
+    IntentarCompletarMision();
+}
+
+public void RegistrarFinDescensoHelicoptero()
+{
+    if (!EsServidor ||
+        estadoActual != EstadoMision.IrAlHelipuerto)
+    {
+        return;
+    }
+
+    helicopteroTerminoDescenso = true;
+
+    Debug.Log(
+        "[Helipuerto] La animación de descenso terminó. " +
+        $"Jugador llegó: {jugadorLlegoAlHelipuerto}."
+    );
+
+    IntentarCompletarMision();
+}
+
+private void IntentarCompletarMision()
+{
+    if (!EsServidor ||
+        estadoActual != EstadoMision.IrAlHelipuerto ||
+        !jugadorLlegoAlHelipuerto ||
+        !helicopteroTerminoDescenso)
+    {
+        return;
+    }
+
+    CompletarMision();
+}
+
+ 
+public void CompletarMision()
+{
+    if (!EsServidor ||
+        estadoActual != EstadoMision.IrAlHelipuerto ||
+        !jugadorLlegoAlHelipuerto ||
+        !helicopteroTerminoDescenso)
+    {
+        return;
+    }
+
+    estadoActual = EstadoMision.Completada;
+
+    DetenerCuentaRegresiva();
+
+    if (RoundManager.Instance != null)
+        RoundManager.Instance.DetenerSpawnsHistoria();
+
+    ActualizarObjetivo("MISIÓN COMPLETADA");
+
+    ActualizarDescripcion(
+        "Lograste escapar de la mansión."
+    );
+
+    if (textoTemporizador != null)
+        textoTemporizador.gameObject.SetActive(false);
+
+    Debug.Log(
+        "[Mansion] Descenso terminado y jugador en el helipuerto. " +
+        "Iniciando transición de victoria."
+    );
+
+    if (FadeTransicionHistoria.Instance == null)
+    {
+        Debug.LogError(
+            "[Mansion] No se encontró FadeTransicionHistoria."
+        );
+        return;
+    }
+
+    FadeTransicionHistoria.Instance.EjecutarTransicion(() =>
+    {
+        PauseController pauseController =
+            FindAnyObjectByType<PauseController>();
+
+        if (pauseController == null)
         {
+            Debug.LogError(
+                "[Mansion] No se encontró PauseController para mostrar la victoria."
+            );
             return;
         }
 
-        estadoActual = EstadoMision.Completada;
+        pauseController.MostrarVictoria();
 
-        DetenerCuentaRegresiva();
+        Debug.Log("[Mansion] Pantalla de victoria activada.");
+    });
+}
 
-        ActualizarObjetivo("¡MISIÓN COMPLETADA!");
 
-        ActualizarDescripcion(
-            "Lograste escapar de la mansión."
-        );
-
-        if (textoTemporizador != null)
-            textoTemporizador.gameObject.SetActive(false);
-
-        Debug.Log("[Mansion] Misión completada.");
-    }
 
     private void DetenerCuentaRegresiva()
     {
+        MostrarTemporizador(false);
         if (cuentaRegresivaRoutine != null)
         {
             StopCoroutine(cuentaRegresivaRoutine);
@@ -481,4 +567,11 @@ public class GestorMansionHistoria : MonoBehaviour
 
         return null;
     }
+    private void MostrarTemporizador(bool mostrar)
+{
+    if (textoTemporizador != null)
+    {
+        textoTemporizador.gameObject.SetActive(mostrar);
+    }
+}
 }
