@@ -1045,6 +1045,14 @@ private void IniciarTransicionASafeZone2()
             return;
         }
 
+        // Al ocultar la Ciudad se apaga su NavMesh: los zombies que quedaron
+        // no podrían moverse. En la zona segura tampoco aparecen nuevos.
+        if (IsServer && RoundManager.Instance != null)
+        {
+            RoundManager.Instance.DetenerSpawnsHistoria();
+            RoundManager.Instance.EliminarZombiesHistoria();
+        }
+
         // Trasladar al jugador a la zona segura.
         gestor.TransicionarASafeZone2(jugador);
 

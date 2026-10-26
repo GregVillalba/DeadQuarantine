@@ -11419,11 +11419,33 @@ PrefabInstance:
       propertyPath: GlobalObjectIdHash
       value: 2010297270
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 2026122944144111316, guid: efa408d81699c6f45ad293b2efcd3eaf, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 797339051209296711, guid: efa408d81699c6f45ad293b2efcd3eaf, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 469097967}
   m_SourcePrefab: {fileID: 100100000, guid: efa408d81699c6f45ad293b2efcd3eaf, type: 3}
+--- !u!1 &469097966 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 797339051209296711, guid: efa408d81699c6f45ad293b2efcd3eaf, type: 3}
+  m_PrefabInstance: {fileID: 469097965}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &469097967
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 469097966}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e24207a59d58a834d814216f0362025e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::MercaderSegunModo
+  modosVisibles: 6
 --- !u!64 &469559127
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -62679,7 +62701,8 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 2147483647
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 693885730179661614, guid: bf1b05a4eb7c34a4f9fcde2271db0791, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 5236294284206009287, guid: bf1b05a4eb7c34a4f9fcde2271db0791, type: 3}

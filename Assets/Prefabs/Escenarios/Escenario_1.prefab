@@ -12686,8 +12686,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Scripts::MultiplayerPlayerSpawner
   ShowTopMostFoldoutHeaderGroup: 1
+  maxPlayers: 4
   playerSpawn1: {fileID: 1043363940941582563}
   playerSpawn2: {fileID: 0}
+  playerSpawn3: {fileID: 0}
+  playerSpawn4: {fileID: 0}
 --- !u!1 &6123886729524632856
 GameObject:
   m_ObjectHideFlags: 0
@@ -41255,13 +41258,34 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5101806914358668905, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 693885730179661614}
   m_SourcePrefab: {fileID: 100100000, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
 --- !u!4 &813212242153550146 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4496252039056711960, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
   m_PrefabInstance: {fileID: 3831711511623389274}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &8350160836398726707 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5101806914358668905, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+  m_PrefabInstance: {fileID: 3831711511623389274}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &693885730179661614
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8350160836398726707}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e24207a59d58a834d814216f0362025e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::MercaderSegunModo
+  modosVisibles: 6
 --- !u!1001 &3833437621017220122
 PrefabInstance:
   m_ObjectHideFlags: 0
