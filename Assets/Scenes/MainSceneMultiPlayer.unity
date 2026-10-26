@@ -17052,6 +17052,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Scripts::RoundManager
   ShowTopMostFoldoutHeaderGroup: 1
   zombiePrefab: {fileID: 1055470696967520, guid: bb116383f6f80bf4d90cb48aeca8e8bf, type: 3}
+  dogZombiePrefab: {fileID: 2448360648697484514, guid: c073e07eafb7143d9add67cc2544470d, type: 3}
+  dogRoundHowlClip: {fileID: 8300000, guid: dffc76626e1de324a994de3053636129, type: 3}
+  dogRoundAudioSource: {fileID: 1624495902}
+  dogRoundHowlVolume: 1
   spawnPoints:
   - {fileID: 1518587162956133116, guid: 7dc0903ff70a8d34198787f89318c59e, type: 3}
   - {fileID: 2827793387562212536, guid: 6001892d074aac64686ff1d09352b3e2, type: 3}
@@ -17097,6 +17101,8 @@ MonoBehaviour:
   maxWaitForPlayersTime: 15
   debugStartRound: 1
   maxZombiesHistoria: 25
+  tiempoResistenciaMansion: 120
+  saludBossMansion: 2500
   CurrentRoundNetwork:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
@@ -21032,6 +21038,11 @@ MonoBehaviour:
 --- !u!4 &1624495901 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7911222479291460899, guid: bf1b05a4eb7c34a4f9fcde2271db0791, type: 3}
+  m_PrefabInstance: {fileID: 1624495898}
+  m_PrefabAsset: {fileID: 0}
+--- !u!82 &1624495902 stripped
+AudioSource:
+  m_CorrespondingSourceObject: {fileID: 8392250742233821235, guid: bf1b05a4eb7c34a4f9fcde2271db0791, type: 3}
   m_PrefabInstance: {fileID: 1624495898}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &1631039054

@@ -89,6 +89,16 @@ public class GameModeConfig : ScriptableObject
     [Tooltip("Multiplicador maximo de velocidad (1.5 = +50%).")]
     [Min(1f)] public float maxZombieSpeedMultiplier = 1.5f;
 
+    [Header("Infinito: perro zombie")]
+    [Tooltip("Los perros aparecen solamente cada N rondas. 5 = rondas 5, 10, 15...")]
+    [Min(1)] public int dogEveryNRounds = 5;
+
+    [Tooltip("Porcentaje de los enemigos NO-BOSS de esas rondas que serán perros. 0.20 = 20%.")]
+    [Range(0f, 1f)] public float dogShareOnDogRounds = 0.20f;
+
+    [Tooltip("Vida base del perro en la ronda 1 de referencia. El backlog define 50.")]
+    [Min(1)] public int baseDogHealth = 50;
+
     [Header("Infinito: fase de compras")]
     [Tooltip("Primera ronda tras la cual hay tienda.")]
     [Min(1)] public int shopFirstRound = 3;
@@ -177,6 +187,34 @@ public class GameModeConfig : ScriptableObject
     {
         float multiplier = 1f + zombieSpeedIncreasePerRound * (Mathf.Max(round, 1) - 1);
         return Mathf.Min(multiplier, maxZombieSpeedMultiplier);
+    }
+
+    public bool IsDogRound(int round)
+    {
+        return infiniteRounds &&
+               round > 0 &&
+               dogEveryNRounds > 0 &&
+               round % dogEveryNRounds == 0;
+    }
+
+    public int GetDogCount(int round, int nonBossEnemyCount)
+    {
+        if (!IsDogRound(round) || nonBossEnemyCount <= 0)
+            return 0;
+
+        return Mathf.Clamp(
+            Mathf.RoundToInt(nonBossEnemyCount * dogShareOnDogRounds),
+            0,
+            nonBossEnemyCount
+        );
+    }
+
+    public int GetDogHealth(int round, DifficultyLevel level)
+    {
+        // Conserva la vida inicial propia del perro (50) y utiliza la misma
+        // progresión por dificultad que ya aplica Supervivencia a los enemigos.
+        return baseDogHealth +
+               GetScaling(level).zombieHealthPerRound * (Mathf.Max(round, 1) - 1);
     }
 
     public bool HasShopAfterRound(int round)

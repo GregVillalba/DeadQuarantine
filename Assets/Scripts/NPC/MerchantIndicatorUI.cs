@@ -44,6 +44,7 @@ public class MerchantIndicatorUI : MonoBehaviour
     private string teclaSaltarCompras = string.Empty;
     private bool saltarComprasEnviado;
     private bool saltarComprasTextoCreado;
+    private IndicadorCompanerosListos indicadorCompaneros;
 
     private void Awake()
     {
@@ -86,6 +87,10 @@ public class MerchantIndicatorUI : MonoBehaviour
         shopUI = transform.root.GetComponentInChildren<NPCShopUI>(true);
 
         CrearTextoSaltarCompras();
+
+        if (saltarComprasText != null)
+            indicadorCompaneros = IndicadorCompanerosListos.Crear(saltarComprasText);
+
         BuscarMercader();
     }
 
@@ -234,11 +239,13 @@ public class MerchantIndicatorUI : MonoBehaviour
             return;
 
         string texto;
+        bool esperandoCompaneros = false;
 
         if (saltarComprasEnviado || RoundManager.Instance.JugadorLocalListoFaseCompras())
         {
             // Solo: la fase termina enseguida, no hay a quién esperar.
-            texto = HayOtrosJugadores() ? textoEsperandoCompaneros : string.Empty;
+            esperandoCompaneros = IndicadorCompanerosListos.HayCompaneros();
+            texto = esperandoCompaneros ? textoEsperandoCompaneros : string.Empty;
         }
         else
         {
@@ -247,6 +254,10 @@ public class MerchantIndicatorUI : MonoBehaviour
 
         bool visible = !string.IsNullOrEmpty(texto);
         SetActivo(saltarComprasText.gameObject, visible);
+
+        // Mientras espera, los círculos muestran cuáles de los compañeros faltan marcar "Listo".
+        if (indicadorCompaneros != null)
+            indicadorCompaneros.Mostrar(esperandoCompaneros);
 
         if (!visible)
             return;
@@ -258,20 +269,6 @@ public class MerchantIndicatorUI : MonoBehaviour
 
         if (saltarComprasTextoCreado)
             UbicarTextoSaltarCompras();
-    }
-
-    // Los clientes siempre juegan acompañados; el host está solo si es el único conectado.
-    private static bool HayOtrosJugadores()
-    {
-        NetworkManager networkManager = NetworkManager.Singleton;
-
-        if (networkManager == null)
-            return false;
-
-        if (!networkManager.IsServer)
-            return true;
-
-        return networkManager.ConnectedClientsIds.Count > 1;
     }
 
     // Si no se asignó un texto en el Inspector, se clona el del tiempo (misma fuente, color y tamaño).

@@ -10,6 +10,20 @@ public class RoundManager : NetworkBehaviour
 
     [Header("Zombie")]
     [SerializeField] private GameObject zombiePrefab;
+
+    [Tooltip("Prefab del perro zombie. Solo se usa en Supervivencia, según GameModeConfig.")]
+    [SerializeField] private GameObject dogZombiePrefab;
+
+    [Header("Audio de ronda con perros")]
+    [Tooltip("Aullido que se reproduce al comenzar una ronda en la que realmente van a aparecer perros zombie.")]
+    [SerializeField] private AudioClip dogRoundHowlClip;
+
+    [Tooltip("Opcional. Si queda vacío, RoundManager crea automáticamente un AudioSource 2D.")]
+    [SerializeField] private AudioSource dogRoundAudioSource;
+
+    [Range(0f, 1f)]
+    [SerializeField] private float dogRoundHowlVolume = 1f;
+
     [SerializeField] private Transform[] spawnPoints;
 
     [Header("Boss")]
@@ -175,7 +189,7 @@ private Coroutine misionMansionRoutine;
     public float TiempoResistenciaMansion => tiempoResistenciaMansion;
 
     // Jugadores que tocaron "Listo" durante la fase de compras. Se sincroniza
-    // para que cada cliente sepa si el otro jugador ya está listo.
+    // para que cada cliente sepa cuáles de sus compañeros ya están listos.
     // (Las NetworkList se crean en Awake, antes del spawn de red.)
     public NetworkList<ulong> ShopReadyClientsNetwork;
 
@@ -488,6 +502,18 @@ private IEnumerator StartSingleplayerRound(int round)
 
         zombiesThisRound = Mathf.Max(zombiesThisRound, bossCount);
 
+        // Reproduce el aullido solamente si esta ronda de Supervivencia
+        // realmente va a contener al menos un perro zombie.
+        int nonBossEnemyCount = Mathf.Max(0, zombiesThisRound - bossCount);
+        bool willSpawnDogsThisRound =
+            infiniteMode &&
+            activeMode != null &&
+            dogZombiePrefab != null &&
+            activeMode.GetDogCount(round, nonBossEnemyCount) > 0;
+
+        if (willSpawnDogsThisRound)
+            PlayDogRoundHowlClientRpc();
+
         zombiesSpawnedThisRound = 0;
         zombiesKilledThisRound = 0;
 
@@ -526,6 +552,33 @@ private IEnumerator StartSingleplayerRound(int round)
                    bossCount
                 )
             );
+    }
+
+    // =========================================================
+    // AUDIO DE RONDA CON PERROS
+    // =========================================================
+
+    [ClientRpc]
+    private void PlayDogRoundHowlClientRpc()
+    {
+        if (dogRoundHowlClip == null)
+            return;
+
+        AudioSource source = dogRoundAudioSource;
+
+        if (source == null)
+            source = GetComponent<AudioSource>();
+
+        if (source == null)
+        {
+            source = gameObject.AddComponent<AudioSource>();
+            source.playOnAwake = false;
+            source.loop = false;
+            source.spatialBlend = 0f; // Sonido global/2D de inicio de ronda.
+        }
+
+        dogRoundAudioSource = source;
+        source.PlayOneShot(dogRoundHowlClip, dogRoundHowlVolume);
     }
 
     // =========================================================
@@ -762,7 +815,47 @@ private IEnumerator StartSingleplayerRound(int round)
         }
 
         // =====================================================
-        // ZOMBIES NORMALES
+        // PERROS ZOMBIE (SOLO SUPERVIVENCIA)
+        // =====================================================
+
+        int dogZombiesToSpawn = 0;
+
+        if (infiniteMode && activeMode != null && activeMode.IsDogRound(round))
+        {
+            if (dogZombiePrefab == null)
+            {
+                Debug.LogWarning(
+                    "[RoundManager] Esta es una ronda de perros, pero Dog Zombie Prefab no está asignado. " +
+                    "Se generarán zombies normales en su lugar."
+                );
+            }
+            else
+            {
+                // El porcentaje se calcula sobre los enemigos que no son boss.
+                // Así el perro reemplaza zombies normales y NO aumenta el total de la ronda.
+                dogZombiesToSpawn =
+                    activeMode.GetDogCount(round, normalZombiesToSpawn);
+            }
+        }
+
+        int normalOnlyToSpawn =
+            normalZombiesToSpawn - dogZombiesToSpawn;
+
+        int dogsRemaining = dogZombiesToSpawn;
+        int normalsRemaining = normalOnlyToSpawn;
+
+        if (dogZombiesToSpawn > 0)
+        {
+            Debug.Log(
+                "[RoundManager] Ronda " + round +
+                ": perros=" + dogZombiesToSpawn +
+                " | zombies normales=" + normalOnlyToSpawn +
+                " | bosses=" + bossCount
+            );
+        }
+
+        // =====================================================
+        // ENEMIGOS NORMALES + PERROS
         // =====================================================
 
         for (
@@ -792,20 +885,43 @@ private IEnumerator StartSingleplayerRound(int round)
                     i % shuffledSpawnPoints.Count
                 ];
 
+            int enemiesRemaining = dogsRemaining + normalsRemaining;
+
+            bool spawnDog =
+                dogsRemaining > 0 &&
+                (normalsRemaining <= 0 ||
+                 Random.value < (dogsRemaining / (float)enemiesRemaining));
+
+            GameObject prefabToSpawn =
+                spawnDog
+                    ? dogZombiePrefab
+                    : zombiePrefab;
+
+            int enemyHealth =
+                spawnDog && activeMode != null
+                    ? activeMode.GetDogHealth(round, activeDifficulty)
+                    : zombieHealthThisRound;
+
+            // El perro siempre usa su velocidad rápida configurada en el prefab.
+            // Los zombies normales conservan la probabilidad de corredor existente.
             bool willRun =
-                Random.value <
-                runChance;
+                spawnDog ||
+                Random.value < runChance;
 
-           /* SpawnZombie(
-                zombiePrefab,
+            if (SpawnZombie(
+                prefabToSpawn,
                 spawnPoint,
-                zombieHealthThisRound,
-                willRun
-            );*/
-
-            if (SpawnZombie(zombiePrefab, spawnPoint, zombieHealthThisRound, willRun, speedMultiplier))
+                enemyHealth,
+                willRun,
+                speedMultiplier
+            ))
             {
                 zombiesSpawnedThisRound++;
+
+                if (spawnDog)
+                    dogsRemaining--;
+                else
+                    normalsRemaining--;
             }
 
             if (
@@ -1504,7 +1620,7 @@ public void EliminarZombiesHistoria()
     }
 
     // "Listo": el jugador terminó de comprar. Cuando todos los jugadores
-    // conectados lo marcan, la fase de compras termina antes de tiempo.
+    // conectados y vivos lo marcan, la fase de compras termina antes de tiempo.
     [ServerRpc(RequireOwnership = false)]
     public void MarcarListoFaseComprasServerRpc(ServerRpcParams rpcParams = default)
     {
@@ -1526,21 +1642,67 @@ public void EliminarZombiesHistoria()
         return ShopReadyClientsNetwork.Contains(NetworkManager.Singleton.LocalClientId);
     }
 
-    // true si algún jugador distinto al local ya marcó "Listo".
-    public bool OtroJugadorListoFaseCompras()
+    public enum EstadoCompaneroCompras
     {
-        if (!ShopPhaseActiveNetwork.Value || NetworkManager.Singleton == null)
-            return false;
+        Desconectado,
+        Comprando,
+        Listo,
+        Muerto
+    }
 
-        ulong localId = NetworkManager.Singleton.LocalClientId;
+    private readonly List<NetworkObject> companerosOrdenados = new List<NetworkObject>();
 
-        foreach (ulong clientId in ShopReadyClientsNetwork)
+    // Llena "destino" con el estado de los compañeros del jugador local (todos menos él),
+    // ordenados por id de cliente. Los lugares que sobran quedan como Desconectado.
+    // Funciona en host y clientes: los objetos de jugador se registran en todos los peers.
+    public void ObtenerEstadosCompanerosFaseCompras(EstadoCompaneroCompras[] destino)
+    {
+        for (int i = 0; i < destino.Length; i++)
+            destino[i] = EstadoCompaneroCompras.Desconectado;
+
+        NetworkManager networkManager = NetworkManager.Singleton;
+
+        if (!ShopPhaseActiveNetwork.Value || networkManager == null || networkManager.SpawnManager == null)
+            return;
+
+        ulong localId = networkManager.LocalClientId;
+
+        companerosOrdenados.Clear();
+
+        foreach (NetworkObject jugador in networkManager.SpawnManager.PlayerObjects)
         {
-            if (clientId != localId)
-                return true;
+            if (jugador != null && jugador.OwnerClientId != localId)
+                companerosOrdenados.Add(jugador);
         }
 
-        return false;
+        companerosOrdenados.Sort((a, b) => a.OwnerClientId.CompareTo(b.OwnerClientId));
+
+        int cantidad = Mathf.Min(destino.Length, companerosOrdenados.Count);
+
+        for (int i = 0; i < cantidad; i++)
+        {
+            NetworkObject jugador = companerosOrdenados[i];
+
+            if (ShopReadyClientsNetwork.Contains(jugador.OwnerClientId))
+                destino[i] = EstadoCompaneroCompras.Listo;
+            else if (!ParticipaEnFaseCompras(jugador))
+                destino[i] = EstadoCompaneroCompras.Muerto;
+            else
+                destino[i] = EstadoCompaneroCompras.Comprando;
+        }
+    }
+
+    // Solo los jugadores vivos tienen que marcar "Listo": un muerto (espectando o abatido)
+    // no puede ir a la tienda ni apretar la tecla, así que no frena al resto.
+    // Si todavía no tiene PlayerHealth (cargando) se lo espera igual.
+    private static bool ParticipaEnFaseCompras(NetworkObject jugador)
+    {
+        if (jugador == null)
+            return false;
+
+        PlayerHealth playerHealth = jugador.GetComponent<PlayerHealth>();
+
+        return playerHealth == null || playerHealth.IsAlive;
     }
 
     private bool AllPlayersReadyForShopEnd()
@@ -1549,17 +1711,20 @@ public void EliminarZombiesHistoria()
             return false;
 
         var connectedClients = NetworkManager.Singleton.ConnectedClientsList;
-
-        if (connectedClients.Count == 0)
-            return false;
+        int jugadoresQueParticipan = 0;
 
         foreach (NetworkClient client in connectedClients)
         {
+            if (client.PlayerObject != null && !ParticipaEnFaseCompras(client.PlayerObject))
+                continue;
+
+            jugadoresQueParticipan++;
+
             if (!ShopReadyClientsNetwork.Contains(client.ClientId))
                 return false;
         }
 
-        return true;
+        return jugadoresQueParticipan > 0;
     }
 
     // =========================================================
@@ -1830,15 +1995,19 @@ public void IniciarMisionMansion(Transform puntoSpawnBoss)
         StartCoroutine(SecuenciaMisionMansion(puntoSpawnBoss));
 }
 
+
 private IEnumerator SecuenciaMisionMansion(
     Transform puntoSpawnBoss
 )
 {
     historiaSpawningActivo = true;
 
-    historiaSpawnRoutine = StartCoroutine(
-        HistoriaSpawnRoutine()
-    );
+    if (historiaSpawnRoutine == null)
+    {
+        historiaSpawnRoutine = StartCoroutine(
+            HistoriaSpawnRoutine()
+        );
+    }
 
     Debug.Log(
         "[RoundManager] Mansión: comienza la fase de resistencia."
@@ -1852,16 +2021,9 @@ private IEnumerator SecuenciaMisionMansion(
         yield break;
     }
 
-    DetenerSpawnsHistoria();
-    EliminarZombiesHistoria();
-
-    yield return null;
-
-    if (GameLostNetwork.Value)
-    {
-        misionMansionRoutine = null;
-        yield break;
-    }
+    // IMPORTANTE:
+    // No detenemos los spawns ni eliminamos los zombies existentes.
+    // Los zombies comunes siguen activos durante el combate contra el boss.
 
     GameObject bossPrefab = GetRandomBossPrefab();
 
@@ -1897,16 +2059,24 @@ private IEnumerator SecuenciaMisionMansion(
     }
 
     bossMansionAparecio = true;
-    AliveZombiesNetwork.Value = 1;
+
+    // El boss también cuenta como zombie vivo.
+    AliveZombiesNetwork.Value++;
 
     Debug.Log(
-        "[RoundManager] Mansión: apareció el boss."
+        "[RoundManager] Mansión: apareció el boss. " +
+        "Los spawns de zombies comunes continúan activos."
     );
 
-if (GestorMansionHistoria.Instance != null)
-    GestorMansionHistoria.Instance.BossAparecio();
+    if (GestorMansionHistoria.Instance != null)
+    {
+        GestorMansionHistoria.Instance.BossAparecio();
+    }
+
     misionMansionRoutine = null;
 }
+
+
 
 public void BossHistoriaDerrotado()
 {
@@ -1930,9 +2100,15 @@ public void BossHistoriaDerrotado()
     }
 
     bossMansionAparecio = false;
-    AliveZombiesNetwork.Value = 0;
 
-    Debug.Log("[RoundManager] Mansión: boss derrotado.");
+    // No reiniciar AliveZombiesNetwork:
+    // ZombieDied() se encarga de descontar al boss y mantener
+    // correctamente el conteo de los zombies comunes restantes.
+
+    Debug.Log(
+        "[RoundManager] Mansión: boss derrotado. " +
+        "Los spawns de zombies comunes continúan."
+    );
 
     if (GestorMansionHistoria.Instance != null)
     {
@@ -1945,4 +2121,5 @@ public void BossHistoriaDerrotado()
         );
     }
 }
+
 }

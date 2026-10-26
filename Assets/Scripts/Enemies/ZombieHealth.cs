@@ -10,6 +10,10 @@ public class ZombieHealth : NetworkBehaviour
     [SerializeField] private int maxHealth = 3;
     [SerializeField] private float destroyDelay = 3f;
 
+    [Header("--- MUERTE ---")]
+    [Tooltip("Activado = usa el ragdoll actual. Desactivado = mantiene el Animator y usa ZombieAnimationDriver para reproducir una animación de muerte.")]
+    [SerializeField] private bool useRagdollOnDeath = true;
+
     [Header("--- BARRA DE VIDA FLOTANTE ---")]
     [SerializeField] private Slider healthSlider;
     [SerializeField] private Image healthFillImage;
@@ -51,6 +55,7 @@ public void MarcarComoBossHistoria()
     );
 
     private Animator animator;
+    private ZombieAnimationDriver animationDriver;
     private NavMeshAgent agent;
     private ZombieAI zombieAI;
     private ZombieAudio zombieAudio;
@@ -72,6 +77,11 @@ public void MarcarComoBossHistoria()
     private void Awake()
     {
         animator = GetComponent<Animator>();
+
+        animationDriver = GetComponent<ZombieAnimationDriver>();
+        if (animationDriver == null)
+            animationDriver = GetComponentInChildren<ZombieAnimationDriver>(true);
+
         agent = GetComponent<NavMeshAgent>();
         zombieAI = GetComponent<ZombieAI>();
         zombieAudio = GetComponent<ZombieAudio>();
@@ -494,7 +504,11 @@ public void MarcarComoBossHistoria()
     [ClientRpc]
     private void PlayHitEffectsClientRpc()
     {
-        if (animator != null &&
+        if (animationDriver != null)
+        {
+            animationDriver.PlayHit();
+        }
+        else if (animator != null &&
             animator.enabled)
         {
             animator.SetTrigger("Hit");
@@ -576,7 +590,19 @@ private void Die(ulong shooterClientId)
     [ClientRpc]
     private void PlayDeathEffectsClientRpc()
     {
-        ActivateRagdoll();
+        // También se marca en clientes para que ZombieAudio y otros componentes
+        // locales sepan inmediatamente que el enemigo ya murió.
+        IsDead = true;
+
+        if (useRagdollOnDeath)
+        {
+            ActivateRagdoll();
+        }
+        else
+        {
+            PlayAnimatedDeath();
+        }
+
 //======================== NUEVO =========================
         if (zombieHeadshot != null)
             zombieHeadshot.DesactivarHitbox();
@@ -584,6 +610,42 @@ private void Die(ulong shooterClientId)
         if (zombieAudio != null)
         {
             zombieAudio.PlayDeathSound();
+        }
+    }
+
+    private void PlayAnimatedDeath()
+    {
+        if (zombieAI != null)
+            zombieAI.enabled = false;
+
+        if (agent != null && agent.enabled)
+        {
+            if (agent.isOnNavMesh)
+            {
+                agent.isStopped = true;
+                agent.ResetPath();
+            }
+
+            agent.enabled = false;
+        }
+
+        // Evita que el cadáver siga recibiendo impactos o bloqueando disparos,
+        // pero deja el Animator activo para poder reproducir DeathLeft/DeathRight.
+        Collider[] deathColliders = GetComponentsInChildren<Collider>(true);
+
+        foreach (Collider deathCollider in deathColliders)
+        {
+            if (deathCollider != null)
+                deathCollider.enabled = false;
+        }
+
+        if (animationDriver != null)
+        {
+            animationDriver.PlayDeath();
+        }
+        else if (animator != null && animator.enabled)
+        {
+            animator.SetTrigger("Death");
         }
     }
 
