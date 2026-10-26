@@ -1,4 +1,3 @@
-
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -13,15 +12,14 @@ public class AchievementsManager : MonoBehaviour
     public static AchievementsManager Instance { get; private set; }
 
     [Header("Configuración Backend / Base de Datos")]
-  
     private const string apiUrl = "https://dead-quarentine-web.wasmer.app/api/logros/desbloquear";
 
     [SerializeField]
-    private string usernameJugador = "UserUnity";
+    private string usernameJugador = "";
 
     public string UsernameJugador
     {
-        get => usernameJugador;
+        get => ObtenerUsername();
         set => usernameJugador = value;
     }
 
@@ -77,8 +75,41 @@ public class AchievementsManager : MonoBehaviour
         }
         catch { }
 
-        // Fallback si corre fuera de sesión
+        if (!string.IsNullOrEmpty(idLocalJugador))
+            return idLocalJugador;
+
         return SystemInfo.deviceUniqueIdentifier;
+    }
+
+    public string ObtenerUsername()
+    {
+        // 1. Si se configuró explícitamente en esta instancia
+        if (!string.IsNullOrWhiteSpace(usernameJugador) && usernameJugador != "UserUnity")
+            return usernameJugador.Trim();
+
+        // 2. Intentar leer desde PlayerIdentity si existe
+        try
+        {
+            string idNombre = PlayerIdentity.GetUsername();
+            if (!string.IsNullOrWhiteSpace(idNombre) && idNombre != "UserUnity")
+                return idNombre.Trim();
+        }
+        catch { }
+
+        // 3. Claves habituales de PlayerPrefs según la pantalla de selección de personajes
+        string[] clavesPrefs = { "PlayerUsername", "Username", "NombrePersonaje", "UsuarioNombre" };
+        foreach (string clave in clavesPrefs)
+        {
+            if (PlayerPrefs.HasKey(clave))
+            {
+                string guardado = PlayerPrefs.GetString(clave);
+                if (!string.IsNullOrWhiteSpace(guardado) && guardado != "UserUnity")
+                    return guardado.Trim();
+            }
+        }
+
+        // Fallback por defecto en caso de no existir datos guardados
+        return "Luch10";
     }
 
     // ============================================================
@@ -155,22 +186,22 @@ public class AchievementsManager : MonoBehaviour
         SincronizarLogrosPrevios();
 
         Debug.Log(
-            "[ACHIEVEMENTS] Gestor inicializado. Logros habilitados: " +
-            LogrosHabilitados
+            $"[ACHIEVEMENTS] Gestor inicializado para jugador '{ObtenerUsername()}'. Logros habilitados: {LogrosHabilitados}"
         );
     }
 
     [ContextMenu("Probar GET")]
-private void ProbarGet() => StartCoroutine(ProbarGetCoroutine());
+    private void ProbarGet() => StartCoroutine(ProbarGetCoroutine());
 
-private IEnumerator ProbarGetCoroutine()
-{
-    using (UnityWebRequest r = UnityWebRequest.Get(apiUrl))
+    private IEnumerator ProbarGetCoroutine()
     {
-        yield return r.SendWebRequest();
-        Debug.Log($"[TEST GET] {r.result} | HTTP {r.responseCode} | {r.error}");
+        using (UnityWebRequest r = UnityWebRequest.Get(apiUrl))
+        {
+            yield return r.SendWebRequest();
+            Debug.Log($"[TEST GET] {r.result} | HTTP {r.responseCode} | {r.error}");
+        }
     }
-}
+
     [ContextMenu("Probar Google")]
     private void ProbarGoogle() => StartCoroutine(ProbarGoogleCoroutine());
 
@@ -192,8 +223,7 @@ private IEnumerator ProbarGetCoroutine()
         if (achievementDatabase == null)
         {
             Debug.LogError(
-                "[ACHIEVEMENTS] AchievementsManager no tiene " +
-                "una AchievementDatabase asignada."
+                "[ACHIEVEMENTS] AchievementsManager no tiene una AchievementDatabase asignada."
             );
             return;
         }
@@ -236,8 +266,6 @@ private IEnumerator ProbarGetCoroutine()
         playerScore.ZombiesEliminadosNetwork.OnValueChanged +=
             OnZombiesEliminadosChanged;
 
-        // Evita importar las bajas acumuladas durante el tutorial
-        // como progreso inicial de logros.
         if (!BloqueoLogrosActivo())
         {
             OnZombiesEliminadosChanged(
@@ -258,8 +286,7 @@ private IEnumerator ProbarGetCoroutine()
         if (achievementDatabase == null)
         {
             Debug.LogError(
-                "[ACHIEVEMENTS] No se puede inicializar la lista " +
-                "porque no existe AchievementDatabase."
+                "[ACHIEVEMENTS] No se puede inicializar la lista porque no existe AchievementDatabase."
             );
             return;
         }
@@ -305,7 +332,7 @@ private IEnumerator ProbarGetCoroutine()
     }
 
     // ============================================================
-    // EASTER EGGS: CONSULTAR REGISTRO
+    // EASTER EGGS
     // ============================================================
 
     public bool EasterEggYaEncontrado(string easterEggId)
@@ -320,10 +347,6 @@ private IEnumerator ProbarGetCoroutine()
         return datos.easterEggsEncontrados.Contains(easterEggId);
     }
 
-    // ============================================================
-    // EASTER EGGS: REGISTRAR UNA SOLA VEZ
-    // ============================================================
-
     public bool RegistrarEasterEggEncontrado(string easterEggId)
     {
         if (BloqueoLogrosActivo())
@@ -332,8 +355,7 @@ private IEnumerator ProbarGetCoroutine()
         if (datos == null)
         {
             Debug.LogError(
-                "[ACHIEVEMENTS] No hay datos cargados para registrar " +
-                "el Easter Egg."
+                "[ACHIEVEMENTS] No hay datos cargados para registrar el Easter Egg."
             );
             return false;
         }
@@ -360,7 +382,6 @@ private IEnumerator ProbarGetCoroutine()
         }
 
         datos.easterEggsEncontrados.Add(easterEggId);
-
         GuardarProgreso();
 
         SumarProgreso(
@@ -436,19 +457,10 @@ private IEnumerator ProbarGetCoroutine()
                 logro.progreso = unico.objetivo;
                 logro.desbloqueado = true;
 
-                Debug.Log(
-                    "[ACHIEVEMENTS] LOGRO COMPLETADO: " + id
-                );
+                Debug.Log("[ACHIEVEMENTS] LOGRO COMPLETADO: " + id);
 
-                MostrarLogroEnHUD(
-                    id,
-                    AchievementRank.Ninguno
-                );
-
-                ReportarProgresoServidor(
-                    id,
-                    AchievementRank.Ninguno
-                );
+                MostrarLogroEnHUD(id, AchievementRank.Ninguno);
+                ReportarProgresoServidor(id, AchievementRank.Ninguno);
             }
 
             GuardarProgreso();
@@ -456,7 +468,6 @@ private IEnumerator ProbarGetCoroutine()
         }
 
         logro.progreso += cantidad;
-
         ActualizarRangoDesdeProgreso(id);
         GuardarProgreso();
     }
@@ -483,16 +494,14 @@ private IEnumerator ProbarGetCoroutine()
 
         if (nuevoRango <= logro.rangoActual)
         {
-            logro.desbloqueado =
-                nuevoRango == AchievementRank.Oro;
+            logro.desbloqueado = nuevoRango == AchievementRank.Oro;
             return;
         }
 
         logro.rangoActual = nuevoRango;
         logro.desbloqueado = nuevoRango == AchievementRank.Oro;
 
-        AchievementTierDefinition tier =
-            definicion.ObtenerRango(nuevoRango);
+        AchievementTierDefinition tier = definicion.ObtenerRango(nuevoRango);
 
         if (tier != null)
         {
@@ -502,25 +511,16 @@ private IEnumerator ProbarGetCoroutine()
             );
         }
 
-        Debug.Log(
-            "[ACHIEVEMENTS] RANGO DESBLOQUEADO: " +
-            id + " -> " + nuevoRango
-        );
+        Debug.Log($"[ACHIEVEMENTS] RANGO DESBLOQUEADO: {id} -> {nuevoRango}");
 
         if (nuevoRango == AchievementRank.Oro)
         {
-            Debug.Log(
-                "[ACHIEVEMENTS] LOGRO COMPLETADO: " + id
-            );
+            Debug.Log("[ACHIEVEMENTS] LOGRO COMPLETADO: " + id);
         }
 
         MostrarLogroEnHUD(id, nuevoRango);
         ReportarProgresoServidor(id, nuevoRango);
     }
-
-    // ============================================================
-    // DETERMINAR RANGO
-    // ============================================================
 
     private AchievementRank DeterminarRango(
         AchievementDefinition definicion,
@@ -538,9 +538,7 @@ private IEnumerator ProbarGetCoroutine()
 
         foreach (AchievementRank rango in rangos)
         {
-            AchievementTierDefinition tier =
-                definicion.ObtenerRango(rango);
-
+            AchievementTierDefinition tier = definicion.ObtenerRango(rango);
             if (tier == null)
                 continue;
 
@@ -551,14 +549,7 @@ private IEnumerator ProbarGetCoroutine()
         return rangoActual;
     }
 
-    // ============================================================
-    // DESBLOQUEAR RANGO DIRECTAMENTE
-    // ============================================================
-
-    public void DesbloquearRango(
-        AchievementId id,
-        AchievementRank rango
-    )
+    public void DesbloquearRango(AchievementId id, AchievementRank rango)
     {
         if (BloqueoLogrosActivo())
             return;
@@ -584,37 +575,23 @@ private IEnumerator ProbarGetCoroutine()
         logro.rangoActual = rango;
         logro.desbloqueado = rango == AchievementRank.Oro;
 
-        AchievementTierDefinition tier =
-            definicion.ObtenerRango(rango);
-
+        AchievementTierDefinition tier = definicion.ObtenerRango(rango);
         if (tier != null)
         {
-            logro.progreso = Mathf.Max(
-                logro.progreso,
-                tier.objetivo
-            );
+            logro.progreso = Mathf.Max(logro.progreso, tier.objetivo);
         }
 
-        Debug.Log(
-            "[ACHIEVEMENTS] RANGO DESBLOQUEADO: " +
-            id + " -> " + rango
-        );
+        Debug.Log($"[ACHIEVEMENTS] RANGO DESBLOQUEADO: {id} -> {rango}");
 
         if (rango == AchievementRank.Oro)
         {
-            Debug.Log(
-                "[ACHIEVEMENTS] LOGRO COMPLETADO: " + id
-            );
+            Debug.Log("[ACHIEVEMENTS] LOGRO COMPLETADO: " + id);
         }
 
         MostrarLogroEnHUD(id, rango);
         GuardarProgreso();
         ReportarProgresoServidor(id, rango);
     }
-
-    // ============================================================
-    // DESBLOQUEAR LOGRO
-    // ============================================================
 
     public void Desbloquear(AchievementId id)
     {
@@ -633,29 +610,15 @@ private IEnumerator ProbarGetCoroutine()
                 return;
 
             logro.desbloqueado = true;
-
             Debug.Log("[ACHIEVEMENTS] LOGRO COMPLETADO: " + id);
 
-            MostrarLogroEnHUD(
-                id,
-                AchievementRank.Ninguno
-            );
-
+            MostrarLogroEnHUD(id, AchievementRank.Ninguno);
             GuardarProgreso();
-
-            ReportarProgresoServidor(
-                id,
-                AchievementRank.Ninguno
-            );
-
+            ReportarProgresoServidor(id, AchievementRank.Ninguno);
             return;
         }
 
-        AchievementRank rango = DeterminarRango(
-            definicion,
-            logro.progreso
-        );
-
+        AchievementRank rango = DeterminarRango(definicion, logro.progreso);
         if (rango == AchievementRank.Ninguno)
             return;
 
@@ -669,27 +632,17 @@ private IEnumerator ProbarGetCoroutine()
         logro.rangoActual = rango;
         logro.desbloqueado = rango == AchievementRank.Oro;
 
-        AchievementTierDefinition tier =
-            definicion.ObtenerRango(rango);
-
+        AchievementTierDefinition tier = definicion.ObtenerRango(rango);
         if (tier != null)
         {
-            logro.progreso = Mathf.Max(
-                logro.progreso,
-                tier.objetivo
-            );
+            logro.progreso = Mathf.Max(logro.progreso, tier.objetivo);
         }
 
-        Debug.Log(
-            "[ACHIEVEMENTS] RANGO DESBLOQUEADO: " +
-            id + " -> " + rango
-        );
+        Debug.Log($"[ACHIEVEMENTS] RANGO DESBLOQUEADO: {id} -> {rango}");
 
         if (rango == AchievementRank.Oro)
         {
-            Debug.Log(
-                "[ACHIEVEMENTS] LOGRO COMPLETADO: " + id
-            );
+            Debug.Log("[ACHIEVEMENTS] LOGRO COMPLETADO: " + id);
         }
 
         MostrarLogroEnHUD(id, rango);
@@ -701,10 +654,7 @@ private IEnumerator ProbarGetCoroutine()
     // COMUNICACIÓN CON MYSQL / SERVIDOR
     // ============================================================
 
-    private void ReportarProgresoServidor(
-        AchievementId id,
-        AchievementRank rango
-    )
+    private void ReportarProgresoServidor(AchievementId id, AchievementRank rango)
     {
         if (BloqueoLogrosActivo())
             return;
@@ -714,127 +664,13 @@ private IEnumerator ProbarGetCoroutine()
         if (string.IsNullOrEmpty(sublogroClave))
         {
             Debug.LogWarning(
-                "[ACHIEVEMENTS API] No se encontró clave asignada para: " +
-                id + " - " + rango
+                $"[ACHIEVEMENTS API] No se encontró clave asignada para: {id} - {rango}"
             );
             return;
         }
 
         StartCoroutine(EnviarSublogroCoroutine(sublogroClave));
     }
-
-    /*private string ObtenerClaveSublogro(
-        AchievementId id,
-        AchievementRank rango
-    )
-    {
-        switch (id)
-        {
-            case AchievementId.DerrotadorSupremo:
-                if (rango == AchievementRank.Bronce)
-                    return "derrota_50_zombies";
-                if (rango == AchievementRank.Plata)
-                    return "derrota_100_zombies";
-                if (rango == AchievementRank.Oro)
-                    return "derrota_300_zombies";
-                break;
-
-            case AchievementId.SupervivienteDelInfierno:
-                if (rango == AchievementRank.Bronce)
-                    return "supervivencia_normal";
-                if (rango == AchievementRank.Plata)
-                    return "supervivencia_dificil";
-                if (rango == AchievementRank.Oro)
-                    return "supervivencia_pesadilla";
-                break;
-
-            case AchievementId.CompletadorDeRondas:
-                if (rango == AchievementRank.Bronce)
-                    return "rondas_normal";
-                if (rango == AchievementRank.Plata)
-                    return "rondas_dificil";
-                if (rango == AchievementRank.Oro)
-                    return "rondas_pesadilla";
-                break;
-
-            case AchievementId.CampeonDelPoligono:
-                return "completar_poligono";
-
-            case AchievementId.DondeEstaWally:
-                if (rango == AchievementRank.Bronce)
-                    return "easter_egg_1";
-                if (rango == AchievementRank.Plata)
-                    return "easter_egg_2";
-                if (rango == AchievementRank.Oro)
-                    return "easter_egg_3";
-                break;
-        }
-
-        return null;
-    }
-
-    private IEnumerator EnviarSublogroCoroutine(string sublogroClave)
-    {
-        // No iniciar el envío si la escena activa es el tutorial.
-        if (BloqueoLogrosActivo())
-            yield break;
-
-        LogroApiPayload payload = new LogroApiPayload
-        {
-            username = this.usernameJugador,
-            sublogro_clave = sublogroClave
-        };
-
-        string jsonPayload = JsonUtility.ToJson(payload);
-
-        using (UnityWebRequest request = new UnityWebRequest(apiUrl, "POST"))
-        {
-            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
-
-            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
-            request.downloadHandler = new DownloadHandlerBuffer();
-
-            request.SetRequestHeader(
-                "Content-Type",
-                "application/json"
-            );
-
-            yield return request.SendWebRequest();
-
-            if (request.result == UnityWebRequest.Result.Success)
-            {
-                LogroApiResponse respuesta =
-                    JsonUtility.FromJson<LogroApiResponse>(
-                        request.downloadHandler.text
-                    );
-
-                Debug.Log(
-                    "[ACHIEVEMENTS API] Servidor actualizó sublogro '" +
-                    sublogroClave + "' para " + usernameJugador + "."
-                );
-
-                if (respuesta != null &&
-                    !string.IsNullOrEmpty(
-                        respuesta.logro_padre_desbloqueado
-                    ))
-                {
-                    Debug.Log(
-                        "[ACHIEVEMENTS API] ¡LOGRO GLOBAL COMPLETADO " +
-                        "EN BASE DE DATOS: " +
-                        respuesta.logro_padre_desbloqueado + "!"
-                    );
-                }
-            }
-            else
-            {
-                Debug.LogWarning(
-                    "[ACHIEVEMENTS API] Falló al sincronizar en la nube " +
-                    "(" + request.error +
-                    "). Progreso guardado únicamente en local."
-                );
-            }
-        }
-    }*/
 
     public string ObtenerClaveSublogro(AchievementId id, AchievementRank rango)
     {
@@ -881,10 +717,11 @@ private IEnumerator ProbarGetCoroutine()
         }
         return null;
     }
+
     private IEnumerator EnviarSublogroCoroutine(string sublogroClave)
     {
         string idUsuario = ObtenerUserId();
-        string nombre = string.IsNullOrEmpty(usernameJugador) ? "UserUnity" : usernameJugador;
+        string nombre = ObtenerUsername(); // Toma el nombre del personaje real
 
         LogroApiPayload payload = new LogroApiPayload
         {
@@ -894,12 +731,9 @@ private IEnumerator ProbarGetCoroutine()
         };
 
         string jsonPayload = JsonUtility.ToJson(payload);
-
-
-        // Aseguramos la URL sin espacios accidentales
         string urlDestino = apiUrl.Trim();
 
-        Debug.Log($"[ACHIEVEMENTS API] Enviando '{sublogroClave}' a: {urlDestino} | Payload: {jsonPayload}");
+        Debug.Log($"[ACHIEVEMENTS API] Enviando '{sublogroClave}' para '{nombre}' (ID: {idUsuario})");
 
         using (UnityWebRequest request = new UnityWebRequest(urlDestino, "POST"))
         {
@@ -915,7 +749,7 @@ private IEnumerator ProbarGetCoroutine()
 
             if (request.result == UnityWebRequest.Result.Success && (httpCode >= 200 && httpCode < 300))
             {
-                Debug.Log($"<color=green>[ACHIEVEMENTS API] Éxito al sincronizar '{sublogroClave}' (HTTP {httpCode}).</color>");
+                Debug.Log($"<color=green>[ACHIEVEMENTS API] Éxito al sincronizar '{sublogroClave}' para {nombre} (HTTP {httpCode}).</color>");
             }
             else
             {
@@ -924,11 +758,6 @@ private IEnumerator ProbarGetCoroutine()
         }
     }
 
-    /// <summary>
-    /// Sincroniza con la base de datos todos los logros que ya fueron
-    /// completados en sesiones previas y guardados en achievements.json.
-    /// Llamar después de que el usuario inicie sesión y se conozca su IdLocal y Username.
-    /// </summary>
     public void SincronizarLogrosPrevios()
     {
         if (BloqueoLogrosActivo())
@@ -937,12 +766,12 @@ private IEnumerator ProbarGetCoroutine()
         if (datos == null || datos.logros == null)
             return;
 
-        Debug.Log("[ACHIEVEMENTS] Iniciando sincronización de progreso previo con la nube...");
         StartCoroutine(SincronizarProgresoPrevioCoroutine());
     }
+
     private IEnumerator SincronizarProgresoPrevioCoroutine()
     {
-        yield return new WaitForSeconds(0.5f); // Pausa inicial para estabilizar la sesión
+        yield return new WaitForSeconds(0.5f);
 
         if (datos?.logros == null) yield break;
 
@@ -953,7 +782,6 @@ private IEnumerator ProbarGetCoroutine()
             string idLimpio = logro.id.Replace(" ", "");
             if (!System.Enum.TryParse(idLimpio, true, out AchievementId idEnum)) continue;
 
-            // Caso 1: Logro sin rangos (ej: Campeón del Polígono) ya desbloqueado
             if (logro.desbloqueado && logro.rangoActual == AchievementRank.Ninguno)
             {
                 string clave = ObtenerClaveSublogro(idEnum, AchievementRank.Ninguno);
@@ -965,7 +793,6 @@ private IEnumerator ProbarGetCoroutine()
                 continue;
             }
 
-            // Caso 2: Logros por niveles (Bronce, Plata, Oro)
             if (logro.rangoActual >= AchievementRank.Bronce)
             {
                 yield return EnviarSublogroCoroutine(ObtenerClaveSublogro(idEnum, AchievementRank.Bronce));
@@ -984,7 +811,6 @@ private IEnumerator ProbarGetCoroutine()
         }
     }
 
-
     // ============================================================
     // OBTENER DEFINICIONES Y ESTADOS
     // ============================================================
@@ -993,57 +819,38 @@ private IEnumerator ProbarGetCoroutine()
     {
         if (achievementDatabase == null)
         {
-            Debug.LogError(
-                "[ACHIEVEMENTS] No existe AchievementDatabase."
-            );
+            Debug.LogError("[ACHIEVEMENTS] No existe AchievementDatabase.");
             return null;
         }
 
         return achievementDatabase.Obtener(id);
     }
 
-    public AchievementDefinition ObtenerDefinicionParaUI(
-        AchievementId id
-    )
+    public AchievementDefinition ObtenerDefinicionParaUI(AchievementId id)
     {
         return ObtenerDefinicion(id);
     }
 
-    // ============================================================
-    // MOSTRAR HUD
-    // ============================================================
-
-    private void MostrarLogroEnHUD(
-        AchievementId id,
-        AchievementRank rango
-    )
+    private void MostrarLogroEnHUD(AchievementId id, AchievementRank rango)
     {
         if (BloqueoLogrosActivo())
             return;
 
         if (GameplayPopupsController.Instance == null)
         {
-            Debug.LogWarning(
-                "[ACHIEVEMENTS] No existe GameplayPopupsController."
-            );
+            Debug.LogWarning("[ACHIEVEMENTS] No existe GameplayPopupsController.");
             return;
         }
 
         GameplayPopupsController.Instance.MostrarLogro(id, rango);
     }
 
-    // ============================================================
-    // OBTENER LOGRO
-    // ============================================================
-
     public AchievementData ObtenerLogro(AchievementId id)
     {
         if (datos == null || datos.logros == null)
             return null;
 
-        return datos.logros.Find(
-            x => x.id == id.ToString()
-        );
+        return datos.logros.Find(x => x.id == id.ToString());
     }
 
     public bool EstaDesbloqueado(AchievementId id)
@@ -1055,10 +862,7 @@ private IEnumerator ProbarGetCoroutine()
     public AchievementRank ObtenerRango(AchievementId id)
     {
         AchievementData logro = ObtenerLogro(id);
-
-        return logro != null
-            ? logro.rangoActual
-            : AchievementRank.Ninguno;
+        return logro != null ? logro.rangoActual : AchievementRank.Ninguno;
     }
 
     public int ObtenerProgreso(AchievementId id)
@@ -1067,151 +871,82 @@ private IEnumerator ProbarGetCoroutine()
         return logro != null ? logro.progreso : 0;
     }
 
-    // ============================================================
-    // OBTENER PRIMER RANGO
-    // ============================================================
-
-    private AchievementTierDefinition ObtenerPrimerRango(
-        AchievementDefinition definicion
-    )
+    private AchievementTierDefinition ObtenerPrimerRango(AchievementDefinition definicion)
     {
         if (definicion == null)
             return null;
 
-        AchievementTierDefinition bronce =
-            definicion.ObtenerRango(AchievementRank.Bronce);
+        AchievementTierDefinition bronce = definicion.ObtenerRango(AchievementRank.Bronce);
+        if (bronce != null) return bronce;
 
-        if (bronce != null)
-            return bronce;
-
-        AchievementTierDefinition plata =
-            definicion.ObtenerRango(AchievementRank.Plata);
-
-        if (plata != null)
-            return plata;
+        AchievementTierDefinition plata = definicion.ObtenerRango(AchievementRank.Plata);
+        if (plata != null) return plata;
 
         return definicion.ObtenerRango(AchievementRank.Oro);
     }
 
-    // ============================================================
-    // GUARDAR
-    // ============================================================
-
     private void GuardarProgreso()
     {
-        if (datos == null)
-            return;
-
+        if (datos == null) return;
         string json = JsonUtility.ToJson(datos, true);
-
         File.WriteAllText(rutaArchivo, json);
     }
-
-    // ============================================================
-    // CARGAR
-    // ============================================================
 
     private void CargarProgreso()
     {
         if (!File.Exists(rutaArchivo))
         {
             datos = new AchievementsData();
-
-            Debug.Log(
-                "[ACHIEVEMENTS] No existe archivo. " +
-                "Creando progreso nuevo."
-            );
             return;
         }
 
         string json = File.ReadAllText(rutaArchivo);
-
         datos = JsonUtility.FromJson<AchievementsData>(json);
 
         if (datos == null)
-        {
             datos = new AchievementsData();
-
-            Debug.LogWarning(
-                "[ACHIEVEMENTS] Archivo inválido."
-            );
-        }
 
         if (datos.logros == null)
             datos.logros = new List<AchievementData>();
 
         if (datos.easterEggsEncontrados == null)
-        {
             datos.easterEggsEncontrados = new List<string>();
-        }
     }
-
-    // ============================================================
-    // DESTRUIR
-    // ============================================================
 
     private void OnDestroy()
     {
         if (playerScore != null)
         {
-            playerScore.ZombiesEliminadosNetwork.OnValueChanged -=
-                OnZombiesEliminadosChanged;
+            playerScore.ZombiesEliminadosNetwork.OnValueChanged -= OnZombiesEliminadosChanged;
         }
 
         if (Instance == this)
             Instance = null;
     }
 
-    // ============================================================
-    // TOTAL DE LOGROS
-    // ============================================================
-
     public int ObtenerCantidadTotalLogros()
     {
-        if (achievementDatabase == null)
-            return 0;
-
-        IReadOnlyList<AchievementDefinition> definiciones =
-            achievementDatabase.ObtenerTodos();
-
-        if (definiciones == null)
-            return 0;
-
-        return definiciones.Count;
+        if (achievementDatabase == null) return 0;
+        IReadOnlyList<AchievementDefinition> definiciones = achievementDatabase.ObtenerTodos();
+        return definiciones != null ? definiciones.Count : 0;
     }
-
-    // ============================================================
-    // TOTAL DE RANGOS DESBLOQUEADOS
-    // ============================================================
 
     public int ObtenerCantidadTotalRangosDesbloqueados()
     {
-        if (datos == null || datos.logros == null)
-            return 0;
-
+        if (datos == null || datos.logros == null) return 0;
         int total = 0;
 
         foreach (AchievementData logro in datos.logros)
         {
-            if (logro == null)
-                continue;
+            if (logro == null) continue;
 
             switch (logro.rangoActual)
             {
-                case AchievementRank.Bronce:
-                    total += 1;
-                    break;
-
-                case AchievementRank.Plata:
-                    total += 2;
-                    break;
-
-                case AchievementRank.Oro:
-                    total += 3;
-                    break;
+                case AchievementRank.Bronce: total += 1; break;
+                case AchievementRank.Plata: total += 2; break;
+                case AchievementRank.Oro: total += 3; break;
             }
         }
-
         return total;
     }
 }
