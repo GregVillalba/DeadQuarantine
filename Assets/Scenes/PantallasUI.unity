@@ -51946,6 +51946,7 @@ GameObject:
   - component: {fileID: 754175262}
   - component: {fileID: 754175261}
   - component: {fileID: 754175263}
+  - component: {fileID: 754175264}
   m_Layer: 5
   m_Name: RawImage
   m_TagString: Untagged
@@ -61803,6 +61804,7 @@ GameObject:
   - component: {fileID: 896974173}
   - component: {fileID: 896974172}
   - component: {fileID: 896974174}
+  - component: {fileID: 896974175}
   m_Layer: 5
   m_Name: RawImage2
   m_TagString: Untagged
@@ -72453,6 +72455,7 @@ GameObject:
   - component: {fileID: 1089596838}
   - component: {fileID: 1089596837}
   - component: {fileID: 1089596839}
+  - component: {fileID: 1089596840}
   m_Layer: 5
   m_Name: RawImage
   m_TagString: Untagged
@@ -87343,6 +87346,7 @@ GameObject:
   - component: {fileID: 1318734585}
   - component: {fileID: 1318734584}
   - component: {fileID: 1318734586}
+  - component: {fileID: 1318734587}
   m_Layer: 5
   m_Name: RawImage2
   m_TagString: Untagged
@@ -130906,7 +130910,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 4294950911
+    m_Bits: 4294967295
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -139402,6 +139406,7 @@ GameObject:
   - component: {fileID: 2086663055}
   - component: {fileID: 2086663054}
   - component: {fileID: 2086663056}
+  - component: {fileID: 2086663057}
   m_Layer: 5
   m_Name: RawImage2
   m_TagString: Untagged
@@ -143759,6 +143764,111 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2eca976f2540b9f48909882b7a98e40f, type: 3}
+--- !u!114 &754175264
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 754175259}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f42c0d2b2fad25b40a2b197ea9525942, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::ButtonHoverMenuPrincipal
+  textoTMP: {fileID: 0}
+  targetRect: {fileID: 754175260}
+  colorNormal: {r: 0.47058824, g: 0.5686275, b: 0.64705884, a: 1}
+  colorHover: {r: 0, g: 0.56762826, b: 1, a: 1}
+  colorPressed: {r: 0.25882354, g: 0.4431373, b: 0.69411767, a: 1}
+  hoverScale: 1.06
+  clickScale: 0.94
+  pressYOffset: -4
+  transitionSpeed: 14
+--- !u!114 &896974175
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 896974170}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f42c0d2b2fad25b40a2b197ea9525942, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::ButtonHoverMenuPrincipal
+  textoTMP: {fileID: 0}
+  targetRect: {fileID: 896974171}
+  colorNormal: {r: 0.47058824, g: 0.5686275, b: 0.64705884, a: 1}
+  colorHover: {r: 0, g: 0.5686275, b: 1, a: 1}
+  colorPressed: {r: 0.25882354, g: 0.44313726, b: 0.69411767, a: 1}
+  hoverScale: 1.06
+  clickScale: 0.94
+  pressYOffset: -4
+  transitionSpeed: 14
+--- !u!114 &1089596840
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1089596835}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f42c0d2b2fad25b40a2b197ea9525942, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::ButtonHoverMenuPrincipal
+  textoTMP: {fileID: 0}
+  targetRect: {fileID: 1089596836}
+  colorNormal: {r: 0.47058824, g: 0.5686275, b: 0.64705884, a: 1}
+  colorHover: {r: 0, g: 0.5686275, b: 1, a: 1}
+  colorPressed: {r: 0.25882354, g: 0.44313726, b: 0.69411767, a: 1}
+  hoverScale: 1.06
+  clickScale: 0.94
+  pressYOffset: -4
+  transitionSpeed: 14
+--- !u!114 &1318734587
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1318734582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f42c0d2b2fad25b40a2b197ea9525942, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::ButtonHoverMenuPrincipal
+  textoTMP: {fileID: 0}
+  targetRect: {fileID: 1318734583}
+  colorNormal: {r: 0.47058824, g: 0.5686275, b: 0.64705884, a: 1}
+  colorHover: {r: 0, g: 0.5686275, b: 1, a: 1}
+  colorPressed: {r: 0.25882354, g: 0.44313726, b: 0.69411767, a: 1}
+  hoverScale: 1.06
+  clickScale: 0.94
+  pressYOffset: -4
+  transitionSpeed: 14
+--- !u!114 &2086663057
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2086663052}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f42c0d2b2fad25b40a2b197ea9525942, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::ButtonHoverMenuPrincipal
+  textoTMP: {fileID: 0}
+  targetRect: {fileID: 2086663053}
+  colorNormal: {r: 0.47058824, g: 0.5686275, b: 0.64705884, a: 1}
+  colorHover: {r: 0, g: 0.5686275, b: 1, a: 1}
+  colorPressed: {r: 0.25882354, g: 0.44313726, b: 0.69411767, a: 1}
+  hoverScale: 1.06
+  clickScale: 0.94
+  pressYOffset: -4
+  transitionSpeed: 14
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

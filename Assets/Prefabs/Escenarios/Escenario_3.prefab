@@ -1278,6 +1278,7 @@ Transform:
   - {fileID: 3262503731018020691}
   - {fileID: 3048713874871543220}
   - {fileID: 2551045280626439771}
+  - {fileID: 7945730065019055724}
   - {fileID: 2424488193008568205}
   - {fileID: 1599290855047833825}
   - {fileID: 5895944293445986270}
@@ -169725,6 +169726,76 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4104495527826460, guid: fe3d6968f1100cb4cbd49d4e3bcd9f2d, type: 3}
   m_PrefabInstance: {fileID: 5803206612783563914}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &5803729309210011214
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 3056891884529397768}
+    m_Modifications:
+    - target: {fileID: 3856711613769192088, guid: ae35d646d42b41558e2a73a384c08bfa, type: 3}
+      propertyPath: m_Name
+      value: Slot_Machine_02
+      objectReference: {fileID: 0}
+    - target: {fileID: 4525583726467762210, guid: ae35d646d42b41558e2a73a384c08bfa, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4525583726467762210, guid: ae35d646d42b41558e2a73a384c08bfa, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 4525583726467762210, guid: ae35d646d42b41558e2a73a384c08bfa, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4525583726467762210, guid: ae35d646d42b41558e2a73a384c08bfa, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -2.9
+      objectReference: {fileID: 0}
+    - target: {fileID: 4525583726467762210, guid: ae35d646d42b41558e2a73a384c08bfa, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -32.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4525583726467762210, guid: ae35d646d42b41558e2a73a384c08bfa, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4525583726467762210, guid: ae35d646d42b41558e2a73a384c08bfa, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4525583726467762210, guid: ae35d646d42b41558e2a73a384c08bfa, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4525583726467762210, guid: ae35d646d42b41558e2a73a384c08bfa, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4525583726467762210, guid: ae35d646d42b41558e2a73a384c08bfa, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4525583726467762210, guid: ae35d646d42b41558e2a73a384c08bfa, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -180
+      objectReference: {fileID: 0}
+    - target: {fileID: 4525583726467762210, guid: ae35d646d42b41558e2a73a384c08bfa, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: ae35d646d42b41558e2a73a384c08bfa, type: 3}
+--- !u!4 &7945730065019055724 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4525583726467762210, guid: ae35d646d42b41558e2a73a384c08bfa, type: 3}
+  m_PrefabInstance: {fileID: 5803729309210011214}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &5811184697591694475
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -201677,12 +201748,20 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 108365395727872954, guid: 6ac0efad4d3319941a376999926bab79, type: 3}
+      propertyPath: m_BoundingSphereOverride.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 108365395727872954, guid: 6ac0efad4d3319941a376999926bab79, type: 3}
+      propertyPath: m_BoundingSphereOverride.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 108365395727872954, guid: 6ac0efad4d3319941a376999926bab79, type: 3}
       propertyPath: m_BoundingSphereOverride.y
-      value: 7.6373786e+23
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 108365395727872954, guid: 6ac0efad4d3319941a376999926bab79, type: 3}
       propertyPath: m_BoundingSphereOverride.z
-      value: 8.9e-43
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 198940039958267134, guid: 6ac0efad4d3319941a376999926bab79, type: 3}
       propertyPath: randomSeed
