@@ -40,6 +40,7 @@ public class LobbyPlayerSlot : MonoBehaviour
     private bool hasLast;
     private bool lastConnected, lastLocal, lastHost, lastReady;
     private int lastIndex = -2;
+    private string lastUsername = string.Empty;
 
     public void Configure(CharacterCatalog catalog, CharacterPreviewStage stage, Color colorRojo, Sprite iconoVerde, Sprite iconoRojo)
     {
@@ -59,6 +60,7 @@ public class LobbyPlayerSlot : MonoBehaviour
         hasLast = true;
         lastConnected = false;
         lastIndex = -2;
+        lastUsername = string.Empty;
 
         if (stage != null) stage.Clear(slotIndex);
 
@@ -77,12 +79,23 @@ public class LobbyPlayerSlot : MonoBehaviour
     /// <param name="remoteIndex">Personaje publicado por ese jugador en la sesión. Para el local se usa la selección actual.</param>
     public void SetPlayer(bool isLocal, bool isHost, bool ready, int remoteIndex)
     {
+        string username = isLocal ? PlayerIdentity.GetUsername() : string.Empty;
+        SetPlayer(isLocal, isHost, ready, remoteIndex, username);
+    }
+
+    public void SetPlayer(bool isLocal, bool isHost, bool ready, int remoteIndex, string username)
+    {
         int index = isLocal ? CharacterSelection.SelectedIndex : remoteIndex;
 
         if (stage != null)
             stage.Show(slotIndex, index);
 
-        if (hasLast && lastConnected && lastLocal == isLocal && lastHost == isHost && lastReady == ready && lastIndex == index)
+        string visibleUsername = !string.IsNullOrWhiteSpace(username)
+            ? username.Trim()
+            : "JUGADOR " + (slotIndex + 1);
+
+        if (hasLast && lastConnected && lastLocal == isLocal && lastHost == isHost &&
+            lastReady == ready && lastIndex == index && lastUsername == visibleUsername)
             return;
 
         hasLast = true;
@@ -91,8 +104,9 @@ public class LobbyPlayerSlot : MonoBehaviour
         lastHost = isHost;
         lastReady = ready;
         lastIndex = index;
+        lastUsername = visibleUsername;
 
-        if (titleText != null) titleText.text = "JUGADOR " + (slotIndex + 1);
+        if (titleText != null) titleText.text = visibleUsername;
 
         if (roleText != null)
             roleText.text = "[ " + (isHost ? "ANFITRION" : "CO - OP / REMOTO") + (isLocal ? " / TU" : "") + " ]";

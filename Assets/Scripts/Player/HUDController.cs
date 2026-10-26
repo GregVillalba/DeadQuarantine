@@ -200,20 +200,23 @@ public class HUDController : MonoBehaviour
         MultiplayerPlayerSpawnAssigner assigner =
             networkObject.GetComponent<MultiplayerPlayerSpawnAssigner>();
 
-        // Singleplayer: no hay asignador, es siempre el jugador 1.
+        // Singleplayer: no hay asignador. Se mantiene el mismo flujo original.
         if (assigner == null)
         {
-            playerLabelText.text = "Jugador 1 (TÚ)";
+            string username = PlayerIdentity.GetUsername();
+            playerLabelText.text =
+                (string.IsNullOrWhiteSpace(username) ? "JUGADOR" : username.ToUpperInvariant()) + " (TÚ)";
             etiquetaActualizada = true;
             return;
         }
 
-        // Multijugador: espera a que el servidor asigne el numero de jugador.
+        // Multijugador: se mantiene la espera original a la asignación del servidor.
         if (assigner.AssignedSpawnIndex.Value < 0)
             return;
 
+        string multiplayerUsername = PlayerIdentity.GetUsername();
         playerLabelText.text =
-            "Jugador " + (assigner.AssignedSpawnIndex.Value + 1) + " (TÚ)";
+            (string.IsNullOrWhiteSpace(multiplayerUsername) ? "JUGADOR" : multiplayerUsername.ToUpperInvariant()) + " (TÚ)";
 
         etiquetaActualizada = true;
     }

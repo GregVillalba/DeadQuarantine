@@ -6,18 +6,17 @@ using TMPro;
 public class PlayerNameplate : NetworkBehaviour
 {
     [Header("Referencias UI")]
-    [SerializeField] private GameObject nameplateContainer; // Arrastra DisplayName aquí
+    [SerializeField] private GameObject nameplateContainer; // Arrastra DisplayName aquÃ­
     [SerializeField] private TMP_Text txtPlayerName;          // Arrastra el Text (TMP)
+
+    [Header("Personaje")]
+    [SerializeField] private PlayerCharacter playerCharacter;
 
     [Header("Ajustes")]
     [SerializeField] private Vector3 offset = new Vector3(0, 2.2f, 0);
 
-    // Claves de PlayerPrefs de CharacterRenameManager
-    private const string PREF_ULTIMO_ACTIVO = "PLAYER_CUSTOM_USERNAME";
-    private const string PREF_OSCAR = "NOMBRE_PERSONAJE_OSCAR";
-
     private NetworkVariable<FixedString32Bytes> networkPlayerName = new NetworkVariable<FixedString32Bytes>(
-        new FixedString32Bytes("Oscar"),
+        new FixedString32Bytes("JUGADOR"),
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
     );
@@ -26,6 +25,12 @@ public class PlayerNameplate : NetworkBehaviour
 
     private void Awake()
     {
+        if (playerCharacter == null)
+            playerCharacter = GetComponent<PlayerCharacter>();
+
+        if (playerCharacter == null)
+            playerCharacter = GetComponentInParent<PlayerCharacter>();
+
         networkPlayerName.OnValueChanged += OnNameChanged;
     }
 
@@ -40,24 +45,15 @@ public class PlayerNameplate : NetworkBehaviour
         if (nameplateContainer != null)
             nameplateContainer.SetActive(true);
 
+        if (playerCharacter != null)
+            playerCharacter.CharacterIndex.OnValueChanged += OnCharacterChanged;
+
         if (IsOwner)
         {
-            // 1. Intentar leer el último nombre activo guardado por CharacterRenameManager
-            string miNombre = PlayerPrefs.GetString(PREF_ULTIMO_ACTIVO, "");
+            string miNombre = PlayerIdentity.GetUsername();
 
-            // 2. Si no hay último activo, intentar leer el nombre guardado de Oscar
             if (string.IsNullOrWhiteSpace(miNombre))
-            {
-                miNombre = PlayerPrefs.GetString(PREF_OSCAR, "");
-            }
-
-            // 3. Fallback final si nunca se abrió el menú o está vacío
-            if (string.IsNullOrWhiteSpace(miNombre))
-            {
-                miNombre = "Oscar";
-            }
-
-            Debug.Log($"[PlayerNameplate] Nombre sincronizado desde CharacterRenameManager: '{miNombre}'");
+                miNombre = "JUGADOR";
 
             SetPlayerNameServerRpc(miNombre);
             ActualizarTexto(miNombre);
@@ -66,6 +62,14 @@ public class PlayerNameplate : NetworkBehaviour
         {
             ActualizarTexto(networkPlayerName.Value.ToString());
         }
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        if (playerCharacter != null)
+            playerCharacter.CharacterIndex.OnValueChanged -= OnCharacterChanged;
+
+        base.OnNetworkDespawn();
     }
 
     [ServerRpc]
@@ -81,10 +85,27 @@ public class PlayerNameplate : NetworkBehaviour
 
     private void ActualizarTexto(string nombre)
     {
-        if (txtPlayerName != null)
+        if (txtPlayerName == null)
+            return;
+
+        string username = string.IsNullOrWhiteSpace(nombre) ? "JUGADOR" : nombre.Trim();
+        string characterName = string.Empty;
+
+        if (playerCharacter != null && playerCharacter.Catalog != null)
         {
-            txtPlayerName.text = nombre;
+            characterName = playerCharacter.Catalog.GetCharacterNameForVariant(
+                playerCharacter.CharacterIndex.Value
+            );
         }
+
+        txtPlayerName.text = string.IsNullOrWhiteSpace(characterName)
+            ? username.ToUpperInvariant()
+            : username.ToUpperInvariant() + " - " + characterName.ToUpperInvariant();
+    }
+
+    private void OnCharacterChanged(int previousIndex, int newIndex)
+    {
+        ActualizarTexto(networkPlayerName.Value.ToString());
     }
 
     private void LateUpdate()
@@ -98,7 +119,7 @@ public class PlayerNameplate : NetworkBehaviour
             if (localCamera == null) return;
         }
 
-        // Efecto Billboard hacia la cámara activa
+        // Efecto Billboard hacia la cÃ¡mara activa
         Vector3 direccionACamara = nameplateContainer.transform.position - localCamera.transform.position;
         if (direccionACamara.sqrMagnitude > 0.001f)
         {

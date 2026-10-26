@@ -100,6 +100,7 @@ public class MultiplayerLobbyController : MonoBehaviour
 
     // Personaje elegido por cada jugador (número del catálogo). Viaja junto al Ready.
     private const string CHARACTER_PROPERTY = "Character";
+    private const string USERNAME_PROPERTY = "Username";
 
     private int ultimoPersonajePublicado = -1;
     private float proximoPublicarPersonaje = 0f;
@@ -485,6 +486,12 @@ public class MultiplayerLobbyController : MonoBehaviour
             )
         );
 
+        string username = PlayerIdentity.GetUsername();
+        if (!string.IsNullOrWhiteSpace(username))
+        {
+            player.SetProperty(USERNAME_PROPERTY, new PlayerProperty(username.Trim()));
+        }
+
         await network.CurrentSession
             .SaveCurrentPlayerDataAsync();
     }
@@ -733,7 +740,8 @@ public class MultiplayerLobbyController : MonoBehaviour
                 p.Id == miId,
                 p.Id == hostId,
                 ObtenerReadyJugador(p),
-                ObtenerPersonajeJugador(p)
+                ObtenerPersonajeJugador(p),
+                ObtenerUsernameJugador(p)
             );
         }
     }
@@ -748,6 +756,25 @@ public class MultiplayerLobbyController : MonoBehaviour
         }
 
         return 0;
+    }
+
+    private string ObtenerUsernameJugador(IReadOnlyPlayer player)
+    {
+        if (player != null &&
+            player.Properties.TryGetValue(USERNAME_PROPERTY, out var propiedad) &&
+            !string.IsNullOrWhiteSpace(propiedad.Value))
+        {
+            return propiedad.Value.Trim();
+        }
+
+        if (network != null && network.CurrentSession != null &&
+            network.CurrentSession.CurrentPlayer != null && player != null &&
+            player.Id == network.CurrentSession.CurrentPlayer.Id)
+        {
+            return PlayerIdentity.GetUsername();
+        }
+
+        return string.Empty;
     }
 
     // Si el jugador local cambió de personaje en el selector, lo publica (máx. 1 vez cada 0.5 s para no saturar el servicio).
@@ -780,6 +807,15 @@ public class MultiplayerLobbyController : MonoBehaviour
                 ultimoPersonajePublicado.ToString()
             )
         );
+
+        string username = PlayerIdentity.GetUsername();
+        if (!string.IsNullOrWhiteSpace(username))
+        {
+            network.CurrentSession.CurrentPlayer.SetProperty(
+                USERNAME_PROPERTY,
+                new PlayerProperty(username.Trim())
+            );
+        }
 
         await network.CurrentSession
             .SaveCurrentPlayerDataAsync();
