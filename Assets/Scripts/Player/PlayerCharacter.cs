@@ -45,8 +45,17 @@ public class PlayerCharacter : NetworkBehaviour
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Owner);
 
-    /// <summary>Multiplicador del tiempo de recarga de la clase (0.9 Ligero, 1 Normal, 1.2 Pesado). El script del arma lo multiplica por su tiempo de recarga.</summary>
-    public float ReloadTimeMultiplier { get; private set; } = 1f;
+    /// <summary>
+    /// Multiplicador de VELOCIDAD de recarga de la clase.
+    /// 1 = normal, 1.2 = 20% más rápido, 0.9 = 10% más lento.
+    /// Weapon lo usa para acelerar o ralentizar la animación completa de recarga.
+    /// </summary>
+    public float ReloadSpeedMultiplier { get; private set; } = 1f;
+
+    /// <summary>
+    /// Alias de compatibilidad con código anterior. El valor ahora representa velocidad, no tiempo.
+    /// </summary>
+    public float ReloadTimeMultiplier => ReloadSpeedMultiplier;
 
     public CharacterCatalog Catalog => catalog;
     public int AppliedIndex => appliedIndex;
@@ -149,11 +158,11 @@ public class PlayerCharacter : NetworkBehaviour
         if (data == null)
             return;
 
-        // Velocidad y estamina se aplican como % sobre los valores del Inspector de PlayerMovement (Normal = 100%).
+        // Movimiento, estamina y regeneración se aplican sobre los valores base del Inspector (Normal = 100%).
         if (playerMovement != null)
             playerMovement.ApplyClassModifiers(data.MoveMultiplier, data.StaminaMultiplier, data.StaminaRegenMultiplier);
 
-        ReloadTimeMultiplier = data.ReloadMultiplier;
+        ReloadSpeedMultiplier = Mathf.Max(0.01f, data.ReloadSpeedMultiplier);
 
         if (playerHealth != null)
             playerHealth.SetMaxHealth(data.maxHealth, true);

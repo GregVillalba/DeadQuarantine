@@ -63,6 +63,7 @@ public class DetectorAlturaRadioHistoria : MonoBehaviour
                 );
 
                 alEncontrarSenal?.Invoke();
+                NotificarSenalEncontrada();
             }
         }
         else
@@ -70,8 +71,6 @@ public class DetectorAlturaRadioHistoria : MonoBehaviour
             tiempoEnAlturaActual = 0f;
         }
 
-        Debug.Log($"[Radio] Altura actual: {altura:F2} m | " +
-          $"Altura requerida: {alturaMinima:F2} m");
     }
 
     private bool EsJugadorLocal()
@@ -176,7 +175,26 @@ public class DetectorAlturaRadioHistoria : MonoBehaviour
     if (!EsJugadorLocal() || Keyboard.current == null)
         return;
 
-    if (Keyboard.current.f8Key.wasPressedThisFrame)
+    if (Keyboard.current.f9Key.wasPressedThisFrame)
         ActivarBusquedaDeSenal();
+}
+
+private void NotificarSenalEncontrada()
+{
+    GestorHistoriaPartida gestor = GestorHistoriaPartida.Instance;
+
+    if (gestor == null)
+    {
+        Debug.LogError(
+            "[Radio] No se encontró GestorHistoriaPartida."
+        );
+        return;
+    }
+
+    Debug.Log(
+        "[Radio] Notificando al gestor que se encontró la señal."
+    );
+
+    gestor.IntentarRegistrarSenalEncontrada();
 }
 }

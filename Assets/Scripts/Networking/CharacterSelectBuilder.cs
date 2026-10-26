@@ -22,6 +22,17 @@ public class CharacterSelectUIBuilder : EditorWindow
     private CharacterPreviewStage copyFrom;
 
     // Paleta
+    private static string TierNameForBuilder(CharacterClass type)
+    {
+        switch (type)
+        {
+            case CharacterClass.Scout: return "EXPLORADOR";
+            case CharacterClass.Soldier: return "SOLDADO";
+            case CharacterClass.Tank: return "TANQUE";
+            default: return type.ToString().ToUpperInvariant();
+        }
+    }
+
     private static readonly Color Dark = new Color(0.03f, 0.04f, 0.05f, 0.94f);
     private static readonly Color Panel = new Color(0.05f, 0.07f, 0.08f, 0.85f);
     private static readonly Color Grey = new Color(0.78f, 0.82f, 0.82f, 1f);
@@ -176,16 +187,25 @@ public class CharacterSelectUIBuilder : EditorWindow
         TMP_Text femaleTxt = NewText("Texto", btnFemale.transform, "MUJER", 26f, Grey, TextAlignmentOptions.Center, true);
         Stretch(femaleTxt.rectTransform, 0f);
 
-        TMP_Text tierText = NewText("TierText", panelInfo.transform, "NORMAL", 26f, A, TextAlignmentOptions.Left, true, 16f);
+        TMP_Text tierText = NewText("TierText", panelInfo.transform, "SOLDADO", 26f, A, TextAlignmentOptions.Left, true, 16f);
         Place(tierText.rectTransform, TL, TL, new Vector2(20f, -112f), new Vector2(540f, 36f));
 
-        TMP_Text nameText = NewText("NombreText", panelInfo.transform, "SOLDADO", 66f, Color.white, TextAlignmentOptions.Left, true, 36f);
+        TMP_Text nameText = NewText("NombreText", panelInfo.transform, "NOMBRE", 66f, Color.white, TextAlignmentOptions.Left, true, 36f);
         Place(nameText.rectTransform, TL, TL, new Vector2(20f, -146f), new Vector2(540f, 84f));
 
         TMP_Text descText = NewText("DescripcionText", panelInfo.transform, "", 24f, Grey, TextAlignmentOptions.TopLeft, false);
         Place(descText.rectTransform, TL, TL, new Vector2(20f, -240f), new Vector2(540f, 100f));
 
-        string[] statNames = { "VIDA", "VELOCIDAD", "ESTAMINA", "REGEN. ESTAMINA", "RECARGA" };
+        // Los porcentajes representan modificadores respecto del valor base (100%).
+        // El valor numérico se mostrará como +X% / -X% / 0% desde CharacterSelectMenu.
+        string[] statNames =
+        {
+            "VIDA",
+            "VELOCIDAD (%)",
+            "ESTAMINA",
+            "REGEN. ESTAMINA (%)",
+            "VELOCIDAD RECARGA (%)"
+        };
         Image[] fills = new Image[5];
         TMP_Text[] values = new TMP_Text[5];
 
@@ -193,18 +213,67 @@ public class CharacterSelectUIBuilder : EditorWindow
         {
             float y = -372f - i * 56f;
 
-            TMP_Text label = NewText("Label_" + statNames[i], panelInfo.transform, statNames[i], 24f, Grey, TextAlignmentOptions.Left, true, 16f);
-            Place(label.rectTransform, TL, TL, new Vector2(20f, y), new Vector2(200f, 36f));
+            // Todas las etiquetas usan EXACTAMENTE el mismo tamaño.
+            // Sin auto-sizing: evita que las estadísticas largas se vean más chicas.
+            TMP_Text label = NewText(
+                "Label_" + statNames[i],
+                panelInfo.transform,
+                statNames[i],
+                18f,
+                Grey,
+                TextAlignmentOptions.Left,
+                true);
 
+            Place(label.rectTransform, TL, TL, new Vector2(20f, y), new Vector2(225f, 36f));
+
+            // Redistribución horizontal:
+            // 20..245 = etiqueta | 250..455 = barra | 465..560 = valor
             Image bg = NewImage("Barra_" + statNames[i], panelInfo.transform, BarBg, false);
-            Place(bg.rectTransform, TL, TL, new Vector2(230f, y - 11f), new Vector2(250f, 14f));
+            Place(bg.rectTransform, TL, TL, new Vector2(250f, y - 9f), new Vector2(205f, 16f));
 
             Image fill = NewImage("Relleno", bg.transform, A, false);
-            Stretch(fill.rectTransform, 0f);
+
+            // NO usamos Image.Type.Filled porque sin un sprite específico puede no
+            // recortarse correctamente. El ancho se controla directamente con anchors.
+            fill.type = Image.Type.Simple;
+
+            RectTransform fillRt = fill.rectTransform;
+            fillRt.anchorMin = new Vector2(0f, 0f);
+            fillRt.anchorMax = new Vector2(0f, 1f); // empieza vacía
+            fillRt.pivot = new Vector2(0f, 0.5f);
+            fillRt.offsetMin = Vector2.zero;
+            fillRt.offsetMax = Vector2.zero;
+
+            // Divisiones visuales en cinco tramos, siempre por encima del relleno.
+            for (int segment = 1; segment < 5; segment++)
+            {
+                Image divider = NewImage(
+                    "Division_" + segment,
+                    bg.transform,
+                    new Color(0.02f, 0.03f, 0.03f, 0.72f),
+                    false);
+
+                RectTransform drt = divider.rectTransform;
+                float x = segment / 5f;
+                drt.anchorMin = new Vector2(x, 0f);
+                drt.anchorMax = new Vector2(x, 1f);
+                drt.pivot = new Vector2(0.5f, 0.5f);
+                drt.anchoredPosition = Vector2.zero;
+                drt.sizeDelta = new Vector2(2f, 0f);
+            }
+
             fills[i] = fill;
 
-            TMP_Text val = NewText("Valor_" + statNames[i], panelInfo.transform, "0", 26f, Color.white, TextAlignmentOptions.Right, true, 16f);
-            Place(val.rectTransform, TL, TL, new Vector2(490f, y), new Vector2(70f, 36f));
+            TMP_Text val = NewText(
+                "Valor_" + statNames[i],
+                panelInfo.transform,
+                "0",
+                24f,
+                Color.white,
+                TextAlignmentOptions.Right,
+                true);
+
+            Place(val.rectTransform, TL, TL, new Vector2(465f, y), new Vector2(95f, 36f));
             values[i] = val;
         }
 
@@ -230,7 +299,7 @@ public class CharacterSelectUIBuilder : EditorWindow
             icon.preserveAspect = true;
             icon.enabled = false;
 
-            TMP_Text tier = NewText("Tier", card.transform, order[i].ToString(), 20f, Grey, TextAlignmentOptions.Left, true, 12f);
+            TMP_Text tier = NewText("Tier", card.transform, TierNameForBuilder(order[i]), 20f, Grey, TextAlignmentOptions.Left, true, 12f);
             Place(tier.rectTransform, TL, TL, new Vector2(116f, -18f), new Vector2(244f, 28f));
 
             TMP_Text cname = NewText("Nombre", card.transform, "", 36f, Color.white, TextAlignmentOptions.Left, true, 16f);

@@ -15,6 +15,10 @@ public class ConfiguracionEscenarioJugable : MonoBehaviour
     [Header("Spawns de zombies")]
     [SerializeField] private Transform[] spawnsZombies;
 
+    [Header("Recursos del escenario")]
+    [Tooltip("Las 3 distribuciones de recursos del escenario. Al empezar la partida se usa una al azar.")]
+    [SerializeField] private OpcionRecursosEscenario[] opcionesRecursos;
+
 
     public ConfiguracionPartidaSeleccionada.Escenario TipoEscenario
     {
@@ -29,6 +33,11 @@ public class ConfiguracionEscenarioJugable : MonoBehaviour
     public Transform[] SpawnsZombies
     {
         get { return spawnsZombies; }
+    }
+
+    public OpcionRecursosEscenario[] OpcionesRecursos
+    {
+        get { return opcionesRecursos; }
     }
 
     // Devuelve el punto de aparicion segun el indice del jugador

@@ -21,8 +21,8 @@ public class CharacterSelectMenu : MonoBehaviour
         public CharacterClass type;
         public Button button;               // la tarjeta (su Target Graphic es el fondo)
         public Image icon;                  // retrato de la variante elegida (Variant.icon)
-        public TMP_Text tierLabel;          // LIGERO / NORMAL / PESADO
-        public TMP_Text nameLabel;          // Explorador / Soldado / Tanque
+        public TMP_Text tierLabel;          // EXPLORADOR / SOLDADO / TANQUE (tipo fijo)
+        public TMP_Text nameLabel;          // Nombre propio editable desde CharacterCatalog
         public GameObject selectedFrame;    // marca de "seleccionada"
     }
 
@@ -67,10 +67,15 @@ public class CharacterSelectMenu : MonoBehaviour
     [SerializeField] private Color tabNormal = new Color(0.10f, 0.12f, 0.13f, 0.90f);
     [SerializeField] private Color tabDisabled = new Color(0.07f, 0.08f, 0.09f, 0.60f);
 
+    [Header("Colores de modificadores")]
+    [SerializeField] private Color statPositive = new Color(0.30f, 0.95f, 0.38f, 1f);
+    [SerializeField] private Color statNegative = new Color(1.00f, 0.28f, 0.24f, 1f);
+    [SerializeField] private Color statNeutral = Color.white;
+
     private CharacterClass currentClass = CharacterClass.Soldier;
     private CharacterGender currentGender = CharacterGender.Male;
 
-    private float maxHealth = 1f, maxMove = 1f, maxStamina = 1f, maxRegen = 1f, minReload = 1000f;
+    private float maxHealth = 1f, maxMove = 1f, maxStamina = 1f, maxRegen = 1f, maxReload = 1f;
     private bool wired;
 
     private void Wire()
@@ -154,6 +159,7 @@ public class CharacterSelectMenu : MonoBehaviour
             ClassSlot slot = classSlots[i];
             bool selected = slot.type == currentClass;
             CharacterCatalog.ClassData cd = catalog.GetClassData(slot.type);
+            string variantName = catalog.GetCharacterName(slot.type, currentGender);
 
             if (slot.button != null && slot.button.targetGraphic != null)
                 slot.button.targetGraphic.color = selected ? cardSelected : cardNormal;
@@ -169,7 +175,9 @@ public class CharacterSelectMenu : MonoBehaviour
 
             if (slot.nameLabel != null)
             {
-                slot.nameLabel.text = cd != null ? cd.displayName.ToUpperInvariant() : slot.type.ToString().ToUpperInvariant();
+                slot.nameLabel.text = !string.IsNullOrWhiteSpace(variantName)
+                    ? variantName.ToUpperInvariant()
+                    : slot.type.ToString().ToUpperInvariant();
                 slot.nameLabel.color = selected ? Color.white : textNormal;
             }
 
@@ -195,25 +203,39 @@ public class CharacterSelectMenu : MonoBehaviour
             return;
 
         if (tierText != null) tierText.text = TierName(currentClass);
-        if (nameText != null) nameText.text = data.displayName.ToUpperInvariant();
+        if (nameText != null)
+        {
+            string selectedName = catalog.GetCharacterNameForVariant(index);
+            nameText.text = !string.IsNullOrWhiteSpace(selectedName)
+                ? selectedName.ToUpperInvariant()
+                : currentClass.ToString().ToUpperInvariant();
+        }
         if (descriptionText != null) descriptionText.text = data.description;
 
-        SetStat(health, data.maxHealth / maxHealth, data.maxHealth.ToString());
-        SetStat(moveSpeed, data.moveSpeedPercent / maxMove, data.moveSpeedPercent.ToString("0") + "%");
-        SetStat(stamina, data.maxStamina / maxStamina, data.maxStamina.ToString("0"));
-        SetStat(staminaRegen, data.staminaRegenPercent / maxRegen, data.staminaRegenPercent.ToString("0") + "%");
-        // En la recarga menos es mejor: la barra se llena más cuanto más rápida es.
-        SetStat(reloadTime, data.reloadTimePercent > 0f ? minReload / data.reloadTimePercent : 0f, data.reloadTimePercent.ToString("0") + "%");
+        // Valores absolutos: se muestran tal cual y la barra se compara contra la clase con mayor valor.
+        SetStat(health, data.maxHealth / maxHealth, data.maxHealth.ToString("0"), statNeutral);
+        SetStat(stamina, data.maxStamina / maxStamina, data.maxStamina.ToString("0"), statNeutral);
+
+        // Porcentajes: 100% = valor base de referencia.
+        // En pantalla mostramos el modificador respecto de 100:
+        // 120% -> +20% (verde), 80% -> -20% (rojo), 100% -> 0% (neutral).
+        SetPercentStat(moveSpeed, data.moveSpeedPercent, maxMove);
+        SetPercentStat(staminaRegen, data.staminaRegenPercent, maxRegen);
+
+        // IMPORTANTE: reloadTimePercent se interpreta visualmente como VELOCIDAD DE RECARGA.
+        // Por lo tanto, un valor mayor significa que recarga MÁS RÁPIDO y debe tener una barra mayor.
+        // Ejemplo: 120% -> +20% verde y una barra más llena que 100%.
+        SetPercentStat(reloadTime, data.reloadTimePercent, maxReload);
     }
 
-    // Nombres de la US (C.A. 3). El nombre propio de la clase (Soldado, Tanque...) sale del catálogo.
+    // Tipo/clase fija del personaje. El nombre propio se toma de la Variant del CharacterCatalog.
     public static string TierName(CharacterClass type)
     {
         switch (type)
         {
-            case CharacterClass.Scout: return "LIGERO";
-            case CharacterClass.Soldier: return "NORMAL";
-            case CharacterClass.Tank: return "PESADO";
+            case CharacterClass.Scout: return "EXPLORADOR";
+            case CharacterClass.Soldier: return "SOLDADO";
+            case CharacterClass.Tank: return "TANQUE";
             default: return type.ToString().ToUpperInvariant();
         }
     }
@@ -232,7 +254,7 @@ public class CharacterSelectMenu : MonoBehaviour
             label.color = !enabledChoice ? textDim : (selected ? textOnAccent : textNormal);
     }
 
-    private static void SetStat(StatRow row, float fraction, string text)
+    private static void SetStat(StatRow row, float fraction, string text, Color valueColor)
     {
         if (row == null)
             return;
@@ -241,25 +263,56 @@ public class CharacterSelectMenu : MonoBehaviour
 
         if (row.fill != null)
         {
-            if (row.fill.type == Image.Type.Filled)
-            {
-                row.fill.fillAmount = t;
-            }
-            else
-            {
-                RectTransform rt = row.fill.rectTransform;
-                rt.anchorMin = new Vector2(0f, 0f);
-                rt.anchorMax = new Vector2(t, 1f);
-                rt.offsetMin = Vector2.zero;
-                rt.offsetMax = Vector2.zero;
-            }
+            // Sistema robusto: el valor de la estadística controla directamente
+            // el ANCHO del RectTransform. Así no dependemos de Image.Type.Filled
+            // ni de tener un Sprite asignado a la Image.
+            row.fill.type = Image.Type.Simple;
+
+            RectTransform rt = row.fill.rectTransform;
+            rt.anchorMin = new Vector2(0f, 0f);
+            rt.anchorMax = new Vector2(t, 1f);
+            rt.pivot = new Vector2(0f, 0.5f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
         }
 
         if (row.value != null)
+        {
             row.value.text = text;
+            row.value.color = valueColor;
+        }
     }
 
-    // Las barras se miden contra el mejor valor entre las 3 clases.
+    private void SetPercentStat(StatRow row, float percentValue, float maximum)
+    {
+        float fraction = maximum > 0f ? percentValue / maximum : 0f;
+        float modifier = percentValue - 100f;
+
+        string text;
+        Color color;
+
+        if (modifier > 0.01f)
+        {
+            text = "+" + modifier.ToString("0") + "%";
+            color = statPositive;
+        }
+        else if (modifier < -0.01f)
+        {
+            text = modifier.ToString("0") + "%";
+            color = statNegative;
+        }
+        else
+        {
+            text = "0%";
+            color = statNeutral;
+        }
+
+        SetStat(row, fraction, text, color);
+    }
+
+    // Las barras se miden contra el MEJOR valor entre las 3 clases:
+    // el mejor valor ocupa el 100% del ancho y los demás quedan proporcionados.
+    // Ejemplo: velocidades 130 / 100 / 70 -> barras 100% / 77% / 54%.
     private void ComputeStatMaximums()
     {
         foreach (CharacterClass type in Enum.GetValues(typeof(CharacterClass)))
@@ -273,7 +326,7 @@ public class CharacterSelectMenu : MonoBehaviour
             maxMove = Mathf.Max(maxMove, d.moveSpeedPercent);
             maxStamina = Mathf.Max(maxStamina, d.maxStamina);
             maxRegen = Mathf.Max(maxRegen, d.staminaRegenPercent);
-            minReload = Mathf.Min(minReload, Mathf.Max(1f, d.reloadTimePercent));
+            maxReload = Mathf.Max(maxReload, d.reloadTimePercent);
         }
     }
 }

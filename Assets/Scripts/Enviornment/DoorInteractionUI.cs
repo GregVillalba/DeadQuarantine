@@ -1,7 +1,8 @@
+
 using UnityEngine;
-using UnityEngine.InputSystem;
 using TMPro;
 using Unity.Netcode;
+using UnityEngine.InputSystem;
 
 public class DoorInteractionUI : MonoBehaviour
 {
@@ -18,29 +19,43 @@ public class DoorInteractionUI : MonoBehaviour
 
     private void Awake()
     {
-        playerNetworkObject =
-            GetComponentInParent<NetworkObject>();
+        playerNetworkObject = GetComponentInParent<NetworkObject>();
 
         controls = new PlayerControls();
         ConfiguracionesJuego.CargarRebinds(controls.asset);
 
-        BuscarCamara();
+        Ocultar();
+    }
+
+    private void OnEnable()
+    {
+        if (controls != null)
+            controls.Player.Enable();
+    }
+
+    private void OnDisable()
+    {
+        if (controls != null)
+            controls.Player.Disable();
 
         Ocultar();
     }
 
+    private void OnDestroy()
+    {
+        controls?.Dispose();
+    }
+
     private void Update()
     {
-        if (playerNetworkObject != null)
+        if (playerNetworkObject != null &&
+            !playerNetworkObject.IsOwner)
         {
-            if (!playerNetworkObject.IsOwner)
-            {
-                Ocultar();
-                return;
-            }
+            Ocultar();
+            return;
         }
 
-        if (playerCamera == null)
+        if (playerCamera == null || !playerCamera.isActiveAndEnabled)
         {
             BuscarCamara();
 
@@ -54,109 +69,87 @@ public class DoorInteractionUI : MonoBehaviour
         BuscarPuerta();
     }
 
-    // =========================================================
-    // BUSCAR CÁMARA DEL JUGADOR
-    // =========================================================
+private void BuscarCamara()
+{
+    playerCamera = null;
 
-    private void BuscarCamara()
+    // DoorInteractionUI está dentro de HUD_Canvas,
+    // que es hijo directo de WeaponCamera.
+    Transform posibleCamara = transform.parent;
+
+    if (posibleCamara != null &&
+        posibleCamara.name == "WeaponCamera")
     {
-        Transform root =
-            transform.root;
+        Camera cam = posibleCamara.GetComponent<Camera>();
 
-        Camera[] cameras =
-            root.GetComponentsInChildren<Camera>(
-                true
-            );
-
-        foreach (Camera cam in cameras)
+        if (cam != null && cam.isActiveAndEnabled)
         {
             NetworkObject networkObject =
                 cam.GetComponentInParent<NetworkObject>();
 
-            if (networkObject != null)
+            if (NetworkManager.Singleton != null &&
+                NetworkManager.Singleton.IsListening)
             {
-                if (networkObject.IsOwner)
+                if (networkObject != null &&
+                    networkObject.IsSpawned &&
+                    networkObject.IsOwner)
                 {
                     playerCamera = cam;
-                    return;
                 }
             }
             else
             {
-                // Singleplayer
-                if (cam == Camera.main)
-                {
-                    playerCamera = cam;
-                    return;
-                }
+                playerCamera = cam;
             }
         }
     }
+}
 
-    // =========================================================
-    // BUSCAR PUERTA
-    // =========================================================
 
     private void BuscarPuerta()
     {
-        Ray ray =
-            new Ray(
-                playerCamera.transform.position,
-                playerCamera.transform.forward
-            );
+        Ray ray = new Ray(
+            playerCamera.transform.position,
+            playerCamera.transform.forward
+        );
 
-        if (Physics.Raycast(
-            ray,
-            out RaycastHit hit,
-            interactRange
-        ))
+        if (Physics.Raycast(ray, out RaycastHit hit, interactRange))
         {
-            Door door =
-                hit.collider.GetComponentInParent<Door>();
+            Door door = hit.collider.GetComponentInParent<Door>();
 
-            if (door != null)
+            if (door != null && door.isActiveAndEnabled)
             {
-                Mostrar(
-                    door.IsOpen
-                );
-
+                Mostrar(door.IsOpen);
                 return;
             }
         }
 
         Ocultar();
     }
+private void Mostrar(bool puertaAbierta)
+{
+    if (interactPrompt == null)
+        return;
 
-    // =========================================================
-    // MOSTRAR
-    // =========================================================
-
-    private void Mostrar(bool puertaAbierta)
+    if (interactText != null)
     {
-        if (interactPrompt == null)
-            return;
+        string tecla =
+            InputActionRebindingExtensions.GetBindingDisplayString(
+                controls.Player.Interact
+            );
 
-        if (interactText != null)
-        {
-            string tecla = controls.Player.Interact.GetBindingDisplayString();
-            interactText.text =
-                puertaAbierta
-                    ? tecla + " para cerrar"
-                    : tecla + " para abrir";
-        }
-
-        interactPrompt.SetActive(true);
+        interactText.text = puertaAbierta
+            ? tecla + " para cerrar"
+            : tecla + " para abrir";
     }
 
-    // =========================================================
-    // OCULTAR
-    // =========================================================
+    if (!interactPrompt.activeSelf)
+        interactPrompt.SetActive(true);
+}
 
     private void Ocultar()
     {
-        if (interactPrompt != null)
-        {
+        if (interactPrompt != null && interactPrompt.activeSelf)
             interactPrompt.SetActive(false);
-        }
     }
 }
