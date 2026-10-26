@@ -175,7 +175,7 @@ private Coroutine misionMansionRoutine;
     public float TiempoResistenciaMansion => tiempoResistenciaMansion;
 
     // Jugadores que tocaron "Listo" durante la fase de compras. Se sincroniza
-    // para que cada cliente sepa si el otro jugador ya está listo.
+    // para que cada cliente sepa cuáles de sus compañeros ya están listos.
     // (Las NetworkList se crean en Awake, antes del spawn de red.)
     public NetworkList<ulong> ShopReadyClientsNetwork;
 
@@ -1504,7 +1504,7 @@ public void EliminarZombiesHistoria()
     }
 
     // "Listo": el jugador terminó de comprar. Cuando todos los jugadores
-    // conectados lo marcan, la fase de compras termina antes de tiempo.
+    // conectados y vivos lo marcan, la fase de compras termina antes de tiempo.
     [ServerRpc(RequireOwnership = false)]
     public void MarcarListoFaseComprasServerRpc(ServerRpcParams rpcParams = default)
     {
@@ -1526,21 +1526,67 @@ public void EliminarZombiesHistoria()
         return ShopReadyClientsNetwork.Contains(NetworkManager.Singleton.LocalClientId);
     }
 
-    // true si algún jugador distinto al local ya marcó "Listo".
-    public bool OtroJugadorListoFaseCompras()
+    public enum EstadoCompaneroCompras
     {
-        if (!ShopPhaseActiveNetwork.Value || NetworkManager.Singleton == null)
-            return false;
+        Desconectado,
+        Comprando,
+        Listo,
+        Muerto
+    }
 
-        ulong localId = NetworkManager.Singleton.LocalClientId;
+    private readonly List<NetworkObject> companerosOrdenados = new List<NetworkObject>();
 
-        foreach (ulong clientId in ShopReadyClientsNetwork)
+    // Llena "destino" con el estado de los compañeros del jugador local (todos menos él),
+    // ordenados por id de cliente. Los lugares que sobran quedan como Desconectado.
+    // Funciona en host y clientes: los objetos de jugador se registran en todos los peers.
+    public void ObtenerEstadosCompanerosFaseCompras(EstadoCompaneroCompras[] destino)
+    {
+        for (int i = 0; i < destino.Length; i++)
+            destino[i] = EstadoCompaneroCompras.Desconectado;
+
+        NetworkManager networkManager = NetworkManager.Singleton;
+
+        if (!ShopPhaseActiveNetwork.Value || networkManager == null || networkManager.SpawnManager == null)
+            return;
+
+        ulong localId = networkManager.LocalClientId;
+
+        companerosOrdenados.Clear();
+
+        foreach (NetworkObject jugador in networkManager.SpawnManager.PlayerObjects)
         {
-            if (clientId != localId)
-                return true;
+            if (jugador != null && jugador.OwnerClientId != localId)
+                companerosOrdenados.Add(jugador);
         }
 
-        return false;
+        companerosOrdenados.Sort((a, b) => a.OwnerClientId.CompareTo(b.OwnerClientId));
+
+        int cantidad = Mathf.Min(destino.Length, companerosOrdenados.Count);
+
+        for (int i = 0; i < cantidad; i++)
+        {
+            NetworkObject jugador = companerosOrdenados[i];
+
+            if (ShopReadyClientsNetwork.Contains(jugador.OwnerClientId))
+                destino[i] = EstadoCompaneroCompras.Listo;
+            else if (!ParticipaEnFaseCompras(jugador))
+                destino[i] = EstadoCompaneroCompras.Muerto;
+            else
+                destino[i] = EstadoCompaneroCompras.Comprando;
+        }
+    }
+
+    // Solo los jugadores vivos tienen que marcar "Listo": un muerto (espectando o abatido)
+    // no puede ir a la tienda ni apretar la tecla, así que no frena al resto.
+    // Si todavía no tiene PlayerHealth (cargando) se lo espera igual.
+    private static bool ParticipaEnFaseCompras(NetworkObject jugador)
+    {
+        if (jugador == null)
+            return false;
+
+        PlayerHealth playerHealth = jugador.GetComponent<PlayerHealth>();
+
+        return playerHealth == null || playerHealth.IsAlive;
     }
 
     private bool AllPlayersReadyForShopEnd()
@@ -1549,17 +1595,20 @@ public void EliminarZombiesHistoria()
             return false;
 
         var connectedClients = NetworkManager.Singleton.ConnectedClientsList;
-
-        if (connectedClients.Count == 0)
-            return false;
+        int jugadoresQueParticipan = 0;
 
         foreach (NetworkClient client in connectedClients)
         {
+            if (client.PlayerObject != null && !ParticipaEnFaseCompras(client.PlayerObject))
+                continue;
+
+            jugadoresQueParticipan++;
+
             if (!ShopReadyClientsNetwork.Contains(client.ClientId))
                 return false;
         }
 
-        return true;
+        return jugadoresQueParticipan > 0;
     }
 
     // =========================================================

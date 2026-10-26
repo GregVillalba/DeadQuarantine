@@ -118,8 +118,9 @@ public class NPCShopUI : MonoBehaviour
     [SerializeField] private Button listoButton;
     [SerializeField] private TextMeshProUGUI listoButtonText;
     [SerializeField] private TextMeshProUGUI tiempoTiendaText;
-    [Tooltip("Texto debajo del botón Listo. Solo se ve cuando el otro jugador ya marcó Listo.")]
+    [Tooltip("Texto debajo del botón Listo (multijugador). Al lado se dibuja un círculo por compañero: verde listo, rojo comprando, gris no conectado.")]
     [SerializeField] private TextMeshProUGUI otroJugadorListoText;
+    [SerializeField] private string textoJugadoresListos = "Jugadores listos:";
     [SerializeField] private string textoListo = "Listo";
     [SerializeField] private string textoEsperandoListo = "Esperando...";
     [SerializeField] private string formatoMensajeBloqueado = "Se habilitará un tiempo para comerciar luego de las rondas {0}";
@@ -202,6 +203,7 @@ public class NPCShopUI : MonoBehaviour
     private bool faseComprasAnterior;
     private bool listoMarcado;
     private float mensajeBloqueadoHasta;
+    private IndicadorCompanerosListos indicadorCompaneros;
 
     private void Awake()
     {
@@ -228,6 +230,14 @@ public class NPCShopUI : MonoBehaviour
 
         if (listoButtonText == null && listoButton != null)
             listoButtonText = listoButton.GetComponentInChildren<TextMeshProUGUI>(true);
+
+        if (otroJugadorListoText != null)
+        {
+            // En una sola línea, así los círculos quedan al lado del texto.
+            otroJugadorListoText.text = textoJugadoresListos;
+            otroJugadorListoText.textWrappingMode = TextWrappingModes.NoWrap;
+            indicadorCompaneros = IndicadorCompanerosListos.Crear(otroJugadorListoText);
+        }
 
         if (audioSource != null)
             audioSource.ignoreListenerPause = true;
@@ -1085,10 +1095,13 @@ public class NPCShopUI : MonoBehaviour
 
         if (otroJugadorListoText != null)
         {
-            bool otroListo = faseActiva && RoundManager.Instance.OtroJugadorListoFaseCompras();
+            bool mostrarCompaneros = faseActiva && IndicadorCompanerosListos.HayCompaneros();
 
-            if (otroJugadorListoText.gameObject.activeSelf != otroListo)
-                otroJugadorListoText.gameObject.SetActive(otroListo);
+            if (otroJugadorListoText.gameObject.activeSelf != mostrarCompaneros)
+                otroJugadorListoText.gameObject.SetActive(mostrarCompaneros);
+
+            if (indicadorCompaneros != null)
+                indicadorCompaneros.Mostrar(mostrarCompaneros);
         }
     }
 
