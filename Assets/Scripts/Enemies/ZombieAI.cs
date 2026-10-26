@@ -150,7 +150,7 @@ public class ZombieAI : NetworkBehaviour
 
         if (distanceToTarget <= attackRange)
         {
-            if (agent != null)
+            if (AgenteSobreNavMesh())
             {
                 agent.isStopped = true;
             }
@@ -161,16 +161,13 @@ public class ZombieAI : NetworkBehaviour
         {
             if (!isAttacking)
             {
-                if (agent != null)
+                // Sin NavMesh (por ejemplo, escenario oculto) isStopped lanza un error.
+                if (AgenteSobreNavMesh())
                 {
                     agent.isStopped = false;
-
-                    if (agent.isOnNavMesh)
-                    {
-                        agent.SetDestination(
-                            target.position
-                        );
-                    }
+                    agent.SetDestination(
+                        target.position
+                    );
                 }
             }
         }
@@ -249,13 +246,20 @@ public class ZombieAI : NetworkBehaviour
     // y se juntarían todos en la puerta de la zona segura.
     private void QuedarseQuieto()
     {
-        if (agent != null && agent.isOnNavMesh)
+        if (AgenteSobreNavMesh())
         {
             agent.isStopped = true;
             agent.ResetPath();
         }
 
         UpdateAnimator();
+    }
+
+    private bool AgenteSobreNavMesh()
+    {
+        return agent != null &&
+            agent.isActiveAndEnabled &&
+            agent.isOnNavMesh;
     }
 
     // =========================================================
@@ -279,7 +283,7 @@ public class ZombieAI : NetworkBehaviour
 
         isAttacking = true;
 
-        if (agent != null)
+        if (AgenteSobreNavMesh())
         {
             agent.isStopped = true;
         }
