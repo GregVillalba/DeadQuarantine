@@ -25,6 +25,12 @@ public class ZombieHealth : NetworkBehaviour
     [SerializeField] private float bloodDestroyDelay = 2f;
 
     public bool IsDead { get; private set; }
+    public bool EsBossHistoria { get; private set; }
+
+public void MarcarComoBossHistoria()
+{
+    EsBossHistoria = true;
+}
 
     // =========================================================
     // VIDA SINCRONIZADA
@@ -503,48 +509,65 @@ public class ZombieHealth : NetworkBehaviour
     // =========================================================
     // MUERTE
     // =========================================================
+private void Die(ulong shooterClientId)
+{
+    if (!IsServer)
+        return;
 
-    private void Die(ulong shooterClientId)
+    if (IsDead)
+        return;
+
+    IsDead = true;
+
+    Debug.Log(
+        $"[ZombieHealth] Muere '{gameObject.name}'." +
+        $" EsBossHistoria={EsBossHistoria}" +
+        $" | Vida={currentHealthNetwork.Value}"
+    );
+
+    if (healthBarCanvas != null)
     {
-        if (!IsServer)
-            return;
+        healthBarCanvas.SetActive(false);
+    }
+    else if (healthSlider != null)
+    {
+        healthSlider.gameObject.SetActive(false);
+    }
 
-        if (IsDead)
-            return;
+    PlayDeathEffectsClientRpc();
 
-        IsDead = true;
+    SumarPuntoAlJugador(shooterClientId);
 
-        if (healthBarCanvas != null)
+    DropRecursosZombie dropRecursos =
+        GetComponent<DropRecursosZombie>();
+
+    if (dropRecursos != null)
+        dropRecursos.Soltar();
+
+    if (RoundManager.Instance != null)
+    {
+        if (EsBossHistoria)
         {
-            healthBarCanvas.SetActive(false);
+            Debug.Log(
+                "[ZombieHealth] Notificando muerte del boss al RoundManager."
+            );
+
+            RoundManager.Instance.BossHistoriaDerrotado();
         }
-        else if (healthSlider != null)
-        {
-            healthSlider.gameObject.SetActive(false);
-        }
-
-        // Lo ejecuta en todos los clientes:
-        // desactiva animación y activa físicas.
-        PlayDeathEffectsClientRpc();
-
-        SumarPuntoAlJugador(shooterClientId);
-
-        // Recurso en el piso según la tabla de drop del zombie (en el tutorial no suelta nada).
-        DropRecursosZombie dropRecursos = GetComponent<DropRecursosZombie>();
-
-        if (dropRecursos != null)
-            dropRecursos.Soltar();
-
-        if (RoundManager.Instance != null)
+        else
         {
             RoundManager.Instance.ZombieDied();
         }
-
-        Invoke(
-            nameof(DespawnZombie),
-            destroyDelay
+    }
+    else
+    {
+        Debug.LogError(
+            "[ZombieHealth] No se encontró RoundManager al morir el zombie."
         );
     }
+
+    Invoke(nameof(DespawnZombie), destroyDelay);
+}
 
     // =========================================================
     // EFECTOS DE MUERTE / RAGDOLL

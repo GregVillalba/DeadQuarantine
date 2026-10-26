@@ -43,14 +43,6 @@ public class ZombieAI : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        Debug.Log(
-            "[ZombieAI] Spawn | " +
-            gameObject.name +
-            " | IsServer=" +
-            IsServer +
-            " | IsClient=" +
-            IsClient
-        );
 
         // La IA solamente funciona en el servidor.
         if (!IsServer)
