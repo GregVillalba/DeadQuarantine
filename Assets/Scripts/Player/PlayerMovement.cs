@@ -51,6 +51,8 @@ public class PlayerMovement : NetworkBehaviour
     [Header("Bloqueo suave contra zombies")]
     [SerializeField] private LayerMask zombieBlockMask;
     [SerializeField] private float zombiePushBuffer = 0.05f;
+    [Tooltip("Límite de corrección horizontal por frame al salir de un zombie. Evita desplazamientos explosivos.")]
+    [SerializeField] private float maxZombieDepenetrationPerFrame = 0.08f;
 
     [Header("Ventana")]
     [SerializeField] private float windowTraversalDistance = 1.3f;
@@ -412,8 +414,10 @@ public class PlayerMovement : NetworkBehaviour
             transform.right * effectiveMoveInput.x +
             transform.forward * effectiveMoveInput.y;
         
-        // ============ ÚNICO BLOQUE NUEVO — empieza acá ============
-        float moveDistance = horizontalMovement.magnitude * Time.deltaTime;
+        // ============ BLOQUEO SUAVE CONTRA ZOMBIES ============
+        // La distancia del cast debe coincidir con la distancia REAL que se moverá
+        // el CharacterController este frame (incluye currentSpeed).
+        float moveDistance = horizontalMovement.magnitude * currentSpeed * Time.deltaTime;
 
         if (moveDistance > 0.0001f)
         {
@@ -421,21 +425,48 @@ public class PlayerMovement : NetworkBehaviour
             float castRadius = characterController.radius * 0.9f;
             Vector3 castOrigin = transform.position + Vector3.up * (characterController.height * 0.5f);
 
-            if (Physics.SphereCast(
-                    castOrigin,
-                    castRadius,
-                    moveDirection,
-                    out RaycastHit hit,
-                    moveDistance + zombiePushBuffer,
-                    zombieBlockMask,
-                    QueryTriggerInteraction.Ignore))
+            RaycastHit[] hits = Physics.SphereCastAll(
+                castOrigin,
+                castRadius,
+                moveDirection,
+                moveDistance + zombiePushBuffer,
+                zombieBlockMask,
+                QueryTriggerInteraction.Ignore
+            );
+
+            float closestValidDistance = float.PositiveInfinity;
+
+            for (int i = 0; i < hits.Length; i++)
             {
-                float allowedDistance = Mathf.Max(hit.distance - zombiePushBuffer, 0f);
+                Collider hitCollider = hits[i].collider;
+
+                if (hitCollider == null)
+                    continue;
+
+                // Nunca tratamos nuestra propia jerarquía como obstáculo zombie.
+                if (hitCollider.transform.root == transform.root)
+                    continue;
+
+                // MUY IMPORTANTE: una puerta jamás debe participar en este sistema.
+                if (hitCollider.GetComponentInParent<Door>() != null)
+                    continue;
+
+                if (hits[i].distance < closestValidDistance)
+                    closestValidDistance = hits[i].distance;
+            }
+
+            if (!float.IsPositiveInfinity(closestValidDistance))
+            {
+                float allowedDistance = Mathf.Max(
+                    closestValidDistance - zombiePushBuffer,
+                    0f
+                );
+
                 float scale = allowedDistance / moveDistance;
                 horizontalMovement *= Mathf.Clamp01(scale);
             }
         }
-        // ============ ÚNICO BLOQUE NUEVO — termina acá ============
+        // ============ FIN BLOQUEO SUAVE CONTRA ZOMBIES ============
 
         Vector3 fullMovement =
             horizontalMovement * currentSpeed +
@@ -450,13 +481,16 @@ public class PlayerMovement : NetworkBehaviour
             velocityY = 0f;
 
         // ============ BLOQUE 2 (nuevo): corrección posterior ============
-        ResolveZombieOverlap();
+        //ResolveZombieOverlap();
         // ============ FIN BLOQUE 2 ============
     }
 
     private void ResolveZombieOverlap()
     {
-        Vector3 checkCenter = transform.position + Vector3.up * (characterController.height * 0.5f);
+        Vector3 checkCenter =
+            transform.position +
+            Vector3.up * (characterController.height * 0.5f);
+
         float checkRadius = characterController.radius;
 
         Collider[] overlaps = Physics.OverlapSphere(
@@ -468,19 +502,48 @@ public class PlayerMovement : NetworkBehaviour
 
         foreach (Collider zombieCollider in overlaps)
         {
-            Vector3 closestPoint = zombieCollider.ClosestPoint(checkCenter);
+            if (zombieCollider == null)
+                continue;
 
-            Vector3 offset = checkCenter - closestPoint;
-            offset.y = 0f; // empuje solo horizontal, no queremos afectar la caída/salto
+            // Nunca empujarnos a nosotros mismos.
+            if (zombieCollider.transform.root == transform.root)
+                continue;
+
+            // CRÍTICO: si por error la layer de una puerta está incluida en
+            // zombieBlockMask, la ignoramos igualmente. Una puerta nunca debe
+            // ejecutar el empuje anti-zombies.
+            if (zombieCollider.GetComponentInParent<Door>() != null)
+                continue;
+
+            Vector3 closestPoint =
+                zombieCollider.ClosestPoint(checkCenter);
+
+            Vector3 offset =
+                checkCenter - closestPoint;
+
+            // Este sistema solo corrige en horizontal.
+            offset.y = 0f;
 
             float distance = offset.magnitude;
 
             if (distance < checkRadius && distance > 0.0001f)
             {
-                float pushAmount = checkRadius - distance;
-                Vector3 pushDirection = offset.normalized;
+                float requiredPush =
+                    checkRadius - distance;
 
-                characterController.Move(pushDirection * pushAmount);
+                // Nunca permitir que una sola corrección desplace al jugador
+                // una distancia enorme en un frame.
+                float pushAmount = Mathf.Min(
+                    requiredPush,
+                    Mathf.Max(0.001f, maxZombieDepenetrationPerFrame)
+                );
+
+                Vector3 pushDirection =
+                    offset.normalized;
+
+                characterController.Move(
+                    pushDirection * pushAmount
+                );
             }
         }
     }
