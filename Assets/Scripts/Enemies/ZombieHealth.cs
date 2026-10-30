@@ -266,32 +266,35 @@ public void MarcarComoBossHistoria()
     // DAÑO
     // =========================================================
 
-    public void TakeDamage(
-        int amount,
-        Vector3 hitPoint,
-        Vector3 hitNormal,
-        bool esHeadshot = false
-    )
-    {
-        if (IsDead)
-            return;
+   public void TakeDamage(
+    int amount,
+    Vector3 hitPoint,
+    Vector3 hitNormal,
+    bool esHeadshot = false,
+    bool registrarHeadshot = false
+)
+{
+    if (IsDead)
+        return;
 
-        TakeDamageServerRpc(
-            amount,
-            hitPoint,
-            hitNormal,
-            esHeadshot
-        );
-    }
+    TakeDamageServerRpc(
+        amount,
+        hitPoint,
+        hitNormal,
+        esHeadshot,
+        registrarHeadshot
+    );
+}
 
-    [ServerRpc(RequireOwnership = false)]
-    private void TakeDamageServerRpc(
-        int amount,
-        Vector3 hitPoint,
-        Vector3 hitNormal,
-        bool esHeadshot,
-        ServerRpcParams rpcParams = default
-    )
+   [ServerRpc(RequireOwnership = false)]
+private void TakeDamageServerRpc(
+    int amount,
+    Vector3 hitPoint,
+    Vector3 hitNormal,
+    bool esHeadshot,
+    bool registrarHeadshot,
+    ServerRpcParams rpcParams = default
+)
     {
         if (IsDead)
             return;
@@ -346,8 +349,11 @@ public void MarcarComoBossHistoria()
             );
         }
 
-        if (headshotAplicado)
-            zombieHeadshot.OtorgarPuntosExtra(shooterClientId);
+       if (registrarHeadshot)
+    SumarHeadshotAlJugador(shooterClientId);
+
+if (headshotAplicado)
+    zombieHeadshot.OtorgarPuntosExtra(shooterClientId);
 
         PlayBloodEffectClientRpc(
             hitPoint,
@@ -739,4 +745,28 @@ private void Die(ulong shooterClientId)
 
         ActualizarBarraDeVida();
     }
+    private void SumarHeadshotAlJugador(ulong shooterClientId)
+{
+    if (!IsServer)
+        return;
+
+    if (NetworkManager.Singleton == null)
+        return;
+
+    if (!NetworkManager.Singleton.ConnectedClients.TryGetValue(
+        shooterClientId,
+        out NetworkClient shooterClient))
+    {
+        return;
+    }
+
+    if (shooterClient.PlayerObject == null)
+        return;
+
+    PlayerScore playerScore =
+        shooterClient.PlayerObject.GetComponentInChildren<PlayerScore>();
+
+    if (playerScore != null)
+        playerScore.SumarHeadshot();
+}
 }

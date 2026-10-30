@@ -15,6 +15,7 @@ public class Weapon : MonoBehaviour
     [SerializeField] private Animator weaponAnimator;
     [SerializeField] private Muzzle muzzle;
     [SerializeField] private GameObject bulletTrailPrefab;
+    private bool headshotRegistradoEnDisparo;
 
     [Header("Recoil de cámara")]
     [SerializeField] private CameraRecoil cameraRecoil;
@@ -1124,17 +1125,20 @@ public class Weapon : MonoBehaviour
     // =========================================================
 
     private void Shoot()
+{
+    // Cada disparo comienza sin headshots registrados.
+    headshotRegistradoEnDisparo = false;
+
+    if (firesMultiplePellets)
     {
-        if (firesMultiplePellets)
-        {
-            for (int i = 0; i < pelletsPerShot; i++)
-                FirePellet(currentSpread + pelletSpreadAngle, pelletCenterBias);
-        }
-        else
-        {
-            FirePellet(currentSpread);
-        }
+        for (int i = 0; i < pelletsPerShot; i++)
+            FirePellet(currentSpread + pelletSpreadAngle, pelletCenterBias);
     }
+    else
+    {
+        FirePellet(currentSpread);
+    }
+}
 
     private void FirePellet(float spreadDegrees, float centerBias = 0f)
     {
@@ -1230,42 +1234,52 @@ public class Weapon : MonoBehaviour
 
 //======================================== NUEVO ===============================================================
             // Daño a zombies.
-            ZombieHealth zombieHealth =
-                hit.collider.GetComponentInParent<ZombieHealth>();
+ZombieHealth zombieHealth =
+    hit.collider.GetComponentInParent<ZombieHealth>();
 
-            if (zombieHealth != null)
-            {
-             // Headshot: el rayo atravesó el hitbox de la cabeza de ESTE zombie.
-            // (El collider del cuerpo suele ser el primer impacto, por eso se revisan todos.)
-                bool esHeadshot = false;
+if (zombieHealth != null)
+{
+    bool esHeadshot = false;
 
-                foreach (RaycastHit h in hits)
-                {
-                    ZombieHeadHitbox head = h.collider.GetComponent<ZombieHeadHitbox>();
+    foreach (RaycastHit h in hits)
+    {
+        ZombieHeadHitbox head =
+            h.collider.GetComponent<ZombieHeadHitbox>();
 
-                    if (head != null && head.Owner == zombieHealth)
-                    {
-                        esHeadshot = true;
-                        break;
-                    }
-                }
-                int finalDamage = Mathf.Max(
-                    1,
-                    Mathf.RoundToInt(DanoBasePorImpacto * DistanceFalloffMultiplier(hit.distance))
-                );
+        if (head != null && head.Owner == zombieHealth)
+        {
+            esHeadshot = true;
+            break;
+        }
+    }
 
-                zombieHealth.TakeDamage(
-                    finalDamage,
-                    hit.point,
-                    hit.normal,
-                    esHeadshot
-                );
+    // Solo el primer headshot del disparo se registra para el logro.
+    bool registrarHeadshot =
+        esHeadshot && !headshotRegistradoEnDisparo;
 
-                if (playerScore != null)
-                    playerScore.RegistrarImpactoServerRpc();
+    if (registrarHeadshot)
+        headshotRegistradoEnDisparo = true;
 
-                return;
-            }
+    int finalDamage = Mathf.Max(
+        1,
+        Mathf.RoundToInt(
+            DanoBasePorImpacto * DistanceFalloffMultiplier(hit.distance)
+        )
+    );
+
+    zombieHealth.TakeDamage(
+        finalDamage,
+        hit.point,
+        hit.normal,
+        esHeadshot,
+        registrarHeadshot
+    );
+
+    if (playerScore != null)
+        playerScore.RegistrarImpactoServerRpc();
+
+    return;
+}
 //==============================================================================================================
             
             // EASTER EGG: permite que los disparos dañen los objetos

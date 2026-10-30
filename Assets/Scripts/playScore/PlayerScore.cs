@@ -44,7 +44,12 @@ public NetworkVariable<int> CaidasNetwork = new NetworkVariable<int>(
     NetworkVariableReadPermission.Everyone,
     NetworkVariableWritePermission.Server
 );
-
+public NetworkVariable<int> HeadshotsRealizadosNetwork =
+    new NetworkVariable<int>(
+        0,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
 public void SumarCaida()
 {
     if (!IsServer)
@@ -53,6 +58,13 @@ public void SumarCaida()
     CaidasNetwork.Value++;
 }
 
+public void SumarHeadshot()
+{
+    if (!IsServer)
+        return;
+
+    HeadshotsRealizadosNetwork.Value++;
+}
 public void SumarReaparicion()
 {
     if (!IsServer)

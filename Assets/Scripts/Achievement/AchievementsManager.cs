@@ -246,36 +246,44 @@ public class AchievementsManager : MonoBehaviour
     // ============================================================
 
     private void BuscarPlayerScore()
+{
+    if (NetworkManager.Singleton == null)
+        return;
+
+    if (NetworkManager.Singleton.LocalClient == null)
+        return;
+
+    if (NetworkManager.Singleton.LocalClient.PlayerObject == null)
+        return;
+
+    playerScore =
+        NetworkManager.Singleton.LocalClient.PlayerObject
+            .GetComponentInChildren<PlayerScore>();
+
+    if (playerScore == null)
+        return;
+
+    playerScore.ZombiesEliminadosNetwork.OnValueChanged +=
+        OnZombiesEliminadosChanged;
+
+    playerScore.HeadshotsRealizadosNetwork.OnValueChanged +=
+        OnHeadshotsRealizadosChanged;
+
+    if (!BloqueoLogrosActivo())
     {
-        if (NetworkManager.Singleton == null)
-            return;
+        OnZombiesEliminadosChanged(
+            0,
+            playerScore.ZombiesEliminadosNetwork.Value
+        );
 
-        if (NetworkManager.Singleton.LocalClient == null)
-            return;
-
-        if (NetworkManager.Singleton.LocalClient.PlayerObject == null)
-            return;
-
-        playerScore =
-            NetworkManager.Singleton.LocalClient.PlayerObject
-                .GetComponentInChildren<PlayerScore>();
-
-        if (playerScore == null)
-            return;
-
-        playerScore.ZombiesEliminadosNetwork.OnValueChanged +=
-            OnZombiesEliminadosChanged;
-
-        if (!BloqueoLogrosActivo())
-        {
-            OnZombiesEliminadosChanged(
-                0,
-                playerScore.ZombiesEliminadosNetwork.Value
-            );
-        }
-
-        Debug.Log("[ACHIEVEMENTS] PlayerScore encontrado.");
+        OnHeadshotsRealizadosChanged(
+            0,
+            playerScore.HeadshotsRealizadosNetwork.Value
+        );
     }
+
+    Debug.Log("[ACHIEVEMENTS] PlayerScore encontrado.");
+}
 
     // ============================================================
     // INICIALIZAR LOGROS
@@ -418,6 +426,25 @@ public class AchievementsManager : MonoBehaviour
             zombiesNuevos
         );
     }
+
+    private void OnHeadshotsRealizadosChanged(
+    int valorAnterior,
+    int valorNuevo
+)
+{
+    if (BloqueoLogrosActivo())
+        return;
+
+    int headshotsNuevos = valorNuevo - valorAnterior;
+
+    if (headshotsNuevos <= 0)
+        return;
+
+    SumarProgreso(
+        AchievementId.MeDueleLaCabeza,
+        headshotsNuevos
+    );
+}
 
     // ============================================================
     // SUMAR PROGRESO
@@ -913,16 +940,20 @@ public class AchievementsManager : MonoBehaviour
             datos.easterEggsEncontrados = new List<string>();
     }
 
-    private void OnDestroy()
+   private void OnDestroy()
+{
+    if (playerScore != null)
     {
-        if (playerScore != null)
-        {
-            playerScore.ZombiesEliminadosNetwork.OnValueChanged -= OnZombiesEliminadosChanged;
-        }
+        playerScore.ZombiesEliminadosNetwork.OnValueChanged -=
+            OnZombiesEliminadosChanged;
 
-        if (Instance == this)
-            Instance = null;
+        playerScore.HeadshotsRealizadosNetwork.OnValueChanged -=
+            OnHeadshotsRealizadosChanged;
     }
+
+    if (Instance == this)
+        Instance = null;
+}
 
     public int ObtenerCantidadTotalLogros()
     {
