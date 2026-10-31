@@ -24,13 +24,18 @@ public class HUDController : MonoBehaviour
     [SerializeField] private GameObject vidas1;
     [SerializeField] private GameObject vidas0;
 
-    [Header("Quemadura (icono a la derecha de la barra de vida)")]
+    [Header("Iconos de estado (a la derecha de la barra de vida)")]
     [Tooltip("Icono que aparece mientras el jugador se quema con el fuego de su granada incendiaria.")]
     [SerializeField] private Sprite iconoQuemadura;
     [SerializeField] private Color colorIconoQuemadura = new Color(1f, 0.55f, 0.1f, 1f);
-    [Tooltip("Separación entre el final de la barra de vida y el icono.")]
+    [Tooltip("Icono que aparece después de lastimarse por una caída.")]
+    [SerializeField] private Sprite iconoCaida;
+    [SerializeField] private Color colorIconoCaida = new Color(1f, 0.35f, 0.27f, 1f);
+    [Tooltip("Segundos que se ve el icono de caída después de aterrizar.")]
+    [SerializeField] private float duracionIconoCaida = 3f;
+    [Tooltip("Separación entre el final de la barra de vida y el primer icono, y entre iconos.")]
     [SerializeField] private float separacionIconoQuemadura = 8f;
-    [Tooltip("Tamaño del icono respecto del alto de la barra de vida.")]
+    [Tooltip("Tamaño de los iconos respecto del alto de la barra de vida.")]
     [SerializeField] private float escalaIconoQuemadura = 1.1f;
     [SerializeField] private float velocidadTitiladoQuemadura = 6f;
 
@@ -296,7 +301,7 @@ public class HUDController : MonoBehaviour
     private void ActualizarTodo()
     {
         UpdateHealthBar();
-        UpdateIconoQuemadura();
+        UpdateIconosEstado();
         UpdateStaminaBar();
         UpdateArmorBar();
         UpdateAmmoText();
@@ -692,41 +697,56 @@ public class HUDController : MonoBehaviour
     }
 
     // =========================================================
-    // QUEMADURA
+    // ICONOS DE ESTADO (quemadura, caída)
     // =========================================================
 
     private Image imagenQuemadura;
+    private Image imagenCaida;
 
-    // Titila a la derecha de la barra de vida mientras el jugador se quema.
-    private void UpdateIconoQuemadura()
+    // Titilan a la derecha de la barra de vida, uno al lado del otro (solo los que están visibles).
+    private void UpdateIconosEstado()
     {
         bool quemandose = playerHealth != null && playerHealth.Quemandose.Value;
+        bool lastimadoPorCaida = playerHealth != null &&
+            Time.time - playerHealth.UltimaCaidaConDano < duracionIconoCaida;
 
-        if (imagenQuemadura == null)
+        float x = separacionIconoQuemadura;
+        x = ActualizarIconoEstado(ref imagenQuemadura, iconoQuemadura, "IconoQuemadura", quemandose, colorIconoQuemadura, x);
+        ActualizarIconoEstado(ref imagenCaida, iconoCaida, "IconoCaida", lastimadoPorCaida, colorIconoCaida, x);
+    }
+
+    // Devuelve dónde va el próximo icono.
+    private float ActualizarIconoEstado(ref Image imagen, Sprite sprite, string nombre, bool visible, Color color, float x)
+    {
+        if (imagen == null)
         {
-            if (!quemandose)
-                return;
+            if (!visible)
+                return x;
 
-            imagenQuemadura = CrearIconoQuemadura();
+            imagen = CrearIconoEstado(sprite, nombre);
 
-            if (imagenQuemadura == null)
-                return;
+            if (imagen == null)
+                return x;
         }
 
-        imagenQuemadura.enabled = quemandose;
+        imagen.enabled = visible;
 
-        if (!quemandose)
-            return;
+        if (!visible)
+            return x;
 
-        Color color = colorIconoQuemadura;
+        RectTransform rt = imagen.rectTransform;
+        rt.anchoredPosition = new Vector2(x, 0f);
+
         color.a *= Mathf.Lerp(0.45f, 1f, (Mathf.Sin(Time.time * velocidadTitiladoQuemadura) + 1f) * 0.5f);
-        imagenQuemadura.color = color;
+        imagen.color = color;
+
+        return x + rt.sizeDelta.x + separacionIconoQuemadura;
     }
 
     // Se crea la primera vez que hace falta, al lado de la barra de vida (el Slider que contiene a healthFill).
-    private Image CrearIconoQuemadura()
+    private Image CrearIconoEstado(Sprite sprite, string nombre)
     {
-        if (iconoQuemadura == null || healthFill == null)
+        if (sprite == null || healthFill == null)
             return null;
 
         Slider barra = healthFill.GetComponentInParent<Slider>();
@@ -734,7 +754,7 @@ public class HUDController : MonoBehaviour
             ? (RectTransform)barra.transform
             : (RectTransform)healthFill.transform.parent;
 
-        GameObject go = new GameObject("IconoQuemadura", typeof(RectTransform), typeof(Image));
+        GameObject go = new GameObject(nombre, typeof(RectTransform), typeof(Image));
         go.layer = contenedor.gameObject.layer;
         go.transform.SetParent(contenedor, false);
 
@@ -744,11 +764,10 @@ public class HUDController : MonoBehaviour
         rt.anchorMin = new Vector2(1f, 0.5f);
         rt.anchorMax = new Vector2(1f, 0.5f);
         rt.pivot = new Vector2(0f, 0.5f);
-        rt.anchoredPosition = new Vector2(separacionIconoQuemadura, 0f);
         rt.sizeDelta = new Vector2(tamano, tamano);
 
         Image imagen = go.GetComponent<Image>();
-        imagen.sprite = iconoQuemadura;
+        imagen.sprite = sprite;
         imagen.preserveAspect = true;
         imagen.raycastTarget = false;
         imagen.enabled = false;

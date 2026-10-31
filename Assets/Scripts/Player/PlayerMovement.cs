@@ -25,6 +25,14 @@ public class PlayerMovement : NetworkBehaviour
     [SerializeField] private float groundedVelocity = -2f;
     [SerializeField] private WeaponSwitcher weaponSwitcher;
 
+    [Header("Daño por caída (alturas y daño en PlayerHealth)")]
+    [Tooltip("Cuánto baja la cámara (m) al aterrizar de la caída más baja que hace daño.")]
+    [SerializeField] private float sacudidaCaidaMinima = 0.12f;
+    [Tooltip("Cuánto baja la cámara (m) al aterrizar de una caída letal.")]
+    [SerializeField] private float sacudidaCaidaMaxima = 0.45f;
+    [Tooltip("Si el jugador se mueve más que esto en un solo cuadro, se toma como teletransporte y no como caída.")]
+    [SerializeField] private float distanciaTeletransporte = 5f;
+
     [Header("Estamina")]
     [SerializeField] private float maxStamina = 5f;
     [SerializeField] private float staminaDrainRate = 1.5f;
@@ -186,6 +194,12 @@ public class PlayerMovement : NetworkBehaviour
     private Coroutine cameraReturnCoroutine;
 
     private Vector3 originalCharacterModelLocalPosition;
+
+    // Caída en curso (solo el dueño): altura más alta desde que dejó el piso.
+    private bool enElAire;
+    private float alturaMaximaCaida;
+    private Vector3 ultimaPosicionCaida;
+    private bool posicionCaidaValida;
 
     // =========================================================
     // AWAKE
@@ -390,6 +404,8 @@ public class PlayerMovement : NetworkBehaviour
 
         if (isParkouring)
         {
+            // El parkour mueve al jugador a mano: no cuenta como caída.
+            CancelarCaida();
             HandleCrouch();
             return;
         }
@@ -479,6 +495,8 @@ public class PlayerMovement : NetworkBehaviour
         // quedás "pegado" al techo hasta que se agote la velocidad).
         if ((moveFlags & CollisionFlags.Above) != 0 && velocityY > 0f)
             velocityY = 0f;
+
+        ActualizarCaida();
 
         // ============ BLOQUE 2 (nuevo): corrección posterior ============
         //ResolveZombieOverlap();
@@ -2034,6 +2052,75 @@ public class PlayerMovement : NetworkBehaviour
     }
 
     // =========================================================
+    // DAÑO POR CAÍDA
+    // =========================================================
+
+    // Mide la caída desde el punto más alto hasta donde aterriza y se la manda a PlayerHealth (servidor).
+    private void ActualizarCaida()
+    {
+        Vector3 posicion = transform.position;
+
+        // Teletransporte (spawn, cambio de escenario, espectador...): no es una caída.
+        bool teletransporte =
+            !characterController.enabled ||
+            !posicionCaidaValida ||
+            (posicion - ultimaPosicionCaida).sqrMagnitude > distanciaTeletransporte * distanciaTeletransporte;
+
+        ultimaPosicionCaida = posicion;
+        posicionCaidaValida = characterController.enabled;
+
+        if (teletransporte)
+        {
+            enElAire = false;
+            return;
+        }
+
+        if (!characterController.isGrounded)
+        {
+            if (!enElAire)
+            {
+                enElAire = true;
+                alturaMaximaCaida = posicion.y;
+            }
+            else
+            {
+                alturaMaximaCaida = Mathf.Max(alturaMaximaCaida, posicion.y);
+            }
+
+            return;
+        }
+
+        if (!enElAire)
+            return;
+
+        enElAire = false;
+
+        float altura = alturaMaximaCaida - posicion.y;
+
+        if (playerHealth == null || !playerHealth.IsAlive || playerHealth.CalcularDanoCaida(altura) <= 0)
+            return;
+
+        playerHealth.ReportarCaida(altura);
+        SacudirCamaraPorCaida(playerHealth.IntensidadCaida(altura));
+    }
+
+    private void CancelarCaida()
+    {
+        enElAire = false;
+        posicionCaidaValida = false;
+    }
+
+    // Golpe de cámara hacia abajo: HandleCrouch la devuelve sola a su lugar en los cuadros siguientes.
+    private void SacudirCamaraPorCaida(float intensidad)
+    {
+        if (cameraTransform == null)
+            return;
+
+        cameraTransform.localPosition +=
+            Vector3.down * Mathf.Lerp(sacudidaCaidaMinima, sacudidaCaidaMaxima, intensidad);
+    }
+
+    // =========================================================
     // FINALIZAR PARKOUR
     // =========================================================
 
@@ -2092,6 +2179,8 @@ public class PlayerMovement : NetworkBehaviour
 
         isParkouring =
             false;
+
+        CancelarCaida();
 
         if (characterController != null)
         {
