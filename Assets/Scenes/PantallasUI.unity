@@ -71168,11 +71168,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 201ddd544eebc0f4d99581c86fb4f7ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Scripts::UsernameFirstRunPopup
-  panel: {fileID: 2023666875}
-  usernameInput: {fileID: 3757693}
-  confirmButton: {fileID: 535232833}
-  validationText: {fileID: 1529893571}
-  uiToDisableWhileOpen: {fileID: 0}
 --- !u!1 &772692769
 GameObject:
   m_ObjectHideFlags: 0
@@ -78035,6 +78030,7 @@ GameObject:
   - component: {fileID: 842136761}
   - component: {fileID: 842136760}
   - component: {fileID: 842136759}
+  - component: {fileID: 842136762}
   m_Layer: 0
   m_Name: ConfiguracionesPanel
   m_TagString: Untagged
@@ -78170,6 +78166,34 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 842136757}
   m_CullTransparentMesh: 1
+--- !u!114 &842136762
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 842136757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0296ba21d47fca64882e5379b1f16332, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::GrupoBotonesFooter
+  btnRestablecer:
+    boton: {fileID: 1603432722}
+    imagenFondo: {fileID: 0}
+    texto: {fileID: 0}
+  btnAplicar:
+    boton: {fileID: 1683436561}
+    imagenFondo: {fileID: 0}
+    texto: {fileID: 0}
+  btnVolver:
+    boton: {fileID: 1941671422}
+    imagenFondo: {fileID: 0}
+    texto: {fileID: 0}
+  colorFondoActivo: {r: 0.12, g: 0.4, b: 0.28, a: 1}
+  colorTextoActivo: {r: 0.35, g: 1, b: 0.65, a: 1}
+  colorFondoInactivo: {r: 0, g: 0, b: 0, a: 0}
+  colorTextoInactivo: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &842940222
 GameObject:
   m_ObjectHideFlags: 0
@@ -148867,7 +148891,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.1, g: 0.17, b: 0.12, a: 0.96}
+  m_Color: {r: 0.06753293, g: 0.13207549, b: 0.08651604, a: 0.96}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
