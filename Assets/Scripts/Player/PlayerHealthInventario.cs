@@ -342,7 +342,7 @@ public partial class PlayerHealth
             return;
         }
 
-        if (!lanzador.CrearProyectilServidor(slot.itemId.ToString(), posicion, velocidad))
+        if (!lanzador.CrearProyectilServidor(slot.itemId.ToString(), posicion, velocidad, OwnerClientId))
             return;
 
         slot.cantidad--;

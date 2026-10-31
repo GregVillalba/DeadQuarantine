@@ -20,7 +20,27 @@ public class ZombieAI : NetworkBehaviour
     [SerializeField] private float walkSpeed = 1.5f;
     [SerializeField] private float runSpeed = 3f;
 
+    [Header("Aturdimiento (granada aturdidora)")]
+    [Tooltip("Efecto que se muestra encima del zombie mientras está aturdido. Vacío = sin efecto visual.")]
+    [SerializeField] private GameObject efectoAturdido;
+    [SerializeField] private float alturaEfectoAturdido = 1.8f;
+
     public bool IsRunning { get; private set; }
+
+    // true mientras está aturdido: no se mueve ni ataca, y los clientes congelan la animación.
+    private NetworkVariable<bool> aturdidoNetwork =
+        new NetworkVariable<bool>(
+            false,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+
+    public bool EstaAturdido => aturdidoNetwork.Value;
+
+    private float finAturdimiento;
+    private Coroutine rutinaAturdimiento;
+    private GameObject efectoAturdidoActivo;
+    private bool animacionCongelada;
 
     // Multiplicador de velocidad por ronda (modo Supervivencia). 1 = sin cambios.
     private float speedMultiplier = 1f;     //
@@ -52,6 +72,9 @@ public class ZombieAI : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        // El efecto del aturdimiento se ve en todos los clientes, aunque la IA corra solo en el servidor.
+        aturdidoNetwork.OnValueChanged += OnAturdidoChanged;
+        ActualizarEfectoAturdimiento(aturdidoNetwork.Value);
 
         // La IA solamente funciona en el servidor.
         if (!IsServer)
@@ -66,6 +89,126 @@ public class ZombieAI : NetworkBehaviour
         }
 
         FindClosestPlayer();
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        aturdidoNetwork.OnValueChanged -= OnAturdidoChanged;
+        ActualizarEfectoAturdimiento(false);
+    }
+
+    // =========================================================
+    // ATURDIMIENTO
+    // =========================================================
+
+    /// <summary>
+    /// Solo servidor. Deja al zombie inmóvil y sin atacar durante "duracion" segundos.
+    /// Si ya estaba aturdido se queda con la duración que termine más tarde.
+    /// </summary>
+    public void Aturdir(float duracion)
+    {
+        if (!IsServer || duracion <= 0f)
+            return;
+
+        if (zombieHealth != null && zombieHealth.IsDead)
+            return;
+
+        finAturdimiento =
+            Mathf.Max(
+                finAturdimiento,
+                Time.time + duracion
+            );
+
+        // Corta el golpe que estaba por pegar.
+        isAttacking = false;
+
+        if (AgenteSobreNavMesh())
+        {
+            agent.isStopped = true;
+            agent.ResetPath();
+            agent.velocity = Vector3.zero;
+        }
+
+        if (rutinaAturdimiento == null)
+            rutinaAturdimiento = StartCoroutine(RutinaAturdimiento());
+    }
+
+    /// <summary>Solo servidor. Termina el aturdimiento ya (por ejemplo, al morir).</summary>
+    public void QuitarAturdimiento()
+    {
+        if (!IsServer)
+            return;
+
+        if (rutinaAturdimiento != null)
+        {
+            StopCoroutine(rutinaAturdimiento);
+            rutinaAturdimiento = null;
+        }
+
+        finAturdimiento = 0f;
+        aturdidoNetwork.Value = false;
+    }
+
+    // Esta rutina sigue corriendo aunque ZombieAI quede deshabilitado: solo se corta al morir o despawnear.
+    private IEnumerator RutinaAturdimiento()
+    {
+        aturdidoNetwork.Value = true;
+
+        while (Time.time < finAturdimiento)
+            yield return null;
+
+        rutinaAturdimiento = null;
+        aturdidoNetwork.Value = false;
+    }
+
+    private void OnAturdidoChanged(bool anterior, bool actual)
+    {
+        ActualizarEfectoAturdimiento(actual);
+    }
+
+    /// <summary>
+    /// Local. Saca el efecto del aturdimiento y descongela la animación sin esperar a la red.
+    /// Lo usa ZombieHealth al morir para que la animación de muerte se reproduzca.
+    /// </summary>
+    public void QuitarEfectoAturdimiento()
+    {
+        ActualizarEfectoAturdimiento(false);
+    }
+
+    private void ActualizarEfectoAturdimiento(bool aturdido)
+    {
+        // Congela la animación (incluye Animators en hijos, como el del perro zombie).
+        // Solo descongela si la congeló el aturdimiento: el perro congela su propio cadáver al morir
+        // y el aviso de "ya no está aturdido" puede llegar después de la muerte.
+        if (aturdido != animacionCongelada)
+        {
+            foreach (Animator anim in GetComponentsInChildren<Animator>(true))
+                anim.speed = aturdido ? 0f : 1f;
+
+            animacionCongelada = aturdido;
+        }
+
+        if (aturdido)
+        {
+            if (efectoAturdidoActivo == null && efectoAturdido != null)
+            {
+                efectoAturdidoActivo =
+                    Instantiate(
+                        efectoAturdido,
+                        transform.position + Vector3.up * alturaEfectoAturdido,
+                        Quaternion.identity,
+                        transform
+                    );
+            }
+
+            return;
+        }
+
+        if (efectoAturdidoActivo != null)
+        {
+            Destroy(efectoAturdidoActivo);
+            efectoAturdidoActivo = null;
+        }
     }
 
     public void SetRunning(bool isRunning)
@@ -129,6 +272,12 @@ public class ZombieAI : NetworkBehaviour
             zombieHealth.IsDead
         )
         {
+            return;
+        }
+
+        if (aturdidoNetwork.Value)
+        {
+            QuedarseQuieto();
             return;
         }
 
@@ -317,6 +466,13 @@ public class ZombieAI : NetworkBehaviour
             zombieHealth != null &&
             zombieHealth.IsDead
         )
+        {
+            isAttacking = false;
+            yield break;
+        }
+
+        // Aturdido durante la animación del golpe: el golpe no llega.
+        if (aturdidoNetwork.Value)
         {
             isAttacking = false;
             yield break;

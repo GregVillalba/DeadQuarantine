@@ -182,8 +182,9 @@ public class GrenadeThrow : MonoBehaviour
     /// <summary>
     /// Solo servidor (lo llama PlayerHealth después de validar que hay granada en el slot).
     /// Crea y lanza el proyectil del tipo indicado. false si no se pudo crear.
+    /// lanzadorClientId: dueño del jugador que la tiró (se lleva las kills).
     /// </summary>
-    public bool CrearProyectilServidor(string tipoId, Vector3 position, Vector3 velocity)
+    public bool CrearProyectilServidor(string tipoId, Vector3 position, Vector3 velocity, ulong lanzadorClientId)
     {
         GameObject prefab = PrefabDeTipo(IndiceDeTipo(tipoId));
 
@@ -207,7 +208,7 @@ public class GrenadeThrow : MonoBehaviour
         }
 
         networkObject.Spawn(true);
-        projectile.Launch(velocity);
+        projectile.Launch(velocity, lanzadorClientId);
         return true;
     }
 

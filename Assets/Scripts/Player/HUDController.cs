@@ -24,6 +24,16 @@ public class HUDController : MonoBehaviour
     [SerializeField] private GameObject vidas1;
     [SerializeField] private GameObject vidas0;
 
+    [Header("Quemadura (icono a la derecha de la barra de vida)")]
+    [Tooltip("Icono que aparece mientras el jugador se quema con el fuego de su granada incendiaria.")]
+    [SerializeField] private Sprite iconoQuemadura;
+    [SerializeField] private Color colorIconoQuemadura = new Color(1f, 0.55f, 0.1f, 1f);
+    [Tooltip("Separación entre el final de la barra de vida y el icono.")]
+    [SerializeField] private float separacionIconoQuemadura = 8f;
+    [Tooltip("Tamaño del icono respecto del alto de la barra de vida.")]
+    [SerializeField] private float escalaIconoQuemadura = 1.1f;
+    [SerializeField] private float velocidadTitiladoQuemadura = 6f;
+
     [Header("Estamina")]
     [SerializeField] private Image staminaFill;
     [Tooltip("Número que baja junto con la barra (0-100).")]
@@ -286,6 +296,7 @@ public class HUDController : MonoBehaviour
     private void ActualizarTodo()
     {
         UpdateHealthBar();
+        UpdateIconoQuemadura();
         UpdateStaminaBar();
         UpdateArmorBar();
         UpdateAmmoText();
@@ -678,6 +689,70 @@ public class HUDController : MonoBehaviour
             iconosOfertas[itemId] = icono;
 
         return icono;
+    }
+
+    // =========================================================
+    // QUEMADURA
+    // =========================================================
+
+    private Image imagenQuemadura;
+
+    // Titila a la derecha de la barra de vida mientras el jugador se quema.
+    private void UpdateIconoQuemadura()
+    {
+        bool quemandose = playerHealth != null && playerHealth.Quemandose.Value;
+
+        if (imagenQuemadura == null)
+        {
+            if (!quemandose)
+                return;
+
+            imagenQuemadura = CrearIconoQuemadura();
+
+            if (imagenQuemadura == null)
+                return;
+        }
+
+        imagenQuemadura.enabled = quemandose;
+
+        if (!quemandose)
+            return;
+
+        Color color = colorIconoQuemadura;
+        color.a *= Mathf.Lerp(0.45f, 1f, (Mathf.Sin(Time.time * velocidadTitiladoQuemadura) + 1f) * 0.5f);
+        imagenQuemadura.color = color;
+    }
+
+    // Se crea la primera vez que hace falta, al lado de la barra de vida (el Slider que contiene a healthFill).
+    private Image CrearIconoQuemadura()
+    {
+        if (iconoQuemadura == null || healthFill == null)
+            return null;
+
+        Slider barra = healthFill.GetComponentInParent<Slider>();
+        RectTransform contenedor = barra != null
+            ? (RectTransform)barra.transform
+            : (RectTransform)healthFill.transform.parent;
+
+        GameObject go = new GameObject("IconoQuemadura", typeof(RectTransform), typeof(Image));
+        go.layer = contenedor.gameObject.layer;
+        go.transform.SetParent(contenedor, false);
+
+        float tamano = contenedor.rect.height * escalaIconoQuemadura;
+
+        RectTransform rt = (RectTransform)go.transform;
+        rt.anchorMin = new Vector2(1f, 0.5f);
+        rt.anchorMax = new Vector2(1f, 0.5f);
+        rt.pivot = new Vector2(0f, 0.5f);
+        rt.anchoredPosition = new Vector2(separacionIconoQuemadura, 0f);
+        rt.sizeDelta = new Vector2(tamano, tamano);
+
+        Image imagen = go.GetComponent<Image>();
+        imagen.sprite = iconoQuemadura;
+        imagen.preserveAspect = true;
+        imagen.raycastTarget = false;
+        imagen.enabled = false;
+        return imagen;
     }
 
     // =========================================================
