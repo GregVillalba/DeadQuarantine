@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
+using Unity.Netcode.Components;
 
 public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
 {
@@ -146,7 +147,16 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
             return;
         }
 
-        MoveToAssignedSpawn(index);
+        if (IsOwner) { IsAtSpawn.Value = false; MoveToAssignedSpawn(index); }
+        else RespawnOwnerClientRpc();
+    }
+
+    [ClientRpc]
+    private void RespawnOwnerClientRpc()
+    {
+        if (!IsOwner) return;
+        IsAtSpawn.Value = false;
+        MoveToAssignedSpawn(AssignedSpawnIndex.Value);
     }
 
     // =========================================================
@@ -182,6 +192,10 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
             return;
         }
 
+        // Player NetworkTransform is owner-authoritative. Its cached state must
+        // be teleported too, otherwise the first network tick can restore the old position.
+        var networkTransform = GetComponent<NetworkTransform>();
+        if (!IsOwner) return;
         CharacterController cc =
             GetComponent<CharacterController>();
 
@@ -204,6 +218,9 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
             );
         }
 
+        if (networkTransform && networkTransform.IsSpawned)
+            networkTransform.Teleport(spawnPoint.position, spawnPoint.rotation, transform.localScale);
+
         Debug.Log(
             "[SpawnAssigner] Jugador movido a SpawnIndex " +
             index
@@ -216,5 +233,6 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
     {
         AssignedSpawnIndex.OnValueChanged -=
             OnSpawnIndexChanged;
+        base.OnNetworkDespawn();
     }
 }

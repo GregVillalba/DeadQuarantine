@@ -952,9 +952,6 @@ public class NPCShopUI : MonoBehaviour
 
         if (playerLook != null)
             playerLook.enabled = false;
-
-        if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null)
-            weaponSwitcher.CurrentWeapon.InputLocked = true;
     }
 
     private void RestaurarJugador()
@@ -1114,6 +1111,23 @@ public class NPCShopUI : MonoBehaviour
         RoundManager.Instance.MarcarListoFaseComprasServerRpc();
 
         ActualizarUIFaseCompras();
+    }
+
+    private void SetWeaponsInputLocked(bool locked)
+    {
+        Weapon[] weapons =
+            transform.root.GetComponentsInChildren<Weapon>(true);
+
+        foreach (Weapon weapon in weapons)
+        {
+            if (weapon == null)
+                continue;
+
+            weapon.InputLocked = locked;
+
+            if (locked)
+                weapon.ForceStopAiming();
+        }
     }
 
     private static string FormatearTiempo(int segundos)

@@ -178,52 +178,12 @@ public class MultiplayerPlayerSpawner : NetworkBehaviour
 
     public Transform GetSpawnPoint(int index)
     {
-        // En el cliente el escenario no se guarda al arrancar (solo en el servidor),
-        // asi que se pide al gestor de escenarios cuando hace falta.
-        if (escenarioActivo == null)
+        var gestor = FindAnyObjectByType<GestorEscenariosPartida>();
+        if (gestor != null)
         {
-            GestorEscenariosPartida gestor =
-                FindAnyObjectByType<GestorEscenariosPartida>();
-
-            if (gestor != null)
-                escenarioActivo = gestor.ObtenerEscenarioActivo();
+            escenarioActivo = gestor.ObtenerEscenarioActivo();
+            return escenarioActivo != null ? escenarioActivo.ObtenerSpawnJugador(index) : null;
         }
-
-        // =====================================================
-        // USAR LOS SPAWNS DEL ESCENARIO ACTIVO
-        // =====================================================
-
-     /*   if (escenarioActivo != null)
-        {
-            Transform spawnJugador =
-                escenarioActivo.SpawnJugador;
-
-            if (spawnJugador != null)
-            {
-                return spawnJugador;
-            }
-        }*/
-
-        if (escenarioActivo != null)
-        {
-            Transform spawnJugador =
-                escenarioActivo.ObtenerSpawnJugador(index);
-
-            if (spawnJugador != null)
-            {
-                return spawnJugador;
-            }
-        }
-
-        // =====================================================
-        // RESPALDO: SPAWNS MANUALES
-        // =====================================================
-
-        Debug.LogWarning(
-            "[Spawner] No se pudo obtener el SpawnJugador " +
-            "del escenario activo. Se utilizará el spawn manual."
-        );
-
         return GetBackupSpawn(index);
     }
 
