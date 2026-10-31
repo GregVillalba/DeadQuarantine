@@ -33,6 +33,12 @@ public class HUDController : MonoBehaviour
     [SerializeField] private Color colorIconoCaida = new Color(1f, 0.35f, 0.27f, 1f);
     [Tooltip("Segundos que se ve el icono de caída después de aterrizar.")]
     [SerializeField] private float duracionIconoCaida = 3f;
+    [Tooltip("Icono que aparece mientras el jugador está dentro de un alambre de púas (lo lastima).")]
+    [SerializeField] private Sprite iconoSangrado;
+    [SerializeField] private Color colorIconoSangrado = new Color(0.9f, 0.12f, 0.16f, 1f);
+    [Tooltip("Icono que aparece mientras el jugador pisa un charco de barro (lo ralentiza).")]
+    [SerializeField] private Sprite iconoLentitud;
+    [SerializeField] private Color colorIconoLentitud = new Color(0.85f, 0.65f, 0.35f, 1f);
     [Tooltip("Separación entre el final de la barra de vida y el primer icono, y entre iconos.")]
     [SerializeField] private float separacionIconoQuemadura = 8f;
     [Tooltip("Tamaño de los iconos respecto del alto de la barra de vida.")]
@@ -702,6 +708,8 @@ public class HUDController : MonoBehaviour
 
     private Image imagenQuemadura;
     private Image imagenCaida;
+    private Image imagenSangrado;
+    private Image imagenLentitud;
 
     // Titilan a la derecha de la barra de vida, uno al lado del otro (solo los que están visibles).
     private void UpdateIconosEstado()
@@ -709,10 +717,14 @@ public class HUDController : MonoBehaviour
         bool quemandose = playerHealth != null && playerHealth.Quemandose.Value;
         bool lastimadoPorCaida = playerHealth != null &&
             Time.time - playerHealth.UltimaCaidaConDano < duracionIconoCaida;
+        bool enAlambre = playerMovement != null && playerMovement.EnAlambre;
+        bool enBarro = playerMovement != null && playerMovement.EnBarro;
 
         float x = separacionIconoQuemadura;
         x = ActualizarIconoEstado(ref imagenQuemadura, iconoQuemadura, "IconoQuemadura", quemandose, colorIconoQuemadura, x);
-        ActualizarIconoEstado(ref imagenCaida, iconoCaida, "IconoCaida", lastimadoPorCaida, colorIconoCaida, x);
+        x = ActualizarIconoEstado(ref imagenCaida, iconoCaida, "IconoCaida", lastimadoPorCaida, colorIconoCaida, x);
+        x = ActualizarIconoEstado(ref imagenSangrado, iconoSangrado, "IconoSangrado", enAlambre, colorIconoSangrado, x);
+        ActualizarIconoEstado(ref imagenLentitud, iconoLentitud, "IconoLentitud", enBarro, colorIconoLentitud, x);
     }
 
     // Devuelve dónde va el próximo icono.
