@@ -11,7 +11,7 @@ public class MeleeAttack : MonoBehaviour
 
     [Header("Configuración")]
     [SerializeField] private float meleeRange = 2f;
-    [SerializeField] private int meleeDamage = 75;
+    [SerializeField] private int meleeDamage = 40;
     [SerializeField] private float attackCooldown = 0.6f; // un poco menos que la duración del clip
     [SerializeField] private LayerMask hittableMask = ~0;
 
