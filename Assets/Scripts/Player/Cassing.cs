@@ -38,8 +38,8 @@ public class Casing : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         audioSource = GetComponent<AudioSource>();
 
-        // Rotación inicial aleatoria.
-        transform.rotation = Random.rotation;
+        // Preserve the animated socket basis for the impulse; randomize only the shell's visual spin.
+        Quaternion socketRotation=transform.rotation;
 
         // Fuerza de expulsión.
         Vector3 ejectForce = new Vector3(
@@ -48,10 +48,8 @@ public class Casing : MonoBehaviour
             Random.Range(minimumZForce, maximumZForce)
         );
 
-        rb.AddRelativeForce(
-            ejectForce,
-            ForceMode.Impulse
-        );
+        rb.AddForce(socketRotation * ejectForce, ForceMode.Impulse);
+        transform.rotation=socketRotation*Random.rotation;
 
         // Rotación inicial.
         Vector3 randomTorque = new Vector3(

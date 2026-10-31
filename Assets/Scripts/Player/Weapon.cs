@@ -69,6 +69,10 @@ public class Weapon : MonoBehaviour
     [SerializeField] private float boltActionDelay = 0.12f;
 
     private bool boltActionActive = false;
+    private bool pendingReload;
+    private float lastShellInsert = float.NegativeInfinity;
+    private readonly System.Collections.Generic.List<Vector3> presentationTargets = new();
+    private NetworkWeaponPresentation presentation;
 
     [Header("Aim")]
     [SerializeField] private float aimFOV = 50f;
@@ -99,6 +103,30 @@ public class Weapon : MonoBehaviour
     [Header("Animación de recarga (tercera persona)")]
     [SerializeField] private bool usesMultiPartReload = false;
     public bool UsesMultiPartReload => usesMultiPartReload;
+    public AudioClip PresentationShotSound => shootSound;
+    public UnityEngine.Audio.AudioMixerGroup PresentationMixer => audioSource ? audioSource.outputAudioMixerGroup : null;
+    public GameObject PresentationTrail => bulletTrailPrefab;
+    public float PresentationRange => range;
+    public float PresentationFireInterval => fireRate;
+    public Vector3 AimOrigin => playerCamera ? playerCamera.transform.position : transform.position;
+    public AudioClip PresentationReloadSound(bool empty) => empty ? reloadEmptySound : reloadSound;
+    public AudioClip PresentationEventSound(NetworkWeaponPresentation.WeaponEvent kind) => kind switch {
+        NetworkWeaponPresentation.WeaponEvent.ReloadOpen=>reloadOpenSound,
+        NetworkWeaponPresentation.WeaponEvent.Insert=>reloadInsertSound,
+        NetworkWeaponPresentation.WeaponEvent.ReloadClose=>reloadCloseSound,
+        NetworkWeaponPresentation.WeaponEvent.BoltOpen=>reloadBoltOpenSound,
+        NetworkWeaponPresentation.WeaponEvent.BoltClose=>reloadBoltCloseSound,_=>null };
+    public void PresentationEvent(NetworkWeaponPresentation.WeaponEvent kind)
+    { if(!presentation)presentation=GetComponentInParent<NetworkWeaponPresentation>();presentation?.PublishEvent(this,kind); }
+    // Overlay-camera coordinates must be mapped to the world camera before spawning physics or trails.
+    public void PresentationPose(Transform socket,out Vector3 position,out Quaternion rotation)
+    {
+        position=socket.position;rotation=socket.rotation;
+        if(playerCamera && weaponCamera && playerCamera!=weaponCamera) {
+            position=playerCamera.ViewportToWorldPoint(weaponCamera.WorldToViewportPoint(socket.position));
+            rotation=playerCamera.transform.rotation*Quaternion.Inverse(weaponCamera.transform.rotation)*socket.rotation;
+        }
+    }
 
     [Header("Daño por distancia")]
     [SerializeField] private float damageFalloffStart = 8f;
@@ -324,6 +352,9 @@ public class Weapon : MonoBehaviour
         // el evento que bajaba 'isReloading' ya no va a llegar y el arma quedaría bloqueada.
         isReloading = false;
         shellLoading = false;
+        pendingReload = false;
+        isChambering = false;
+        boltActionActive = false;
         ResetReloadAnimationSpeed();
     }
 
@@ -337,6 +368,7 @@ public class Weapon : MonoBehaviour
     /// </summary>
     public void CancelReload()
     {
+        pendingReload=false;
         bool estabaRecargando = isReloading || shellLoading;
 
         isReloading = false;
@@ -510,7 +542,7 @@ public class Weapon : MonoBehaviour
 
     public void AnimationAmmunitionFill()
     {
-        if (!isReloading)
+        if (!isReloading || usesMultiPartReload)
             return;
 
         FillMagazine();
@@ -518,8 +550,11 @@ public class Weapon : MonoBehaviour
 
     public void AnimationInsertOneShell()
     {
-        if (!isReloading)
+        // Only an insert event may add a shotgun shell. Crossfades can emit duplicate events.
+        if (!isReloading || !usesMultiPartReload || !shellLoading || Time.time-lastShellInsert < .12f)
             return;
+        lastShellInsert=Time.time;
+        PresentationEvent(NetworkWeaponPresentation.WeaponEvent.Insert);
 
         if (currentAmmo < maxAmmo && TryConsumeReserve(1))
             currentAmmo++;
@@ -548,19 +583,7 @@ public class Weapon : MonoBehaviour
         {
             FillMagazine();
         }
-        else if (
-            currentAmmo != maxAmmo &&
-            (!UsesLimitedReserve || ReserveAmmo > 0)
-        )
-        {
-            Debug.LogWarning(
-                "[Weapon] AnimationReloadFinished: el loop bala por bala terminó con " +
-                currentAmmo + "/" + maxAmmo +
-                " — revisá las condiciones ShellLoading en Insert A/B."
-            );
 
-            FillMagazine();
-        }
 
         isReloading = false;
         shellLoading = false;
@@ -573,25 +596,28 @@ public class Weapon : MonoBehaviour
 
     public void AnimationReloadOpen()
     {
+        PresentationEvent(NetworkWeaponPresentation.WeaponEvent.ReloadOpen);
         PlaySound(reloadOpenSound);
     }
 
     public void AnimationReloadClose()
     {
+        PresentationEvent(NetworkWeaponPresentation.WeaponEvent.ReloadClose);
         PlaySound(reloadCloseSound);
     }
 
     public void AnimationBoltOpen()
     {
+        PresentationEvent(NetworkWeaponPresentation.WeaponEvent.BoltOpen);
         PlaySound(reloadBoltOpenSound);
     }
 
     public void AnimationBoltClose()
     {
+        PresentationEvent(NetworkWeaponPresentation.WeaponEvent.BoltClose);
         PlaySound(reloadBoltCloseSound);
 
-        if (isReloading)
-            AnimationReloadFinished();
+        // Completion is emitted at the end of the bolt clip, after it returns to firing pose.
     }
 
     public void ForceStopAiming()
@@ -613,6 +639,9 @@ public class Weapon : MonoBehaviour
                 weaponAnimator.SetBool("BoltAction", false);
         }
 
+        if(pendingReload && !isChambering && !isReloading && !InputLocked && !SwitchBlocked) {
+            pendingReload=false;OnReload(default);
+        }
         UpdateAimFOV();
         UpdateSpread();
         UpdateJumpSpread();
@@ -642,7 +671,7 @@ public class Weapon : MonoBehaviour
             (playerMovement != null && playerMovement.IsSprinting)
         );
 
-        if (PauseController.LocalPlayerPaused)
+        if (PlayerInputGate.ActionsBlocked)
             return;
 
         if (SwitchBlocked)
@@ -913,11 +942,19 @@ public class Weapon : MonoBehaviour
 
     private void TryFire()
     {
-        if (PauseController.LocalPlayerPaused)
+        if (PlayerInputGate.ActionsBlocked)
             return;
 
         if (SwitchBlocked)
+        {
+            Debug.LogWarning(
+                "[Weapon] FIRE BLOQUEADO POR SWITCH | " +
+                "Arma=" + gameObject.name +
+                " | IsSwitching=" + weaponSwitcher.IsSwitching
+            );
+
             return;
+        }
 
         if (InputLocked)
         {
@@ -1030,12 +1067,17 @@ public class Weapon : MonoBehaviour
 
         PlaySound(shootSound);
 
-        if (weaponAnimator != null)
+        if (weaponAnimator != null) {
             weaponAnimator.SetTrigger("Fire");
+            weaponAnimator.SetTrigger("WeaponPartsFire");
+        }
 
         muzzle?.PlayEffect();
 
+        presentationTargets.Clear();
         Shoot();
+        if(!presentation)presentation=GetComponentInParent<NetworkWeaponPresentation>();
+        presentation?.PublishShot(this,presentationTargets.ToArray());
 
         if (requiresBoltActionAfterFire)
         {
@@ -1069,7 +1111,7 @@ public class Weapon : MonoBehaviour
 
     private void OnReload(InputAction.CallbackContext context)
     {
-        if (PauseController.LocalPlayerPaused)
+        if (PlayerInputGate.ActionsBlocked)
             return;
 
         if (SwitchBlocked)
@@ -1077,6 +1119,7 @@ public class Weapon : MonoBehaviour
 
         if (InputLocked || isReloading)
             return;
+        if(isChambering) {pendingReload=true;return;}
 
         if (currentAmmo == maxAmmo)
             return;
@@ -1089,6 +1132,9 @@ public class Weapon : MonoBehaviour
 
         IsAiming = false;
         isReloading = true;
+        pendingReload=false;
+        lastShellInsert=float.NegativeInfinity;
+        if(weaponAnimator) {weaponAnimator.ResetTrigger("Fire");weaponAnimator.SetBool("BoltAction",false);}
 
         // La velocidad de recarga pertenece a la CLASE, no al arma.
         // Se aplica al Animator completo para que también aceleren/ralenticen
@@ -1111,6 +1157,7 @@ public class Weapon : MonoBehaviour
             weaponAnimator.SetBool("ShellLoading", shellLoading);
 
             weaponAnimator.SetTrigger("Reload");
+            weaponAnimator.SetTrigger("WeaponPartsReload");
         }
     }
 
@@ -1312,8 +1359,7 @@ if (zombieHealth != null)
         else
         {
             Vector3 missPoint =
-                (firePoint != null ? firePoint.position : ray.origin)
-                + spreadDirection * range;
+                ray.origin + spreadDirection * range;
 
             SpawnBulletTrail(missPoint);
 
@@ -1332,12 +1378,13 @@ if (zombieHealth != null)
 
     private void SpawnBulletTrail(Vector3 targetPoint)
     {
+        presentationTargets.Add(targetPoint);
         if (bulletTrailPrefab == null || firePoint == null)
             return;
-
+        PresentationPose(firePoint,out Vector3 worldPoint,out _);
         GameObject trailObject = Instantiate(
             bulletTrailPrefab,
-            firePoint.position,
+            worldPoint,
             Quaternion.identity
         );
 

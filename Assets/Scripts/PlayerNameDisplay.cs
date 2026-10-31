@@ -21,7 +21,14 @@ public class PlayerNameplate : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
+    [SerializeField] private Material overlayTemplate;
+    private Material overlayMaterial,originalMaterial;
     private Camera localCamera;
+    private float nextOcclusionCheck;
+    private float opacity=1;
+    public bool IsOccluded {get;private set;}
+    public bool NameVisible => nameplateContainer && nameplateContainer.activeInHierarchy;
+    public float NameOpacity => opacity;
 
     private void Awake()
     {
@@ -43,7 +50,14 @@ public class PlayerNameplate : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         if (nameplateContainer != null)
-            nameplateContainer.SetActive(true);
+            nameplateContainer.SetActive(!IsOwner);
+        if(txtPlayerName) {
+            originalMaterial=txtPlayerName.fontSharedMaterial;
+            overlayMaterial=new Material(originalMaterial){name="Player Name Overlay",renderQueue=4000};
+            if(overlayTemplate)overlayMaterial.shader=overlayTemplate.shader;
+            overlayMaterial.SetFloat(ShaderUtilities.ShaderTag_ZTestMode,(float)UnityEngine.Rendering.CompareFunction.Always);
+            txtPlayerName.fontSharedMaterial=overlayMaterial;txtPlayerName.isOverlay=true;txtPlayerName.raycastTarget=false;
+        }
 
         if (playerCharacter != null)
             playerCharacter.CharacterIndex.OnValueChanged += OnCharacterChanged;
@@ -69,6 +83,8 @@ public class PlayerNameplate : NetworkBehaviour
         if (playerCharacter != null)
             playerCharacter.CharacterIndex.OnValueChanged -= OnCharacterChanged;
 
+        if(txtPlayerName && originalMaterial)txtPlayerName.fontSharedMaterial=originalMaterial;
+        if(overlayMaterial)Destroy(overlayMaterial);
         base.OnNetworkDespawn();
     }
 
@@ -119,6 +135,20 @@ public class PlayerNameplate : NetworkBehaviour
             if (localCamera == null) return;
         }
 
+        if(IsOwner) {nameplateContainer.SetActive(false);return;}
+        nameplateContainer.transform.position=transform.position+offset;
+        if(Time.unscaledTime>=nextOcclusionCheck) {
+            nextOcclusionCheck=Time.unscaledTime+.12f;
+            Vector3 target=transform.position+Vector3.up*1.4f;
+            Vector3 ray=target-localCamera.transform.position;
+            IsOccluded=false;
+            foreach(var hit in Physics.RaycastAll(localCamera.transform.position,ray.normalized,ray.magnitude,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore)) {
+                if(hit.transform.root==transform.root || hit.transform.root==localCamera.transform.root)continue;
+                IsOccluded=true;break;
+            }
+        }
+        opacity=Mathf.MoveTowards(opacity,IsOccluded?.35f:1f,Time.unscaledDeltaTime*5);
+        if(txtPlayerName)txtPlayerName.alpha=opacity;
         // Efecto Billboard hacia la cámara activa
         Vector3 direccionACamara = nameplateContainer.transform.position - localCamera.transform.position;
         if (direccionACamara.sqrMagnitude > 0.001f)

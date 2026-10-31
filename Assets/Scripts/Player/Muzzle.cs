@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 
 public class Muzzle : MonoBehaviour
@@ -17,10 +17,16 @@ public class Muzzle : MonoBehaviour
 
     
 
+    public bool HasParticleEffect => particles != null;
     private ParticleSystem particles;
     private Light flashLight;
     private Coroutine lightCoroutine;
 
+    public void CopySettingsFrom(Muzzle source)
+    {
+        flashParticlesPrefab=source.flashParticlesPrefab;flashParticlesCount=source.flashParticlesCount;
+        flashLightPrefab=source.flashLightPrefab;flashLightDuration=source.flashLightDuration;flashLightOffset=source.flashLightOffset;
+    }
     private void Awake()
     {
         if (socket == null)
@@ -32,6 +38,9 @@ public class Muzzle : MonoBehaviour
             Instantiate(flashParticlesPrefab, socket);
 
         particlesObject.transform.localPosition = Vector3.zero;
+        // The effect asset is authored facing local -Y (approximately +90 degrees around X).
+        // Preserve that rotation on the original weapon socket; do not add another barrel LookRotation.
+        particlesObject.transform.localRotation = flashParticlesPrefab.transform.localRotation;
         particlesObject.layer = gameObject.layer;
 
         particles =
