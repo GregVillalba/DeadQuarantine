@@ -164,6 +164,7 @@ public class PlayerMovement : NetworkBehaviour
         moveSpeed = baseMoveSpeed * moveMultiplier;
         sprintSpeed = baseSprintSpeed * moveMultiplier;
         crouchSpeed = baseCrouchSpeed * moveMultiplier;
+        multiplicadorClase = moveMultiplier;
 
         maxStamina = baseMaxStamina * staminaMultiplier;
         CurrentStamina = maxStamina;
@@ -194,6 +195,17 @@ public class PlayerMovement : NetworkBehaviour
     private Coroutine cameraReturnCoroutine;
 
     private Vector3 originalCharacterModelLocalPosition;
+
+    // Velocidad de la clase elegida (0.7 Pesado, 1 Normal, 1.15 Ligero): los obstáculos frenan menos a los lentos.
+    private float multiplicadorClase = 1f;
+
+    /// <summary>Solo en el dueño: está pisando un charco de barro (el HUD muestra la tortuga).</summary>
+    public bool EnBarro { get; private set; }
+
+    /// <summary>Solo en el dueño: está dentro de un alambre de púas (el HUD muestra la sangre).</summary>
+    public bool EnAlambre { get; private set; }
+
+    private float ultimoDanoAlambre = float.NegativeInfinity;
 
     // Caída en curso (solo el dueño): altura más alta desde que dejó el piso.
     private bool enElAire;
@@ -421,6 +433,8 @@ public class PlayerMovement : NetworkBehaviour
             currentSpeed = crouchSpeed;
         else if (IsSprinting)
             currentSpeed = sprintSpeed;
+
+        currentSpeed *= ActualizarObstaculos();
 
         // Si está bloqueado (pausa), el input horizontal se anula,
         // pero la caída por gravedad sigue funcionando normalmente.
@@ -2049,6 +2063,39 @@ public class PlayerMovement : NetworkBehaviour
             velocityY =
                 Mathf.Max(velocityY, -maxFallSpeed);
         }
+    }
+
+    // =========================================================
+    // OBSTÁCULOS (charco de barro, alambre de púas)
+    // =========================================================
+
+    // Devuelve cuánto queda de la velocidad (1 = sin obstáculo) y, en el alambre, pide el daño al servidor.
+    private float ActualizarObstaculos()
+    {
+        float multiplicador = ObstaculoTerreno.MultiplicadorJugadorEn(
+            transform.position, multiplicadorClase, out bool enBarro, out ObstaculoTerreno alambre);
+
+        bool acabaDeEntrar = alambre != null && !EnAlambre;
+        EnBarro = enBarro;
+        EnAlambre = alambre != null;
+
+        if (alambre == null || alambre.Dano <= 0 || playerHealth == null || !playerHealth.IsAlive)
+            return multiplicador;
+
+        // Al tocarlo lastima enseguida (con un mínimo de medio segundo para no lastimar dos veces
+        // si el jugador queda justo en el borde); si se queda adentro, cada "Intervalo Daño".
+        float desdeUltimo = Time.time - ultimoDanoAlambre;
+        bool lastima = acabaDeEntrar
+            ? desdeUltimo >= 0.5f
+            : alambre.IntervaloDano > 0f && desdeUltimo >= alambre.IntervaloDano;
+
+        if (lastima)
+        {
+            ultimoDanoAlambre = Time.time;
+            playerHealth.ReportarDanoObstaculo(alambre.Dano, alambre.IgnoraEscudo);
+        }
+
+        return multiplicador;
     }
 
     // =========================================================

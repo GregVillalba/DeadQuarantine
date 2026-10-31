@@ -45,6 +45,10 @@ public class ZombieAI : NetworkBehaviour
     // Multiplicador de velocidad por ronda (modo Supervivencia). 1 = sin cambios.
     private float speedMultiplier = 1f;     //
 
+    // Ralentización por obstáculos (charco de barro). 1 = sin obstáculo. Se revisa cada tanto, no cada cuadro.
+    private float multiplicadorTerreno = 1f;
+    private float proximaRevisionTerreno;
+
     private NavMeshAgent agent;
     private Animator animator;
     private ZombieAnimationDriver animationDriver;
@@ -214,32 +218,41 @@ public class ZombieAI : NetworkBehaviour
     public void SetRunning(bool isRunning)
     {
         IsRunning = isRunning;
-
-        if (agent != null)
-        {
-            /*agent.speed =
-                isRunning
-                    ? runSpeed
-                    : walkSpeed;*/
-
-            agent.speed =
-                (isRunning
-                    ? runSpeed
-                    : walkSpeed) * speedMultiplier;
-        }
+        AplicarVelocidad();
     }
 
     public void SetSpeedMultiplier(float multiplier)            //
     {
         speedMultiplier = Mathf.Max(0.1f, multiplier);
+        AplicarVelocidad();
+    }
 
+    // Velocidad del agente: caminar/correr × ronda × obstáculo que esté pisando.
+    private void AplicarVelocidad()
+    {
         if (agent != null)
         {
             agent.speed =
                 (IsRunning
                     ? runSpeed
-                    : walkSpeed) * speedMultiplier;
+                    : walkSpeed) * speedMultiplier * multiplicadorTerreno;
         }
+    }
+
+    private void ActualizarTerreno()
+    {
+        if (Time.time < proximaRevisionTerreno)
+            return;
+
+        proximaRevisionTerreno = Time.time + 0.2f;
+
+        float multiplicador = ObstaculoTerreno.MultiplicadorZombieEn(transform.position, IsRunning);
+
+        if (Mathf.Approximately(multiplicador, multiplicadorTerreno))
+            return;
+
+        multiplicadorTerreno = multiplicador;
+        AplicarVelocidad();
     }
 
     public bool IsBehindTarget()
@@ -281,6 +294,7 @@ public class ZombieAI : NetworkBehaviour
             return;
         }
 
+        ActualizarTerreno();
         FindClosestPlayer();
 
         if (target == null)
