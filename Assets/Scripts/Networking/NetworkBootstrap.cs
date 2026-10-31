@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 using Unity.Netcode;
 
@@ -44,6 +45,8 @@ public class NetworkBootstrap : MonoBehaviour
     public ISession CurrentSession => currentSession;
 
     private bool isIntentionalLeave;
+
+    private readonly HashSet<ulong> clientesSincronizados = new HashSet<ulong>();
 
 
     // ============================================================
@@ -159,7 +162,10 @@ public class NetworkBootstrap : MonoBehaviour
             );
 
             if (NetworkManager.Singleton != null)
-                NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+               // NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+               NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
+               NetworkManager.Singleton.OnServerStopped -= OnServidorDetenido;
+NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
 
             return CurrentJoinCode;
         }
@@ -220,8 +226,10 @@ public class NetworkBootstrap : MonoBehaviour
                 CurrentJoinCode
             );
             if (NetworkManager.Singleton != null)
-                NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
-
+               // NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+               NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
+                NetworkManager.Singleton.OnServerStopped -= OnServidorDetenido;
+                NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
             return true;
         }
         catch (Exception e)
@@ -354,6 +362,9 @@ public class NetworkBootstrap : MonoBehaviour
                 "[Network] >>> INICIANDO RELAY <<<"
             );
 
+            clientesSincronizados.Clear();
+            NetworkManager.Singleton.OnServerStarted += RegistrarSincronizacion;
+
             Task relayTask =
                 currentSession
                     .AsHost()
@@ -441,7 +452,7 @@ public class NetworkBootstrap : MonoBehaviour
             // Si se carga la escena antes de que el invitado termine de
             // conectarse, la recibe dos veces ("Server Scene Handle already exist").
 
-            int jugadoresEsperados = currentSession.Players.Count;
+          /*  int jugadoresEsperados = currentSession.Players.Count;
             float esperaClientes = 0f;
 
             while (
@@ -474,7 +485,37 @@ public class NetworkBootstrap : MonoBehaviour
             }
 
             // Margen para que el invitado termine de sincronizar la escena actual.
-            await Task.Delay(1500);
+            await Task.Delay(1500); */
+
+            int invitadosEsperados = currentSession.Players.Count - 1;
+float espera = 0f;
+
+while (true)
+{
+    int listos = 0;
+    foreach (ulong id in NetworkManager.Singleton.ConnectedClientsIds)
+        if (id != NetworkManager.ServerClientId && clientesSincronizados.Contains(id))
+            listos++;
+
+    if (listos >= invitadosEsperados)
+        break;
+
+    if (espera >= 20f)
+    {
+        if (listos >= 1)
+        {
+            Debug.LogWarning("[Network] No todos los invitados sincronizaron: sigo con los que están.");
+            break;
+        }
+        Debug.LogError("[Network] Ningún invitado terminó de sincronizar.");
+        return;
+    }
+
+    await Task.Delay(100);
+    espera += 0.1f;
+}
+
+NetworkManager.Singleton.SceneManager.OnSynchronizeComplete -= OnClienteSincronizado;
 
 
             // ========================================================
@@ -523,6 +564,17 @@ public class NetworkBootstrap : MonoBehaviour
         );
     }
 
+    private void RegistrarSincronizacion()
+{
+    NetworkManager.Singleton.OnServerStarted -= RegistrarSincronizacion;
+    NetworkManager.Singleton.SceneManager.OnSynchronizeComplete += OnClienteSincronizado;
+}
+
+private void OnClienteSincronizado(ulong clientId)
+{
+    clientesSincronizados.Add(clientId);
+}
+
    /* private void OnClientDisconnected(ulong clientId)
     {
         if (NetworkManager.Singleton == null)
@@ -548,6 +600,8 @@ public class NetworkBootstrap : MonoBehaviour
 {
     if (NetworkManager.Singleton == null)
         return;
+
+    Debug.LogWarning($"[Network] Desconexión de clientId={clientId}. Motivo: '{NetworkManager.Singleton.DisconnectReason}'");
 
     // HOST: se fue otro jugador
     if (IsHost)
@@ -575,6 +629,18 @@ public class NetworkBootstrap : MonoBehaviour
         OnHostLeft.Invoke();
     else
         _ = GoToMenuDueToDisconnect();
+}
+
+private void OnServidorDetenido(bool eraHost)
+{
+    if (NetworkManager.Singleton != null)
+        NetworkManager.Singleton.OnServerStopped -= OnServidorDetenido;
+
+    if (isIntentionalLeave)
+        return;
+
+    Debug.LogError("[Network] El servidor se detuvo por una falla de transporte. Vuelvo al menú.");
+    _ = GoToMenuDueToDisconnect();
 }
 
     //private async Task GoToMenuDueToDisconnect()
@@ -723,6 +789,7 @@ public class NetworkBootstrap : MonoBehaviour
     {
         isIntentionalLeave = true;
     }
+    public bool IsLeavingIntentionally => isIntentionalLeave;
 
     // ============================================================
     // SALIR
