@@ -60333,6 +60333,8 @@ MonoBehaviour:
   capacidadSlot: 1
   incrementoPorEspacioExtra: 1
   maxEspaciosExtra: 2
+  efectoQuemadura: {fileID: 1853590768085000, guid: 1356dc656cdf1654faa01a76e60e6b45, type: 3}
+  alturaEfectoQuemadura: 1
   SlotsCuras:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
@@ -80179,6 +80181,8 @@ MonoBehaviour:
   healthColorLow: {r: 1, g: 0, b: 0, a: 1}
   vidas1: {fileID: 3531423080104319319}
   vidas0: {fileID: 7898995153178106618}
+  iconoQuemadura: {fileID: 21300000, guid: 2fe30c317e614e5683703ecfbc780ba2, type: 3}
+  iconoCaida: {fileID: 21300000, guid: 508edae86edc4307beaaa2d6f9fbef2d, type: 3}
   staminaFill: {fileID: 642673259120701135}
   staminaValueText: {fileID: 566400293597173723}
   armorFill: {fileID: 6300424272137519185}
@@ -108856,7 +108860,7 @@ MonoBehaviour:
   weaponSwitcher: {fileID: 967506594462204975}
   knifeObject: {fileID: 4928207162578613728}
   meleeRange: 2
-  meleeDamage: 75
+  meleeDamage: 40
   attackCooldown: 0.6
   hittableMask:
     serializedVersion: 2
@@ -108890,10 +108894,10 @@ MonoBehaviour:
   tipos:
   - id: Granadas
     prefab: {fileID: 0}
-  - id: Granada Cegadora
-    prefab: {fileID: 0}
-  - id: Granada de Humo
-    prefab: {fileID: 0}
+  - id: Granada Incendiaria
+    prefab: {fileID: 1948591290861370, guid: 3701ba7064d84a99b4f217bdb05a684f, type: 3}
+  - id: Granada Aturdidora
+    prefab: {fileID: 1948591290861370, guid: 075fc801978049d7bb279cec2de1d302, type: 3}
 --- !u!114 &2234281886041262522
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -12350,8 +12350,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Scripts::MultiplayerPlayerSpawner
   ShowTopMostFoldoutHeaderGroup: 1
+  maxPlayers: 4
   playerSpawn1: {fileID: 1245234162}
   playerSpawn2: {fileID: 0}
+  playerSpawn3: {fileID: 0}
+  playerSpawn4: {fileID: 0}
 --- !u!114 &1238336937
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21814,11 +21817,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
       propertyPath: offers.Array.data[4].disponible
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
       propertyPath: offers.Array.data[5].disponible
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
       propertyPath: offers.Array.data[11].weaponName
@@ -21835,6 +21838,10 @@ PrefabInstance:
     - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
       propertyPath: offers.Array.data[13].weaponName
       value: Slot extra de curacion
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[1].precioBidon
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
       propertyPath: offers.Array.data[2].precioBidon
@@ -21925,11 +21932,23 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[1].precioCantimplora
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[1].precioPilaDeLatas
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
       propertyPath: offers.Array.data[2].precioCantimplora
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
       propertyPath: offers.Array.data[2].precioPilaDeLatas
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}
+      propertyPath: offers.Array.data[3].precioCantimplora
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4531254107153173504, guid: 4ea563fc837063a4eb50f41d4d32f022, type: 3}

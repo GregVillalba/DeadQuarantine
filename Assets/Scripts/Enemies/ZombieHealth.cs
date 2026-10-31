@@ -28,6 +28,11 @@ public class ZombieHealth : NetworkBehaviour
     [SerializeField] private GameObject bloodImpactPrefab;
     [SerializeField] private float bloodDestroyDelay = 2f;
 
+    [Header("--- QUEMADURA (granada incendiaria) ---")]
+    [Tooltip("Fuego que se prende encima del zombie mientras se quema. Vacío = se quema sin efecto visual.")]
+    [SerializeField] private GameObject efectoQuemadura;
+    [SerializeField] private float alturaEfectoQuemadura = 1f;
+
     public bool IsDead { get; private set; }
     public bool EsBossHistoria { get; private set; }
 
@@ -53,6 +58,24 @@ public void MarcarComoBossHistoria()
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
     );
+
+    // true mientras se está quemando: los clientes prenden / apagan el fuego encima del zombie.
+    private NetworkVariable<bool> quemandoseNetwork =
+        new NetworkVariable<bool>(
+            false,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+
+    // Quemadura (solo servidor).
+    private float finQuemadura;
+    private int danoQuemadura;
+    private float intervaloQuemadura;
+    private ulong atacanteQuemadura;
+    private Coroutine rutinaQuemadura;
+
+    // Fuego instanciado en este cliente.
+    private GameObject fuegoActivo;
 
     private Animator animator;
     private ZombieAnimationDriver animationDriver;
@@ -237,6 +260,11 @@ public void MarcarComoBossHistoria()
         maxHealthNetwork.OnValueChanged +=
             OnMaxHealthChanged;
 
+        quemandoseNetwork.OnValueChanged +=
+            OnQuemandoseChanged;
+
+        ActualizarEfectoQuemadura(quemandoseNetwork.Value);
+
         if (IsServer)
         {
             maxHealthNetwork.Value =
@@ -260,6 +288,10 @@ public void MarcarComoBossHistoria()
             OnHealthChanged;
         maxHealthNetwork.OnValueChanged -=
         OnMaxHealthChanged;
+        quemandoseNetwork.OnValueChanged -=
+            OnQuemandoseChanged;
+
+        ActualizarEfectoQuemadura(false);
     }
 
     // =========================================================
@@ -296,11 +328,57 @@ private void TakeDamageServerRpc(
     ServerRpcParams rpcParams = default
 )
     {
+        AplicarDano(
+            amount,
+            hitPoint,
+            hitNormal,
+            esHeadshot,
+            registrarHeadshot,
+            rpcParams.Receive.SenderClientId,
+            true
+        );
+    }
+
+    /// <summary>
+    /// Solo servidor. Daño que no viene de un disparo del cliente (granadas, fuego):
+    /// el que tiró la granada se pasa a mano para que la kill y los puntos sean suyos y no del host.
+    /// efectosDeImpacto = false para el daño por tick (sin sangre ni animación de golpe en cada tick).
+    /// </summary>
+    public void RecibirDanoServidor(
+        int amount,
+        Vector3 hitPoint,
+        Vector3 hitNormal,
+        ulong atacanteClientId,
+        bool efectosDeImpacto = true
+    )
+    {
+        if (!IsServer)
+            return;
+
+        AplicarDano(
+            amount,
+            hitPoint,
+            hitNormal,
+            false,
+            false,
+            atacanteClientId,
+            efectosDeImpacto
+        );
+    }
+
+    private void AplicarDano(
+        int amount,
+        Vector3 hitPoint,
+        Vector3 hitNormal,
+        bool esHeadshot,
+        bool registrarHeadshot,
+        ulong shooterClientId,
+        bool efectosDeImpacto
+    )
+    {
         if (IsDead)
             return;
 
-        ulong shooterClientId =
-            rpcParams.Receive.SenderClientId;
 //======================= NUEVO =========================
         // Headshot: ZombieHeadshot decide cuánto daño hace.
     bool headshotAplicado = false;
@@ -338,7 +416,7 @@ private void TakeDamageServerRpc(
 
             Die(shooterClientId);
         }
-        else
+        else if (efectosDeImpacto)
         {
             PlayHitEffectsClientRpc();
 
@@ -355,10 +433,130 @@ private void TakeDamageServerRpc(
 if (headshotAplicado)
     zombieHeadshot.OtorgarPuntosExtra(shooterClientId);
 
-        PlayBloodEffectClientRpc(
-            hitPoint,
-            hitNormal
-        );
+        if (efectosDeImpacto)
+        {
+            PlayBloodEffectClientRpc(
+                hitPoint,
+                hitNormal
+            );
+        }
+    }
+
+    // =========================================================
+    // QUEMADURA (granada incendiaria)
+    // =========================================================
+
+    public bool EstaQuemandose => quemandoseNetwork.Value;
+
+    /// <summary>
+    /// Solo servidor. Prende fuego al zombie o, si ya se está quemando, le renueva la duración.
+    /// Hace danoPorTick cada intervalo hasta que pasa la duración sin que se vuelva a llamar.
+    /// </summary>
+    public void Quemar(
+        float duracion,
+        int danoPorTick,
+        float intervalo,
+        ulong atacanteClientId
+    )
+    {
+        if (!IsServer || IsDead)
+            return;
+
+        finQuemadura =
+            Mathf.Max(
+                finQuemadura,
+                Time.time + duracion
+            );
+
+        danoQuemadura = danoPorTick;
+        intervaloQuemadura = Mathf.Max(0.1f, intervalo);
+        atacanteQuemadura = atacanteClientId;
+
+        if (rutinaQuemadura == null)
+            rutinaQuemadura = StartCoroutine(RutinaQuemadura());
+    }
+
+    private System.Collections.IEnumerator RutinaQuemadura()
+    {
+        quemandoseNetwork.Value = true;
+
+        while (!IsDead && Time.time < finQuemadura)
+        {
+            yield return new WaitForSeconds(intervaloQuemadura);
+
+            if (IsDead)
+                break;
+
+            Vector3 punto =
+                transform.position +
+                Vector3.up * alturaEfectoQuemadura;
+
+            AplicarDano(
+                danoQuemadura,
+                punto,
+                Vector3.up,
+                false,
+                false,
+                atacanteQuemadura,
+                false
+            );
+        }
+
+        ApagarQuemadura();
+    }
+
+    private void ApagarQuemadura()
+    {
+        if (!IsServer)
+            return;
+
+        if (rutinaQuemadura != null)
+        {
+            StopCoroutine(rutinaQuemadura);
+            rutinaQuemadura = null;
+        }
+
+        finQuemadura = 0f;
+        quemandoseNetwork.Value = false;
+    }
+
+    private void OnQuemandoseChanged(
+        bool anterior,
+        bool actual
+    )
+    {
+        ActualizarEfectoQuemadura(actual);
+    }
+
+    private void ActualizarEfectoQuemadura(bool encendido)
+    {
+        if (encendido)
+        {
+            if (fuegoActivo != null || efectoQuemadura == null)
+                return;
+
+            fuegoActivo =
+                Instantiate(
+                    efectoQuemadura,
+                    transform.position + Vector3.up * alturaEfectoQuemadura,
+                    Quaternion.identity,
+                    transform
+                );
+
+            return;
+        }
+
+        if (fuegoActivo == null)
+            return;
+
+        // Se suelta del zombie y deja de emitir: las llamas que ya salieron se apagan solas.
+        fuegoActivo.transform.SetParent(null, true);
+
+        foreach (ParticleSystem particulas in fuegoActivo.GetComponentsInChildren<ParticleSystem>())
+            particulas.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+
+        Destroy(fuegoActivo, 2f);
+        fuegoActivo = null;
     }
 
     // =========================================================
@@ -539,6 +737,11 @@ private void Die(ulong shooterClientId)
 
     IsDead = true;
 
+    ApagarQuemadura();
+
+    if (zombieAI != null)
+        zombieAI.QuitarAturdimiento();
+
     Debug.Log(
         $"[ZombieHealth] Muere '{gameObject.name}'." +
         $" EsBossHistoria={EsBossHistoria}" +
@@ -579,8 +782,9 @@ private void Die(ulong shooterClientId)
             RoundManager.Instance.ZombieDied();
         }
     }
-    else
+    else if (GetComponent<TutorialZombieRespawn>() == null)
     {
+        // En el tutorial no hay RoundManager: sus zombies se reviven solos (TutorialZombieRespawn).
         Debug.LogError(
             "[ZombieHealth] No se encontró RoundManager al morir el zombie."
         );
@@ -599,6 +803,10 @@ private void Die(ulong shooterClientId)
         // También se marca en clientes para que ZombieAudio y otros componentes
         // locales sepan inmediatamente que el enemigo ya murió.
         IsDead = true;
+
+        // Si muere aturdido, el Animator tiene que volver a moverse para la animación de muerte.
+        if (zombieAI != null)
+            zombieAI.QuitarEfectoAturdimiento();
 
         if (useRagdollOnDeath)
         {
@@ -714,7 +922,13 @@ private void Die(ulong shooterClientId)
         IsDead = false;
 
         if (IsServer)
+        {
             currentHealthNetwork.Value = maxHealth;
+            ApagarQuemadura();
+
+            if (zombieAI != null)
+                zombieAI.QuitarAturdimiento();
+        }
 
         ConfigureRagdollInitialState();
 

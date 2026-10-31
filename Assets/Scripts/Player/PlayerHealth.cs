@@ -232,6 +232,7 @@ public partial class PlayerHealth : NetworkBehaviour
         HelmetShieldMax.OnValueChanged += BlindajeChanged;
 
         SuscribirInventario();
+        SuscribirQuemadura();
 
         OnHealthChanged?.Invoke(
             CurrentHealth.Value,
@@ -266,6 +267,7 @@ public partial class PlayerHealth : NetworkBehaviour
         HelmetShieldMax.OnValueChanged -= BlindajeChanged;
 
         DesuscribirInventario();
+        DesuscribirQuemadura();
     }
 
     // =========================================================
@@ -436,7 +438,8 @@ public partial class PlayerHealth : NetworkBehaviour
     // DAÑO
     // =========================================================
 
-    public void TakeDamage(int amount)
+    // ignorarEscudo: el daño va directo a la vida (caídas). El resto del daño lo absorbe primero el escudo.
+    public void TakeDamage(int amount, bool ignorarEscudo = false)
     {
         if (!IsServer)
             return;
@@ -452,7 +455,8 @@ public partial class PlayerHealth : NetworkBehaviour
         if (CurrentHealth.Value <= 0)
             return;
 
-        amount = AbsorberConEscudo(amount);
+        if (!ignorarEscudo)
+            amount = AbsorberConEscudo(amount);
 
         CurrentHealth.Value -=
             amount;
