@@ -43259,6 +43259,109 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &3957754645524584630
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4042690370859863240}
+  - component: {fileID: 8315210182114626024}
+  - component: {fileID: 4429905860880596035}
+  - component: {fileID: 3851465813503561871}
+  m_Layer: 3
+  m_Name: Achievement_Canvas
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &4042690370859863240
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3957754645524584630}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0, y: 0, z: 0}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 8900671092416978684}
+  m_Father: {fileID: 2883292750241744731}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0, y: 0}
+--- !u!223 &8315210182114626024
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3957754645524584630}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 0
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 0
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
+  m_AdditionalShaderChannelsFlag: 25
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 20
+  m_TargetDisplay: 0
+--- !u!114 &4429905860880596035
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3957754645524584630}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
+  m_UiScaleMode: 0
+  m_ReferencePixelsPerUnit: 100
+  m_ScaleFactor: 1
+  m_ReferenceResolution: {x: 800, y: 600}
+  m_ScreenMatchMode: 0
+  m_MatchWidthOrHeight: 0
+  m_PhysicalUnit: 3
+  m_FallbackScreenDPI: 96
+  m_DefaultSpriteDPI: 96
+  m_DynamicPixelsPerUnit: 1
+  m_PresetInfoIsWorld: 0
+--- !u!114 &3851465813503561871
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3957754645524584630}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
+  m_IgnoreReversedGraphics: 1
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &3963666520605162619
 GameObject:
   m_ObjectHideFlags: 0
@@ -46787,6 +46890,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6564946030770742002}
+  - {fileID: 4042690370859863240}
   - {fileID: 2887396819924741446}
   m_Father: {fileID: 4179107254545099709}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -58361,7 +58465,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 10
   m_TargetDisplay: 0
 --- !u!114 &7184017271964066114
 MonoBehaviour:
@@ -60169,7 +60273,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1614284941
+  GlobalObjectIdHash: 3516423437
   InScenePlacedSourceGlobalObjectIdHash: 477224611
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -60223,6 +60327,9 @@ MonoBehaviour:
   maxFallSpeed: 25
   groundedVelocity: -2
   weaponSwitcher: {fileID: 967506594462204975}
+  sacudidaCaidaMinima: 0.12
+  sacudidaCaidaMaxima: 0.45
+  distanciaTeletransporte: 5
   maxStamina: 9
   staminaDrainRate: 1.5
   staminaRegenRate: 1
@@ -60246,6 +60353,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 0
   zombiePushBuffer: 0.05
+  maxZombieDepenetrationPerFrame: 0.08
   windowTraversalDistance: 1.3
   windowHeightOffset: 0.55
   windowArcHeight: 0.08
@@ -60329,12 +60437,12 @@ MonoBehaviour:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
+  alturaMinimaCaida: 4
+  alturaLetalCaida: 12
   cantidadSlotsCuras: 1
   capacidadSlot: 1
   incrementoPorEspacioExtra: 1
   maxEspaciosExtra: 2
-  efectoQuemadura: {fileID: 1853590768085000, guid: 1356dc656cdf1654faa01a76e60e6b45, type: 3}
-  alturaEfectoQuemadura: 1
   SlotsCuras:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
@@ -60349,6 +60457,13 @@ MonoBehaviour:
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
   EspaciosExtraGranadas:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  efectoQuemadura: {fileID: 1853590768085000, guid: 1356dc656cdf1654faa01a76e60e6b45, type: 3}
+  alturaEfectoQuemadura: 1
+  Quemandose:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
@@ -60650,6 +60765,11 @@ MonoBehaviour:
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
   CaidasNetwork:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  HeadshotsRealizadosNetwork:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
@@ -75558,7 +75678,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7262791972878783545}
-  m_Father: {fileID: 2887396819924741446}
+  m_Father: {fileID: 4042690370859863240}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
@@ -80080,7 +80200,6 @@ RectTransform:
   - {fileID: 5581206196032456873}
   - {fileID: 5684472630340777191}
   - {fileID: 6001234567890200202}
-  - {fileID: 8900671092416978684}
   - {fileID: 5818571935544604676}
   - {fileID: 6282668967148258081}
   - {fileID: 3002388505172160099}
@@ -80182,7 +80301,13 @@ MonoBehaviour:
   vidas1: {fileID: 3531423080104319319}
   vidas0: {fileID: 7898995153178106618}
   iconoQuemadura: {fileID: 21300000, guid: 2fe30c317e614e5683703ecfbc780ba2, type: 3}
+  colorIconoQuemadura: {r: 1, g: 0.55, b: 0.1, a: 1}
   iconoCaida: {fileID: 21300000, guid: 508edae86edc4307beaaa2d6f9fbef2d, type: 3}
+  colorIconoCaida: {r: 1, g: 0.35, b: 0.27, a: 1}
+  duracionIconoCaida: 3
+  separacionIconoQuemadura: 8
+  escalaIconoQuemadura: 1.1
+  velocidadTitiladoQuemadura: 6
   staminaFill: {fileID: 642673259120701135}
   staminaValueText: {fileID: 566400293597173723}
   armorFill: {fileID: 6300424272137519185}

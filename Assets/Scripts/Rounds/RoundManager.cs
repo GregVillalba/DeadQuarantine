@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem;
 
 public class RoundManager : NetworkBehaviour
 {
@@ -205,6 +206,7 @@ private Coroutine misionMansionRoutine;
     private GameModeConfig activeMode;
     private bool infiniteMode;
     private DifficultyLevel activeDifficulty = DifficultyLevel.Normal;
+    private bool logroSupervivenciaDesbloqueado;
 
     private int zombiesSpawnedThisRound;
     private int zombiesKilledThisRound;
@@ -243,6 +245,30 @@ private Coroutine misionMansionRoutine;
 
         Instance = this;
     }
+
+
+private void Update()
+{
+    if (!IsServer || Keyboard.current == null)
+        return;
+
+    // Prueba de victoria del modo Rondas.
+    if (Keyboard.current.kKey.wasPressedThisFrame &&
+        !EsModoHistoria &&
+        !infiniteMode)
+    {
+        CurrentRoundNetwork.Value = maxRounds;
+        EndRound();
+    }
+
+    // Prueba de llegada a la ronda 20 en Supervivencia.
+    if (Keyboard.current[Key.Semicolon].wasPressedThisFrame &&
+        !EsModoHistoria &&
+        infiniteMode)
+    {
+        StartRound(20);
+    }
+}
 
     // =========================================================
     // NETWORK SPAWN
@@ -474,6 +500,24 @@ private IEnumerator StartSingleplayerRound(int round)
             round = debugStartRound;
 
         CurrentRoundNetwork.Value = round;
+
+        // Logro de Supervivencia: alcanzar la ronda 20.
+if (infiniteMode &&
+    round >= 20 &&
+    !logroSupervivenciaDesbloqueado)
+{
+    logroSupervivenciaDesbloqueado = true;
+
+    DesbloquearLogroModoClientRpc(
+        true,
+        DifficultyNetwork.Value
+    );
+
+    Debug.Log(
+        "[RoundManager] Logro de Supervivencia desbloqueado. Ronda: " +
+        round
+    );
+}
 
         RespawnSpectatingPlayers();
 
@@ -1451,6 +1495,61 @@ public void EliminarZombiesHistoria()
             pause.MostrarVictoria();
         }
     }
+    [ClientRpc]
+private void DesbloquearLogroModoClientRpc(
+    bool esSupervivencia,
+    int dificultad
+)
+{
+    if (AchievementsManager.Instance == null)
+    {
+        Debug.LogWarning(
+            "[RoundManager] No se encontró AchievementsManager en este cliente."
+        );
+
+        return;
+    }
+
+    AchievementRank rango;
+
+    switch ((DifficultyLevel)dificultad)
+    {
+        case DifficultyLevel.Normal:
+            rango = AchievementRank.Bronce;
+            break;
+
+        case DifficultyLevel.Dificil:
+            rango = AchievementRank.Plata;
+            break;
+
+        case DifficultyLevel.Pesadilla:
+            rango = AchievementRank.Oro;
+            break;
+
+        default:
+            Debug.LogWarning(
+                "[RoundManager] Dificultad desconocida: " + dificultad
+            );
+
+            return;
+    }
+
+    AchievementId logro = esSupervivencia
+        ? AchievementId.SupervivienteDelInfierno
+        : AchievementId.CompletadorDeRondas;
+
+    AchievementsManager.Instance.DesbloquearRango(
+        logro,
+        rango
+    );
+
+    Debug.Log(
+        "[RoundManager] Logro registrado: " +
+        logro +
+        " | Rango: " +
+        rango
+    );
+}
 
     [ClientRpc]
     private void MostrarDerrotaClientRpc()
@@ -1471,58 +1570,60 @@ public void EliminarZombiesHistoria()
     // =========================================================
     // FIN DE RONDA
     // =========================================================
+private void EndRound()
+{
+    if (!IsServer)
+        return;
 
-    private void EndRound()
+    roundInProgress = false;
+
+    StartCoroutine(
+        EndRoundDelay()
+    );
+}
+private IEnumerator EndRoundDelay()
+{
+    yield return new WaitForSeconds(delayAntesDePanel);
+
+    bool esRondaFinal =
+        !infiniteMode &&
+        CurrentRoundNetwork.Value >= maxRounds;
+
+    if (esRondaFinal)
     {
-        if (!IsServer)
-            return;
-
-        roundInProgress = false;
-
-        StartCoroutine(
-            EndRoundDelay()
-        );
-    }
-
-    private IEnumerator EndRoundDelay()
-    {
-        yield return new WaitForSeconds(
-            delayAntesDePanel
+        // Logro de Rondas: completar todas las rondas y derrotar al boss.
+        DesbloquearLogroModoClientRpc(
+            false,
+            DifficultyNetwork.Value
         );
 
-        bool esRondaFinal =
-            !infiniteMode &&
-            CurrentRoundNetwork.Value >= maxRounds;
+        MostrarVictoriaClientRpc();
 
-        if (esRondaFinal)
-        {
-            MostrarVictoriaClientRpc();
-            Debug.Log(
-                "Ronda " +
-                CurrentRoundNetwork.Value +
-                " completada."
-            );
-
-            if (roundStartHUD != null)
-            {
-                roundStartHUD.Hide();
-            }
-
-            yield break;
-        }
-
-        pendingNextRound =
+        Debug.Log(
+            "Ronda " +
             CurrentRoundNetwork.Value +
-            1;
+            " completada."
+        );
 
-        if (HasShopPhaseAfterRound(CurrentRoundNetwork.Value))
+        if (roundStartHUD != null)
         {
-            StartCoroutine(ShopPhaseRoutine());
-            yield break;
+            roundStartHUD.Hide();
         }
 
-        ConfirmarSiguienteRonda();
+        yield break;
     }
+
+    pendingNextRound =
+        CurrentRoundNetwork.Value + 1;
+
+    if (HasShopPhaseAfterRound(CurrentRoundNetwork.Value))
+    {
+        StartCoroutine(ShopPhaseRoutine());
+        yield break;
+    }
+
+    ConfirmarSiguienteRonda();
+}
 
     // =========================================================
     // FASE DE COMPRAS
