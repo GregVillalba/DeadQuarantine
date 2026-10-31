@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem;
 
 public class RoundManager : NetworkBehaviour
 {
@@ -244,6 +245,30 @@ private Coroutine misionMansionRoutine;
 
         Instance = this;
     }
+
+
+private void Update()
+{
+    if (!IsServer || Keyboard.current == null)
+        return;
+
+    // Prueba de victoria del modo Rondas.
+    if (Keyboard.current.kKey.wasPressedThisFrame &&
+        !EsModoHistoria &&
+        !infiniteMode)
+    {
+        CurrentRoundNetwork.Value = maxRounds;
+        EndRound();
+    }
+
+    // Prueba de llegada a la ronda 20 en Supervivencia.
+    if (Keyboard.current[Key.Semicolon].wasPressedThisFrame &&
+        !EsModoHistoria &&
+        infiniteMode)
+    {
+        StartRound(20);
+    }
+}
 
     // =========================================================
     // NETWORK SPAWN
