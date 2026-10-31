@@ -1,103 +1,52 @@
 using System;
+using System.Collections;
+using System.Text.RegularExpressions;
 using UnityEngine;
+using TMPro;
 
 public static class PlayerIdentity
 {
-    private const string PREF_KEY_USER_ID = "DEVICE_LOCAL_USER_ID";
-    private const string PREF_KEY_USERNAME = "PlayerUsername";
+    private const string PrefKeyUserId = "DQ_USER_ID";
+    private const string PrefKeyUsername = "DQ_USERNAME";
 
     public const int MaxUsernameLength = 10;
+    private static readonly Regex patronAlfanumerico = new Regex("^[a-zA-Z0-9]{1,10}$");
 
+    /// <summary>
+    /// Retorna el User ID actual guardado o genera un UUID nuevo si es la primera vez.
+    /// </summary>
     public static string GetUserId()
     {
-        string currentId = PlayerPrefs.GetString(PREF_KEY_USER_ID, string.Empty);
-
-        if (string.IsNullOrEmpty(currentId))
+        if (!PlayerPrefs.HasKey(PrefKeyUserId))
         {
-            currentId = Guid.NewGuid().ToString();
-            PlayerPrefs.SetString(PREF_KEY_USER_ID, currentId);
+            string nuevoId = Guid.NewGuid().ToString("N");
+            PlayerPrefs.SetString(PrefKeyUserId, nuevoId);
             PlayerPrefs.Save();
-
-            Debug.Log($"[IDENTITY] Nuevo ID único generado: {currentId}");
+            return nuevoId;
         }
 
-        return currentId;
+        return PlayerPrefs.GetString(PrefKeyUserId);
     }
 
     /// <summary>
-    /// Devuelve true únicamente si existe un username real guardado.
-    /// Ya no se inventa un nombre por defecto.
-    /// </summary>
-    public static bool HasUsername()
-    {
-        if (!PlayerPrefs.HasKey(PREF_KEY_USERNAME))
-            return false;
-
-        return IsValidUsername(PlayerPrefs.GetString(PREF_KEY_USERNAME, string.Empty));
-    }
-
-    /// <summary>
-    /// Username permanente del jugador.
-    /// Devuelve string.Empty si todavía no fue elegido.
+    /// Retorna el nombre de usuario actual o string vacío si no tiene.
     /// </summary>
     public static string GetUsername()
     {
-        if (!HasUsername())
-            return string.Empty;
-
-        return PlayerPrefs.GetString(PREF_KEY_USERNAME, string.Empty).Trim();
+        return PlayerPrefs.GetString(PrefKeyUsername, string.Empty);
     }
 
     /// <summary>
-    /// Se mantiene el nombre del método por compatibilidad.
-    /// Por ahora el username es de creación única: si ya existe, NO se modifica.
-    /// Cuando se implemente la US de cambio de username conviene agregar un método separado.
+    /// Indica si el jugador ya configuró un nombre válido previamente.
     /// </summary>
-    public static void SetUsername(string newUsername)
+    public static bool HasUsername()
     {
-        if (HasUsername())
-        {
-            Debug.LogWarning(
-                "[IDENTITY] Ya existe un nombre de usuario. " +
-                "El cambio de username está bloqueado hasta implementar esa funcionalidad."
-            );
-            return;
-        }
-
-        if (!TryCreateUsername(newUsername, out string error))
-            Debug.LogWarning("[IDENTITY] No se pudo guardar el username: " + error);
+        return !string.IsNullOrWhiteSpace(GetUsername());
     }
 
-    public static bool TryCreateUsername(string newUsername, out string error)
-    {
-        error = string.Empty;
-
-        if (HasUsername())
-        {
-            error = "Ya existe un nombre de usuario guardado.";
-            return false;
-        }
-
-        if (!IsValidUsername(newUsername, out error))
-            return false;
-
-        string cleanUsername = newUsername.Trim();
-
-        PlayerPrefs.SetString(PREF_KEY_USERNAME, cleanUsername);
-        PlayerPrefs.Save();
-
-        // Garantiza que el usuario también tenga su ID persistente desde este momento.
-        GetUserId();
-
-        Debug.Log($"[IDENTITY] Nombre de usuario creado: {cleanUsername}");
-        return true;
-    }
-
-    public static bool IsValidUsername(string username)
-    {
-        return IsValidUsername(username, out _);
-    }
-
+    /// <summary>
+    /// Valida si un nombre de usuario cumple con los requisitos de formato y longitud.
+    /// </summary>
     public static bool IsValidUsername(string username, out string error)
     {
         error = string.Empty;
@@ -108,25 +57,93 @@ public static class PlayerIdentity
             return false;
         }
 
-        username = username.Trim();
+        string nombreLimpio = username.Trim();
 
-        if (username.Length > MaxUsernameLength)
+        if (nombreLimpio.Length > MaxUsernameLength)
         {
             error = $"Máximo {MaxUsernameLength} caracteres.";
             return false;
         }
 
-        for (int i = 0; i < username.Length; i++)
+        if (!patronAlfanumerico.IsMatch(nombreLimpio))
         {
-            char c = username[i];
-
-            if (!char.IsLetterOrDigit(c))
-            {
-                error = "Usá solamente letras y números, sin espacios.";
-                return false;
-            }
+            error = "Solo letras y números (sin espacios).";
+            return false;
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Crea el nombre de usuario por primera vez tras validarlo.
+    /// </summary>
+    public static bool TryCreateUsername(string nuevoNombre, out string error)
+    {
+        if (!IsValidUsername(nuevoNombre, out error))
+        {
+            return false;
+        }
+
+        PlayerPrefs.SetString(PrefKeyUsername, nuevoNombre.Trim());
+        PlayerPrefs.Save();
+        return true;
+    }
+
+    /// <summary>
+    /// Actualiza el nombre de usuario localmente si pasa la validación.
+    /// </summary>
+    public static bool TryUpdateUsername(string nuevoNombre, out string error)
+    {
+        if (!IsValidUsername(nuevoNombre, out error))
+        {
+            return false;
+        }
+
+        PlayerPrefs.SetString(PrefKeyUsername, nuevoNombre.Trim());
+        PlayerPrefs.Save();
+        return true;
+    }
+
+    /// <summary>
+    /// Pisa el ID local con el ID de una cuenta importada/transferida.
+    /// </summary>
+    public static bool TryImportarUserId(string idImportado, out string error)
+    {
+        error = string.Empty;
+        if (string.IsNullOrWhiteSpace(idImportado) || idImportado.Trim().Length < 8)
+        {
+            error = "El ID es demasiado corto o inválido.";
+            return false;
+        }
+
+        string idLimpio = idImportado.Trim();
+        PlayerPrefs.SetString(PrefKeyUserId, idLimpio);
+        PlayerPrefs.Save();
+        return true;
+    }
+
+    /// <summary>
+    /// Copia el User ID completo al portapapeles y activa un mensaje temporal en UI.
+    /// </summary>
+    public static void CopiarIdConFeedback(MonoBehaviour runner, TMP_Text txtFeedback, float duracionSegundos = 2.0f)
+    {
+        string id = GetUserId();
+        GUIUtility.systemCopyBuffer = id;
+        Debug.Log($"<color=cyan>[ID COPIADO]</color> {id}");
+
+        if (runner != null && txtFeedback != null)
+        {
+            runner.StartCoroutine(RutinaFeedback(txtFeedback, "¡ID copiado exitosamente!", duracionSegundos));
+        }
+    }
+
+    private static IEnumerator RutinaFeedback(TMP_Text label, string mensaje, float duracion)
+    {
+        label.text = mensaje;
+        label.gameObject.SetActive(true);
+
+        yield return new WaitForSeconds(duracion);
+
+        label.text = string.Empty;
     }
 }

@@ -1,5 +1,8 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using TMPro;
 
 public class MenuPrincipalAcciones : MonoBehaviour
 {
@@ -19,6 +22,46 @@ public class MenuPrincipalAcciones : MonoBehaviour
     // Nombre exacto de tu escena de un jugador
     private const string EscenaSinglePlayer = "mainSceneSinglePlayer";
     private const string EscenaTutorial = "TutorialScene";
+
+    [Header("Transferir Datos (Copiar ID)")]
+    [SerializeField] private TMP_Text txtFeedbackTransferir;
+    private Coroutine corrutinaFeedbackTransferir;
+
+    // ==========================================
+    // COPIAR ID / TRANSFERENCIA DE DATOS
+    // ==========================================
+
+    public void TransferirDatosCopiarID()
+    {
+        // 1. Obtiene el ID completo registrado en PlayerIdentity
+        string idJugador = PlayerIdentity.GetUserId();
+
+        // 2. Copia el texto al portapapeles del sistema
+        GUIUtility.systemCopyBuffer = idJugador;
+        Debug.Log($"<color=cyan>[TRANSFERIR DATOS]</color> ID copiado: {idJugador}");
+
+        // 3. Muestra el feedback visual durante 2 segundos
+        if (txtFeedbackTransferir != null)
+        {
+            if (corrutinaFeedbackTransferir != null)
+                StopCoroutine(corrutinaFeedbackTransferir);
+
+            corrutinaFeedbackTransferir = StartCoroutine(RutinaFeedbackTransferir("¡Copiado exitosamente!"));
+        }
+    }
+
+    private IEnumerator RutinaFeedbackTransferir(string mensaje)
+    {
+        txtFeedbackTransferir.text = mensaje;
+        txtFeedbackTransferir.gameObject.SetActive(true);
+
+        yield return new WaitForSeconds(2.0f);
+
+        txtFeedbackTransferir.text = string.Empty;
+        corrutinaFeedbackTransferir = null;
+    }
+
+
 
     // ==========================================
     // CARGA DE ESCENAS
@@ -141,4 +184,8 @@ public class MenuPrincipalAcciones : MonoBehaviour
         if (sonidoPanel != null) sonidoPanel.SetActive(false);
         if (sensibilidadMousePanel != null) sensibilidadMousePanel.SetActive(false);
     }
+
+    
+
+
 }
