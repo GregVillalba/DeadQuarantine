@@ -214,6 +214,7 @@ public class WeaponSwitcherTests
     public void NotifyUnholsterFinished_BajaElFlagIsSwitching()
     {
         SetPrivateField(switcher, "isSwitching", true);
+        SetPrivateField(switcher, "unholsterPhase", true);
 
         switcher.NotifyUnholsterFinished();
 
@@ -223,35 +224,45 @@ public class WeaponSwitcherTests
 
 
     [Test]
-    public void GetNextUnlockedIndex_SaltaLosSlotsBloqueados()
+    public void CycleWeapon_SaltaLasArmasFueraDelInventario()
     {
-        SetPrivateField(switcher, "unlocked", new[] { true, false, true });
+        switcher.UnlockWeapon("shotgun", equipAfterUnlock: false);
         SetPrivateField(switcher, "currentIndex", 0);
 
-        int next = (int)InvokePrivateMethod(switcher, "GetNextUnlockedIndex");
+        InvokePrivateMethod(switcher, "CycleWeapon", 1);
+        int next = switcher.CurrentWeaponIndex;
 
         Assert.AreEqual(2, next);
     }
 
     [Test]
-    public void GetNextUnlockedIndex_SiNoHayOtraArmaDesbloqueada_DevuelveLaActual()
+    public void CycleWeapon_UnaSolaArma_ConservaActual()
     {
-        SetPrivateField(switcher, "unlocked", new[] { true, false, false });
         SetPrivateField(switcher, "currentIndex", 0);
 
-        int next = (int)InvokePrivateMethod(switcher, "GetNextUnlockedIndex");
+        InvokePrivateMethod(switcher, "CycleWeapon", 1);
+        int next = switcher.CurrentWeaponIndex;
 
         Assert.AreEqual(0, next);
     }
 
     [Test]
-    public void GetNextUnlockedIndex_DaLaVueltaAlPrincipioDeLaLista()
+    public void CycleWeapon_DaLaVueltaEnDosCasilleros()
     {
-        SetPrivateField(switcher, "unlocked", new[] { true, true, false });
+        switcher.UnlockWeapon("rifle", equipAfterUnlock: false);
         SetPrivateField(switcher, "currentIndex", 1);
 
-        int next = (int)InvokePrivateMethod(switcher, "GetNextUnlockedIndex");
+        InvokePrivateMethod(switcher, "CycleWeapon", 1);
+        int next = switcher.CurrentWeaponIndex;
 
         Assert.AreEqual(0, next);
+    }
+    [Test]
+    public void NotifyUnholsterFinished_NoDesbloqueaDuranteHolster()
+    {
+        SetPrivateField(switcher,"isSwitching",true);
+        SetPrivateField(switcher,"unholsterPhase",false);
+        switcher.NotifyUnholsterFinished();
+        Assert.IsTrue(GetPrivateField<bool>(switcher,"isSwitching"));
     }
 }

@@ -81,6 +81,8 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
         if (networkObject != null && !networkObject.IsOwner)
             return;
 
+        thirdPersonAnimator.SetBool("TP_Holstering", weaponSwitcher && weaponSwitcher.IsHolstering);
+        thirdPersonAnimator.SetBool("TP_Unholstering", weaponSwitcher && weaponSwitcher.IsUnholstering);
         UpdateMovementParams();
         UpdateStateParams();
         UpdateWeaponParams();   // calcula aimW, así que va antes de los pesos de layer
@@ -117,7 +119,7 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
         a.SetBool("TP_IsGrounded", groundedTimer < groundedGrace);
 
         if (wasGrounded && !rawGrounded && v.y > 0.5f)
-            a.SetTrigger("TP_Jump");
+            TriggerAction("TP_Jump");
 
         wasGrounded = rawGrounded;
 
@@ -181,6 +183,7 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
         a.SetFloat("TP_AimWeight", aimW);
         a.SetBool("TP_IsAiming", aiming);
         a.SetBool("TP_IsReloading", reloading);
+        a.SetFloat("TP_ReloadSpeed",reloading?playerCharacterSpeed():1f);
         // NUEVO: gatilla la rama de recarga por partes (Shotgun_01, Sniper_01).
         a.SetBool("TP_MultiPartReload", weapon != null && weapon.UsesMultiPartReload);
 
@@ -213,9 +216,21 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
         a.SetBool("TP_ShellLoading", weapon.ShellLoading);
         a.SetBool("TP_IsChambering", weapon.IsChambering);
 
-        DetectFire(weapon);
+        // Fire is driven by the actual accepted local shot, not an ammo delta.
+        lastWeapon=weapon;lastAmmo=weapon.CurrentAmmo;hasAmmoBaseline=true;
     }
 
+    public void NotifyFire(Weapon weapon)
+    {
+        if(weapon==null || !thirdPersonAnimator)return;
+        TriggerAction("TP_Fire");
+        lastWeapon=weapon;lastAmmo=weapon.CurrentAmmo;hasAmmoBaseline=true;
+    }
+    private void TriggerAction(string name)
+    {
+        var sync=thirdPersonAnimator.GetComponent<OwnerNetworkAnimator>();
+        if(sync && sync.IsSpawned)sync.SetTrigger(name);else thirdPersonAnimator.SetTrigger(name);
+    }
     private void DetectFire(Weapon weapon)
     {
         // Al cambiar de arma se reinicia la referencia, para que la munición
@@ -237,6 +252,8 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
     // =========================================================
     // PESOS DE LAYERS
     // =========================================================
+
+    private float playerCharacterSpeed() {var character=GetComponentInParent<PlayerCharacter>();return character?character.ReloadSpeedMultiplier:1f;}
 
     private void UpdateLayerWeights()
     {

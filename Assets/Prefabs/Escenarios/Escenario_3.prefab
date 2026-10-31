@@ -9332,7 +9332,6 @@ GameObject:
   m_Component:
   - component: {fileID: 7985264551568078767}
   - component: {fileID: 5873646310735495179}
-  - component: {fileID: 8919237228989249880}
   m_Layer: 0
   m_Name: SpawnPlayer
   m_TagString: Untagged
@@ -9384,24 +9383,6 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!114 &8919237228989249880
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4360756126303605201}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ae7be0fc775365948a1e7921d587e303, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Scripts::MultiplayerPlayerSpawner
-  ShowTopMostFoldoutHeaderGroup: 1
-  maxPlayers: 4
-  playerSpawn1: {fileID: 1918946777242718424}
-  playerSpawn2: {fileID: 0}
-  playerSpawn3: {fileID: 0}
-  playerSpawn4: {fileID: 0}
 --- !u!1 &4368205712149178008
 GameObject:
   m_ObjectHideFlags: 0
@@ -23276,9 +23257,12 @@ MonoBehaviour:
   openAngle: 90
   openSpeed: 2
   invertOpenDirection: 0
+  crearRigidbodyAutomaticamente: 1
+  configurarRigidbodyAutomaticamente: 1
   audioSource: {fileID: 5753398414444889099}
   doorOpenSound: {fileID: 8300000, guid: 03dc2da98a55fa543b3f74ac216d270b, type: 3}
   doorCloseSound: {fileID: 8300000, guid: 29095896813de8448b824222be416347, type: 3}
+  detenerAnteJugadores: 1
 --- !u!114 &2330741604110315862
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -65719,9 +65703,12 @@ MonoBehaviour:
   openAngle: 90
   openSpeed: 2
   invertOpenDirection: 0
+  crearRigidbodyAutomaticamente: 1
+  configurarRigidbodyAutomaticamente: 1
   audioSource: {fileID: 6927846714695399130}
   doorOpenSound: {fileID: 8300000, guid: 03dc2da98a55fa543b3f74ac216d270b, type: 3}
   doorCloseSound: {fileID: 8300000, guid: 29095896813de8448b824222be416347, type: 3}
+  detenerAnteJugadores: 1
 --- !u!114 &7944047714563703712
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -108514,9 +108501,12 @@ MonoBehaviour:
   openAngle: 90
   openSpeed: 2
   invertOpenDirection: 0
+  crearRigidbodyAutomaticamente: 1
+  configurarRigidbodyAutomaticamente: 1
   audioSource: {fileID: 8125072048475594831}
   doorOpenSound: {fileID: 8300000, guid: 03dc2da98a55fa543b3f74ac216d270b, type: 3}
   doorCloseSound: {fileID: 8300000, guid: 29095896813de8448b824222be416347, type: 3}
+  detenerAnteJugadores: 1
 --- !u!114 &8908324188466267836
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -142304,9 +142294,12 @@ MonoBehaviour:
   openAngle: 90
   openSpeed: 2
   invertOpenDirection: 0
+  crearRigidbodyAutomaticamente: 1
+  configurarRigidbodyAutomaticamente: 1
   audioSource: {fileID: 6274034390219915488}
   doorOpenSound: {fileID: 8300000, guid: 03dc2da98a55fa543b3f74ac216d270b, type: 3}
   doorCloseSound: {fileID: 8300000, guid: 29095896813de8448b824222be416347, type: 3}
+  detenerAnteJugadores: 1
 --- !u!208 &7733509953962981064
 NavMeshObstacle:
   m_ObjectHideFlags: 0
@@ -167837,9 +167830,12 @@ MonoBehaviour:
   openAngle: 90
   openSpeed: 2
   invertOpenDirection: 0
+  crearRigidbodyAutomaticamente: 1
+  configurarRigidbodyAutomaticamente: 1
   audioSource: {fileID: 7762193306195091319}
   doorOpenSound: {fileID: 8300000, guid: 03dc2da98a55fa543b3f74ac216d270b, type: 3}
   doorCloseSound: {fileID: 8300000, guid: 29095896813de8448b824222be416347, type: 3}
+  detenerAnteJugadores: 1
 --- !u!114 &9128192041069024500
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -172269,9 +172265,12 @@ MonoBehaviour:
   openAngle: 90
   openSpeed: 2
   invertOpenDirection: 0
+  crearRigidbodyAutomaticamente: 1
+  configurarRigidbodyAutomaticamente: 1
   audioSource: {fileID: 4286560252990697838}
   doorOpenSound: {fileID: 8300000, guid: 03dc2da98a55fa543b3f74ac216d270b, type: 3}
   doorCloseSound: {fileID: 8300000, guid: 29095896813de8448b824222be416347, type: 3}
+  detenerAnteJugadores: 1
 --- !u!114 &2861515218663416829
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -189746,9 +189745,12 @@ MonoBehaviour:
   openAngle: 90
   openSpeed: 2
   invertOpenDirection: 0
+  crearRigidbodyAutomaticamente: 1
+  configurarRigidbodyAutomaticamente: 1
   audioSource: {fileID: 6949898155546699070}
   doorOpenSound: {fileID: 8300000, guid: 03dc2da98a55fa543b3f74ac216d270b, type: 3}
   doorCloseSound: {fileID: 8300000, guid: 29095896813de8448b824222be416347, type: 3}
+  detenerAnteJugadores: 1
 --- !u!208 &5086169903289218683
 NavMeshObstacle:
   m_ObjectHideFlags: 0
@@ -207798,9 +207800,12 @@ MonoBehaviour:
   openAngle: 90
   openSpeed: 2
   invertOpenDirection: 0
+  crearRigidbodyAutomaticamente: 1
+  configurarRigidbodyAutomaticamente: 1
   audioSource: {fileID: 2186409855117525127}
   doorOpenSound: {fileID: 8300000, guid: 03dc2da98a55fa543b3f74ac216d270b, type: 3}
   doorCloseSound: {fileID: 8300000, guid: 29095896813de8448b824222be416347, type: 3}
+  detenerAnteJugadores: 1
 --- !u!114 &3160216815837161227
 MonoBehaviour:
   m_ObjectHideFlags: 0

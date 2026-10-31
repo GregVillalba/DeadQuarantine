@@ -18,11 +18,10 @@ public class WeaponAnimationEvents : MonoBehaviour
         if (casingPrefab == null || casingEjectPoint == null)
             return;
 
-        Instantiate(
-            casingPrefab,
-            casingEjectPoint.position,
-            casingEjectPoint.rotation
-        );
+        Vector3 position=casingEjectPoint.position;Quaternion rotation=casingEjectPoint.rotation;
+        if(weapon)weapon.PresentationPose(casingEjectPoint,out position,out rotation);
+        Instantiate(casingPrefab,position,rotation);
+        if(weapon)weapon.PresentationEvent(NetworkWeaponPresentation.WeaponEvent.Eject);
     }
     public void OnSlideBack()
     {
@@ -44,6 +43,9 @@ public class WeaponAnimationEvents : MonoBehaviour
         if (weapon != null)
             weapon.AnimationInsertOneShell();
     }
+
+    // Some existing shotgun close clips use the direct Weapon method name.
+    public void AnimationReloadFinished() => OnAnimationEndedReload();
 
     public void OnAnimationEndedReload()
     {

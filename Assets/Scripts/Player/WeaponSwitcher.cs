@@ -90,6 +90,8 @@ public class WeaponSwitcher : MonoBehaviour
     /// acuchillar ni tirar granadas.
     /// </summary>
     public bool IsSwitching => isSwitching;
+    public bool IsHolstering => isSwitching && !unholsterPhase;
+    public bool IsUnholstering => isSwitching && unholsterPhase;
 
     /// <summary>
     /// Se dispara cuando cambia el arma elegida, se equipa una o se desbloquea una.
@@ -756,6 +758,9 @@ public class WeaponSwitcher : MonoBehaviour
 
         weaponAnimator.ResetTrigger("Reload");
         weaponAnimator.SetBool("ShellLoading", false);
+        weaponAnimator.ResetTrigger("Fire");
+        weaponAnimator.ResetTrigger("WeaponPartsFire");weaponAnimator.ResetTrigger("WeaponPartsReload");
+        weaponAnimator.SetBool("BoltAction",false);
 
         int count = Mathf.Min(layerIdleHashes.Length, weaponAnimator.layerCount);
 
