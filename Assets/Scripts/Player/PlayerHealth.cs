@@ -232,6 +232,7 @@ public partial class PlayerHealth : NetworkBehaviour
         HelmetShieldMax.OnValueChanged += BlindajeChanged;
 
         SuscribirInventario();
+        SuscribirQuemadura();
 
         OnHealthChanged?.Invoke(
             CurrentHealth.Value,
@@ -266,6 +267,7 @@ public partial class PlayerHealth : NetworkBehaviour
         HelmetShieldMax.OnValueChanged -= BlindajeChanged;
 
         DesuscribirInventario();
+        DesuscribirQuemadura();
     }
 
     // =========================================================
