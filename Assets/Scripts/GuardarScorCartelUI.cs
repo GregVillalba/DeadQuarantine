@@ -28,7 +28,6 @@ public class GuardarScoreCartelUI : MonoBehaviour
     [Header("Reglas de Guardado")]
     [SerializeField] private int puntajeMinimoParaGuardar = 50;
 
-
     [Serializable]
     private class RankingEntry
     {
@@ -66,22 +65,6 @@ public class GuardarScoreCartelUI : MonoBehaviour
         public string dificultad;
     }
 
-    private static class JsonHelper
-    {
-        public static T[] FromJson<T>(string json)
-        {
-            string newJson = "{\"array\":" + json + "}";
-            Wrapper<T> wrapper = JsonUtility.FromJson<Wrapper<T>>(newJson);
-            return wrapper.array;
-        }
-
-        [Serializable]
-        private class Wrapper<T>
-        {
-            public T[] array;
-        }
-    }
-
     private string nombreJugador;
     private string dificultadJugador;
     private int scoreJugador;
@@ -89,9 +72,11 @@ public class GuardarScoreCartelUI : MonoBehaviour
     private Action onFinalizadoCallback;
     private Color colorOriginalBtnOk = Color.white;
 
-
-    [Serializable] private class PuestoResponse { public int puesto; }
-
+    [Serializable]
+    private class PuestoResponse
+    {
+        public int puesto;
+    }
 
     private IEnumerator CalcularPuesto()
     {
@@ -142,12 +127,11 @@ public class GuardarScoreCartelUI : MonoBehaviour
     private string ObtenerDificultadActual()
     {
         var cfg = ConfiguracionPartidaSeleccionada.Instancia;
-        if (cfg == null) return "";
+        if (cfg == null) return "Normal";
 
         var d = cfg.dificultadSeleccionada;
-        return d == ConfiguracionPartidaSeleccionada.Dificultad.Ninguna ? "" : d.ToString();
+        return d == ConfiguracionPartidaSeleccionada.Dificultad.Ninguna ? "Normal" : d.ToString();
     }
-
 
     public void AbrirCartel(string username, int puntos, string modo, Action onFinalizado, MonoBehaviour runner = null, string dificultad = "Normal")
     {
@@ -158,9 +142,17 @@ public class GuardarScoreCartelUI : MonoBehaviour
             return;
         }
 
-        nombreJugador = string.IsNullOrWhiteSpace(username) ? "Superviviente" : username;
+        // Prioridad 1: Obtener directamente de PlayerIdentity si existe guardado
+        string nombreActualizado = PlayerIdentity.GetUsername();
+
+        if (string.IsNullOrWhiteSpace(nombreActualizado))
+        {
+            nombreActualizado = string.IsNullOrWhiteSpace(username) ? "Superviviente" : username;
+        }
+
+        nombreJugador = nombreActualizado.Trim();
         scoreJugador = puntos;
-        modoJugador = modo;
+        modoJugador = string.IsNullOrWhiteSpace(modo) ? "singleplayer" : modo.ToLower();
         dificultadJugador = ObtenerDificultadActual();
         onFinalizadoCallback = onFinalizado;
 
@@ -222,7 +214,7 @@ public class GuardarScoreCartelUI : MonoBehaviour
 
     private void OnOkClicked()
     {
-        Debug.Log("<color=green>[GuardarScoreCartelUI] Clic en OK / Reintentar...</color>");
+        Debug.Log("<color=green>[GuardarScoreCartelUI] Clic en OK...</color>");
         PintarBotonNaranjaOscuro(btnOk);
         StartCoroutine(ObtenerDatosRedYSubirScore());
     }
@@ -259,17 +251,11 @@ public class GuardarScoreCartelUI : MonoBehaviour
                         if (!string.IsNullOrEmpty(geo.country_code)) codigoPaisDetectado = geo.country_code;
                         if (geo.connection != null) usaVpnDetectado = geo.connection.is_vpn ? 1 : 0;
                     }
-
-                    Debug.Log($"<color=cyan>[GuardarScoreCartelUI] Red detectada: IP={ipDetectada}, País={paisDetectado} ({codigoPaisDetectado}), VPN={usaVpnDetectado}</color>");
                 }
                 catch (Exception ex)
                 {
                     Debug.LogWarning($"[GuardarScoreCartelUI] Error parseando datos de IP: {ex.Message}");
                 }
-            }
-            else
-            {
-                Debug.LogWarning($"[GuardarScoreCartelUI] No se pudo consultar GeoIP ({geoReq.error}). Usando valores por defecto.");
             }
         }
 
@@ -284,10 +270,16 @@ public class GuardarScoreCartelUI : MonoBehaviour
             txtEstado.text = "Guardando...";
         }
 
+        // Obtener siempre el ID persistente y el nombre fresco
+        string currentId = PlayerIdentity.GetUserId();
+        string currentUsername = PlayerIdentity.GetUsername();
+        if (string.IsNullOrWhiteSpace(currentUsername))
+            currentUsername = nombreJugador;
+
         ScorePayload payload = new ScorePayload
         {
-            user_id = PlayerIdentity.GetUserId(),
-            username = nombreJugador,
+            user_id = currentId,
+            username = currentUsername,
             puntos = scoreJugador,
             modo = modoJugador,
             dificultad = dificultadJugador,
@@ -300,7 +292,6 @@ public class GuardarScoreCartelUI : MonoBehaviour
 
         string json = JsonUtility.ToJson(payload);
         Debug.Log($"<color=yellow>[GuardarScoreCartelUI] Enviando Payload Completo a {apiUrl}:</color>\n{json}");
-
 
         using (UnityWebRequest req = new UnityWebRequest(apiUrl, "POST"))
         {
@@ -316,7 +307,7 @@ public class GuardarScoreCartelUI : MonoBehaviour
 
             if (req.result == UnityWebRequest.Result.Success && (httpCode >= 200 && httpCode < 300))
             {
-                Debug.Log($"<color=green>[GuardarScoreCartelUI] Score subido con éxito. HTTP {httpCode}</color>");
+                Debug.Log($"<color=green>[GuardarScoreCartelUI] Score subido con éxito para {currentUsername} (ID: {currentId}). HTTP {httpCode}</color>");
 
                 if (txtEstado != null)
                 {
@@ -329,11 +320,11 @@ public class GuardarScoreCartelUI : MonoBehaviour
             }
             else
             {
-                Debug.LogError($"<color=red>[GuardarScoreCartelUI] ERROR AL GUARDAR SCORE EN BASE DE DATOS:</color>\n" +
+                Debug.LogError($"<color=red>[GuardarScoreCartelUI] ERROR AL GUARDAR SCORE:</color>\n" +
                                $"- HTTP Code: {httpCode}\n" +
-                               $"- WebRequest Error: {req.error}\n" +
-                               $"- Respuesta del Servidor: {respuestaServidor}\n" +
-                               $"- Payload enviado: {json}");
+                               $"- Error: {req.error}\n" +
+                               $"- Servidor: {respuestaServidor}\n" +
+                               $"- Payload: {json}");
 
                 if (txtEstado != null)
                 {
@@ -350,7 +341,6 @@ public class GuardarScoreCartelUI : MonoBehaviour
 
     private void OnCancelClicked()
     {
-        Debug.Log("<color=red>[GuardarScoreCartelUI] Clic en CANCEL: Acción cancelada.</color>");
         PintarBotonNaranjaOscuro(btnCancel);
         StartCoroutine(CancelarCoroutine());
     }

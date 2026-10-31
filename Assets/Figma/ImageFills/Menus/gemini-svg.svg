@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" width="100%" height="100%">
+  <defs>
+    <!-- Gradiente de fondo oscuro semitransparente -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0c1015" stop-opacity="0.94" />
+      <stop offset="100%" stop-color="#06080b" stop-opacity="0.97" />
+    </linearGradient>
+
+    <!-- Patrón de líneas tácticas tipo rejilla -->
+    <pattern id="scanlines" width="100" height="4" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="100" y2="0" stroke="#ffffff" stroke-width="0.8" stroke-opacity="0.03" />
+    </pattern>
+
+    <!-- Resplandor sutil para acentos -->
+    <filter id="glowRed" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Sombra exterior -->
+  <polygon points="32,8 768,8 792,32 792,388 768,412 32,412 8,388 8,32" fill="#000000" opacity="0.6" />
+
+  <!-- Placa Base Principal -->
+  <polygon points="30,10 770,10 790,30 790,390 770,410 30,410 10,390 10,30" fill="url(#bgGrad)" stroke="#1a2530" stroke-width="2" />
+
+  <!-- Trama interna de scanlines -->
+  <polygon points="30,10 770,10 790,30 790,390 770,410 30,410 10,390 10,30" fill="url(#scanlines)" />
+
+  <!-- Marco de Contención Interno Biselado -->
+  <polygon points="38,20 762,20 780,38 780,382 762,400 38,400 20,382 20,38" fill="none" stroke="#2a3b4c" stroke-width="1.5" stroke-dasharray="12 6" />
+
+  <!-- Esquinas Reforzadas Tácticas -->
+  <!-- Superior Izquierda -->
+  <path d="M 14 42 L 14 26 L 26 14 L 42 14" fill="none" stroke="#d93838" stroke-width="3" filter="url(#glowRed)" />
+  <rect x="22" y="22" width="4" height="4" fill="#d93838" />
+
+  <!-- Superior Derecha -->
+  <path d="M 758 14 L 774 14 L 786 26 L 786 42" fill="none" stroke="#d93838" stroke-width="3" filter="url(#glowRed)" />
+  <rect x="774" y="22" width="4" height="4" fill="#d93838" />
+
+  <!-- Inferior Derecha -->
+  <path d="M 786 378 L 786 394 L 774 406 L 758 406" fill="none" stroke="#486581" stroke-width="3" />
+  <rect x="774" y="394" width="4" height="4" fill="#486581" />
+
+  <!-- Inferior Izquierda -->
+  <path d="M 42 406 L 26 406 L 14 394 L 14 378" fill="none" stroke="#486581" stroke-width="3" />
+  <rect x="22" y="394" width="4" height="4" fill="#486581" />
+
+  <!-- Franja / Badge de Encabezado: ALERTA DEL SISTEMA -->
+  <polygon points="260,10 540,10 525,34 275,34" fill="#8a1818" opacity="0.85" />
+  <text x="400" y="26" font-family="&#39;Consolas&#39;, &#39;Courier New&#39;, monospace" font-size="11" font-weight="bold" fill="#f8d7da" letter-spacing="3" text-anchor="middle">SYSTEM OVERRIDE // DISCONNECT</text>
+
+  <!-- Línea divisoria técnica inferior -->
+  <line x1="120" y1="285" x2="680" y2="285" stroke="#1f2c38" stroke-width="1.5" />
+  <polygon points="390,283 410,283 400,287" fill="#d93838" />
+
+  <!-- Micro-marcas técnicas Sci-Fi -->
+  <text x="35" y="395" font-family="&#39;Consolas&#39;, monospace" font-size="9" fill="#3e5265" letter-spacing="1">TERM_ID: #87-ABORT</text>
+  <text x="765" y="395" font-family="&#39;Consolas&#39;, monospace" font-size="9" fill="#3e5265" letter-spacing="1" text-anchor="end">PROTOCOL: 0x99_HALT</text>
+</svg>
