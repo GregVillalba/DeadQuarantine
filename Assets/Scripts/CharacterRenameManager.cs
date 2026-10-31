@@ -1,115 +1,368 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Text.RegularExpressions;
-using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.Networking;
 using TMPro;
+using UnityEngine;
+using UnityEngine.Networking;
+using UnityEngine.UI;
 
 public class CharacterRenameManager : MonoBehaviour
 {
     public static CharacterRenameManager Instance { get; private set; }
 
-    // Claves de guardado local permanente
-    private const string PREF_OSCAR = "NOMBRE_PERSONAJE_OSCAR";
-    private const string PREF_JANET = "NOMBRE_PERSONAJE_JANET";
-    private const string PREF_ULTIMO_ACTIVO = "PLAYER_CUSTOM_USERNAME";
+    private const string API_URL_USUARIOS = "https://dead-quarentine-web.wasmer.app/api/usuarios";
 
-    public enum PersonajeSeleccionado { Oscar, Janet }
-    private PersonajeSeleccionado personajeEnEdicion;
+    [Header("Contenedor Raíz (UsernameFirstRunUI)")]
+    [SerializeField] private GameObject rootFirstRunUI;
 
-    [Header("Backend")]
-    [SerializeField] private string apiUrl = "http://localhost:3000/api/usuarios/perfil";
+    [Header("Ventanas")]
+    [SerializeField] private GameObject ventanaNombre;
+    [SerializeField] private GameObject ventanaClave;
 
-    [Header("Referencias Jugador 1 (Oscar)")]
-    [SerializeField] private Button btnCambiarOscar;
-    [SerializeField] private TMP_Text txtNombreOscar; // Objeto 'tit' de Jugador1
+    [Header("Formulario Nombre (Ventana)")]
+    [SerializeField] private TMP_InputField inputNombre;
+    [SerializeField] private TMP_Text txtValidationNombre;
+    [SerializeField] private TMP_Text txtFeedbackServidorNombre;
+    [SerializeField] private TMP_Text txtIDLabel;
 
-    [Header("Referencias Jugador 2 (Janet)")]
-    [SerializeField] private Button btnCambiarJanet;
-    [SerializeField] private TMP_Text txtNombreJanet; // Objeto 'tit' de Jugador2
+    [Header("Botones Ventana Nombre")]
+    [SerializeField] private Button btnConfirmarNombre;
+    [SerializeField] private Button btnCancelarNombre;
+    [SerializeField] private Button btnSalirNombre;
+    [SerializeField] private Button btnReintentarNombre;
+    [SerializeField] private Button btnIrAVentanaClave;
 
-    [Header("Ventana Emergente (emergente_Cambiar_nombre)")]
-    [SerializeField] private GameObject emergenteCambiarNombre;
-    [SerializeField] private TMP_InputField inputFieldNombre;
-    [SerializeField] private Button btnOk;
-    [SerializeField] private Button btnCancel;
+    [Header("Formulario Clave (Ventana_CLAVE)")]
+    [SerializeField] private TMP_InputField inputClaveAnterior;
+    [SerializeField] private TMP_Text txtValidationClave;
+    [SerializeField] private TMP_Text txtFeedbackServidorClave;
 
-    [Header("Validación de Nombre")]
-    [SerializeField] private TMP_Text txtEstadoValidacion; // Label para mostrar si está OK
-    [SerializeField] private Color colorValido = new Color(0.2f, 0.9f, 0.3f);    // Verde
-    [SerializeField] private Color colorInvalido = new Color(1f, 0.3f, 0.3f);    // Rojo
+    [Header("Botones Ventana Clave")]
+    [SerializeField] private Button btnConfirmarClave;
+    [SerializeField] private Button btnAtrasANombre;
+    [SerializeField] private Button btnCancelarClave;
+    [SerializeField] private Button btnSalirClave;
+    [SerializeField] private Button btnReintentarClave;
 
-    // Patrón Regex: Solo letras y números (sin espacios ni símbolos), entre 1 y 10 caracteres
+    [Header("Botones Menú / Lobby")]
+    [SerializeField] private TMP_Text txtNombreLobby;
+    [SerializeField] private Button btnAbrirPopupCambio;
+    [SerializeField] private Button btnMenuTransferirDatos;
+    [SerializeField] private TMP_Text txtFeedbackTransferirMenu;
+
+    [Header("Colores")]
+    [SerializeField] private Color colorValido = new Color(0.2f, 0.9f, 0.3f);
+    [SerializeField] private Color colorInvalido = new Color(1f, 0.3f, 0.3f);
+
+    private CanvasGroup rootCanvasGroup;
+    private GraphicRaycaster rootRaycaster;
     private static readonly Regex patronAlfanumerico = new Regex("^[a-zA-Z0-9]{1,10}$");
+    private bool esPrimerInicioActual = false;
 
-    public string NombreOscarActual { get; private set; }
-    public string NombreJanetActual { get; private set; }
+    [Serializable]
+    private class PerfilPayload
+    {
+        public string user_id;
+        public string username;
+        public string nuevo_username;
+    }
 
     private void Awake()
     {
-        if (Instance == null) Instance = this;
-        else { Destroy(gameObject); return; }
+        if (Instance == null)
+            Instance = this;
 
-        NombreOscarActual = PlayerPrefs.GetString(PREF_OSCAR, "Oscar");
-        NombreJanetActual = PlayerPrefs.GetString(PREF_JANET, "Janet");
-
-        ActualizarTextosEnPantalla();
-        ConfigurarBotones();
-
-        if (inputFieldNombre != null)
+        if (rootFirstRunUI != null)
         {
-            // Limitar longitud máxima en el componente a 10 caracteres
-            inputFieldNombre.characterLimit = 10;
-            // Escuchar cambios en tiempo real mientras el usuario escribe
-            inputFieldNombre.onValueChanged.AddListener(OnNombreInputCambiado);
+            rootCanvasGroup = rootFirstRunUI.GetComponent<CanvasGroup>();
+            if (rootCanvasGroup == null)
+                rootCanvasGroup = rootFirstRunUI.AddComponent<CanvasGroup>();
+            rootRaycaster = rootFirstRunUI.GetComponent<GraphicRaycaster>();
         }
 
-        if (emergenteCambiarNombre != null)
-            emergenteCambiarNombre.SetActive(false);
-    }
+        ConfigurarListeners();
 
-    private void ConfigurarBotones()
-    {
-        if (btnCambiarOscar != null)
-            btnCambiarOscar.onClick.AddListener(() => AbrirEmergente(PersonajeSeleccionado.Oscar));
-
-        if (btnCambiarJanet != null)
-            btnCambiarJanet.onClick.AddListener(() => AbrirEmergente(PersonajeSeleccionado.Janet));
-
-        if (btnOk != null)
-            btnOk.onClick.AddListener(ConfirmarNuevoNombre);
-
-        if (btnCancel != null)
-            btnCancel.onClick.AddListener(CerrarEmergente);
-    }
-
-    private void AbrirEmergente(PersonajeSeleccionado personaje)
-    {
-        personajeEnEdicion = personaje;
-
-        if (emergenteCambiarNombre != null)
-            emergenteCambiarNombre.SetActive(true);
-
-        if (inputFieldNombre != null)
+        if (inputNombre != null)
         {
-            string nombreActual = (personaje == PersonajeSeleccionado.Oscar) ? NombreOscarActual : NombreJanetActual;
-            inputFieldNombre.text = nombreActual;
-            inputFieldNombre.Select();
-            inputFieldNombre.ActivateInputField();
+            inputNombre.characterLimit = PlayerIdentity.MaxUsernameLength;
+            inputNombre.onValueChanged.AddListener(OnInputNombreCambiado);
+        }
 
-            // Validar de inmediato al abrir
-            ValidarNombre(nombreActual);
+        if (inputClaveAnterior != null)
+        {
+            inputClaveAnterior.onValueChanged.AddListener(OnInputClaveCambiado);
+        }
+
+        ForzarCierreUI();
+    }
+
+    private void Start()
+    {
+        string idUnico = PlayerIdentity.GetUserId();
+        string sufijoCorto = idUnico.Length >= 4 ? idUnico.Substring(0, 4).ToUpper() : "0001";
+        ActualizarTextos(sufijoCorto);
+
+        if (!PlayerIdentity.HasUsername())
+        {
+            AbrirPantallaNombre(esPrimerInicio: true);
+        }
+        else
+        {
+            ForzarCierreUI();
         }
     }
 
-    public void CerrarEmergente()
+    private void ConfigurarListeners()
     {
-        if (emergenteCambiarNombre != null)
-            emergenteCambiarNombre.SetActive(false);
+        if (btnConfirmarNombre != null) btnConfirmarNombre.onClick.AddListener(EjecutarConfirmarNombre);
+        if (btnCancelarNombre != null) btnCancelarNombre.onClick.AddListener(BotonCancelar);
+        if (btnSalirNombre != null) btnSalirNombre.onClick.AddListener(BotonCancelar);
+        if (btnReintentarNombre != null) btnReintentarNombre.onClick.AddListener(EjecutarConfirmarNombre);
+        if (btnIrAVentanaClave != null) btnIrAVentanaClave.onClick.AddListener(BotonIrAClave);
+
+        if (btnConfirmarClave != null) btnConfirmarClave.onClick.AddListener(EjecutarTransferenciaClave);
+        if (btnAtrasANombre != null) btnAtrasANombre.onClick.AddListener(() => AbrirPantallaNombre(esPrimerInicioActual));
+        if (btnCancelarClave != null) btnCancelarClave.onClick.AddListener(BotonCancelar);
+        if (btnSalirClave != null) btnSalirClave.onClick.AddListener(BotonCancelar);
+        if (btnReintentarClave != null) btnReintentarClave.onClick.AddListener(EjecutarTransferenciaClave);
+
+        if (btnAbrirPopupCambio != null)
+            btnAbrirPopupCambio.onClick.AddListener(() => AbrirPantallaNombre(esPrimerInicio: false));
+
+        if (btnMenuTransferirDatos != null)
+        {
+            btnMenuTransferirDatos.onClick.AddListener(() =>
+            {
+                PlayerIdentity.CopiarIdConFeedback(this, txtFeedbackTransferirMenu, 2.0f);
+            });
+        }
     }
 
-    private void OnNombreInputCambiado(string texto)
+    public void BotonCancelar()
     {
+        Debug.Log("<color=yellow>[UI]</color> Botón Cancelar presionado exitosamente.");
+        ForzarCierreUI();
+    }
+
+    public void BotonIrAClave()
+    {
+        Debug.Log("<color=cyan>[UI]</color> Cambiando a Ventana Clave.");
+        AbrirPantallaClave();
+    }
+
+    #region Manejo de Visibilidad
+    public void ForzarCierreUI()
+    {
+        if (ventanaNombre != null) ventanaNombre.SetActive(false);
+        if (ventanaClave != null) ventanaClave.SetActive(false);
+
+        if (rootCanvasGroup != null)
+        {
+            rootCanvasGroup.alpha = 0f;
+            rootCanvasGroup.interactable = false;
+            rootCanvasGroup.blocksRaycasts = false;
+        }
+
+        if (rootRaycaster != null) rootRaycaster.enabled = false;
+        if (rootFirstRunUI != null) rootFirstRunUI.SetActive(false);
+    }
+
+    private void MostrarRootUI()
+    {
+        if (rootFirstRunUI != null)
+        {
+            rootFirstRunUI.SetActive(true);
+            rootFirstRunUI.transform.SetAsLastSibling();
+        }
+
+        if (rootRaycaster != null) rootRaycaster.enabled = true;
+
+        if (rootCanvasGroup != null)
+        {
+            rootCanvasGroup.alpha = 1f;
+            rootCanvasGroup.interactable = true;
+            rootCanvasGroup.blocksRaycasts = true;
+        }
+    }
+
+    public void AbrirPantallaNombre(bool esPrimerInicio = false)
+    {
+        esPrimerInicioActual = esPrimerInicio;
+        MostrarRootUI();
+
+        if (ventanaClave != null) ventanaClave.SetActive(false);
+        if (ventanaNombre != null)
+        {
+            ventanaNombre.transform.SetAsLastSibling();
+            ventanaNombre.SetActive(true);
+        }
+
+        SetEstadoBotonesNombre(EstadoFormulario.Escribiendo);
+
+        string idUnico = PlayerIdentity.GetUserId();
+        string sufijoCorto = idUnico.Length >= 4 ? idUnico.Substring(0, 4).ToUpper() : "0001";
+        ActualizarTextos(sufijoCorto);
+
+        if (inputNombre != null)
+        {
+            string textoBase = !esPrimerInicio ? PlayerIdentity.GetUsername() : "";
+            inputNombre.text = textoBase;
+            inputNombre.Select();
+            inputNombre.ActivateInputField();
+            ValidarNombre(textoBase);
+        }
+
+        if (txtFeedbackServidorNombre != null) txtFeedbackServidorNombre.text = "";
+    }
+
+    public void AbrirPantallaClave()
+    {
+        MostrarRootUI();
+
+        if (ventanaNombre != null) ventanaNombre.SetActive(false);
+        if (ventanaClave != null)
+        {
+            ventanaClave.transform.SetAsLastSibling();
+            ventanaClave.SetActive(true);
+        }
+
+        SetEstadoBotonesClave(EstadoFormulario.Escribiendo);
+
+        if (inputClaveAnterior != null)
+        {
+            inputClaveAnterior.text = "";
+            inputClaveAnterior.Select();
+            inputClaveAnterior.ActivateInputField();
+        }
+
+        if (txtValidationClave != null) txtValidationClave.text = "";
+        if (txtFeedbackServidorClave != null) txtFeedbackServidorClave.text = "";
+    }
+    #endregion
+
+    #region Control de Estados de Botones
+    private enum EstadoFormulario { Escribiendo, Guardando, GuardadoExito, GuardadoFallo }
+
+    private void SetEstadoBotonesNombre(EstadoFormulario estado)
+    {
+        switch (estado)
+        {
+            case EstadoFormulario.Escribiendo:
+                if (btnConfirmarNombre != null) btnConfirmarNombre.gameObject.SetActive(true);
+                if (btnCancelarNombre != null)
+                {
+                    btnCancelarNombre.gameObject.SetActive(true);
+                    btnCancelarNombre.interactable = true;
+                }
+                if (btnIrAVentanaClave != null)
+                {
+                    btnIrAVentanaClave.gameObject.SetActive(true);
+                    btnIrAVentanaClave.interactable = true;
+                }
+                if (btnSalirNombre != null) btnSalirNombre.gameObject.SetActive(false);
+                if (btnReintentarNombre != null) btnReintentarNombre.gameObject.SetActive(false);
+                break;
+
+            case EstadoFormulario.Guardando:
+                if (btnConfirmarNombre != null) btnConfirmarNombre.interactable = false;
+                if (btnCancelarNombre != null) btnCancelarNombre.interactable = false;
+                if (btnIrAVentanaClave != null) btnIrAVentanaClave.interactable = false;
+                break;
+
+            case EstadoFormulario.GuardadoExito:
+                if (btnConfirmarNombre != null) btnConfirmarNombre.gameObject.SetActive(false);
+                if (btnCancelarNombre != null) btnCancelarNombre.gameObject.SetActive(false);
+                if (btnReintentarNombre != null) btnReintentarNombre.gameObject.SetActive(false);
+                if (btnIrAVentanaClave != null) btnIrAVentanaClave.gameObject.SetActive(false);
+                if (btnSalirNombre != null)
+                {
+                    btnSalirNombre.gameObject.SetActive(true);
+                    btnSalirNombre.interactable = true;
+                }
+                break;
+
+            case EstadoFormulario.GuardadoFallo:
+                if (btnConfirmarNombre != null) btnConfirmarNombre.gameObject.SetActive(false);
+                if (btnSalirNombre != null) btnSalirNombre.gameObject.SetActive(false);
+                if (btnCancelarNombre != null)
+                {
+                    btnCancelarNombre.gameObject.SetActive(true);
+                    btnCancelarNombre.interactable = true;
+                }
+                if (btnReintentarNombre != null)
+                {
+                    btnReintentarNombre.gameObject.SetActive(true);
+                    btnReintentarNombre.interactable = true;
+                }
+                break;
+        }
+    }
+
+    private void SetEstadoBotonesClave(EstadoFormulario estado)
+    {
+        switch (estado)
+        {
+            case EstadoFormulario.Escribiendo:
+                if (btnConfirmarClave != null) btnConfirmarClave.gameObject.SetActive(true);
+                if (btnCancelarClave != null)
+                {
+                    btnCancelarClave.gameObject.SetActive(true);
+                    btnCancelarClave.interactable = true;
+                }
+                if (btnAtrasANombre != null)
+                {
+                    btnAtrasANombre.gameObject.SetActive(true);
+                    btnAtrasANombre.interactable = true;
+                }
+                if (btnSalirClave != null) btnSalirClave.gameObject.SetActive(false);
+                if (btnReintentarClave != null) btnReintentarClave.gameObject.SetActive(false);
+                break;
+
+            case EstadoFormulario.Guardando:
+                if (btnConfirmarClave != null) btnConfirmarClave.interactable = false;
+                if (btnCancelarClave != null) btnCancelarClave.interactable = false;
+                if (btnAtrasANombre != null) btnAtrasANombre.interactable = false;
+                break;
+
+            case EstadoFormulario.GuardadoExito:
+                if (btnConfirmarClave != null) btnConfirmarClave.gameObject.SetActive(false);
+                if (btnCancelarClave != null) btnCancelarClave.gameObject.SetActive(false);
+                if (btnAtrasANombre != null) btnAtrasANombre.gameObject.SetActive(false);
+                if (btnReintentarClave != null) btnReintentarClave.gameObject.SetActive(false);
+                if (btnSalirClave != null)
+                {
+                    btnSalirClave.gameObject.SetActive(true);
+                    btnSalirClave.interactable = true;
+                }
+                break;
+
+            case EstadoFormulario.GuardadoFallo:
+                if (btnConfirmarClave != null) btnConfirmarClave.gameObject.SetActive(false);
+                if (btnSalirClave != null) btnSalirClave.gameObject.SetActive(false);
+                if (btnAtrasANombre != null)
+                {
+                    btnAtrasANombre.gameObject.SetActive(true);
+                    btnAtrasANombre.interactable = true;
+                }
+                if (btnCancelarClave != null)
+                {
+                    btnCancelarClave.gameObject.SetActive(true);
+                    btnCancelarClave.interactable = true;
+                }
+                if (btnReintentarClave != null)
+                {
+                    btnReintentarClave.gameObject.SetActive(true);
+                    btnReintentarClave.interactable = true;
+                }
+                break;
+        }
+    }
+    #endregion
+
+    #region Guardado y Validación (Nombre)
+    private void OnInputNombreCambiado(string texto)
+    {
+        SetEstadoBotonesNombre(EstadoFormulario.Escribiendo);
         ValidarNombre(texto);
     }
 
@@ -119,133 +372,256 @@ public class CharacterRenameManager : MonoBehaviour
 
         if (string.IsNullOrEmpty(texto))
         {
-            ActualizarFeedback(false, "El nombre no puede estar vacío");
+            SetFeedbackNombre(false, "El nombre no puede estar vacío");
             return false;
         }
 
-        if (texto.Length > 10)
+        if (texto.Length > PlayerIdentity.MaxUsernameLength)
         {
-            ActualizarFeedback(false, "Máximo 10 caracteres");
+            SetFeedbackNombre(false, $"Máximo {PlayerIdentity.MaxUsernameLength} caracteres");
             return false;
         }
 
         if (!patronAlfanumerico.IsMatch(texto))
         {
-            ActualizarFeedback(false, "Solo letras y números (sin signos ni espacios)");
+            SetFeedbackNombre(false, "Solo letras y números (sin espacios)");
             return false;
         }
 
-        ActualizarFeedback(true, "Nombre válido ✓");
+        SetFeedbackNombre(true, "Nombre válido ✓");
         return true;
     }
 
-    private void ActualizarFeedback(bool esValido, string mensaje)
+    private void SetFeedbackNombre(bool esValido, string mensaje)
     {
-        // Activar o desactivar el botón OK según el estado
-        if (btnOk != null)
-            btnOk.interactable = esValido;
+        if (btnConfirmarNombre != null) btnConfirmarNombre.interactable = esValido;
 
-        // Actualizar el texto del label y su color
-        if (txtEstadoValidacion != null)
+        if (txtValidationNombre != null)
         {
-            txtEstadoValidacion.text = mensaje;
-            txtEstadoValidacion.color = esValido ? colorValido : colorInvalido;
+            txtValidationNombre.text = mensaje;
+            txtValidationNombre.color = esValido ? colorValido : colorInvalido;
         }
     }
 
-    private void ConfirmarNuevoNombre()
+    private void EjecutarConfirmarNombre()
     {
-        string textoIngresado = inputFieldNombre != null ? inputFieldNombre.text.Trim() : "";
+        string textoIngresado = inputNombre != null ? inputNombre.text.Trim() : "";
+        if (!ValidarNombre(textoIngresado)) return;
 
-        if (!ValidarNombre(textoIngresado))
-            return;
+        SetEstadoBotonesNombre(EstadoFormulario.Guardando);
 
-        string nombreAnterior = "";
-        string nuevoNombre = textoIngresado;
+        if (txtFeedbackServidorNombre != null)
+            txtFeedbackServidorNombre.text = "Guardando...";
 
-        if (personajeEnEdicion == PersonajeSeleccionado.Oscar)
-        {
-            nombreAnterior = NombreOscarActual;
-            NombreOscarActual = nuevoNombre;
-            PlayerPrefs.SetString(PREF_OSCAR, nuevoNombre);
-        }
-        else
-        {
-            nombreAnterior = NombreJanetActual;
-            NombreJanetActual = nuevoNombre;
-            PlayerPrefs.SetString(PREF_JANET, nuevoNombre);
-        }
-
-        PlayerPrefs.SetString(PREF_ULTIMO_ACTIVO, nuevoNombre);
-        PlayerPrefs.Save();
-
-        ActualizarTextosEnPantalla();
-        SincronizarConLogros(nuevoNombre);
-        CerrarEmergente();
-
-        StartCoroutine(SincronizarConMySQL(nombreAnterior, nuevoNombre));
+        StartCoroutine(RutinaGuardarNombre(textoIngresado));
     }
 
-    private void ActualizarTextosEnPantalla()
+    private IEnumerator RutinaGuardarNombre(string nuevoNombre)
     {
-        if (txtNombreOscar != null) txtNombreOscar.text = $"✍️ {NombreOscarActual}";
-        if (txtNombreJanet != null) txtNombreJanet.text = $"✍️ {NombreJanetActual}";
-    }
-
-    private void SincronizarConLogros(string nombreFinal)
-    {
-        if (AchievementsManager.Instance != null)
-        {
-            AchievementsManager.Instance.UsernameJugador = nombreFinal;
-        }
-    }
-
-    public void SeleccionarPersonajeParaJugar(PersonajeSeleccionado personaje)
-    {
-        string nombreElegido = (personaje == PersonajeSeleccionado.Oscar) ? NombreOscarActual : NombreJanetActual;
-        PlayerPrefs.SetString(PREF_ULTIMO_ACTIVO, nombreElegido);
-        PlayerPrefs.Save();
-        SincronizarConLogros(nombreElegido);
-    }
-
-    // ============================================================
-    // SINCRONIZACIÓN CON BASE DE DATOS
-    // ============================================================
-
-    [System.Serializable]
-    private class PerfilPayload
-    {
-        public string username;
-        public string nuevo_username;
-    }
-
-    private IEnumerator SincronizarConMySQL(string nombreAnterior, string nuevoNombre)
-    {
+        string idDispositivo = PlayerIdentity.GetUserId();
         PerfilPayload payload = new PerfilPayload
         {
-            username = nombreAnterior,
+            user_id = idDispositivo,
+            username = nuevoNombre,
             nuevo_username = nuevoNombre
         };
 
         string json = JsonUtility.ToJson(payload);
 
-        using (UnityWebRequest req = new UnityWebRequest(apiUrl, "POST"))
+        using (UnityWebRequest req = new UnityWebRequest(API_URL_USUARIOS, "POST"))
         {
             byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
             req.uploadHandler = new UploadHandlerRaw(bodyRaw);
             req.downloadHandler = new DownloadHandlerBuffer();
             req.SetRequestHeader("Content-Type", "application/json");
+            req.SetRequestHeader("Accept", "application/json");
+            req.certificateHandler = new BypassCertificateHandler();
+            req.timeout = 8;
 
             yield return req.SendWebRequest();
 
-            if (req.result == UnityWebRequest.Result.Success)
+            if (req.result == UnityWebRequest.Result.Success && (req.responseCode >= 200 && req.responseCode < 300))
             {
-                Debug.Log($"[PERFIL DB] Sincronizado en MySQL: {nuevoNombre}");
+                PlayerIdentity.TryUpdateUsername(nuevoNombre, out _);
+
+                string sufijoCorto = idDispositivo.Length >= 4 ? idDispositivo.Substring(0, 4).ToUpper() : "0001";
+                ActualizarTextos(sufijoCorto);
+
+                if (AchievementsManager.Instance != null)
+                    AchievementsManager.Instance.UsernameJugador = nuevoNombre;
+
+                if (txtFeedbackServidorNombre != null)
+                {
+                    txtFeedbackServidorNombre.text = "¡Guardado exitosamente!";
+                    txtFeedbackServidorNombre.color = colorValido;
+                }
+
+                SetEstadoBotonesNombre(EstadoFormulario.GuardadoExito);
             }
             else
             {
-                Debug.LogWarning($"[PERFIL DB] Sin conexión al backend ({req.error}). El nombre se mantiene seguro en local.");
+                if (txtFeedbackServidorNombre != null)
+                {
+                    txtFeedbackServidorNombre.text = "Error al conectar con el servidor.";
+                    txtFeedbackServidorNombre.color = colorInvalido;
+                }
+
+                SetEstadoBotonesNombre(EstadoFormulario.GuardadoFallo);
             }
         }
+    }
+
+    private void ActualizarTextos(string sufijoCorto)
+    {
+        string idCompleto = PlayerIdentity.GetUserId();
+
+        if (txtIDLabel != null)
+            txtIDLabel.text = $"ID: {idCompleto}";
+
+        if (txtNombreLobby != null)
+        {
+            string nombre = PlayerIdentity.GetUsername();
+            if (!string.IsNullOrEmpty(nombre))
+                txtNombreLobby.text = nombre;
+        }
+    }
+    #endregion
+
+    #region Transferencia por Clave
+    private void OnInputClaveCambiado(string texto)
+    {
+        SetEstadoBotonesClave(EstadoFormulario.Escribiendo);
+
+        if (btnConfirmarClave != null)
+            btnConfirmarClave.interactable = !string.IsNullOrWhiteSpace(texto) && texto.Trim().Length >= 8;
+
+        if (txtValidationClave != null) txtValidationClave.text = "";
+    }
+
+    private void EjecutarTransferenciaClave()
+    {
+        string claveIngresada = inputClaveAnterior != null ? inputClaveAnterior.text.Trim() : "";
+        string idLocalActual = PlayerIdentity.GetUserId();
+
+        if (claveIngresada.Equals(idLocalActual, StringComparison.OrdinalIgnoreCase))
+        {
+            if (txtFeedbackServidorClave != null)
+            {
+                txtFeedbackServidorClave.text = "Esta cuenta ya está activa.";
+                txtFeedbackServidorClave.color = colorInvalido;
+            }
+            return;
+        }
+
+        if (string.IsNullOrEmpty(claveIngresada) || claveIngresada.Length < 8)
+        {
+            if (txtFeedbackServidorClave != null)
+            {
+                txtFeedbackServidorClave.text = "Formato de clave inválido (mínimo 8 caracteres).";
+                txtFeedbackServidorClave.color = colorInvalido;
+            }
+            return;
+        }
+
+        SetEstadoBotonesClave(EstadoFormulario.Guardando);
+
+        if (txtFeedbackServidorClave != null)
+        {
+            txtFeedbackServidorClave.text = "Buscando cuenta...";
+            txtFeedbackServidorClave.color = Color.white;
+        }
+
+        StartCoroutine(RutinaTransferirCuentaPorClave(claveIngresada));
+    }
+
+    private IEnumerator RutinaTransferirCuentaPorClave(string idClave)
+    {
+        string url = $"{API_URL_USUARIOS}?user_id={UnityWebRequest.EscapeURL(idClave)}";
+
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            req.certificateHandler = new BypassCertificateHandler();
+            req.timeout = 5;
+
+            yield return req.SendWebRequest();
+
+            string nombreRecuperado = null;
+
+            if (req.result == UnityWebRequest.Result.Success && req.responseCode == 200)
+            {
+                string rawJson = req.downloadHandler.text != null ? req.downloadHandler.text.Trim() : "";
+
+                if (rawJson.StartsWith("[") && rawJson.EndsWith("]"))
+                {
+                    rawJson = rawJson.Substring(1, rawJson.Length - 2).Trim();
+                }
+
+                if (!string.IsNullOrEmpty(rawJson) && rawJson.StartsWith("{"))
+                {
+                    try
+                    {
+                        PerfilPayload datos = JsonUtility.FromJson<PerfilPayload>(rawJson);
+                        if (datos != null && !string.IsNullOrEmpty(datos.username))
+                        {
+                            nombreRecuperado = datos.username;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning($"[TRANSFERIR] Parseo opcional omitido: {ex.Message}");
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(nombreRecuperado))
+            {
+                nombreRecuperado = PlayerIdentity.GetUsername();
+                if (string.IsNullOrEmpty(nombreRecuperado))
+                {
+                    nombreRecuperado = "Superviviente";
+                }
+            }
+
+            bool importado = PlayerIdentity.TryImportarUserId(idClave, out _);
+
+            if (importado)
+            {
+                PlayerIdentity.TryUpdateUsername(nombreRecuperado, out _);
+
+                string sufijoCorto = idClave.Length >= 4 ? idClave.Substring(0, 4).ToUpper() : "0001";
+                ActualizarTextos(sufijoCorto);
+
+                if (AchievementsManager.Instance != null)
+                {
+                    AchievementsManager.Instance.UsernameJugador = nombreRecuperado;
+                }
+
+                if (txtFeedbackServidorClave != null)
+                {
+                    txtFeedbackServidorClave.text = $"¡Cuenta #{sufijoCorto} vinculada con éxito!";
+                    txtFeedbackServidorClave.color = colorValido;
+                }
+
+                Debug.Log($"<color=green>[TRANSFERENCIA EXITOSA]</color> Nuevo User ID activo en el juego: {idClave}");
+
+                SetEstadoBotonesClave(EstadoFormulario.GuardadoExito);
+            }
+            else
+            {
+                if (txtFeedbackServidorClave != null)
+                {
+                    txtFeedbackServidorClave.text = "Clave o ID inválido.";
+                    txtFeedbackServidorClave.color = colorInvalido;
+                }
+
+                SetEstadoBotonesClave(EstadoFormulario.GuardadoFallo);
+            }
+        }
+    }
+    #endregion
+
+    private class BypassCertificateHandler : CertificateHandler
+    {
+        protected override bool ValidateCertificate(byte[] certificateData) => true;
     }
 }

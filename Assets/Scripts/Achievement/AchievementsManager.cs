@@ -1,12 +1,12 @@
-
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
-using Unity.Netcode;
 
 public class AchievementsManager : MonoBehaviour
 {
@@ -36,6 +36,82 @@ public class AchievementsManager : MonoBehaviour
     private PlayerScore playerScore;
     private string rutaArchivo;
     private AchievementsData datos;
+
+    [System.Serializable]
+    private class LogroApiPayload
+    {
+        public string id_local;
+        public string username;
+        public string sublogro_clave;
+    }
+
+    [SerializeField]
+    private string idLocalJugador = "";
+
+    public string IdLocalJugador
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(idLocalJugador))
+            {
+                if (PlayerPrefs.HasKey("UsuarioIdLocal"))
+                    idLocalJugador = PlayerPrefs.GetString("UsuarioIdLocal");
+                else
+                {
+                    idLocalJugador = System.Guid.NewGuid().ToString();
+                    PlayerPrefs.SetString("UsuarioIdLocal", idLocalJugador);
+                    PlayerPrefs.Save();
+                }
+            }
+            return idLocalJugador;
+        }
+        set => idLocalJugador = value;
+    }
+
+    public string ObtenerUserId()
+    {
+        try
+        {
+            string id = PlayerIdentity.GetUserId();
+            if (!string.IsNullOrEmpty(id)) return id;
+        }
+        catch { }
+
+        if (!string.IsNullOrEmpty(idLocalJugador))
+            return idLocalJugador;
+
+        return SystemInfo.deviceUniqueIdentifier;
+    }
+    public string ObtenerUsername()
+    {
+        // 1. Si se configuró explícitamente en esta instancia
+        if (!string.IsNullOrWhiteSpace(usernameJugador) && usernameJugador != "UserUnity")
+            return usernameJugador.Trim();
+
+        // 2. Intentar leer desde PlayerIdentity si existe
+        try
+        {
+            string idNombre = PlayerIdentity.GetUsername();
+            if (!string.IsNullOrWhiteSpace(idNombre) && idNombre != "UserUnity")
+                return idNombre.Trim();
+        }
+        catch { }
+
+        // 3. Claves habituales de PlayerPrefs según la pantalla de selección de personajes
+        string[] clavesPrefs = { "PlayerUsername", "Username", "NombrePersonaje", "UsuarioNombre" };
+        foreach (string clave in clavesPrefs)
+        {
+            if (PlayerPrefs.HasKey(clave))
+            {
+                string guardado = PlayerPrefs.GetString(clave);
+                if (!string.IsNullOrWhiteSpace(guardado) && guardado != "UserUnity")
+                    return guardado.Trim();
+            }
+        }
+
+        // Fallback por defecto en caso de no existir datos guardados
+        return "Luch10";
+    }
 
     // ============================================================
     // COMPROBAR SI LOS LOGROS ESTÁN HABILITADOS
@@ -75,13 +151,6 @@ public class AchievementsManager : MonoBehaviour
     {
         public List<AchievementData> logros = new List<AchievementData>();
         public List<string> easterEggsEncontrados = new List<string>();
-    }
-
-    [System.Serializable]
-    private class LogroApiPayload
-    {
-        public string username;
-        public string sublogro_clave;
     }
 
     [System.Serializable]
@@ -720,7 +789,8 @@ public class AchievementsManager : MonoBehaviour
 
         LogroApiPayload payload = new LogroApiPayload
         {
-            username = this.usernameJugador,
+            id_local = IdLocalJugador,
+            username = ObtenerUsername(),
             sublogro_clave = sublogroClave
         };
 
@@ -1005,3 +1075,4 @@ public class AchievementsManager : MonoBehaviour
         return total;
     }
 }
+
