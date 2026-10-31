@@ -358,7 +358,19 @@ public void CompletarMision()
             return;
         }
 
-        pauseController.MostrarVictoria();
+       pauseController.MostrarVictoria();
+
+        // El logro aparece SOBRE la pantalla de victoria.
+        if (RoundManager.Instance != null)
+        {
+            RoundManager.Instance.DesbloquearLogroHistoria();
+        }
+        else
+        {
+            Debug.LogError(
+                "[Mansion] No se encontró RoundManager para desbloquear el logro."
+            );
+        }
 
         Debug.Log("[Mansion] Pantalla de victoria activada.");
     });

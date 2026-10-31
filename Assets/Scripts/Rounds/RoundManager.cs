@@ -207,6 +207,7 @@ private Coroutine misionMansionRoutine;
     private bool infiniteMode;
     private DifficultyLevel activeDifficulty = DifficultyLevel.Normal;
     private bool logroSupervivenciaDesbloqueado;
+    private bool logroHistoriaDesbloqueado;
 
     private int zombiesSpawnedThisRound;
     private int zombiesKilledThisRound;
@@ -245,30 +246,6 @@ private Coroutine misionMansionRoutine;
 
         Instance = this;
     }
-
-
-private void Update()
-{
-    if (!IsServer || Keyboard.current == null)
-        return;
-
-    // Prueba de victoria del modo Rondas.
-    if (Keyboard.current.kKey.wasPressedThisFrame &&
-        !EsModoHistoria &&
-        !infiniteMode)
-    {
-        CurrentRoundNetwork.Value = maxRounds;
-        EndRound();
-    }
-
-    // Prueba de llegada a la ronda 20 en Supervivencia.
-    if (Keyboard.current[Key.Semicolon].wasPressedThisFrame &&
-        !EsModoHistoria &&
-        infiniteMode)
-    {
-        StartRound(20);
-    }
-}
 
     // =========================================================
     // NETWORK SPAWN
@@ -2221,6 +2198,74 @@ public void BossHistoriaDerrotado()
             "[RoundManager] No se encontró GestorMansionHistoria."
         );
     }
+}
+
+public void DesbloquearLogroHistoria()
+{
+    if (!IsServer || !EsModoHistoria)
+        return;
+
+    if (logroHistoriaDesbloqueado)
+        return;
+
+    logroHistoriaDesbloqueado = true;
+
+    DesbloquearLogroHistoriaClientRpc(
+        DifficultyNetwork.Value
+    );
+
+    Debug.Log(
+        "[RoundManager] Logro de Historia desbloqueado."
+    );
+}
+
+[ClientRpc]
+private void DesbloquearLogroHistoriaClientRpc(
+    int dificultad
+)
+{
+    if (AchievementsManager.Instance == null)
+    {
+        Debug.LogWarning(
+            "[RoundManager] No se encontró AchievementsManager."
+        );
+
+        return;
+    }
+
+    AchievementRank rango;
+
+    switch ((DifficultyLevel)dificultad)
+    {
+        case DifficultyLevel.Normal:
+            rango = AchievementRank.Bronce;
+            break;
+
+        case DifficultyLevel.Dificil:
+            rango = AchievementRank.Plata;
+            break;
+
+        case DifficultyLevel.Pesadilla:
+            rango = AchievementRank.Oro;
+            break;
+
+        default:
+            Debug.LogWarning(
+                "[RoundManager] Dificultad desconocida: " +
+                dificultad
+            );
+            return;
+    }
+
+    AchievementsManager.Instance.DesbloquearRango(
+        AchievementId.Historiador,
+        rango
+    );
+
+    Debug.Log(
+        "[RoundManager] Logro Historiador registrado. " +
+        "Rango: " + rango
+    );
 }
 
 }
