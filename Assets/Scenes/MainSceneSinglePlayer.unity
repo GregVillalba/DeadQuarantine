@@ -2952,6 +2952,162 @@ MonoBehaviour:
   m_Center: {x: 0, y: 0, z: 0}
   m_Area: 1
   m_AffectedAgents: ffffffff
+--- !u!1001 &114629602
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 7422000663175666592}
+    m_Modifications:
+    - target: {fileID: 2911261630517708172, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -263.164
+      objectReference: {fileID: 0}
+    - target: {fileID: 2911261630517708172, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -10.826
+      objectReference: {fileID: 0}
+    - target: {fileID: 2911261630517708172, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -95.113
+      objectReference: {fileID: 0}
+    - target: {fileID: 2911261630517708172, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.49059954
+      objectReference: {fileID: 0}
+    - target: {fileID: 2911261630517708172, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2911261630517708172, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.87138516
+      objectReference: {fileID: 0}
+    - target: {fileID: 2911261630517708172, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2911261630517708172, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2911261630517708172, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 121.24
+      objectReference: {fileID: 0}
+    - target: {fileID: 2911261630517708172, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3227209398358897757, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8963679300333122791, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+      propertyPath: m_Name
+      value: EasterEggCiudad
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8963679300333122791, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 114629604}
+    - targetCorrespondingSourceObject: {fileID: 8963679300333122791, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 114629609}
+    - targetCorrespondingSourceObject: {fileID: 6383147026438347779, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 114629608}
+  m_SourcePrefab: {fileID: 100100000, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+--- !u!4 &114629603 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2911261630517708172, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+  m_PrefabInstance: {fileID: 114629602}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &114629604
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 114629607}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 2565192109
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!1 &114629605 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6383147026438347779, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+  m_PrefabInstance: {fileID: 114629602}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &114629606 stripped
+BoxCollider:
+  m_CorrespondingSourceObject: {fileID: 8856045160516351636, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+  m_PrefabInstance: {fileID: 114629602}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &114629607 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8963679300333122791, guid: 737e7d9aae0f0e1448d6f9857b0ddec5, type: 3}
+  m_PrefabInstance: {fileID: 114629602}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &114629608
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 114629605}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.31593183, y: 0.3621931, z: 0.17625228}
+  m_Center: {x: 0.0031833502, y: 0.18109655, z: -0.0028599354}
+--- !u!114 &114629609
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 114629607}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ab2a51764b7b2e418b2ad89df6859a9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::EasterEgg
+  ShowTopMostFoldoutHeaderGroup: 1
+  easterEggId: EasterEggCiudad
+  maxHealth: 1
+  rewardPoints: 1000
+  interactionDistance: 3
+  eggCollider: {fileID: 114629606}
 --- !u!1 &114634394
 GameObject:
   m_ObjectHideFlags: 0
@@ -54687,6 +54843,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7796596768711152548, guid: 4e7427283fddd5e4d8f3ca3c3b2bb3f6, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1895191484}
+    - targetCorrespondingSourceObject: {fileID: 7796596768711152548, guid: 4e7427283fddd5e4d8f3ca3c3b2bb3f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 114629603}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4e7427283fddd5e4d8f3ca3c3b2bb3f6, type: 3}
 --- !u!4 &7422000663175666592 stripped
