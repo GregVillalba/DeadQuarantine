@@ -50,6 +50,8 @@ public class MultiplayerMenuManager : MonoBehaviour
     [SerializeField] private GameObject botonComenzarJuego;
     [SerializeField] private GameObject botonHome;
 
+    [SerializeField] private MultiplayerLobbyController lobbyController;
+
     private enum ModoSeleccionado
     {
         Ninguno,
@@ -100,8 +102,10 @@ public class MultiplayerMenuManager : MonoBehaviour
             selectorModoHistoria.SetActive(true);
 
         MostrarCuadroSubmodo(cuadroSubmodoHistoria);
-        ApagarTodosLosSelectoresDificultad();
+       // ApagarTodosLosSelectoresDificultad();
+       ReiniciarDificultad();
         OcultarAvisoInhabilitado();
+        ActualizarPanelEscenarioSegunModo();
     }
 
     public void SeleccionarModoRonda5()
@@ -115,8 +119,10 @@ public class MultiplayerMenuManager : MonoBehaviour
             selectorModoRonda5.SetActive(true);
 
         MostrarCuadroSubmodo(cuadroSubmodoRonda5);
-        ApagarTodosLosSelectoresDificultad();
+       // ApagarTodosLosSelectoresDificultad();
+       ReiniciarDificultad();
         OcultarAvisoInhabilitado();
+        ActualizarPanelEscenarioSegunModo();
     }
 
     public void SeleccionarModoSupervivencia()
@@ -130,8 +136,10 @@ public class MultiplayerMenuManager : MonoBehaviour
             selectorModoSupervivencia.SetActive(true);
 
         MostrarCuadroSubmodo(cuadroSubmodoSupervivencia);
-        ApagarTodosLosSelectoresDificultad();
+        //ApagarTodosLosSelectoresDificultad();
+        ReiniciarDificultad();
         OcultarAvisoInhabilitado();
+        ActualizarPanelEscenarioSegunModo();
     }
 
     public void SeleccionarModalidadAleatoria()
@@ -184,7 +192,7 @@ public class MultiplayerMenuManager : MonoBehaviour
         MostrarAvisoInhabilitado();
     }*/
 
-        private void ElegirDificultad(
+   /*     private void ElegirDificultad(
         GameObject marcoSeleccionado,
         string nombreDificultad,
         ConfiguracionPartidaSeleccionada.Dificultad dificultad
@@ -218,7 +226,34 @@ public class MultiplayerMenuManager : MonoBehaviour
 
         // El personaje ya no se elige acá (se elige en la ventana PERSONAJE del lobby): se salta ese paso.
         AvanzarSinSeleccionDePersonaje();
+    }*/
+
+    private void ElegirDificultad(
+    GameObject marcoSeleccionado,
+    string nombreDificultad,
+    ConfiguracionPartidaSeleccionada.Dificultad dificultad
+)
+{
+    MarcarDificultadExclusiva(marcoSeleccionado);
+
+    if (!ModoHabilitado())
+    {
+        MostrarAvisoInhabilitado();
+        return;
     }
+
+    dificultadActual = dificultad;
+    textoNombreDificultad = nombreDificultad;
+    OcultarAvisoInhabilitado();
+
+    if (textoModalidadDificultad != null)
+    {
+        textoModalidadDificultad.text =
+            $"{textoNombreModo} - {textoNombreDificultad}";
+    }
+
+    AvanzarSiEstaCompleto(false);
+}
 
     // Reemplaza al paso viejo "elegir Jugador1 / Jugador2": va directo a elegir el escenario (o a comenzar en Historia).
     private void AvanzarSinSeleccionDePersonaje()
@@ -391,7 +426,8 @@ public void SeleccionarJugador1()
             vistaLaboratorio.SetActive(true);
 
         OcultarAvisoInhabilitado();
-        ValidarComenzar();
+       // ValidarComenzar();
+       AvanzarSiEstaCompleto(true);
     }
 
     // CIUDAD - TODAVÍA NO DISPONIBLE
@@ -427,14 +463,15 @@ public void SeleccionarJugador1()
             vistaCabana.SetActive(true);
 
         OcultarAvisoInhabilitado();
-        ValidarComenzar();
+       // ValidarComenzar();
+       AvanzarSiEstaCompleto(true);
     }
 
     // =========================================================
     // COMENZAR PARTIDA
     // =========================================================
 
-public void OnClick_ComenzarAJugar()
+/*public void OnClick_ComenzarAJugar()
 {
     bool puedeComenzar =
         jugador1Listo &&
@@ -470,6 +507,25 @@ public void OnClick_ComenzarAJugar()
 
     if (botonComenzarJuego != null)
         botonComenzarJuego.SetActive(false);
+    }*/
+
+    public void OnClick_ComenzarAJugar()
+{
+    jugador1Listo = true; // el personaje se elige en el lobby
+
+    if (!ConfiguracionCompleta())
+        return;
+
+    GuardarConfiguracionPartida();
+
+    if (ConfiguracionPartidaSeleccionada.Instancia == null)
+    {
+        Debug.LogError("MultiplayerMenuManager: NO EXISTE ConfiguracionPartidaSeleccionada.");
+        return;
+    }
+
+    if (lobbyController != null)
+        lobbyController.OnClick_CrearSala();
 }
 
 
@@ -643,7 +699,7 @@ else
             aparienciaPanel.SetActive(false);
 
         if (modalidadPanel != null)
-            modalidadPanel.SetActive(true);
+            modalidadPanel.SetActive(false);
 
         OcultarAvisoInhabilitado();
     }
@@ -810,4 +866,45 @@ private void ValidarComenzar()
         if (cartelAvisoInhabilitado != null)
             cartelAvisoInhabilitado.SetActive(false);
     }
+
+    private bool ConfiguracionCompleta()
+{
+    return ModoHabilitado() &&
+           dificultadActual != ConfiguracionPartidaSeleccionada.Dificultad.Ninguna &&
+           (modoActual == ModoSeleccionado.Historia || escenarioLista);
+}
+
+private void AvanzarSiEstaCompleto(bool avisar)
+{
+    if (ConfiguracionCompleta())
+        OnClick_ComenzarAJugar();
+    else if (avisar)
+        MostrarAvisoInhabilitado();
+}
+
+private void ReiniciarDificultad()
+{
+    dificultadActual = ConfiguracionPartidaSeleccionada.Dificultad.Ninguna;
+    textoNombreDificultad = "";
+    ApagarTodosLosSelectoresDificultad();
+
+    if (textoModalidadDificultad != null)
+        textoModalidadDificultad.text = textoNombreModo;
+}
+
+private void ActualizarPanelEscenarioSegunModo()
+{
+    bool necesitaMapa = modoActual == ModoSeleccionado.Ronda5 ||
+                        modoActual == ModoSeleccionado.Infinitas;
+
+    if (panelEscenario != null)
+        panelEscenario.SetActive(necesitaMapa);
+
+    if (!necesitaMapa) // Historia siempre es en el Laboratorio
+    {
+        escenarioLista = false;
+        ApagarSelectoresEscenarios();
+        OcultarVistasEscenarios();
+    }
+}
 }

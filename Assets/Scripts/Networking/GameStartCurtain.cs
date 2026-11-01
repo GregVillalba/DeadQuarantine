@@ -55,7 +55,7 @@ public class GameStartCurtain : MonoBehaviour
         }
     }
 
-    private void Update()
+   /* private void Update()
     {
         if (curtainHidden)
             return;
@@ -68,6 +68,42 @@ public class GameStartCurtain : MonoBehaviour
             Debug.LogWarning("[GameStartCurtain] Tiempo agotado: se abre la cortina aunque no todos esten ubicados.");
 
         OcultarCortina();
+    }*/
+
+    private void Update()
+    {
+        if (curtainHidden)
+            return;
+
+
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+        {
+            Debug.LogError("[GameStartCurtain] La red no está activa: vuelvo al menú.");
+            curtainHidden = true;
+
+            if (NetworkBootstrap.Instance != null)
+                _ = NetworkBootstrap.Instance.GoToMenuDueToDisconnect();
+
+            return;
+        }
+        if (!TodosListos())
+        {
+            if (Time.unscaledTime - inicioEspera < 20f)
+                return;
+
+            Debug.LogWarning("[GameStartCurtain] Tiempo agotado: se abre la cortina aunque no todos estén ubicados.");
+            LogEstadoJugadores();
+        }
+
+        OcultarCortina();
+    }
+
+    private void LogEstadoJugadores()
+    {
+        foreach (var a in FindObjectsByType<MultiplayerPlayerSpawnAssigner>(FindObjectsSortMode.None))
+        {
+            Debug.LogWarning($"[GameStartCurtain] clientId={a.OwnerClientId} | spawnIndex={a.AssignedSpawnIndex.Value} | IsAtSpawn={a.IsAtSpawn.Value} | pos={a.transform.position}");
+        }
     }
 
     private bool TodosListos()

@@ -20,6 +20,8 @@ public class MultiplayerLobbyController : MonoBehaviour
     [SerializeField] private GameObject ingresarCodPanel;
     [SerializeField] private GameObject salaEsperaPanel;
 
+    [SerializeField] private GameObject configuracionPartidaPanel;
+
     [Header("--- NETWORK ---")]
     [SerializeField] private NetworkBootstrap network;
 
@@ -84,6 +86,8 @@ public class MultiplayerLobbyController : MonoBehaviour
     [SerializeField] private Sprite iconoRojo;
 
     private bool estoyEnSala = false;
+
+    private bool creandoSala;
     private bool countdownIniciado = false;
     private bool miReady = false;
     private float tiempoCountdown = -1f;
@@ -224,6 +228,8 @@ public class MultiplayerLobbyController : MonoBehaviour
 
     public async void OnClick_CrearSala()
     {
+        if (creandoSala) return;
+
         if (!VerificarInternet())
             return;
 
@@ -241,6 +247,8 @@ public class MultiplayerLobbyController : MonoBehaviour
             MostrarSinInternet();
             return;
         }
+
+        creandoSala = true;
 
         try
         {
@@ -286,8 +294,33 @@ public class MultiplayerLobbyController : MonoBehaviour
         {
             Debug.LogError("[Lobby] Error creando sala: " + e.Message);
             MostrarSinInternet();
-        }
+            
+        }finally { creandoSala = false; }
     }
+
+   /* public void OnClick_IrAConfigurarPartida()
+{
+    if (!VerificarInternet())
+        return;
+
+    MostrarPanel(null); // oculta crear/unirse, código y sala
+
+    if (configuracionPartidaPanel != null)
+        configuracionPartidaPanel.SetActive(true);
+}*/
+
+public void OnClick_IrAConfigurarPartida()
+{
+    if (!VerificarInternet())
+        return;
+
+    MostrarPanel(configuracionPartidaPanel);
+}
+
+/*public void OnClick_AtrasDesdeConfiguracion()
+{
+    MostrarPanel(modoMultiplayerPanel);
+}*/
 
     // =========================================================
     // UNIRSE A SALA
@@ -1204,7 +1237,12 @@ public class MultiplayerLobbyController : MonoBehaviour
             {
                 vivos.Add(p);
             }
-            else if (sesion.IsHost && removiendo.Add(p.Id))
+           /* else if (sesion.IsHost && removiendo.Add(p.Id))
+            {
+                _ = QuitarJugador(p.Id);
+            }*/
+
+            else if (sesion.IsHost && !HayNetcodeActivo() && removiendo.Add(p.Id))
             {
                 _ = QuitarJugador(p.Id);
             }
@@ -1245,6 +1283,9 @@ public class MultiplayerLobbyController : MonoBehaviour
             return true;
         }
 
+        if (HayNetcodeActivo())
+            return false;
+
         // 2) El anfitrión cerró el juego sin avisar: dejó de latir.
         string hostId = sesion.Host;
         IReadOnlyList<IReadOnlyPlayer> todos = sesion.Players;
@@ -1261,8 +1302,19 @@ public class MultiplayerLobbyController : MonoBehaviour
         return false;
     }
 
+    // Una vez que Netcode está activo, la conexión real manda: el latido del lobby ya no sirve
+// (el host deja de latir apenas cambia de escena).
+private static bool HayNetcodeActivo()
+{
+    var nm = Unity.Netcode.NetworkManager.Singleton;
+    return nm != null && nm.IsListening;
+}
+
     private async void ManejarSalaCerrada(string titulo, string texto)
     {
+
+        Debug.LogWarning("[Lobby] ManejarSalaCerrada: " + titulo + " | " + texto);
+        
         if (saliendoPorCierre)
             return;
 
@@ -1310,8 +1362,12 @@ public class MultiplayerLobbyController : MonoBehaviour
     // PANELES
     // =========================================================
 
-    private void MostrarPanel(GameObject panelActivo)
+    /*private void MostrarPanel(GameObject panelActivo)
     {
+
+        if (configuracionPartidaPanel != null)
+            configuracionPartidaPanel.SetActive(false);
+
         if (modoMultiplayerPanel != null)
         {
             modoMultiplayerPanel.SetActive(
@@ -1332,7 +1388,28 @@ public class MultiplayerLobbyController : MonoBehaviour
                 salaEsperaPanel == panelActivo
             );
         }
-    }
+    }*/
+
+    private void MostrarPanel(GameObject panelActivo)
+{
+    // La pantalla principal (Crear/Unirse) queda visible también mientras
+    // se muestra la configuración o el ingreso de código.
+    bool pantallaPrincipal = panelActivo == modoMultiplayerPanel ||
+                             panelActivo == ingresarCodPanel ||
+                             panelActivo == configuracionPartidaPanel;
+
+    if (modoMultiplayerPanel != null)
+        modoMultiplayerPanel.SetActive(pantallaPrincipal);
+
+    if (ingresarCodPanel != null)
+        ingresarCodPanel.SetActive(panelActivo == ingresarCodPanel);
+
+    if (configuracionPartidaPanel != null)
+        configuracionPartidaPanel.SetActive(panelActivo == configuracionPartidaPanel);
+
+    if (salaEsperaPanel != null)
+        salaEsperaPanel.SetActive(panelActivo == salaEsperaPanel);
+}
 
     private void OnDestroy()
     {
