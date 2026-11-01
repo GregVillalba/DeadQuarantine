@@ -219,7 +219,30 @@ public class Weapon : MonoBehaviour
 
     private PlayerScore playerScore;
 
-    public bool InputLocked { get; set; }
+    private bool inputLocked;
+
+    public bool InputLocked
+    {
+        get => inputLocked;
+
+        set
+        {
+            if (inputLocked == value)
+                return;
+
+            inputLocked = value;
+
+            Debug.LogWarning(
+                "[INPUT LOCK] " +
+                gameObject.name +
+                " -> " +
+                value +
+                "\n" +
+                System.Environment.StackTrace,
+                this
+            );
+        }
+    }
 
     // =========================================================
     // VELOCIDAD DE RECARGA POR CLASE
