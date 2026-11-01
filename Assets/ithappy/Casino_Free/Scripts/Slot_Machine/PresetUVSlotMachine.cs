@@ -52,7 +52,8 @@ namespace ithappy.Casino
         }
 
         [Header("Reels — left to right")]
-        [SerializeField] private ReelSettings[] reels =
+        [SerializeField]
+        private ReelSettings[] reels =
         {
             new ReelSettings(), new ReelSettings(),
             new ReelSettings(), new ReelSettings()
@@ -73,7 +74,8 @@ namespace ithappy.Casino
         [SerializeField, Min(0f)] private float extraDurationPerReel = 0.28f;
         [SerializeField, Min(1)] private int firstReelFullTurns = 5;
         [SerializeField, Min(0)] private int extraTurnsPerReel = 1;
-        [SerializeField] private AnimationCurve spinCurve = new AnimationCurve(
+        [SerializeField]
+        private AnimationCurve spinCurve = new AnimationCurve(
             new Keyframe(0f, 0f, 0f, 2.8f),
             new Keyframe(0.12f, 0.22f, 2.2f, 2.2f),
             new Keyframe(0.62f, 0.82f, 0.75f, 0.75f),
@@ -82,7 +84,7 @@ namespace ithappy.Casino
         );
 
         [Header("Automatic Spins")]
-        [SerializeField] private bool autoPlay = true;
+        private bool autoPlay = false; // Sin SerializeField: el valor viejo guardado en la escena se ignora. Solo gira con TryPlay().
         [SerializeField] private Vector2 firstSpinDelayRange = new Vector2(0.5f, 2.5f);
         [SerializeField] private Vector2 delayBetweenSpinsRange = new Vector2(3f, 7f);
 
@@ -95,6 +97,9 @@ namespace ithappy.Casino
         private float loseAnimationChancePercent = 35f;
 
         [SerializeField] private List<ResultPreset> presets = new List<ResultPreset>();
+
+        [Header("Chances")]
+        [SerializeField, Min(1)] private int maxChances = 5;
 
         [Header("Character")]
         [SerializeField] private string characterPointName = "CharacterPoint";
@@ -126,10 +131,18 @@ namespace ithappy.Casino
         private int winHash;
         private int loseHash;
 
+        private int chancesLeft;
+
         public bool IsSpinning => isSpinning;
+        public int ChancesLeft => chancesLeft;
+        public bool CanPlay => !isSpinning && chancesLeft > 0;
+
+        /// <summary>Se dispara al frenar el último rodillo. true = victoria (4 sietes).</summary>
+        public event Action<bool> OnSpinFinished;
 
         private void Awake()
         {
+            chancesLeft = maxChances;
             sittingHash = Animator.StringToHash(sittingStatePath);
             winHash = Animator.StringToHash(winTriggerName);
             loseHash = Animator.StringToHash(loseTriggerName);
@@ -173,6 +186,17 @@ namespace ithappy.Casino
         {
             if (isActiveAndEnabled && !isSpinning)
                 StartCoroutine(SpinRoutine(null));
+        }
+
+        /// <summary>Gasta una chance y gira. Devuelve false si no quedan chances o ya está girando.</summary>
+        public bool TryPlay()
+        {
+            if (!isActiveAndEnabled || !CanPlay)
+                return false;
+
+            chancesLeft--;
+            StartCoroutine(SpinRoutine(null));
+            return true;
         }
 
         public void SpinPresetByIndex(int index)
@@ -254,6 +278,8 @@ namespace ithappy.Casino
                 spinAudioSource.Stop();
 
             PlayResult(preset.isWin);
+            isSpinning = false;
+            OnSpinFinished?.Invoke(preset.isWin);
             isSpinning = false;
         }
 

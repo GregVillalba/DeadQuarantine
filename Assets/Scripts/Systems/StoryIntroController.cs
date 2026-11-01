@@ -247,6 +247,8 @@ public void MostrarAvisoContinuarAMansion()
             popupHistoria.SetActive(true);
         }
 
+        PausarTiempoSiSinglePlayer();
+
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
 
@@ -271,6 +273,18 @@ public void MostrarAvisoContinuarAMansion()
     {
         return SceneManager.GetActiveScene().name == "MainSceneSinglePlayer";
     }
+
+    private void PausarTiempoSiSinglePlayer()
+{
+    if (EsSinglePlayer())
+        Time.timeScale = 0f;
+}
+
+private void ReanudarTiempoSiSinglePlayer()
+{
+    if (EsSinglePlayer())
+        Time.timeScale = 1f;
+}
 
     private void MostrarHistoriaInicial()
     {
@@ -325,6 +339,8 @@ public void MostrarAvisoContinuarAMansion()
         {
             Debug.LogWarning("[StoryIntro] No está asignado el popupHistoria en el Inspector.");
         }
+
+        PausarTiempoSiSinglePlayer();
 
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
@@ -437,6 +453,8 @@ public void MostrarAvisoContinuarAMansion()
             return;
 
         historiaActiva = false;
+
+        ReanudarTiempoSiSinglePlayer();
 
         if (popupHistoria != null)
             popupHistoria.SetActive(false);
@@ -610,6 +628,8 @@ if (IsServer)
 
         popupHistoria.SetActive(true);
     }
+
+    PausarTiempoSiSinglePlayer();
 
     Cursor.visible = true;
     Cursor.lockState = CursorLockMode.None;

@@ -3217,6 +3217,7 @@ MonoBehaviour:
   - {fileID: 7036610821726392580}
   - {fileID: 3478308533491710931}
   - {fileID: 7615892765546909144}
+  opcionesRecursos: []
 --- !u!1 &1844963654762826858
 GameObject:
   m_ObjectHideFlags: 0
@@ -8309,7 +8310,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3951894256
+  GlobalObjectIdHash: 3260451835
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -8337,8 +8338,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Scripts::MultiplayerPlayerSpawner
   ShowTopMostFoldoutHeaderGroup: 1
+  maxPlayers: 4
   playerSpawn1: {fileID: 1918946777242718424}
   playerSpawn2: {fileID: 0}
+  playerSpawn3: {fileID: 0}
+  playerSpawn4: {fileID: 0}
 --- !u!1 &4488509663248406991
 GameObject:
   m_ObjectHideFlags: 0
@@ -17283,7 +17287,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3240145876
+  GlobalObjectIdHash: 4068715115
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -20902,9 +20906,12 @@ MonoBehaviour:
   openAngle: 90
   openSpeed: 2
   invertOpenDirection: 0
+  crearRigidbodyAutomaticamente: 1
+  configurarRigidbodyAutomaticamente: 1
   audioSource: {fileID: 5753398414444889099}
   doorOpenSound: {fileID: 8300000, guid: 03dc2da98a55fa543b3f74ac216d270b, type: 3}
   doorCloseSound: {fileID: 8300000, guid: 29095896813de8448b824222be416347, type: 3}
+  detenerAnteJugadores: 0
 --- !u!114 &2330741604110315862
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20917,7 +20924,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 4178777323
+  GlobalObjectIdHash: 392454214
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -63115,9 +63122,12 @@ MonoBehaviour:
   openAngle: 90
   openSpeed: 2
   invertOpenDirection: 0
+  crearRigidbodyAutomaticamente: 1
+  configurarRigidbodyAutomaticamente: 1
   audioSource: {fileID: 6927846714695399130}
   doorOpenSound: {fileID: 8300000, guid: 03dc2da98a55fa543b3f74ac216d270b, type: 3}
   doorCloseSound: {fileID: 8300000, guid: 29095896813de8448b824222be416347, type: 3}
+  detenerAnteJugadores: 0
 --- !u!114 &7944047714563703712
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -63130,7 +63140,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1208736709
+  GlobalObjectIdHash: 1197234313
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -68705,7 +68715,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 4200288447
+  GlobalObjectIdHash: 2115484798
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -105907,9 +105917,12 @@ MonoBehaviour:
   openAngle: 90
   openSpeed: 2
   invertOpenDirection: 0
+  crearRigidbodyAutomaticamente: 1
+  configurarRigidbodyAutomaticamente: 1
   audioSource: {fileID: 8125072048475594831}
   doorOpenSound: {fileID: 8300000, guid: 03dc2da98a55fa543b3f74ac216d270b, type: 3}
   doorCloseSound: {fileID: 8300000, guid: 29095896813de8448b824222be416347, type: 3}
+  detenerAnteJugadores: 0
 --- !u!114 &8908324188466267836
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -105922,7 +105935,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 712266738
+  GlobalObjectIdHash: 3930805236
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -114861,7 +114874,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2496168035
+  GlobalObjectIdHash: 3302086593
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -131650,7 +131663,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 895210391
+  GlobalObjectIdHash: 882284094
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -131698,7 +131711,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3182290589
+  GlobalObjectIdHash: 2011303002
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -139665,7 +139678,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3896070704
+  GlobalObjectIdHash: 226296647
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -139697,9 +139710,12 @@ MonoBehaviour:
   openAngle: 90
   openSpeed: 2
   invertOpenDirection: 0
+  crearRigidbodyAutomaticamente: 1
+  configurarRigidbodyAutomaticamente: 1
   audioSource: {fileID: 6274034390219915488}
   doorOpenSound: {fileID: 8300000, guid: 03dc2da98a55fa543b3f74ac216d270b, type: 3}
   doorCloseSound: {fileID: 8300000, guid: 29095896813de8448b824222be416347, type: 3}
+  detenerAnteJugadores: 0
 --- !u!208 &7733509953962981064
 NavMeshObstacle:
   m_ObjectHideFlags: 0
@@ -145555,7 +145571,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2647584513
+  GlobalObjectIdHash: 2658758558
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -164125,9 +164141,12 @@ MonoBehaviour:
   openAngle: 90
   openSpeed: 2
   invertOpenDirection: 0
+  crearRigidbodyAutomaticamente: 1
+  configurarRigidbodyAutomaticamente: 1
   audioSource: {fileID: 7762193306195091319}
   doorOpenSound: {fileID: 8300000, guid: 03dc2da98a55fa543b3f74ac216d270b, type: 3}
   doorCloseSound: {fileID: 8300000, guid: 29095896813de8448b824222be416347, type: 3}
+  detenerAnteJugadores: 0
 --- !u!114 &9128192041069024500
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -164140,7 +164159,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2325758900
+  GlobalObjectIdHash: 2327324500
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -168487,9 +168506,12 @@ MonoBehaviour:
   openAngle: 90
   openSpeed: 2
   invertOpenDirection: 0
+  crearRigidbodyAutomaticamente: 1
+  configurarRigidbodyAutomaticamente: 1
   audioSource: {fileID: 4286560252990697838}
   doorOpenSound: {fileID: 8300000, guid: 03dc2da98a55fa543b3f74ac216d270b, type: 3}
   doorCloseSound: {fileID: 8300000, guid: 29095896813de8448b824222be416347, type: 3}
+  detenerAnteJugadores: 0
 --- !u!114 &2861515218663416829
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -168502,7 +168524,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1546090990
+  GlobalObjectIdHash: 3896950472
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -185932,7 +185954,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3851047928
+  GlobalObjectIdHash: 2260715793
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -185964,9 +185986,12 @@ MonoBehaviour:
   openAngle: 90
   openSpeed: 2
   invertOpenDirection: 0
+  crearRigidbodyAutomaticamente: 1
+  configurarRigidbodyAutomaticamente: 1
   audioSource: {fileID: 6949898155546699070}
   doorOpenSound: {fileID: 8300000, guid: 03dc2da98a55fa543b3f74ac216d270b, type: 3}
   doorCloseSound: {fileID: 8300000, guid: 29095896813de8448b824222be416347, type: 3}
+  detenerAnteJugadores: 0
 --- !u!208 &5086169903289218683
 NavMeshObstacle:
   m_ObjectHideFlags: 0
@@ -189045,7 +189070,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 242375605
+  GlobalObjectIdHash: 3727334099
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -189093,7 +189118,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3057562764
+  GlobalObjectIdHash: 1471231555
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -204000,9 +204025,12 @@ MonoBehaviour:
   openAngle: 90
   openSpeed: 2
   invertOpenDirection: 0
+  crearRigidbodyAutomaticamente: 1
+  configurarRigidbodyAutomaticamente: 1
   audioSource: {fileID: 2186409855117525127}
   doorOpenSound: {fileID: 8300000, guid: 03dc2da98a55fa543b3f74ac216d270b, type: 3}
   doorCloseSound: {fileID: 8300000, guid: 29095896813de8448b824222be416347, type: 3}
+  detenerAnteJugadores: 0
 --- !u!114 &3160216815837161227
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -204015,7 +204043,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3903604512
+  GlobalObjectIdHash: 3547264914
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -232186,7 +232214,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2343365905
+  GlobalObjectIdHash: 1485803584
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -232218,7 +232246,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3430976313
+  GlobalObjectIdHash: 4291291720
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -246429,7 +246457,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 4180963445
+  GlobalObjectIdHash: 2803030069
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0

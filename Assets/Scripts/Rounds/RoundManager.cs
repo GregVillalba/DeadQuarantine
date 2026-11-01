@@ -283,7 +283,8 @@ if (EsModoHistoria)
 {
     if (nombreEscena == "MainSceneSinglePlayer")
     {
-        IniciarHistoria();
+        //IniciarHistoria();
+        StartCoroutine(IniciarHistoriaTrasIntro());
     }
     else
     {
@@ -304,6 +305,12 @@ StartCoroutine(WaitForAllPlayersAtSpawnThenStart(1));*/
        StartCoroutine(WaitForAllPlayersAtSpawnThenStart(1));
 
     }
+
+    private IEnumerator IniciarHistoriaTrasIntro()
+{
+    yield return EsperarFinIntroLocal();
+    IniciarHistoria();
+}
     private void ConfigurarSpawnPointsDelEscenario()
 {
     GestorEscenariosPartida gestor =
@@ -338,7 +345,7 @@ StartCoroutine(WaitForAllPlayersAtSpawnThenStart(1));*/
     );
 }
 
-private IEnumerator StartSingleplayerRound(int round)
+/*private IEnumerator StartSingleplayerRound(int round)
    {
        float elapsed = 0f;
 
@@ -356,7 +363,48 @@ private IEnumerator StartSingleplayerRound(int round)
        }
 
        StartRound(round);
-   }
+   }*/
+
+   private IEnumerator StartSingleplayerRound(int round)
+{
+    yield return EsperarFinIntroLocal();
+    StartRound(round);
+}
+
+private IEnumerator EsperarFinIntroLocal()
+{
+    float elapsed = 0f;
+
+    while (elapsed < maxWaitForPlayersTime)
+    {
+        NetworkManager nm = NetworkManager.Singleton;
+
+        if (nm != null &&
+            nm.LocalClient != null &&
+            nm.LocalClient.PlayerObject != null)
+            break;
+
+        elapsed += Time.deltaTime;
+        yield return null;
+    }
+
+    // Un frame para que StoryIntroController marque historiaActiva.
+    yield return null;
+
+    NetworkManager manager = NetworkManager.Singleton;
+    StoryIntroController intro = null;
+
+    if (manager != null &&
+        manager.LocalClient != null &&
+        manager.LocalClient.PlayerObject != null)
+    {
+        intro = manager.LocalClient.PlayerObject
+            .GetComponentInChildren<StoryIntroController>(true);
+    }
+
+    while (intro != null && intro.HistoriaActiva)
+        yield return null;
+}
 
     private IEnumerator WaitForAllPlayersAtSpawnThenStart(int round)
     {

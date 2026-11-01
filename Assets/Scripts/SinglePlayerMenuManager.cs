@@ -112,8 +112,10 @@ public class SingleplayerMenuManager : MonoBehaviour
             selectorModoHistoria.SetActive(true);
 
         MostrarCuadroSubmodo(cuadroSubmodoHistoria);
-        ApagarTodosLosSelectoresDificultad();
+       // ApagarTodosLosSelectoresDificultad();
+        ReiniciarDificultad();
         OcultarAvisoInhabilitado();
+        ActualizarPanelEscenarioSegunModo();
     }
 
 
@@ -128,8 +130,10 @@ public class SingleplayerMenuManager : MonoBehaviour
             selectorModoRonda5.SetActive(true);
 
         MostrarCuadroSubmodo(cuadroSubmodoRonda5);
-        ApagarTodosLosSelectoresDificultad();
+        //ApagarTodosLosSelectoresDificultad();
+        ReiniciarDificultad();
         OcultarAvisoInhabilitado();
+        ActualizarPanelEscenarioSegunModo();
     }
 
 
@@ -144,8 +148,11 @@ public class SingleplayerMenuManager : MonoBehaviour
             selectorModoSupervivencia.SetActive(true);
 
         MostrarCuadroSubmodo(cuadroSubmodoSupervivencia);
-        ApagarTodosLosSelectoresDificultad();
+        //ApagarTodosLosSelectoresDificultad();
+
+        ReiniciarDificultad();
         OcultarAvisoInhabilitado();
+        ActualizarPanelEscenarioSegunModo();
     }
 
 
@@ -159,7 +166,7 @@ public class SingleplayerMenuManager : MonoBehaviour
     // 2. DIFICULTADES
     // =========================================================
 
-    private void ElegirDificultad(
+   /* private void ElegirDificultad(
         GameObject marcoSeleccionado,
         string nombreDificultad,
         ConfiguracionPartidaSeleccionada.Dificultad dificultad
@@ -206,7 +213,37 @@ public class SingleplayerMenuManager : MonoBehaviour
 
         if (panelEscenario != null)
             panelEscenario.SetActive(true);
+    }*/
+
+    private void ElegirDificultad(
+    GameObject marcoSeleccionado,
+    string nombreDificultad,
+    ConfiguracionPartidaSeleccionada.Dificultad dificultad
+)
+{
+    if (enLobby)
+        return;
+
+    MarcarDificultadExclusiva(marcoSeleccionado);
+
+    if (!ModoHabilitado())
+    {
+        MostrarAvisoInhabilitado();
+        return;
     }
+
+    dificultadActual = dificultad;
+    textoNombreDificultad = nombreDificultad;
+    OcultarAvisoInhabilitado();
+
+    if (textoModalidadDificultad != null)
+    {
+        textoModalidadDificultad.text =
+            $"{textoNombreModo} - {textoNombreDificultad}";
+    }
+
+    AvanzarSiEstaCompleto(false);
+}
 
     public void SeleccionarDificultadNormal(GameObject marcoSeleccionado)
     {
@@ -301,7 +338,8 @@ public class SingleplayerMenuManager : MonoBehaviour
 
         OcultarAvisoInhabilitado();
 
-        IrAlLobby();
+       // IrAlLobby();
+       AvanzarSiEstaCompleto(true);
     }
 
 
@@ -341,10 +379,40 @@ public class SingleplayerMenuManager : MonoBehaviour
             aparienciaPanel.SetActive(false);
 
         if (modalidadPanel != null)
-            modalidadPanel.SetActive(true);
+            modalidadPanel.SetActive(false);
 
         OcultarAvisoInhabilitado();
     }
+
+    public void MostrarConfiguracionSingleplayer()
+{
+    if (enLobby)
+        return;
+
+    if (modalidadPanel != null)
+        modalidadPanel.SetActive(true);
+}
+
+    public void BotonContinuar()
+{
+    if (enLobby)
+        return;
+
+    bool mapaOk = modoActual == ModoSeleccionado.Historia ||
+                  (selectorEscenario1 != null && selectorEscenario1.activeSelf) ||
+                  (selectorEscenario2 != null && selectorEscenario2.activeSelf) ||
+                  (selectorEscenario3 != null && selectorEscenario3.activeSelf);
+
+    if (!ModoHabilitado() ||
+        dificultadActual == ConfiguracionPartidaSeleccionada.Dificultad.Ninguna ||
+        !mapaOk)
+    {
+        MostrarAvisoInhabilitado(); // falta elegir algo
+        return;
+    }
+
+    IrAlLobby();
+}
 
 
     // =========================================================
@@ -802,4 +870,55 @@ public class SingleplayerMenuManager : MonoBehaviour
 
         return true;
     }
+
+    private void ReiniciarDificultad()
+{
+    dificultadActual = ConfiguracionPartidaSeleccionada.Dificultad.Ninguna;
+    textoNombreDificultad = "";
+    ApagarTodosLosSelectoresDificultad();
+
+    if (textoModalidadDificultad != null)
+        textoModalidadDificultad.text = textoNombreModo;
+}
+
+private void ActualizarPanelEscenarioSegunModo()
+{
+    bool necesitaMapa = modoActual == ModoSeleccionado.Ronda5 ||
+                        modoActual == ModoSeleccionado.Infinitas;
+
+    if (aparienciaPanel != null)
+        aparienciaPanel.SetActive(necesitaMapa);
+
+    if (panelEscenario != null)
+        panelEscenario.SetActive(necesitaMapa);
+
+    if (!necesitaMapa) // Historia siempre es en el Laboratorio
+    {
+        ApagarSelectoresEscenarios();
+        OcultarVistasEscenarios();
+    }
+}
+
+private bool ConfiguracionCompleta()
+{
+    bool mapaOk = modoActual == ModoSeleccionado.Historia ||
+                  (selectorEscenario1 != null && selectorEscenario1.activeSelf) ||
+                  (selectorEscenario2 != null && selectorEscenario2.activeSelf) ||
+                  (selectorEscenario3 != null && selectorEscenario3.activeSelf);
+
+    return ModoHabilitado() &&
+           dificultadActual != ConfiguracionPartidaSeleccionada.Dificultad.Ninguna &&
+           mapaOk;
+}
+
+private void AvanzarSiEstaCompleto(bool avisar)
+{
+    if (enLobby)
+        return;
+
+    if (ConfiguracionCompleta())
+        IrAlLobby();
+    else if (avisar)
+        MostrarAvisoInhabilitado(); // falta elegir algo
+}
 }

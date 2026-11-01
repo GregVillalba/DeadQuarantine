@@ -215,6 +215,11 @@ public class GestorEscenariosPartida : MonoBehaviour
             if (estado.behaviours[i] != null)
                 estado.behaviours[i].enabled = estado.behavioursActivos[i];
         }
+
+        int r = 0, c = 0;
+        foreach (var x in estado.renderers) if (x != null && x.enabled) r++;
+        foreach (var x in estado.colliders) if (x != null && x.enabled) c++;
+        Debug.Log($"[Escenarios] Mostrar '{raiz.name}': renderers {r}/{estado.renderers.Length}, colliders {c}/{estado.colliders.Length}, activeInHierarchy={raiz.activeInHierarchy}");
     }
 
     private void ConfigurarEscenarioInicial()
@@ -234,6 +239,7 @@ public class GestorEscenariosPartida : MonoBehaviour
 
     private void DesactivarTodasLasUbicaciones()
     {
+        Debug.Log("[Escenarios] DesactivarTodasLasUbicaciones llamado.");
         OcultarEscenario(ObtenerRaiz(escenarioLaboratorio));
         OcultarEscenario(ObtenerRaiz(escenarioCiudad));
         OcultarEscenario(ObtenerRaiz(escenarioCabana));
