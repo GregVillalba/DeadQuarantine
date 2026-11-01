@@ -253,6 +253,54 @@ MonoBehaviour:
       NameHash: 1654612129
       Synchronize: 1
       ParameterType: 9
+    - name: MoveX
+      NameHash: 675470966
+      Synchronize: 1
+      ParameterType: 1
+    - name: MoveY
+      NameHash: 1598418656
+      Synchronize: 1
+      ParameterType: 1
+    - name: IdleVariant
+      NameHash: -1623148628
+      Synchronize: 1
+      ParameterType: 1
+    - name: WalkVariant
+      NameHash: -1872527081
+      Synchronize: 1
+      ParameterType: 1
+    - name: RunVariant
+      NameHash: -2102635681
+      Synchronize: 1
+      ParameterType: 1
+    - name: SprintVariant
+      NameHash: 200000594
+      Synchronize: 1
+      ParameterType: 1
+    - name: Running
+      NameHash: -526601997
+      Synchronize: 1
+      ParameterType: 4
+    - name: Sprint
+      NameHash: -399748991
+      Synchronize: 1
+      ParameterType: 4
+    - name: Spawning
+      NameHash: 1861146890
+      Synchronize: 1
+      ParameterType: 4
+    - name: AttackIndex
+      NameHash: 1829795364
+      Synchronize: 1
+      ParameterType: 3
+    - name: HitIndex
+      NameHash: -1772617784
+      Synchronize: 1
+      ParameterType: 3
+    - name: Spawn
+      NameHash: 1372578019
+      Synchronize: 1
+      ParameterType: 9
   AnimatorParametersExpanded: 0
 --- !u!95 &95735755972598296
 Animator:
@@ -339,8 +387,21 @@ MonoBehaviour:
   useDifficultyDamageOverride: 1
   attackCooldown: 1.5
   attackHitDelay: 0.35
-  walkSpeed: 1.5
-  runSpeed: 3
+  attackAnimationMaxDuration: 3
+  walkSpeed: 2
+  runSpeed: 6
+  baseSpeedBoost: 1.1
+  locomotionDampTime: 0.12
+  sprintChance: 0.25
+  rerollLocomotionOnMoveStart: 1
+  idleVariantChangeInterval: 5
+  freezeDuringHitReaction: 1
+  hitReactionEnterTimeout: 0.35
+  hitReactionMaxDuration: 3
+  emergeFromGround: 1
+  groundSpawnEffectPrefab: {fileID: 1522700639015384, guid: 3a16b32bf79fd14489d750c7e43eba9d, type: 3}
+  spawnStateEnterTimeout: 0.5
+  spawnMaxDuration: 8
   efectoAturdido: {fileID: 1406593679585224, guid: 415a745d154d60545b9ff3810609eba7, type: 3}
   alturaEfectoAturdido: 1.8
 --- !u!114 &8216558089616959420
@@ -367,6 +428,12 @@ MonoBehaviour:
   colorVidaBaja: {r: 1, g: 0, b: 0, a: 1}
   bloodImpactPrefab: {fileID: 1036925697551712, guid: a845e59c374ae0240812749e46f13033, type: 3}
   bloodDestroyDelay: 2
+  usarHitReactionLocalizado: 1
+  radioDeteccionBrazo: 0.42
+  umbralLateralBrazoFallback: 0.16
+  crearHitboxesBrazosAutomaticas: 1
+  radioHitboxBrazo: 0.12
+  extensionHitboxBrazo: 0.06
   efectoQuemadura: {fileID: 1853590768085000, guid: 1356dc656cdf1654faa01a76e60e6b45, type: 3}
   alturaEfectoQuemadura: 1
 --- !u!82 &6644753119058639874

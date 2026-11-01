@@ -1226,7 +1226,12 @@ public class Weapon : MonoBehaviour
             spreadDirection
         );
 
-        RaycastHit[] hits = Physics.RaycastAll(ray, range);
+        RaycastHit[] hits = Physics.RaycastAll(
+            ray,
+            range,
+            ~0,
+            QueryTriggerInteraction.Collide
+        );
 
         System.Array.Sort(
             hits,
@@ -1238,6 +1243,18 @@ public class Weapon : MonoBehaviour
 
         foreach (RaycastHit hit in hits)
         {
+            // Al forzar QueryTriggerInteraction.Collide podemos detectar los hitboxes
+            // auxiliares de cabeza/brazos. El resto de triggers del mapa se ignora.
+            if (hit.collider.isTrigger)
+            {
+                bool esHitboxZombie =
+                    hit.collider.GetComponent<ZombieHeadHitbox>() != null ||
+                    hit.collider.GetComponent<ZombieLimbHitbox>() != null;
+
+                if (!esHitboxZombie)
+                    continue;
+            }
+
             PlayerHealth playerHit =
                 hit.collider.GetComponentInParent<PlayerHealth>();
 
@@ -1323,6 +1340,31 @@ if (zombieHealth != null)
         }
     }
 
+    // Busca hitboxes de brazo del mismo zombie a lo largo de este mismo rayo.
+    // Esto permite distinguir brazos aunque el collider general del cuerpo también
+    // haya sido alcanzado. La cabeza sigue teniendo prioridad.
+    int hitVariantExplicito = -1;
+    float closestLimbDistance = float.PositiveInfinity;
+
+    foreach (RaycastHit h in hits)
+    {
+        ZombieLimbHitbox limb =
+            h.collider.GetComponent<ZombieLimbHitbox>();
+
+        if (limb == null || limb.Owner != zombieHealth)
+            continue;
+
+        // Evita clasificar como brazo un hitbox muy por detrás del impacto real.
+        if (h.distance > hit.distance + 0.45f)
+            continue;
+
+        if (h.distance < closestLimbDistance)
+        {
+            closestLimbDistance = h.distance;
+            hitVariantExplicito = limb.HitVariant;
+        }
+    }
+
     // Solo el primer headshot del disparo se registra para el logro.
     bool registrarHeadshot =
         esHeadshot && !headshotRegistradoEnDisparo;
@@ -1342,7 +1384,8 @@ if (zombieHealth != null)
         hit.point,
         hit.normal,
         esHeadshot,
-        registrarHeadshot
+        registrarHeadshot,
+        hitVariantExplicito
     );
 
     if (playerScore != null)

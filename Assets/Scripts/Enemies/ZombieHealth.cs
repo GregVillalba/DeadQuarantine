@@ -28,6 +28,22 @@ public class ZombieHealth : NetworkBehaviour
     [SerializeField] private GameObject bloodImpactPrefab;
     [SerializeField] private float bloodDestroyDelay = 2f;
 
+    [Header("--- HIT REACTION LOCALIZADO ---")]
+    [Tooltip("Cabeza = Head, brazo izquierdo = LeftArm, brazo derecho = RightArm. Torso y piernas no interrumpen la locomoción.")]
+    [SerializeField] private bool usarHitReactionLocalizado = true;
+    [Tooltip("Distancia máxima en metros entre el punto del disparo y la cadena de huesos del brazo para considerarlo un impacto en ese brazo.")]
+    [SerializeField] private float radioDeteccionBrazo = 0.42f;
+    [Tooltip("Fallback para rigs no Humanoid: distancia lateral mínima respecto al centro para considerar que el disparo fue al brazo.")]
+    [SerializeField] private float umbralLateralBrazoFallback = 0.16f;
+
+    [Header("--- HITBOXES DE BRAZOS (DISPAROS) ---")]
+    [Tooltip("Crea automáticamente hitboxes trigger que siguen los huesos de ambos brazos. No empujan al jugador ni afectan el ragdoll.")]
+    [SerializeField] private bool crearHitboxesBrazosAutomaticas = true;
+    [Tooltip("Grosor aproximado de los hitboxes de brazo. 0.11-0.14 suele funcionar bien.")]
+    [SerializeField] private float radioHitboxBrazo = 0.12f;
+    [Tooltip("Extiende un poco cada cápsula hacia las articulaciones para evitar huecos entre brazo/antebrazo.")]
+    [SerializeField] private float extensionHitboxBrazo = 0.06f;
+
     [Header("--- QUEMADURA (granada incendiaria) ---")]
     [Tooltip("Fuego que se prende encima del zombie mientras se quema. Vacío = se quema sin efecto visual.")]
     [SerializeField] private GameObject efectoQuemadura;
@@ -97,6 +113,9 @@ public void MarcarComoBossHistoria()
     private int ragdollLayer;
     private int[] ragdollOriginalLayers;
 
+    private readonly List<ZombieLimbHitbox> armShotHitboxes =
+        new List<ZombieLimbHitbox>();
+
     private void Awake()
     {
         animator = GetComponent<Animator>();
@@ -125,6 +144,106 @@ public void MarcarComoBossHistoria()
         ragdollOriginalLayers = new int[ragdollColliders.Length];
         for (int i = 0; i < ragdollColliders.Length; i++)
             ragdollOriginalLayers[i] = ragdollColliders[i].gameObject.layer;
+
+        CrearHitboxesBrazosSiCorresponde();
+    }
+
+    // =========================================================
+    // HITBOXES DE BRAZOS PARA DISPAROS
+    // =========================================================
+
+    private void CrearHitboxesBrazosSiCorresponde()
+    {
+        if (!crearHitboxesBrazosAutomaticas)
+            return;
+
+        if (animationDriver != null)
+            return;
+
+        if (animator == null || !animator.isHuman)
+            return;
+
+        armShotHitboxes.Clear();
+
+        CrearHitboxSegmentoBrazo(
+            animator.GetBoneTransform(HumanBodyBones.LeftUpperArm),
+            animator.GetBoneTransform(HumanBodyBones.LeftLowerArm),
+            1,
+            "ShotHitbox_LeftUpperArm"
+        );
+
+        CrearHitboxSegmentoBrazo(
+            animator.GetBoneTransform(HumanBodyBones.LeftLowerArm),
+            animator.GetBoneTransform(HumanBodyBones.LeftHand),
+            1,
+            "ShotHitbox_LeftLowerArm"
+        );
+
+        CrearHitboxSegmentoBrazo(
+            animator.GetBoneTransform(HumanBodyBones.RightUpperArm),
+            animator.GetBoneTransform(HumanBodyBones.RightLowerArm),
+            2,
+            "ShotHitbox_RightUpperArm"
+        );
+
+        CrearHitboxSegmentoBrazo(
+            animator.GetBoneTransform(HumanBodyBones.RightLowerArm),
+            animator.GetBoneTransform(HumanBodyBones.RightHand),
+            2,
+            "ShotHitbox_RightLowerArm"
+        );
+    }
+
+    private void CrearHitboxSegmentoBrazo(
+        Transform inicio,
+        Transform fin,
+        int hitVariant,
+        string nombre)
+    {
+        if (inicio == null || fin == null)
+            return;
+
+        Vector3 worldB = fin.position;
+        Vector3 worldDirection = worldB - inicio.position;
+        float length = worldDirection.magnitude;
+
+        if (length <= 0.01f)
+            return;
+
+        GameObject hitboxObject = new GameObject(nombre);
+        hitboxObject.layer = gameObject.layer;
+        hitboxObject.transform.SetParent(inicio, false);
+
+        Vector3 localEnd = inicio.InverseTransformPoint(worldB);
+        Vector3 localDirection = localEnd.normalized;
+
+        hitboxObject.transform.localPosition = localEnd * 0.5f;
+        hitboxObject.transform.localRotation =
+            Quaternion.FromToRotation(Vector3.up, localDirection);
+        hitboxObject.transform.localScale = Vector3.one;
+
+        CapsuleCollider capsule = hitboxObject.AddComponent<CapsuleCollider>();
+        capsule.isTrigger = true;
+        capsule.direction = 1;
+        capsule.radius = Mathf.Max(0.03f, radioHitboxBrazo);
+        capsule.height = Mathf.Max(
+            capsule.radius * 2f,
+            length + Mathf.Max(0f, extensionHitboxBrazo)
+        );
+        capsule.center = Vector3.zero;
+
+        ZombieLimbHitbox marker = hitboxObject.AddComponent<ZombieLimbHitbox>();
+        marker.Initialize(this, hitVariant, capsule);
+        armShotHitboxes.Add(marker);
+    }
+
+    private void SetArmShotHitboxesActive(bool active)
+    {
+        foreach (ZombieLimbHitbox hitbox in armShotHitboxes)
+        {
+            if (hitbox != null)
+                hitbox.SetActive(active);
+        }
     }
 
     // =========================================================
@@ -303,7 +422,8 @@ public void MarcarComoBossHistoria()
     Vector3 hitPoint,
     Vector3 hitNormal,
     bool esHeadshot = false,
-    bool registrarHeadshot = false
+    bool registrarHeadshot = false,
+    int hitVariantExplicito = -1
 )
 {
     if (IsDead)
@@ -314,7 +434,8 @@ public void MarcarComoBossHistoria()
         hitPoint,
         hitNormal,
         esHeadshot,
-        registrarHeadshot
+        registrarHeadshot,
+        hitVariantExplicito
     );
 }
 
@@ -325,6 +446,7 @@ private void TakeDamageServerRpc(
     Vector3 hitNormal,
     bool esHeadshot,
     bool registrarHeadshot,
+    int hitVariantExplicito,
     ServerRpcParams rpcParams = default
 )
     {
@@ -334,6 +456,7 @@ private void TakeDamageServerRpc(
             hitNormal,
             esHeadshot,
             registrarHeadshot,
+            hitVariantExplicito,
             rpcParams.Receive.SenderClientId,
             true
         );
@@ -361,6 +484,7 @@ private void TakeDamageServerRpc(
             hitNormal,
             false,
             false,
+            -1,
             atacanteClientId,
             efectosDeImpacto
         );
@@ -372,6 +496,7 @@ private void TakeDamageServerRpc(
         Vector3 hitNormal,
         bool esHeadshot,
         bool registrarHeadshot,
+        int hitVariantExplicito,
         ulong shooterClientId,
         bool efectosDeImpacto
     )
@@ -418,7 +543,18 @@ private void TakeDamageServerRpc(
         }
         else if (efectosDeImpacto)
         {
-            PlayHitEffectsClientRpc();
+            // 0 = cabeza, 1 = brazo izquierdo, 2 = brazo derecho.
+            // -1 = torso/piernas: conserva sangre/sonido pero no corta la locomoción.
+            int hitVariant = DeterminarHitReactionLocalizado(
+                hitPoint,
+                headshotAplicado,
+                hitVariantExplicito
+            );
+
+            if (zombieAI != null && hitVariant >= 0)
+                zombieAI.ReaccionarAlImpacto(hitVariant);
+
+            PlayHitEffectsClientRpc(hitVariant);
 
             ShowHitMarkerClientRpc(
                 shooterClientId,
@@ -440,6 +576,140 @@ if (headshotAplicado)
                 hitNormal
             );
         }
+    }
+
+
+    // =========================================================
+    // HIT REACTION SEGÚN ZONA IMPACTADA
+    // =========================================================
+
+    private int DeterminarHitReactionLocalizado(
+        Vector3 hitPoint,
+        bool esHeadshot,
+        int hitVariantExplicito)
+    {
+        // Los AnimationDriver (perro zombie, etc.) mantienen su reacción propia.
+        if (animationDriver != null)
+            return 0;
+
+        if (esHeadshot)
+            return 0; // Zombie_HitReact_Head
+
+        // Si Weapon atravesó uno de los hitboxes de brazo, ya sabemos la zona exacta.
+        if (hitVariantExplicito == 1 || hitVariantExplicito == 2)
+            return hitVariantExplicito;
+
+        if (!usarHitReactionLocalizado)
+            return Random.Range(1, 3);
+
+        Vector3 localHit = transform.InverseTransformPoint(hitPoint);
+        bool sufficientlyLateralForArm =
+            Mathf.Abs(localHit.x) >= Mathf.Max(0.02f, umbralLateralBrazoFallback);
+
+        if (animator != null && animator.isHuman && sufficientlyLateralForArm)
+        {
+            float leftDistance = DistanciaABrazo(
+                hitPoint,
+                HumanBodyBones.LeftUpperArm,
+                HumanBodyBones.LeftLowerArm,
+                HumanBodyBones.LeftHand
+            );
+
+            float rightDistance = DistanciaABrazo(
+                hitPoint,
+                HumanBodyBones.RightUpperArm,
+                HumanBodyBones.RightLowerArm,
+                HumanBodyBones.RightHand
+            );
+
+            float closest = Mathf.Min(leftDistance, rightDistance);
+
+            if (closest <= Mathf.Max(0.05f, radioDeteccionBrazo))
+            {
+                return leftDistance <= rightDistance
+                    ? 1   // Zombie_HitReact_LeftArm
+                    : 2;  // Zombie_HitReact_RightArm
+            }
+        }
+
+        // Fallback para un Avatar no Humanoid. Se usa el punto real del impacto
+        // respecto del zombie, pero solamente en la franja vertical del torso/brazos.
+        float estimatedHeight = 2f;
+        if (agent != null && agent.height > 0.1f)
+            estimatedHeight = agent.height;
+        else
+        {
+            CapsuleCollider capsule = GetComponent<CapsuleCollider>();
+            if (capsule != null)
+                estimatedHeight = capsule.height;
+        }
+
+        float normalizedY = localHit.y / Mathf.Max(0.1f, estimatedHeight);
+        bool armHeight = normalizedY >= 0.42f && normalizedY <= 0.88f;
+        bool sufficientlyLateral =
+            Mathf.Abs(localHit.x) >= Mathf.Max(0.02f, umbralLateralBrazoFallback);
+
+        if (armHeight && sufficientlyLateral)
+        {
+            // Convención humanoide de Unity mirando +Z: +X = derecha del personaje.
+            return localHit.x < 0f ? 1 : 2;
+        }
+
+        // El usuario prefirió no usar las reacciones de piernas. Para torso/piernas
+        // se reproduce sangre/sonido, pero no una animación de hit incorrecta.
+        return -1;
+    }
+
+    private float DistanciaABrazo(
+        Vector3 hitPoint,
+        HumanBodyBones upperBone,
+        HumanBodyBones lowerBone,
+        HumanBodyBones handBone)
+    {
+        Transform upper = animator.GetBoneTransform(upperBone);
+        Transform lower = animator.GetBoneTransform(lowerBone);
+        Transform hand = animator.GetBoneTransform(handBone);
+
+        if (upper == null || lower == null)
+            return float.PositiveInfinity;
+
+        float distance = DistanciaPuntoSegmento(
+            hitPoint,
+            upper.position,
+            lower.position
+        );
+
+        if (hand != null)
+        {
+            distance = Mathf.Min(
+                distance,
+                DistanciaPuntoSegmento(
+                    hitPoint,
+                    lower.position,
+                    hand.position
+                )
+            );
+        }
+
+        return distance;
+    }
+
+    private static float DistanciaPuntoSegmento(
+        Vector3 point,
+        Vector3 a,
+        Vector3 b)
+    {
+        Vector3 ab = b - a;
+        float sqrLength = ab.sqrMagnitude;
+
+        if (sqrLength <= 0.000001f)
+            return Vector3.Distance(point, a);
+
+        float t = Vector3.Dot(point - a, ab) / sqrLength;
+        t = Mathf.Clamp01(t);
+
+        Vector3 closest = a + ab * t;
+        return Vector3.Distance(point, closest);
     }
 
     // =========================================================
@@ -497,6 +767,7 @@ if (headshotAplicado)
                 Vector3.up,
                 false,
                 false,
+                -1,
                 atacanteQuemadura,
                 false
             );
@@ -706,22 +977,41 @@ if (headshotAplicado)
     // =========================================================
 
     [ClientRpc]
-    private void PlayHitEffectsClientRpc()
+    private void PlayHitEffectsClientRpc(int hitVariant)
     {
         if (animationDriver != null)
         {
+            // Perro zombie y futuros AnimationDriver conservan su sistema propio.
             animationDriver.PlayHit();
         }
-        else if (animator != null &&
-            animator.enabled)
+        else if (hitVariant >= 0 && animator != null && animator.enabled)
         {
-            animator.SetTrigger("Hit");
+            int hitIndexHash = Animator.StringToHash("HitIndex");
+            int hitHash = Animator.StringToHash("Hit");
+
+            bool hasHitIndex = false;
+            bool hasHit = false;
+
+            foreach (AnimatorControllerParameter parameter in animator.parameters)
+            {
+                if (parameter.nameHash == hitIndexHash)
+                    hasHitIndex = true;
+                else if (parameter.nameHash == hitHash)
+                    hasHit = true;
+            }
+
+            if (hasHitIndex)
+                animator.SetInteger(hitIndexHash, Mathf.Clamp(hitVariant, 0, 2));
+
+            // El servidor ya disparó Hit localmente en ZombieAI para poder medir
+            // exactamente cuándo termina la reacción. El ClientRpc reproduce el mismo
+            // trigger en los clientes remotos con la misma variante.
+            if (hasHit && (!IsServer || zombieAI == null))
+                animator.SetTrigger(hitHash);
         }
 
         if (zombieAudio != null)
-        {
             zombieAudio.PlayHitSound();
-        }
     }
 
     // =========================================================
@@ -820,6 +1110,8 @@ private void Die(ulong shooterClientId)
 //======================== NUEVO =========================
         if (zombieHeadshot != null)
             zombieHeadshot.DesactivarHitbox();
+
+        SetArmShotHitboxesActive(false);
 //=========================================================
         if (zombieAudio != null)
         {
@@ -944,6 +1236,8 @@ private void Die(ulong shooterClientId)
         if (zombieAI != null) zombieAI.enabled = true;
         if (zombieHeadshot != null)
             zombieHeadshot.ActivarHitbox();
+
+        SetArmShotHitboxesActive(true);
             
         if (animator != null)
         {
@@ -958,6 +1252,11 @@ private void Die(ulong shooterClientId)
             healthSlider.gameObject.SetActive(true);
 
         ActualizarBarraDeVida();
+
+        // El tutorial reutiliza el mismo NetworkObject en lugar de spawnear otro.
+        // Reproduce nuevamente la secuencia de salida de la tierra si está habilitada.
+        if (IsServer && zombieAI != null)
+            zombieAI.ReproducirAparicionDesdeTierra();
     }
     private void SumarHeadshotAlJugador(ulong shooterClientId)
 {
