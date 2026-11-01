@@ -43892,6 +43892,8 @@ MonoBehaviour:
   radioPrefab: {fileID: 7538897277733069475, guid: 9768d9ad6a4b4384aa660b9d4bd80dd4, type: 3}
   puntoSpawnRadio: {fileID: 7422000663175666593}
   distanciaRecogidaRadio: 3
+  puntoSalidaCiudad: {fileID: 7422000663175666594}
+  distanciaActivacionSalidaCiudad: 6
   textoTituloObjetivo: {fileID: 0}
   textoDescripcionObjetivo: {fileID: 0}
   EstadoMisionNetwork:
@@ -54676,6 +54678,18 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 5bb68a94905ffc0418608fc7e572ea42, type: 2}
+    - target: {fileID: 5005494345261436660, guid: 4e7427283fddd5e4d8f3ca3c3b2bb3f6, type: 3}
+      propertyPath: m_InScenePlaced
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5005494345261436660, guid: 4e7427283fddd5e4d8f3ca3c3b2bb3f6, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 912305953
+      objectReference: {fileID: 0}
+    - target: {fileID: 5005494345261436660, guid: 4e7427283fddd5e4d8f3ca3c3b2bb3f6, type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5187702886135811286, guid: 4e7427283fddd5e4d8f3ca3c3b2bb3f6, type: 3}
       propertyPath: m_LocalPosition.x
       value: -147.3
@@ -54934,6 +54948,11 @@ Transform:
 --- !u!4 &7422000663175666593 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3466358354614147062, guid: 4e7427283fddd5e4d8f3ca3c3b2bb3f6, type: 3}
+  m_PrefabInstance: {fileID: 7422000663175666591}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &7422000663175666594 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2130526987700564790, guid: 4e7427283fddd5e4d8f3ca3c3b2bb3f6, type: 3}
   m_PrefabInstance: {fileID: 7422000663175666591}
   m_PrefabAsset: {fileID: 0}
 --- !u!114 &7700000000000006001

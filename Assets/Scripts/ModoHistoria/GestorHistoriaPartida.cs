@@ -17,6 +17,7 @@ public class GestorHistoriaPartida : NetworkBehaviour
     private const int HistoriaCiudadCompletada = 7;
     private const int EnZonaSegura = 8;
     private const int MisionFinalCabana = 9;
+    private const int IrAlCaminoSalida = 10;
     private bool animacionAperturaEjecutada;
     private bool misionCiudadInicializada;
     private readonly HashSet<ulong> jugadoresEnZonaSegura = new HashSet<ulong>();
@@ -37,12 +38,18 @@ public class GestorHistoriaPartida : NetworkBehaviour
     [SerializeField] private GameObject radioPrefab;
     [SerializeField] private Transform puntoSpawnRadio;
     [SerializeField] private float distanciaRecogidaRadio = 3f;
+    [Header("Salida de Ciudad")]
+    [SerializeField] private Transform puntoSalidaCiudad;
+    [SerializeField] private float distanciaActivacionSalidaCiudad = 6f;
 
     [Header("HUD local")]
     [SerializeField] private TMP_Text textoTituloObjetivo;
     [SerializeField] private TMP_Text textoDescripcionObjetivo;
 
 
+    public bool EsperandoSalidaCiudad =>
+    IsSpawned &&
+    EstadoMisionNetwork.Value == IrAlCaminoSalida;
     public static GestorHistoriaPartida Instance { get; private set; }
 
     public NetworkVariable<int> EstadoMisionNetwork =
@@ -275,6 +282,12 @@ public override void OnNetworkSpawn()
         textoDescripcionObjetivo.text =
             "Intenta comunicarte con los sobrevivientes.";
         break;
+        case IrAlCaminoSalida:
+    textoTituloObjetivo.color = Color.white;
+    textoTituloObjetivo.text = "OBJETIVO";
+    textoDescripcionObjetivo.text =
+        "Dirígete al camino de salida de la ciudad.";
+    break;
 
     case HistoriaCiudadCompletada:
         textoTituloObjetivo.color = Color.green;
@@ -915,7 +928,6 @@ public void ConfirmarContactoSobrevivientes()
 
     ConfirmarContactoSobrevivientesRpc();
 }
-
 [Rpc(
     SendTo.Server,
     InvokePermission = RpcInvokePermission.Everyone
@@ -931,16 +943,35 @@ private void ConfirmarContactoSobrevivientesRpc(
 
     ulong clientId = rpcParams.Receive.SenderClientId;
 
-    // Solo puede confirmar el jugador que recogio la radio.
+    // Solo puede confirmar el jugador que recogió la radio.
     if (ClienteConRadioNetwork.Value != clientId)
         return;
 
-    EstadoMisionNetwork.Value = HistoriaCiudadCompletada;
+    EstadoMisionNetwork.Value = IrAlCaminoSalida;
 
     Debug.Log(
         "[Historia] Contacto establecido con los sobrevivientes. " +
-        "Mision de Ciudad completada."
+        "Nuevo objetivo: dirigirse al camino de salida."
     );
+}
+
+private void TrasladarASafeZone1(Transform jugador)
+{
+    GestorEscenariosPartida gestor =
+        GestorEscenariosPartida.Instance;
+
+    if (gestor == null)
+    {
+        Debug.LogError(
+            "[Historia] No se encontró GestorEscenariosPartida."
+        );
+        return;
+    }
+
+    gestor.TransicionarASafeZone1(jugador);
+
+    if (IsServer)
+        EstadoMisionNetwork.Value = EnZonaSegura;
 }
 
 private void AlFinalizarAperturaPuerta()
@@ -965,11 +996,7 @@ private void AlFinalizarAperturaPuerta()
     {
         FadeTransicionHistoria.Instance.EjecutarTransicion(() =>
         {
-            if (GestorEscenariosPartida.Instance != null)
-            {
-                GestorEscenariosPartida.Instance
-                    .TransicionarASafeZone1(jugador);
-            }
+            TrasladarASafeZone1(jugador);
         });
     }
     else
@@ -978,8 +1005,7 @@ private void AlFinalizarAperturaPuerta()
             "[Historia] No se encontró FadeTransicionHistoria."
         );
 
-        GestorEscenariosPartida.Instance
-            ?.TransicionarASafeZone1(jugador);
+        TrasladarASafeZone1(jugador);
     }
 }
 
@@ -1142,6 +1168,56 @@ public void IniciarMisionCabana()
     Debug.Log(
         "[Historia] Misión final iniciada. Objetivo: eliminar al mutante alfa.",
         this
+    );
+}
+
+public void IntentarCompletarSalidaCiudad()
+{
+    if (!IsSpawned)
+        return;
+
+    SolicitarLlegadaSalidaCiudadRpc();
+}
+
+[Rpc(
+    SendTo.Server,
+    InvokePermission = RpcInvokePermission.Everyone
+)]
+private void SolicitarLlegadaSalidaCiudadRpc(
+    RpcParams rpcParams = default)
+{
+    if (!IsServer || !EsHistoriaCiudad())
+        return;
+
+    if (EstadoMisionNetwork.Value != IrAlCaminoSalida)
+        return;
+
+    if (puntoSalidaCiudad == null)
+    {
+        Debug.LogError(
+            "[Historia] No asignaste el punto de salida de Ciudad."
+        );
+        return;
+    }
+
+    ulong clientId = rpcParams.Receive.SenderClientId;
+
+    if (!JugadorCercaDelPunto(
+        clientId,
+        puntoSalidaCiudad.position,
+        distanciaActivacionSalidaCiudad))
+    {
+        Debug.LogWarning(
+            "[Historia] El jugador está demasiado lejos del camino de salida."
+        );
+        return;
+    }
+
+    EstadoMisionNetwork.Value = HistoriaCiudadCompletada;
+
+    Debug.Log(
+        "[Historia] Jugador llegó al camino de salida. " +
+        "Iniciando transición a SafeZone2."
     );
 }
 

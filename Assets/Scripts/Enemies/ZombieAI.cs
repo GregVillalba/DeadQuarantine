@@ -1064,7 +1064,12 @@ public class ZombieAI : NetworkBehaviour
     /// del suelo y evitar cualquier salto vertical al empezar a perseguir.
     /// </summary>
     private void FinalizarRootMotionSpawn()
+{
+    if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
     {
+        agent.isStopped = true;
+        agent.ResetPath();
+    }
         if (!spawnRootMotionActive && !spawnAgentSettingsCaptured)
             return;
 

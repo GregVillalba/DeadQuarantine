@@ -1146,7 +1146,11 @@ private IEnumerator HistoriaSpawnRoutine()
             )
         );
 
-        bool willRun = Random.value < Mathf.Clamp01(runChanceBonus);
+       float probabilidadCorredor = misionMansionActiva
+        ? 0.90f
+        : Mathf.Clamp01(runChanceBonus);
+
+        bool willRun = Random.value < probabilidadCorredor;
 
         if (SpawnZombie(
             zombiePrefab,
