@@ -1,17 +1,27 @@
 using UnityEngine;
 
 /// <summary>
-/// Un solo lugar para saber si el jugador LOCAL tiene un menu abierto (pausa o tienda) y por lo tanto
-/// no debe tirar granadas, acuchillar, cambiar de arma ni mover el sway con el mouse.
-/// Si mas adelante agregas otro menu, sumalo aca y listo: los scripts de arma no hay que tocarlos.
+/// Punto único para saber si las acciones del jugador local
+/// están bloqueadas por una interfaz.
+///
+/// No modifica Weapon.InputLocked.
+/// Solamente informa si un menú está abierto.
 /// </summary>
 public static class PlayerInputGate
 {
-    /// <summary>Acciones del jugador (granada, cuchillo, cambiar arma...) bloqueadas por un menu.</summary>
+    /// <summary>
+    /// Disparo, recarga, apuntado, cambio de arma,
+    /// granadas, cuchillo, etc.
+    /// </summary>
     public static bool ActionsBlocked =>
-        PauseController.LocalPlayerPaused || NPCShopUI.LocalShopOpen;
+        PauseController.LocalPlayerPaused ||
+        NPCShopUI.LocalShopOpen;
 
-    /// <summary>Ignorar el delta del mouse (sway): menu abierto o 2 frames despues de cerrarlo.</summary>
+    /// <summary>
+    /// Bloquea movimientos derivados del mouse.
+    /// Incluye unos frames de seguridad después de cerrar UI.
+    /// </summary>
     public static bool MouseBlocked =>
-        PauseController.MouseInputBlocked || NPCShopUI.MouseInputBlocked;
+        PauseController.MouseInputBlocked ||
+        NPCShopUI.MouseInputBlocked;
 }
