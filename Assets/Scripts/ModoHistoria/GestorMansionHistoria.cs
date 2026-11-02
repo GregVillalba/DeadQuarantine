@@ -347,7 +347,7 @@ public void CompletarMision()
 
     FadeTransicionHistoria.Instance.EjecutarTransicion(() =>
     {
-        PauseController pauseController =
+        /*PauseController pauseController =
             FindAnyObjectByType<PauseController>();
 
         if (pauseController == null)
@@ -372,7 +372,19 @@ public void CompletarMision()
             );
         }
 
-        Debug.Log("[Mansion] Pantalla de victoria activada.");
+        Debug.Log("[Mansion] Pantalla de victoria activada.");*/
+
+        if (RoundManager.Instance != null)
+        {
+            RoundManager.Instance.MostrarVictoriaHistoria();
+            RoundManager.Instance.DesbloquearLogroHistoria();
+        }
+        else
+        {
+            Debug.LogError(
+            "[Mansion] No se encontró RoundManager para mostrar la victoria."
+        );
+        }
     });
 }
 

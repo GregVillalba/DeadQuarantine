@@ -36,7 +36,7 @@ public class PauseController : NetworkBehaviour
     [SerializeField] private GameObject botonReiniciar;
 
     [Header("Fin de Ronda")]
-    [SerializeField] private GameObject popupVictoria;
+   /* [SerializeField] private GameObject popupVictoria;
     [SerializeField] private GameObject popupDerrota;
     [SerializeField] private TextMeshProUGUI textoPuntajeVictoria;
     [SerializeField] private TextMeshProUGUI textoPuntajeDerrota;
@@ -47,7 +47,12 @@ public class PauseController : NetworkBehaviour
     [SerializeField] private TextMeshProUGUI textoPrecisionVictoria;
     [SerializeField] private TextMeshProUGUI textoCaidasDerrota;
     [SerializeField] private TextMeshProUGUI textoCaidasVictoria;
-    [SerializeField] private TextMeshProUGUI textoReaparicionesVictoria;
+    [SerializeField] private TextMeshProUGUI textoReaparicionesVictoria;*/
+
+    [SerializeField] private PantallaFinPartida victoriaSingle;
+    [SerializeField] private PantallaFinPartida victoriaMulti;
+    [SerializeField] private PantallaFinPartida derrotaSingle;
+    [SerializeField] private PantallaFinPartida derrotaMulti;
 
     [SerializeField] private PlayerScore playerScore;
 
@@ -78,6 +83,9 @@ public class PauseController : NetworkBehaviour
 
     public static bool LocalPlayerPaused { get; private set; }
     private static int resumeFrame = -100;
+
+    private PantallaFinPartida victoriaActiva;
+    private PantallaFinPartida derrotaActiva;
 
     public static bool MouseInputBlocked =>
         LocalPlayerPaused || Time.frameCount - resumeFrame <= 2;
@@ -130,11 +138,16 @@ public class PauseController : NetworkBehaviour
         if (storyIntro == null)
             storyIntro = GetComponent<StoryIntroController>();
 
-        if (popupVictoria != null)
+        /*if (popupVictoria != null)
             popupVictoria.SetActive(false);
 
         if (popupDerrota != null)
-            popupDerrota.SetActive(false);
+            popupDerrota.SetActive(false);*/
+
+        foreach (var p in new[] { victoriaSingle, victoriaMulti, derrotaSingle, derrotaMulti })
+        {
+            if (p != null) p.gameObject.SetActive(false);
+        }
 
         if (popupValoracion != null)
             popupValoracion.SetActive(false);
@@ -181,10 +194,11 @@ public class PauseController : NetworkBehaviour
 
     private void ConectarBotonVolverAlMenuDerrota()
     {
-        if (botonVolverAlMenuDerrota == null && popupDerrota != null)
+        if (botonVolverAlMenuDerrota == null && /*popupDerrota*/ derrotaActiva != null)
         {
             botonVolverAlMenuDerrota =
-                popupDerrota.GetComponentInChildren<UnityEngine.UI.Button>(true);
+              /*  popupDerrota.GetComponentInChildren<UnityEngine.UI.Button>(true);*/
+                derrotaActiva.BotonVolver;
         }
 
         if (botonVolverAlMenuDerrota != null)
@@ -489,8 +503,8 @@ public class PauseController : NetworkBehaviour
             if (finDeRondaActivo && Keyboard.current != null)
             {
                 if (
-                    popupVictoria != null &&
-                    popupVictoria.activeSelf &&
+                    /*popupVictoria*/ victoriaActiva != null &&
+                   /* popupVictoria.activeSelf */ victoriaActiva.gameObject.activeSelf &&
                     Keyboard.current.sKey.wasPressedThisFrame
                 )
                 {
@@ -731,6 +745,16 @@ public class PauseController : NetworkBehaviour
             );
     }
 
+    private PantallaFinPartida ElegirPantallaVictoria()
+    {
+        return EsSinglePlayer() ? victoriaSingle : victoriaMulti;
+    }
+
+    private PantallaFinPartida ElegirPantallaDerrota()
+    {
+        return EsSinglePlayer() ? derrotaSingle : derrotaMulti;
+    }
+
     private void ActualizarBotonReiniciar()
     {
         if (botonReiniciar != null)
@@ -831,7 +855,14 @@ public class PauseController : NetworkBehaviour
 
         BloquearJugador();
 
-        if (popupVictoria != null)
+        victoriaActiva = ElegirPantallaVictoria();
+        if (victoriaActiva != null)
+        {
+            victoriaActiva.gameObject.SetActive(true);
+            victoriaActiva.Mostrar(playerScore);
+        }
+
+       /* if (popupVictoria != null)
             popupVictoria.SetActive(true);
 
         if (
@@ -877,7 +908,7 @@ public class PauseController : NetworkBehaviour
         {
             textoCaidasVictoria.text =
                 playerScore.CaidasNetwork.Value.ToString();
-        }
+        }*/
 
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
@@ -891,8 +922,10 @@ public class PauseController : NetworkBehaviour
         if (!IsOwner)
             return;
 
-        if (popupVictoria != null)
-            popupVictoria.SetActive(false);
+       if (/*popupVictoria*/ victoriaActiva != null)
+            /*popupVictoria.SetActive(false);*/
+
+            victoriaActiva?.gameObject.SetActive(false);
 
         Debug.Log(
             "<color=green>[PauseController] Victoria en modo con rondas: abriendo panel de valoración.</color>"
@@ -938,7 +971,15 @@ public class PauseController : NetworkBehaviour
 
         BloquearJugador();
 
-        if (popupDerrota != null)
+        derrotaActiva = ElegirPantallaDerrota();
+        if (derrotaActiva != null)
+        {
+            derrotaActiva.gameObject.SetActive(true);
+            derrotaActiva.Mostrar(playerScore);
+            botonVolverAlMenuDerrota = derrotaActiva.BotonVolver;
+        }
+
+       /* if (popupDerrota != null)
             popupDerrota.SetActive(true);
 
         if (
@@ -999,7 +1040,7 @@ public class PauseController : NetworkBehaviour
 
         // En caso de que el botón se hubiera reinstanciado,
         // lo volvemos a vincular.
-        ConectarBotonVolverAlMenuDerrota();
+        ConectarBotonVolverAlMenuDerrota();*/
 
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
