@@ -26,7 +26,8 @@ public partial class PlayerHealth : NetworkBehaviour
     [SerializeField] private int startingLives = 1;
 
     [Header("Estado abatido")]
-    [SerializeField] private float downedDuration = 20f;    //Valor original: 5f
+    [SerializeField] private float downedDurationSingleplayer = 5f;
+    [SerializeField] private float downedDurationMultiplayer = 20f;
 
     [Header("Regeneración")]
     [SerializeField] private float regenerationDelay = 5f;
@@ -143,6 +144,10 @@ public partial class PlayerHealth : NetworkBehaviour
     private bool EsSingleplayer =>
         SceneManager.GetActiveScene().name ==
         "MainSceneSinglePlayer";
+
+    // Tiempo de abatido según el modo.
+    private float DownedDuration =>
+        EsSingleplayer ? downedDurationSingleplayer : downedDurationMultiplayer;
 
     // Solo se cura estando de pie y sin la vida llena.
     public bool PuedeCurarse =>
@@ -529,8 +534,11 @@ public partial class PlayerHealth : NetworkBehaviour
         State.Value =
             PlayerState.Downed;
 
+       /* DownedTimeRemaining.Value =
+            downedDuration;*/
+
         DownedTimeRemaining.Value =
-            downedDuration;
+            DownedDuration;
 
         Debug.Log(
             "[PlayerHealth] " +
@@ -569,8 +577,11 @@ public partial class PlayerHealth : NetworkBehaviour
 
     private IEnumerator DownedRoutine()
     {
+       /* float remaining =
+            downedDuration;*/
+
         float remaining =
-            downedDuration;
+            DownedDuration;
 
         while (remaining > 0f)
         {

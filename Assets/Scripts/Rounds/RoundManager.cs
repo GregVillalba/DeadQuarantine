@@ -1520,6 +1520,16 @@ public void EliminarZombiesHistoria()
             pause.MostrarVictoria();
         }
     }
+
+    public void MostrarVictoriaHistoria()
+{
+    if (!IsServer || !EsModoHistoria || GameLostNetwork.Value)
+        return;
+
+    MostrarVictoriaClientRpc();
+}
+
+
     [ClientRpc]
 private void DesbloquearLogroModoClientRpc(
     bool esSupervivencia,
