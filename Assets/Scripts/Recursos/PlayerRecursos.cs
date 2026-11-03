@@ -263,4 +263,49 @@ public class PlayerRecursos : NetworkBehaviour
     {
         OnPurchaseResult?.Invoke(weaponId, exito);
     }
+
+ 
+/// <summary>
+/// Guarda los recursos actuales del jugador.
+/// Debe ejecutarse desde el servidor.
+/// </summary>
+public void GuardarDatosRecursos(DatosJugadorSaveData datos)
+{
+    if (!IsServer || !IsSpawned || datos == null)
+        return;
+
+    datos.pilaDeLatas = PilaDeLatasNetwork.Value;
+    datos.cantimplora = CantimploraNetwork.Value;
+    datos.bidon = BidonNetwork.Value;
+
+    Debug.Log(
+        "[PlayerRecursos] Recursos guardados. " +
+        "Latas: " + datos.pilaDeLatas +
+        " | Cantimplora: " + datos.cantimplora +
+        " | Bidón: " + datos.bidon
+    );
+}
+
+/// <summary>
+/// Restaura los recursos del jugador desde el guardado.
+/// Debe ejecutarse desde el servidor, después de OnNetworkSpawn.
+/// </summary>
+public void RestaurarDatosRecursos(DatosJugadorSaveData datos)
+{
+    if (!IsServer || !IsSpawned || datos == null)
+        return;
+
+    PilaDeLatasNetwork.Value = Mathf.Max(0, datos.pilaDeLatas);
+    CantimploraNetwork.Value = Mathf.Max(0, datos.cantimplora);
+    BidonNetwork.Value = Mathf.Max(0, datos.bidon);
+
+    Debug.Log(
+        "[PlayerRecursos] Recursos restaurados. " +
+        "Latas: " + PilaDeLatasNetwork.Value +
+        " | Cantimplora: " + CantimploraNetwork.Value +
+        " | Bidón: " + BidonNetwork.Value
+    );
+}
+
+
 }

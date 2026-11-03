@@ -1,3 +1,4 @@
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,8 +8,8 @@ using UnityEngine.SceneManagement;
 /// <summary>Casillero del HUD de armas al que pertenece cada arma.</summary>
 public enum WeaponSlotCategory
 {
-    Primary = 0,    // tecla 1
-    Secondary = 1   // tecla 2
+    Primary = 0,
+    Secondary = 1
 }
 
 public class WeaponSwitcher : MonoBehaviour
@@ -20,35 +21,30 @@ public class WeaponSwitcher : MonoBehaviour
         public GameObject weaponRoot;
         public Weapon weaponComponent;
         public AnimatorOverrideController overrideController;
-        public AnimatorOverrideController tpOverrideController; // <- NUEVO: override del Animator de tercera persona
+        public AnimatorOverrideController tpOverrideController;
         public bool unlockedByDefault;
-        [Tooltip("Objeto de UI del icono (prefab con RectTransform): contiene el arma y, si existen, sus accesorios. " +
-                 "El hijo llamado 'Weapon' es el arma principal; el resto se muestra tal cual.")]
+
+        [Tooltip("Objeto de UI del icono del slot.")]
         public GameObject weaponIcon;
 
         [Header("Inventario (HUD)")]
-        [Tooltip("YA NO SE USA. El inventario tiene 2 casilleros y se arma solo: el arma inicial ocupa el primario (tecla 1), " +
-                 "la primera arma que comprás ocupa el secundario (tecla 2), y con ambos llenos la compra reemplaza el arma " +
-                 "del casillero que tenés en la mano.")]
         public WeaponSlotCategory category;
 
-        [Header("Casquillo")] // <- NUEVO
-        public GameObject casingPrefab; // <- NUEVO
-        public Transform casingEjectPoint; // <- NUEVO
+        [Header("Casquillo")]
+        public GameObject casingPrefab;
+        public Transform casingEjectPoint;
     }
 
     [Header("Referencias")]
     [SerializeField] private Animator weaponAnimator;
     [SerializeField] private RuntimeAnimatorController baseController;
-    [SerializeField] private Animator thirdPersonAnimator; // <- NUEVO
-    [SerializeField] private RuntimeAnimatorController tpBaseController; // <- NUEVO: controller de la pistola (base)
+    [SerializeField] private Animator thirdPersonAnimator;
+    [SerializeField] private RuntimeAnimatorController tpBaseController;
     [SerializeField] private HUDController hudController;
     [SerializeField] private WeaponAnimationEvents weaponAnimationEvents;
-    [SerializeField] private WeaponSway weaponSway; // <- NUEVO: para que el sway sepa si el arma actual está apuntando
+    [SerializeField] private WeaponSway weaponSway;
 
     [Header("Animator")]
-    [Tooltip("Opcional. Nombre del estado de reposo (Idle) de la capa base del Animator. Si se deja vacío se detecta solo " +
-             "al empezar (en todas las capas). Se usa para cortar la animación de recarga al cambiar de arma o al usar cuchillo/granada.")]
     [SerializeField] private string baseIdleStateName = "";
 
     [Header("Armas")]
@@ -56,14 +52,10 @@ public class WeaponSwitcher : MonoBehaviour
     [SerializeField] private int startingSlotIndex = 0;
 
     [Header("Diagnóstico")]
-    [Tooltip("Escribe en la consola cómo queda el inventario cada vez que se compra o se reemplaza un arma.")]
     [SerializeField] private bool debugInventory = false;
 
-    // Inventario: dos casilleros (0 = primario / tecla 1, 1 = secundario / tecla 2). Cada uno guarda el índice del arma
-    // (su posición en 'slots') o -1 si está vacío. Un arma "desbloqueada" es la que está en alguno de los dos casilleros.
     private int[] inventory;
 
-    // Compras que llegaron mientras se cambiaba de arma: esperan a que termine el cambio para no pisarlo.
     private readonly List<int> queuedUnlocks = new List<int>();
     private readonly List<bool> queuedEquip = new List<bool>();
     private bool queueRunning;
@@ -71,46 +63,40 @@ public class WeaponSwitcher : MonoBehaviour
     private int currentIndex;
     private int pendingIndex = -1;
     private bool isSwitching;
-    private int[] layerIdleHashes;   // estado de reposo (por defecto) de cada capa del Animator
-    private bool unholsterPhase;   // true cuando ya se guardó el arma anterior y se está sacando la nueva
+    private int[] layerIdleHashes;
+    private bool unholsterPhase;
     private int holsterLayerIndex = -1;
 
-    // Estado abatido: el jugador queda obligado a usar el arma inicial y al levantarse recupera la que tenía.
     private PlayerHealth saludJugador;
     private int armaInicialIndex = -1;
     private int armaAntesDeAbatido = -1;
     private bool abatido;
     private Coroutine rutinaAbatido;
-    public Weapon CurrentWeapon => slots[currentIndex].weaponComponent;
+
+    public Weapon CurrentWeapon =>
+        slots != null && currentIndex >= 0 && currentIndex < slots.Length
+            ? slots[currentIndex].weaponComponent
+            : null;
+
     public int CurrentWeaponIndex => currentIndex;
 
-    /// <summary>
-    /// true mientras se guarda el arma actual y se saca la nueva (de que empieza la animación de guardar
-    /// hasta que termina la de sacar). Durante ese tiempo no se puede disparar, recargar, apuntar,
-    /// acuchillar ni tirar granadas.
-    /// </summary>
     public bool IsSwitching => isSwitching;
     public bool IsHolstering => isSwitching && !unholsterPhase;
     public bool IsUnholstering => isSwitching && unholsterPhase;
 
-    /// <summary>
-    /// Se dispara cuando cambia el arma elegida, se equipa una o se desbloquea una.
-    /// Lo escucha el HUD de inventario (WeaponInventoryHUD).
-    /// </summary>
     public event System.Action InventoryChanged;
-
-    /// <summary>Se dispara cuando se vuelven a leer las teclas (cambio de rebind). El HUD actualiza sus textos.</summary>
     public event System.Action BindingsChanged;
 
     private PlayerControls controls;
 
-    // Acciones de PlayerControls.inputactions (mapa Player). Se buscan por nombre: si falta alguna, avisa en consola.
     private InputAction selectPrimaryAction;
     private InputAction selectSecondaryAction;
     private InputAction nextWeaponAction;
     private InputAction previousWeaponAction;
 
     private readonly List<int> cycleBuffer = new List<int>();
+
+    public bool IsInitialized { get; private set; }
 
     private void Awake()
     {
@@ -127,7 +113,6 @@ public class WeaponSwitcher : MonoBehaviour
         if (weaponAnimator != null)
             holsterLayerIndex = weaponAnimator.GetLayerIndex("Holster");
 
-        // ConfiguracionesJuego ya recarga las teclas de este asset; solo falta avisar al HUD.
         ConfiguracionesJuego.CambiosAplicados += OnCambiosAplicados;
     }
 
@@ -138,24 +123,42 @@ public class WeaponSwitcher : MonoBehaviour
 
     private void OnEnable()
     {
+        if (controls == null)
+            return;
+
         controls.Player.Enable();
 
-        if (selectPrimaryAction != null) selectPrimaryAction.performed += OnSelectPrimary;
-        if (selectSecondaryAction != null) selectSecondaryAction.performed += OnSelectSecondary;
-        if (nextWeaponAction != null) nextWeaponAction.performed += OnNextWeapon;
-        if (previousWeaponAction != null) previousWeaponAction.performed += OnPreviousWeapon;
+        if (selectPrimaryAction != null)
+            selectPrimaryAction.performed += OnSelectPrimary;
+
+        if (selectSecondaryAction != null)
+            selectSecondaryAction.performed += OnSelectSecondary;
+
+        if (nextWeaponAction != null)
+            nextWeaponAction.performed += OnNextWeapon;
+
+        if (previousWeaponAction != null)
+            previousWeaponAction.performed += OnPreviousWeapon;
     }
 
     private void OnDisable()
     {
-        if (selectPrimaryAction != null) selectPrimaryAction.performed -= OnSelectPrimary;
-        if (selectSecondaryAction != null) selectSecondaryAction.performed -= OnSelectSecondary;
-        if (nextWeaponAction != null) nextWeaponAction.performed -= OnNextWeapon;
-        if (previousWeaponAction != null) previousWeaponAction.performed -= OnPreviousWeapon;
+        if (selectPrimaryAction != null)
+            selectPrimaryAction.performed -= OnSelectPrimary;
+
+        if (selectSecondaryAction != null)
+            selectSecondaryAction.performed -= OnSelectSecondary;
+
+        if (nextWeaponAction != null)
+            nextWeaponAction.performed -= OnNextWeapon;
+
+        if (previousWeaponAction != null)
+            previousWeaponAction.performed -= OnPreviousWeapon;
 
         queueRunning = false;
 
-        controls.Player.Disable();
+        if (controls != null)
+            controls.Player.Disable();
     }
 
     private void OnDestroy()
@@ -170,24 +173,43 @@ public class WeaponSwitcher : MonoBehaviour
 
     private InputAction FindAction(string actionName)
     {
-        InputAction action = controls.asset.FindAction("Player/" + actionName, false);
+        InputAction action =
+            controls.asset.FindAction("Player/" + actionName, false);
 
         if (action == null)
-            Debug.LogWarning("[WeaponSwitcher] Falta la acción '" + actionName + "' en PlayerControls.inputactions (mapa Player).");
+        {
+            Debug.LogWarning(
+                "[WeaponSwitcher] Falta la acción '" + actionName +
+                "' en PlayerControls.inputactions (mapa Player)."
+            );
+        }
 
         return action;
     }
 
     private void Start()
     {
+        if (slots == null || slots.Length == 0)
+        {
+            Debug.LogError("[WeaponSwitcher] No hay armas configuradas.");
+            return;
+        }
+
         for (int i = 0; i < slots.Length; i++)
-            slots[i].weaponRoot.SetActive(false);
+        {
+            if (slots[i] != null && slots[i].weaponRoot != null)
+                slots[i].weaponRoot.SetActive(false);
+        }
 
         int index = Mathf.Clamp(startingSlotIndex, 0, slots.Length - 1);
 
         if (!IsInInventory(index))
         {
-            Debug.LogWarning("[WeaponSwitcher] El slot inicial (" + index + ") no está desbloqueado. Revisá 'Unlocked By Default'.");
+            Debug.LogWarning(
+                "[WeaponSwitcher] El slot inicial (" + index +
+                ") no está desbloqueado. Revisá 'Unlocked By Default'."
+            );
+
             index = inventory[0] >= 0 ? inventory[0] : 0;
         }
 
@@ -195,13 +217,16 @@ public class WeaponSwitcher : MonoBehaviour
 
         StartCoroutine(CaptureBaseIdleState());
 
-        // Esta es el "arma inicial" que se usa obligatoriamente al estar abatido.
         armaInicialIndex = index;
         SuscribirEstadoJugador();
 
-        // Arranca SIEMPRE bloqueado; se libera explícitamente después.
         if (CurrentWeapon != null)
             CurrentWeapon.InputLocked = true;
+
+        IsInitialized = true;
+
+        if (debugInventory)
+            Debug.Log("[WeaponSwitcher] Inicialización completada.");
     }
 
     private void OnSelectPrimary(InputAction.CallbackContext context)
@@ -214,7 +239,6 @@ public class WeaponSwitcher : MonoBehaviour
         TrySelect(WeaponSlotCategory.Secondary);
     }
 
-    // Rueda hacia abajo = siguiente arma, rueda hacia arriba = anterior.
     private void OnNextWeapon(InputAction.CallbackContext context)
     {
         if (PlayerInputGate.ActionsBlocked)
@@ -231,10 +255,6 @@ public class WeaponSwitcher : MonoBehaviour
         CycleWeapon(-1);
     }
 
-    /// <summary>
-    /// Pasa a la siguiente (+1) o anterior (-1) arma del inventario, en el orden del HUD:
-    /// primero el casillero primario y después el secundario. Da la vuelta al llegar al final.
-    /// </summary>
     private void CycleWeapon(int direction)
     {
         if (isSwitching)
@@ -256,14 +276,15 @@ public class WeaponSwitcher : MonoBehaviour
         if (position < 0)
             position = 0;
 
-        int next = cycleBuffer[(position + direction + cycleBuffer.Count) % cycleBuffer.Count];
+        int next = cycleBuffer[
+            (position + direction + cycleBuffer.Count) % cycleBuffer.Count
+        ];
 
         RequestEquip(next);
     }
 
     private void TrySelect(WeaponSlotCategory category)
     {
-        // Pausa, tienda abierta, etc. (incluye PauseController.LocalPlayerPaused).
         if (PlayerInputGate.ActionsBlocked)
             return;
 
@@ -271,25 +292,31 @@ public class WeaponSwitcher : MonoBehaviour
     }
 
     // =========================================================
-    // INVENTARIO: PRIMARIA / SECUNDARIA
+    // INVENTARIO
     // =========================================================
 
     public bool IsReady => inventory != null;
-    public int SlotCount => slots.Length;
+    public int SlotCount => slots != null ? slots.Length : 0;
 
-    /// <summary>Slot elegido ahora. Durante el cambio de arma ya es el nuevo, así el HUD responde al instante.</summary>
-    public int SelectedIndex => (isSwitching && pendingIndex >= 0) ? pendingIndex : currentIndex;
+    public int SelectedIndex =>
+        (isSwitching && pendingIndex >= 0) ? pendingIndex : currentIndex;
+
     public WeaponSlotCategory SelectedCategory => GetCategory(SelectedIndex);
 
-    /// <summary>true si el arma está en alguno de los dos casilleros (o su compra está esperando en la cola).</summary>
-    public bool IsUnlocked(int index) => index >= 0 && index < slots.Length && (IsInInventory(index) || queuedUnlocks.Contains(index));
-    /// <summary>Objeto de UI del icono del slot (arma + accesorios), o null.</summary>
-    public GameObject GetIconObject(int index) => (index >= 0 && index < slots.Length) ? slots[index].weaponIcon : null;
+    public bool IsUnlocked(int index)
+    {
+        return index >= 0 &&
+               index < slots.Length &&
+               (IsInInventory(index) || queuedUnlocks.Contains(index));
+    }
 
-    /// <summary>
-    /// Accesorios (mira, cargador, grip...) del arma de ese slot, o null si no tiene el componente WeaponAttachments.
-    /// Se busca en el modelo del arma (Weapon Root, en la raíz o en un hijo) y, si no está ahí, en el objeto del Weapon.
-    /// </summary>
+    public GameObject GetIconObject(int index)
+    {
+        return (index >= 0 && index < slots.Length)
+            ? slots[index].weaponIcon
+            : null;
+    }
+
     public WeaponAttachments GetAttachments(int index)
     {
         if (index < 0 || index >= slots.Length)
@@ -299,19 +326,29 @@ public class WeaponSwitcher : MonoBehaviour
         WeaponAttachments found = null;
 
         if (slot.weaponRoot != null)
-            found = slot.weaponRoot.GetComponentInChildren<WeaponAttachments>(true);
+        {
+            found = slot.weaponRoot
+                .GetComponentInChildren<WeaponAttachments>(true);
+        }
 
         if (found == null && slot.weaponComponent != null)
-            found = slot.weaponComponent.GetComponentInChildren<WeaponAttachments>(true);
+        {
+            found = slot.weaponComponent
+                .GetComponentInChildren<WeaponAttachments>(true);
+        }
 
         return found;
     }
 
-    /// <summary>Texto de la tecla de selección de esa categoría, leído de PlayerControls (ya con los rebinds aplicados).</summary>
     public string GetKeyLabel(WeaponSlotCategory category)
     {
-        InputAction action = category == WeaponSlotCategory.Primary ? selectPrimaryAction : selectSecondaryAction;
-        string fallback = category == WeaponSlotCategory.Primary ? "1" : "2";
+        InputAction action =
+            category == WeaponSlotCategory.Primary
+                ? selectPrimaryAction
+                : selectSecondaryAction;
+
+        string fallback =
+            category == WeaponSlotCategory.Primary ? "1" : "2";
 
         if (action == null || action.bindings.Count == 0)
             return fallback;
@@ -321,11 +358,6 @@ public class WeaponSwitcher : MonoBehaviour
         return string.IsNullOrEmpty(label) ? fallback : label;
     }
 
-    /// <summary>
-    /// Vuelve a leer las teclas guardadas (ConfiguracionesJuego.CargarRebinds) y avisa al HUD.
-    /// Llamalo cuando tu menú aplique un cambio de teclas. El HUD también lo llama solo cada vez que reaparece
-    /// (por ejemplo al cerrar la pausa, que oculta y muestra el HUD).
-    /// </summary>
     public void RefreshBindings()
     {
         if (controls == null)
@@ -344,41 +376,39 @@ public class WeaponSwitcher : MonoBehaviour
         BindingsChanged?.Invoke();
     }
 
-    // El HUDController (panel de munición) sigue pidiendo un Sprite: se toma del hijo 'Weapon' del objeto de icono.
     private static Sprite GetIconSprite(GameObject icon)
     {
         if (icon == null)
             return null;
 
-        UnityEngine.UI.Image[] images = icon.GetComponentsInChildren<UnityEngine.UI.Image>(true);
+        UnityEngine.UI.Image[] images =
+            icon.GetComponentsInChildren<UnityEngine.UI.Image>(true);
 
         for (int i = 0; i < images.Length; i++)
         {
-            if (string.Equals(images[i].gameObject.name, "Weapon", System.StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(
+                images[i].gameObject.name,
+                "Weapon",
+                System.StringComparison.OrdinalIgnoreCase))
+            {
                 return images[i].sprite;
+            }
         }
 
         return images.Length > 0 ? images[0].sprite : null;
     }
 
-    /// <summary>Casillero del HUD (primario / secundario) donde está el arma. Si no está en el inventario, devuelve Primary.</summary>
     public WeaponSlotCategory GetCategory(int index)
     {
         int slot = InventorySlotOf(index);
         return (WeaponSlotCategory)Mathf.Max(0, slot);
     }
 
-    /// <summary>
-    /// Arma que tiene ese casillero ahora mismo. -1 = vacío (el casillero va vacío en el HUD).
-    /// </summary>
     public int GetIndexForCategory(WeaponSlotCategory category)
     {
         return inventory[(int)category];
     }
 
-    /// <summary>
-    /// Tecla 1 / 2: equipa el arma que tiene ese casillero. Si el casillero está vacío o ya la tenés en la mano, no hace nada.
-    /// </summary>
     public void SelectCategory(WeaponSlotCategory category)
     {
         if (isSwitching)
@@ -390,22 +420,28 @@ public class WeaponSwitcher : MonoBehaviour
             RequestEquip(target);
     }
 
-    // Arma inicial -> casillero primario (tecla 1). Si hubiera una segunda "Unlocked By Default", va al secundario.
     private void BuildInitialInventory()
     {
         inventory = new int[] { -1, -1 };
 
+        if (slots == null)
+            return;
+
         for (int i = 0; i < slots.Length; i++)
         {
-            if (!slots[i].unlockedByDefault)
+            if (slots[i] == null || !slots[i].unlockedByDefault)
                 continue;
 
             int free = FirstFreeInventorySlot();
 
             if (free < 0)
             {
-                Debug.LogWarning("[WeaponSwitcher] Hay más de 2 armas con 'Unlocked By Default' y el inventario tiene 2 casilleros. " +
-                                 "Se ignora '" + slots[i].weaponId + "'.");
+                Debug.LogWarning(
+                    "[WeaponSwitcher] Hay más de 2 armas con " +
+                    "'Unlocked By Default'. Se ignora '" +
+                    slots[i].weaponId + "'."
+                );
+
                 continue;
             }
 
@@ -424,7 +460,6 @@ public class WeaponSwitcher : MonoBehaviour
         return -1;
     }
 
-    // Casillero (0 o 1) que ocupa el arma, o -1 si no está en el inventario.
     private int InventorySlotOf(int index)
     {
         if (inventory == null || index < 0)
@@ -446,9 +481,12 @@ public class WeaponSwitcher : MonoBehaviour
 
     private int FindSlotIndex(string weaponId)
     {
+        if (slots == null || string.IsNullOrEmpty(weaponId))
+            return -1;
+
         for (int i = 0; i < slots.Length; i++)
         {
-            if (slots[i].weaponId == weaponId)
+            if (slots[i] != null && slots[i].weaponId == weaponId)
                 return i;
         }
 
@@ -456,26 +494,28 @@ public class WeaponSwitcher : MonoBehaviour
     }
 
     // =========================================================
-    // ESTADO ABATIDO: ARMA INICIAL OBLIGATORIA
+    // ESTADO ABATIDO
     // =========================================================
 
     private void SuscribirEstadoJugador()
     {
-        saludJugador = transform.root.GetComponentInChildren<PlayerHealth>(true);
+        saludJugador =
+            transform.root.GetComponentInChildren<PlayerHealth>(true);
 
         if (saludJugador == null)
             return;
 
         saludJugador.OnStateChanged += OnEstadoJugadorCambio;
 
-        // Si el jugador ya estaba abatido cuando arranca este componente.
         if (saludJugador.IsOwner && saludJugador.IsDowned)
             EntrarEnAbatido();
     }
 
-    private void OnEstadoJugadorCambio(PlayerHealth.PlayerState anterior, PlayerHealth.PlayerState nuevo)
+    private void OnEstadoJugadorCambio(
+        PlayerHealth.PlayerState anterior,
+        PlayerHealth.PlayerState nuevo
+    )
     {
-        // Solo el dueño del jugador cambia su arma.
         if (saludJugador == null || !saludJugador.IsOwner)
             return;
 
@@ -491,8 +531,6 @@ public class WeaponSwitcher : MonoBehaviour
             return;
 
         abatido = true;
-
-        // Se recuerda el arma que tenía (o la que estaba sacando) para devolvérsela al levantarse.
         armaAntesDeAbatido = SelectedIndex;
 
         ForzarEquipo(armaInicialIndex, true);
@@ -505,23 +543,24 @@ public class WeaponSwitcher : MonoBehaviour
         int destino = armaAntesDeAbatido;
         armaAntesDeAbatido = -1;
 
-        // Vuelve al arma que tenía antes de caer (si sigue en el inventario).
         if (destino >= 0 && IsInInventory(destino))
             ForzarEquipo(destino, false);
     }
 
-    // liberarInput = true: además se deja el arma lista para disparar y apuntar (al caer abatido).
     private void ForzarEquipo(int index, bool liberarInput)
     {
         if (rutinaAbatido != null)
             StopCoroutine(rutinaAbatido);
 
-        rutinaAbatido = StartCoroutine(ForzarEquipoRoutine(index, liberarInput));
+        rutinaAbatido =
+            StartCoroutine(ForzarEquipoRoutine(index, liberarInput));
     }
 
-    private IEnumerator ForzarEquipoRoutine(int index, bool liberarInput)
+    private IEnumerator ForzarEquipoRoutine(
+        int index,
+        bool liberarInput
+    )
     {
-        // Si justo está cambiando de arma, espera a que termine ese cambio.
         while (isSwitching)
             yield return null;
 
@@ -534,8 +573,6 @@ public class WeaponSwitcher : MonoBehaviour
         if (index != currentIndex)
             RequestEquip(index, true);
 
-        // Espera a que termine el cambio. Si el Animation Event de fin de Unholster no llega
-        // (el arma quedaría desactivada y sin input), se da por terminado a mano pasado un tiempo.
         float limite = Time.time + 3f;
 
         while (isSwitching && Time.time < limite)
@@ -548,7 +585,6 @@ public class WeaponSwitcher : MonoBehaviour
 
         if (arma != null && !isSwitching)
         {
-            // Una arma que quedó bloqueada (por ejemplo desde otra pantalla o ronda) no deja disparar ni apuntar.
             if (liberarInput)
                 arma.InputLocked = false;
 
@@ -557,8 +593,12 @@ public class WeaponSwitcher : MonoBehaviour
 
             if (debugInventory)
             {
-                Debug.Log("[WeaponSwitcher] Arma forzada '" + slots[index].weaponId + "' | enabled=" + arma.enabled +
-                          " | InputLocked=" + arma.InputLocked);
+                Debug.Log(
+                    "[WeaponSwitcher] Arma forzada '" +
+                    slots[index].weaponId +
+                    "' | enabled=" + arma.enabled +
+                    " | InputLocked=" + arma.InputLocked
+                );
             }
         }
 
@@ -566,11 +606,14 @@ public class WeaponSwitcher : MonoBehaviour
     }
 
     // =========================================================
-    // PRIMER EQUIP (sin animación de holster, no hay nada que guardar)
+    // EQUIPAR ARMA
     // =========================================================
 
     private void EquipWeaponImmediate(int index)
     {
+        if (index < 0 || index >= slots.Length)
+            return;
+
         currentIndex = index;
         WeaponSlot slot = slots[currentIndex];
 
@@ -580,17 +623,11 @@ public class WeaponSwitcher : MonoBehaviour
             weaponAnimator.SetBool("Holstered", false);
     }
 
-    // =========================================================
-    // CAMBIO DE ARMA CON ANIMACIÓN
-    // =========================================================
-
-    // forzar = true: cambio obligatorio por el estado abatido (puede ir a un arma que ya no está en el inventario).
     public void RequestEquip(int index, bool forzar = false)
     {
         if (index < 0 || index >= slots.Length)
             return;
 
-        // Abatido: el arma inicial es obligatoria, no se puede cambiar de arma.
         if (abatido && !forzar)
             return;
 
@@ -601,7 +638,8 @@ public class WeaponSwitcher : MonoBehaviour
             return;
 
         pendingIndex = index;
-        InventoryChanged?.Invoke();   // el HUD marca el casillero nuevo al instante
+        InventoryChanged?.Invoke();
+
         StartCoroutine(SwitchWeaponRoutine());
     }
 
@@ -612,8 +650,6 @@ public class WeaponSwitcher : MonoBehaviour
 
         WeaponSlot current = slots[currentIndex];
 
-        // Cambiar de arma cancela la recarga en curso y bloquea disparo/recarga/apuntado
-        // sin ocultar el modelo todavía.
         if (current.weaponComponent != null)
         {
             current.weaponComponent.CancelReload();
@@ -623,41 +659,44 @@ public class WeaponSwitcher : MonoBehaviour
         if (weaponAnimator != null)
             weaponAnimator.SetBool("Holstered", true);
 
-        // Esperar a que termine el clip de Holster antes de tapar el modelo.
         if (weaponAnimator != null && holsterLayerIndex >= 0)
         {
-            yield return null; // Deja que el Animator entre en la transición.
+            yield return null;
 
             while (true)
             {
-                bool inTransition = weaponAnimator.IsInTransition(holsterLayerIndex);
-                AnimatorStateInfo info = weaponAnimator.GetCurrentAnimatorStateInfo(holsterLayerIndex);
+                bool inTransition =
+                    weaponAnimator.IsInTransition(holsterLayerIndex);
 
-                if (!inTransition && info.IsName("Holster") && info.normalizedTime >= 1f)
+                AnimatorStateInfo info =
+                    weaponAnimator.GetCurrentAnimatorStateInfo(
+                        holsterLayerIndex
+                    );
+
+                if (!inTransition &&
+                    info.IsName("Holster") &&
+                    info.normalizedTime >= 1f)
+                {
                     break;
+                }
 
                 yield return null;
             }
         }
 
-        // Se corta cualquier animación que haya quedado a medias (por ejemplo una recarga) antes de cambiar de arma.
         ResetBaseLayerToIdle();
 
-        current.weaponRoot.SetActive(false);
+        if (current.weaponRoot != null)
+            current.weaponRoot.SetActive(false);
 
         currentIndex = pendingIndex;
         WeaponSlot next = slots[currentIndex];
 
-        // El arma nueva se apaga ANTES de activar su modelo: si nunca se había usado, su componente
-        // seguía encendido y habría podido disparar/recargar/apuntar durante la animación de sacarla.
-        // NotifyUnholsterFinished() la vuelve a encender al terminar el Unholster.
         if (next.weaponComponent != null)
             next.weaponComponent.enabled = false;
 
         ApplyControllerAndVisuals(next);
 
-        // El Animator es el mismo para todas las armas: sin esto el arma nueva continuaba el estado
-        // (por ejemplo una recarga) del arma anterior.
         ResetBaseLayerToIdle();
 
         if (weaponAnimator != null)
@@ -665,51 +704,59 @@ public class WeaponSwitcher : MonoBehaviour
 
         unholsterPhase = true;
 
-        // Un cuadro después: cambiar el controller puede reconstruir el Animator y perder el reset anterior.
         yield return null;
-        ResetBaseLayerToIdle();
 
-        // NotifyUnholsterFinished() (llamado por el Animation Event al
-        // terminar el Unholster) reactiva el disparo y baja isSwitching.
+        ResetBaseLayerToIdle();
     }
 
     private void ApplyControllerAndVisuals(WeaponSlot slot)
     {
+        if (slot == null)
+            return;
+
         if (weaponAnimator != null)
         {
             weaponAnimator.runtimeAnimatorController =
-                slot.overrideController != null ? slot.overrideController : baseController;
+                slot.overrideController != null
+                    ? slot.overrideController
+                    : baseController;
         }
 
-        // NUEVO: mismo mecanismo, aplicado al Animator de tercera persona.
         if (thirdPersonAnimator != null)
         {
             thirdPersonAnimator.runtimeAnimatorController =
-                slot.tpOverrideController != null ? slot.tpOverrideController : tpBaseController;
+                slot.tpOverrideController != null
+                    ? slot.tpOverrideController
+                    : tpBaseController;
         }
 
-        slot.weaponRoot.SetActive(true);
+        if (slot.weaponRoot != null)
+            slot.weaponRoot.SetActive(true);
 
         if (hudController != null)
-        hudController.SetWeapon(
-            slot.weaponComponent,
-            GetIconSprite(slot.weaponIcon)
-        );
+        {
+            hudController.SetWeapon(
+                slot.weaponComponent,
+                GetIconSprite(slot.weaponIcon)
+            );
+        }
 
         if (weaponAnimationEvents != null)
         {
             weaponAnimationEvents.SetWeapon(slot.weaponComponent);
-            weaponAnimationEvents.SetCasingData(slot.casingPrefab, slot.casingEjectPoint); // <- NUEVO
+
+            weaponAnimationEvents.SetCasingData(
+                slot.casingPrefab,
+                slot.casingEjectPoint
+            );
         }
 
-        if (weaponSway != null) // <- NUEVO
+        if (weaponSway != null)
             weaponSway.SetWeapon(slot.weaponComponent);
 
         InventoryChanged?.Invoke();
     }
 
-    // Guarda el estado de reposo (el que tiene cada capa al empezar) de TODAS las capas del Animator.
-    // La animación de recarga puede estar en cualquier capa, así que se resetean todas menos la de Holster.
     private IEnumerator CaptureBaseIdleState()
     {
         for (int i = 0; i < 10 && weaponAnimator != null; i++)
@@ -731,10 +778,17 @@ public class WeaponSwitcher : MonoBehaviour
             int[] hashes = new int[count];
 
             for (int l = 0; l < count; l++)
-                hashes[l] = weaponAnimator.GetCurrentAnimatorStateInfo(l).fullPathHash;
+            {
+                hashes[l] =
+                    weaponAnimator.GetCurrentAnimatorStateInfo(l)
+                        .fullPathHash;
+            }
 
             if (!string.IsNullOrEmpty(baseIdleStateName))
-                hashes[0] = Animator.StringToHash(baseIdleStateName);
+            {
+                hashes[0] =
+                    Animator.StringToHash(baseIdleStateName);
+            }
 
             if (hashes[0] == 0)
                 continue;
@@ -743,14 +797,12 @@ public class WeaponSwitcher : MonoBehaviour
             yield break;
         }
 
-        Debug.LogWarning("[WeaponSwitcher] No se pudo detectar el estado de reposo del Animator. " +
-                         "Completá 'Base Idle State Name' para que se corte la animación de recarga al cambiar de arma.");
+        Debug.LogWarning(
+            "[WeaponSwitcher] No se pudo detectar el estado de reposo " +
+            "del Animator. Completá 'Base Idle State Name'."
+        );
     }
 
-    /// <summary>
-    /// Devuelve todas las capas del Animator (menos Holster) a su estado de reposo y limpia los parámetros de recarga.
-    /// Corta de golpe una recarga en curso (el Animator es el mismo para todas las armas).
-    /// </summary>
     public void ResetBaseLayerToIdle()
     {
         if (weaponAnimator == null || layerIdleHashes == null)
@@ -759,14 +811,17 @@ public class WeaponSwitcher : MonoBehaviour
         weaponAnimator.ResetTrigger("Reload");
         weaponAnimator.SetBool("ShellLoading", false);
         weaponAnimator.ResetTrigger("Fire");
-        weaponAnimator.ResetTrigger("WeaponPartsFire");weaponAnimator.ResetTrigger("WeaponPartsReload");
-        weaponAnimator.SetBool("BoltAction",false);
+        weaponAnimator.ResetTrigger("WeaponPartsFire");
+        weaponAnimator.ResetTrigger("WeaponPartsReload");
+        weaponAnimator.SetBool("BoltAction", false);
 
-        int count = Mathf.Min(layerIdleHashes.Length, weaponAnimator.layerCount);
+        int count = Mathf.Min(
+            layerIdleHashes.Length,
+            weaponAnimator.layerCount
+        );
 
         for (int l = 0; l < count; l++)
         {
-            // La capa Holster no se toca: de ahí salen las animaciones de guardar y sacar.
             if (l == holsterLayerIndex || layerIdleHashes[l] == 0)
                 continue;
 
@@ -776,8 +831,6 @@ public class WeaponSwitcher : MonoBehaviour
 
     public void NotifyUnholsterFinished()
     {
-        // Un evento de animación que llegue mientras todavía se está guardando el arma anterior
-        // no debe dar por terminado el cambio (dejaba disparar y recargar a mitad del cambio).
         if (isSwitching && !unholsterPhase)
             return;
 
@@ -789,28 +842,275 @@ public class WeaponSwitcher : MonoBehaviour
             current.weaponComponent.enabled = true;
 
         isSwitching = false;
+        pendingIndex = -1;
     }
 
     // =========================================================
-    // DESBLOQUEO (WallBuy)
+    // GUARDADO DE ARMAS
     // =========================================================
 
     /// <summary>
-    /// Compra / desbloqueo de un arma. Reglas del inventario (2 casilleros):
-    ///  - Con un casillero libre (solo tenés el arma inicial) el arma nueva ocupa el SECUNDARIO.
-    ///  - Con los dos casilleros ocupados reemplaza el arma del casillero que tenés en la mano en ese momento
-    ///    (con equipAfterUnlock = false reemplaza la del otro casillero, para no sacarte el arma de la mano).
-    ///  - Si la compra llega mientras se cambia de arma, espera a que termine el cambio.
-    /// El arma reemplazada deja de estar "desbloqueada": se puede volver a comprar.
+    /// Obtiene los datos de las armas que están actualmente en los
+    /// dos casilleros del inventario.
     /// </summary>
-    public void UnlockWeapon(string weaponId, bool equipAfterUnlock = true)
+    public List<ArmaSaveData> ObtenerDatosArmas()
+    {
+        List<ArmaSaveData> datos = new List<ArmaSaveData>();
+
+        if (inventory == null || slots == null)
+            return datos;
+
+        for (int casillero = 0; casillero < inventory.Length; casillero++)
+        {
+            int index = inventory[casillero];
+
+            if (index < 0 || index >= slots.Length)
+                continue;
+
+            WeaponSlot slot = slots[index];
+
+            if (slot == null || slot.weaponComponent == null)
+                continue;
+
+            ArmaSaveData arma = new ArmaSaveData
+            {
+                identificador = slot.weaponId,
+                casillero = casillero,
+                municionCargador = slot.weaponComponent.CurrentAmmo,
+                municionReserva = slot.weaponComponent.ReserveAmmo
+            };
+
+            WeaponAttachments accesorios = GetAttachments(index);
+
+            if (accesorios != null)
+            {
+                arma.mira = accesorios.ScopeIndex;
+                arma.cargador = accesorios.MagazineIndex;
+                arma.laser = accesorios.LaserIndex;
+                arma.empunadura = accesorios.GripIndex;
+                arma.boca = accesorios.MuzzleIndex;
+            }
+
+            datos.Add(arma);
+        }
+
+        return datos;
+    }
+
+    /// <summary>
+    /// Devuelve el identificador del arma que está equipada actualmente.
+    /// </summary>
+    public string ObtenerArmaEquipadaId()
+    {
+        if (slots == null ||
+            currentIndex < 0 ||
+            currentIndex >= slots.Length ||
+            slots[currentIndex] == null)
+        {
+            return "";
+        }
+
+        return slots[currentIndex].weaponId;
+    }
+
+    /// <summary>
+    /// Restaura las armas, sus casilleros, munición y accesorios.
+    /// Debe llamarse después de que Start haya terminado.
+    /// </summary>
+    public bool RestaurarArmas(
+        List<ArmaSaveData> datos,
+        string armaEquipada
+    )
+    {
+        if (!IsInitialized)
+        {
+            Debug.LogWarning(
+                "[WeaponSwitcher] Todavía no terminó la inicialización " +
+                "del inventario."
+            );
+
+            return false;
+        }
+
+        if (datos == null || slots == null || inventory == null)
+        {
+            Debug.LogError(
+                "[WeaponSwitcher] No se pudieron restaurar las armas: " +
+                "faltan datos o referencias."
+            );
+
+            return false;
+        }
+
+        if (isSwitching)
+        {
+            Debug.LogWarning(
+                "[WeaponSwitcher] No se pueden restaurar las armas " +
+                "durante un cambio de arma."
+            );
+
+            return false;
+        }
+
+        // Si el guardado no contiene armas, conservar el inventario inicial.
+        if (datos.Count == 0)
+        {
+            Debug.LogWarning(
+                "[WeaponSwitcher] El guardado no contiene armas. " +
+                "Se conserva el inventario inicial."
+            );
+
+            return false;
+        }
+
+        // Cancelar compras pendientes para evitar que alteren el inventario
+        // después de la restauración.
+        queuedUnlocks.Clear();
+        queuedEquip.Clear();
+        queueRunning = false;
+
+        // Vaciar los dos casilleros.
+        for (int i = 0; i < inventory.Length; i++)
+            inventory[i] = -1;
+
+        // Restaurar cada arma en su casillero correspondiente.
+        foreach (ArmaSaveData dato in datos)
+        {
+            if (dato == null)
+                continue;
+
+            if (dato.casillero < 0 ||
+                dato.casillero >= inventory.Length)
+            {
+                Debug.LogWarning(
+                    "[WeaponSwitcher] Casillero inválido en el guardado."
+                );
+
+                continue;
+            }
+
+            int index = FindSlotIndex(dato.identificador);
+
+            if (index < 0)
+            {
+                Debug.LogWarning(
+                    "[WeaponSwitcher] No se encontró el arma guardada: " +
+                    dato.identificador
+                );
+
+                continue;
+            }
+
+            if (inventory[dato.casillero] >= 0)
+            {
+                Debug.LogWarning(
+                    "[WeaponSwitcher] El casillero " +
+                    dato.casillero + " ya está ocupado."
+                );
+
+                continue;
+            }
+
+            inventory[dato.casillero] = index;
+
+            WeaponSlot slot = slots[index];
+
+            if (slot.weaponComponent != null)
+            {
+                slot.weaponComponent.RestaurarMunicion(
+                    dato.municionCargador,
+                    dato.municionReserva
+                );
+            }
+
+            WeaponAttachments accesorios = GetAttachments(index);
+
+            if (accesorios != null)
+            {
+                accesorios.SetScope(dato.mira);
+                accesorios.SetMagazine(dato.cargador);
+                accesorios.SetLaser(dato.laser);
+                accesorios.SetGrip(dato.empunadura);
+                accesorios.SetMuzzle(dato.boca);
+            }
+        }
+
+        // Buscar el arma que estaba equipada al guardar.
+        int indexEquipado = FindSlotIndex(armaEquipada);
+
+        if (indexEquipado < 0 || !IsInInventory(indexEquipado))
+        {
+            indexEquipado =
+                inventory[0] >= 0 ? inventory[0] : inventory[1];
+        }
+
+        if (indexEquipado < 0)
+        {
+            Debug.LogError(
+                "[WeaponSwitcher] No hay armas válidas para equipar " +
+                "después de restaurar el inventario."
+            );
+
+            return false;
+        }
+
+        // Apagar todos los modelos antes de activar el arma restaurada.
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (slots[i] == null)
+                continue;
+
+            if (slots[i].weaponRoot != null)
+                slots[i].weaponRoot.SetActive(false);
+
+            if (slots[i].weaponComponent != null)
+                slots[i].weaponComponent.enabled = false;
+        }
+
+        // Equipar directamente, sin animación de cambio.
+        EquipWeaponImmediate(indexEquipado);
+
+        if (slots[indexEquipado].weaponComponent != null)
+        {
+            slots[indexEquipado].weaponComponent.enabled = true;
+            slots[indexEquipado].weaponComponent.InputLocked = true;
+        }
+
+        // Actualizar el arma inicial obligatoria para el estado abatido.
+        armaInicialIndex = indexEquipado;
+
+        pendingIndex = -1;
+        isSwitching = false;
+        unholsterPhase = false;
+
+        InventoryChanged?.Invoke();
+
+        Debug.Log(
+            "[WeaponSwitcher] Inventario restaurado. Primaria: " +
+            DescribeSlot(inventory[0]) +
+            " | Secundaria: " +
+            DescribeSlot(inventory[1]) +
+            " | Equipada: " +
+            slots[indexEquipado].weaponId
+        );
+
+        return true;
+    }
+
+    // =========================================================
+    // DESBLOQUEO / WALLBUY
+    // =========================================================
+
+    public void UnlockWeapon(
+        string weaponId,
+        bool equipAfterUnlock = true
+    )
     {
         int index = FindSlotIndex(weaponId);
 
         if (index < 0)
             return;
 
-        // Ya la tenés en el inventario: solo se habilita y, si se pide, se equipa.
         if (IsInInventory(index))
         {
             ReleaseInput(index);
@@ -821,7 +1121,6 @@ public class WeaponSwitcher : MonoBehaviour
             return;
         }
 
-        // En medio de un cambio de arma (o con otra compra esperando) esta compra va a la cola.
         if (isSwitching || queuedUnlocks.Count > 0)
         {
             if (!queuedUnlocks.Contains(index))
@@ -837,7 +1136,6 @@ public class WeaponSwitcher : MonoBehaviour
         PlaceWeapon(index, equipAfterUnlock);
     }
 
-    // Mete el arma en el inventario: en el primer casillero libre o, si están los dos llenos, reemplazando uno.
     private void PlaceWeapon(int index, bool equip)
     {
         int target = FirstFreeInventorySlot();
@@ -857,9 +1155,17 @@ public class WeaponSwitcher : MonoBehaviour
 
         if (debugInventory)
         {
-            Debug.Log("[WeaponSwitcher] Compra de '" + slots[index].weaponId + "' -> casillero " + (target == 0 ? "primario" : "secundario") +
-                      (replaced >= 0 ? " (reemplaza a '" + slots[replaced].weaponId + "')" : " (casillero libre)") +
-                      " | primario=" + DescribeSlot(inventory[0]) + ", secundario=" + DescribeSlot(inventory[1]));
+            Debug.Log(
+                "[WeaponSwitcher] Compra de '" +
+                slots[index].weaponId +
+                "' -> casillero " +
+                (target == 0 ? "primario" : "secundario") +
+                (replaced >= 0
+                    ? " (reemplaza a '" + slots[replaced].weaponId + "')"
+                    : " (casillero libre)") +
+                " | primario=" + DescribeSlot(inventory[0]) +
+                ", secundario=" + DescribeSlot(inventory[1])
+            );
         }
 
         ReleaseInput(index);
@@ -918,7 +1224,6 @@ public class WeaponSwitcher : MonoBehaviour
         queueRunning = false;
     }
 
-    /// <summary>true si el arma está en el inventario o su compra está esperando en la cola.</summary>
     public bool IsUnlocked(string weaponId)
     {
         int index = FindSlotIndex(weaponId);
