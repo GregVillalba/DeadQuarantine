@@ -57,6 +57,10 @@ public class NPCWeaponVendor : MonoBehaviour
         if (!oferta.disponible || !DisponibilidadTienda.SeMuestraEnPartidaActual(oferta))
             return;
 
+        // Torretas y barriles no se cobran acá: NPCShopUI los manda a ColocadorObjetos, que los cobra al colocarlos.
+        if (oferta.EsColocable)
+            return;
+
         Camera camara = BuscarCamaraJugadorLocal();
         if (camara == null)
         {

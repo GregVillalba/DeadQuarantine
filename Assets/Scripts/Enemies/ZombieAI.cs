@@ -76,6 +76,9 @@ public class ZombieAI : NetworkBehaviour
 
     public bool EstaAturdido => aturdidoNetwork.Value;
 
+    /// <summary>true mientras hace la animación de salir de la tierra (en el servidor y en los clientes).</summary>
+    public bool EstaApareciendo => spawningNetwork.Value;
+
     private float finAturdimiento;
     private Coroutine rutinaAturdimiento;
     private GameObject efectoAturdidoActivo;

@@ -466,13 +466,15 @@ private void TakeDamageServerRpc(
     /// Solo servidor. Daño que no viene de un disparo del cliente (granadas, fuego):
     /// el que tiró la granada se pasa a mano para que la kill y los puntos sean suyos y no del host.
     /// efectosDeImpacto = false para el daño por tick (sin sangre ni animación de golpe en cada tick).
+    /// mostrarHitMarker = false para el daño que el atacante no hizo con su mira (ej: su torreta automática).
     /// </summary>
     public void RecibirDanoServidor(
         int amount,
         Vector3 hitPoint,
         Vector3 hitNormal,
         ulong atacanteClientId,
-        bool efectosDeImpacto = true
+        bool efectosDeImpacto = true,
+        bool mostrarHitMarker = true
     )
     {
         if (!IsServer)
@@ -486,7 +488,8 @@ private void TakeDamageServerRpc(
             false,
             -1,
             atacanteClientId,
-            efectosDeImpacto
+            efectosDeImpacto,
+            mostrarHitMarker
         );
     }
 
@@ -498,7 +501,8 @@ private void TakeDamageServerRpc(
         bool registrarHeadshot,
         int hitVariantExplicito,
         ulong shooterClientId,
-        bool efectosDeImpacto
+        bool efectosDeImpacto,
+        bool mostrarHitMarker = true
     )
     {
         if (IsDead)
@@ -533,11 +537,14 @@ private void TakeDamageServerRpc(
         {
             currentHealthNetwork.Value = 0;
 
-            ShowHitMarkerClientRpc(
-                shooterClientId,
-                true,
-                headshotAplicado
-            );
+            if (mostrarHitMarker)
+            {
+                ShowHitMarkerClientRpc(
+                    shooterClientId,
+                    true,
+                    headshotAplicado
+                );
+            }
 
             Die(shooterClientId);
         }
@@ -556,11 +563,14 @@ private void TakeDamageServerRpc(
 
             PlayHitEffectsClientRpc(hitVariant);
 
-            ShowHitMarkerClientRpc(
-                shooterClientId,
-                false,
-                headshotAplicado
-            );
+            if (mostrarHitMarker)
+            {
+                ShowHitMarkerClientRpc(
+                    shooterClientId,
+                    false,
+                    headshotAplicado
+                );
+            }
         }
 
        if (registrarHeadshot)
