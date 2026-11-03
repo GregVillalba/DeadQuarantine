@@ -1394,7 +1394,20 @@ if (zombieHealth != null)
     return;
 }
 //==============================================================================================================
-            
+
+            // BARRIL EXPLOSIVO: un disparo lo hace explotar (el servidor decide y daña a los zombies alrededor).
+            BarrilExplosivo barril =
+                hit.collider.GetComponentInParent<BarrilExplosivo>();
+
+            if (barril != null)
+            {
+                barril.RecibirDisparo(
+                    Mathf.Max(1, Mathf.RoundToInt(DanoBasePorImpacto))
+                );
+
+                return;
+            }
+
             // EASTER EGG: permite que los disparos dañen los objetos
             // sin otorgar puntos por impacto.
             EasterEgg easterEgg =

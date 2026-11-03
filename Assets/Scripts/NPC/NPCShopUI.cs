@@ -113,6 +113,8 @@ public class NPCShopUI : MonoBehaviour
     [SerializeField] private string textoReparar = "REPARAR";
     [SerializeField] private Image progresoCompraFill;
     [SerializeField] private float tiempoMantenerParaComprar = 2f;
+    [Tooltip("Al comprar una torreta o un barril, cuánto gira el jugador antes de colocarlo (180 = de espaldas al mercader).")]
+    [SerializeField] private float gradosGiroAlColocar = 180f;
 
     [Header("Fase de compras")]
     [SerializeField] private Button listoButton;
@@ -143,6 +145,7 @@ public class NPCShopUI : MonoBehaviour
     private PlayerLook playerLook;
     private PlayerHealth playerHealth;
     private GrenadeThrow grenadeThrow;
+    private ColocadorObjetos colocadorObjetos;
 
     private bool estaAbierta;
     private bool movementWasLocked;
@@ -283,6 +286,13 @@ public class NPCShopUI : MonoBehaviour
             }
 
             ActualizarCompraMantenida();
+            return;
+        }
+
+        // Colocando una torreta o un barril no se puede volver a abrir la tienda.
+        if (ColocadorObjetos.ColocandoLocal)
+        {
+            OcultarPrompt();
             return;
         }
 
@@ -518,6 +528,21 @@ public class NPCShopUI : MonoBehaviour
 
     private void ComprarOferta(WeaponOffer oferta)
     {
+        // Torreta o barril: la tienda se cierra y el jugador pasa directo a colocarlo. Se cobra al confirmar la colocación.
+        if (oferta.EsColocable)
+        {
+            if (colocadorObjetos == null || !colocadorObjetos.PuedeColocar(oferta.weaponId))
+                return;
+
+            CerrarTienda();
+
+            // De espaldas al mercader, para ver el lugar donde se va a colocar y no el puesto.
+            if (colocadorObjetos.IniciarColocacion(oferta) && playerLook != null)
+                playerLook.Girar(gradosGiroAlColocar);
+
+            return;
+        }
+
         if (currentVendor != null)
             currentVendor.RequestPurchase(oferta.weaponId);
     }
@@ -611,16 +636,18 @@ public class NPCShopUI : MonoBehaviour
     {
         WeaponOffer oferta = ofertaSeleccionada;
         bool conStats = oferta != null && TieneStatsDeArma(oferta);
-        bool conCargador = conStats && !oferta.esArrojadiza && !oferta.esBarril;
+        bool conCadencia = conStats && !oferta.esArrojadiza && !oferta.esBarril;
+        // La torreta tiene munición infinita: muestra cadencia pero no cargador.
+        bool conCargador = conCadencia && !oferta.esTorreta;
         bool conCuracion = oferta != null && oferta.EsCuracion;
         bool conArmadura = oferta != null && oferta.armadura > 0;
 
         // cadencia = segundos entre disparos -> balas por segundo.
-        float balasPorSegundo = conCargador && oferta.cadencia > 0f ? 1f / oferta.cadencia : 0f;
+        float balasPorSegundo = conCadencia && oferta.cadencia > 0f ? 1f / oferta.cadencia : 0f;
 
         MostrarEstadistica(filaDano, conStats, conStats ? oferta.dano.ToString() : string.Empty, conStats ? oferta.dano / danoMaximo : 0f);
         MostrarEstadistica(filaAlcance, conStats, conStats ? oferta.alcance + " m" : string.Empty, conStats ? oferta.alcance / alcanceMaximo : 0f);
-        MostrarEstadistica(filaCadencia, conCargador, balasPorSegundo.ToString("0.#") + " balas/segundo", balasPorSegundo / balasPorSegundoMaximo);
+        MostrarEstadistica(filaCadencia, conCadencia, balasPorSegundo.ToString("0.#") + " balas/segundo", balasPorSegundo / balasPorSegundoMaximo);
         MostrarEstadistica(filaCargador, conCargador, conCargador ? oferta.capacidadCargador + " balas" : string.Empty, conCargador ? oferta.capacidadCargador / cargadorMaximo : 0f);
         MostrarEstadistica(filaCuracion, conCuracion, conCuracion ? "+" + oferta.puntosDeSalud + " de vida" : string.Empty, conCuracion ? oferta.puntosDeSalud / curacionMaxima : 0f);
         MostrarEstadistica(filaArmadura, conArmadura, conArmadura ? "+" + oferta.armadura : string.Empty, conArmadura ? oferta.armadura / armaduraMaxima : 0f);
@@ -699,7 +726,9 @@ public class NPCShopUI : MonoBehaviour
 
             if (!oferta.esArrojadiza && !oferta.esBarril)
             {
-                lineas.Add("Cargador: " + oferta.capacidadCargador + " balas");
+                if (!oferta.esTorreta)
+                    lineas.Add("Cargador: " + oferta.capacidadCargador + " balas");
+
                 lineas.Add("Cadencia: " + oferta.cadencia);
             }
         }
@@ -719,6 +748,7 @@ public class NPCShopUI : MonoBehaviour
             ofertaSeleccionada != null &&
             ofertaSeleccionada.disponible &&
             weaponSwitcher != null &&
+            (!ofertaSeleccionada.EsColocable || (colocadorObjetos != null && colocadorObjetos.PuedeColocar(ofertaSeleccionada.weaponId))) &&
             !EstaComprada(ofertaSeleccionada) &&
             !InventarioLlenoPara(ofertaSeleccionada) &&
             !MunicionLlenaPara(ofertaSeleccionada) &&
@@ -795,6 +825,10 @@ public class NPCShopUI : MonoBehaviour
             return playerHealth != null && playerHealth.EspaciosExtraAlMaximo(oferta.slotExtra);
 
         if (grenadeThrow != null && grenadeThrow.EsTipoDeGranada(oferta.weaponId))
+            return false;
+
+        // Se pueden comprar (y colocar) varias torretas y barriles.
+        if (oferta.EsColocable)
             return false;
 
         return !oferta.EsCuracion &&
@@ -1003,6 +1037,7 @@ public class NPCShopUI : MonoBehaviour
         playerLook = root.GetComponentInChildren<PlayerLook>(true);
         playerHealth = root.GetComponentInChildren<PlayerHealth>(true);
         grenadeThrow = root.GetComponentInChildren<GrenadeThrow>(true);
+        colocadorObjetos = root.GetComponentInChildren<ColocadorObjetos>(true);
     }
 
     // =========================================================

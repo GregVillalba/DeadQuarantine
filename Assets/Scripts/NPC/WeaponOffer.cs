@@ -106,7 +106,16 @@ public class WeaponOffer
 
     
 
+    [Tooltip("Barril explosivo: al comprarlo se cierra la tienda y el jugador pasa a colocarlo (ver ColocadorObjetos). " +
+             "Solo aparece en Supervivencia y se cobra al confirmar la colocación.")]
     public bool esBarril;
+
+    [Tooltip("Torreta automática: al comprarla se cierra la tienda y el jugador pasa a colocarla (ver ColocadorObjetos). " +
+             "Solo aparece en Supervivencia y se cobra al confirmar la colocación.")]
+    public bool esTorreta;
+
+    /// <summary>Se coloca en el mapa al comprarla (torreta, barril explosivo) en vez de ir al inventario.</summary>
+    public bool EsColocable => esTorreta || esBarril;
 
     /// <summary>La compra cura al jugador en vez de desbloquear un arma.</summary>
     public bool EsCuracion => puntosDeSalud > 0;
@@ -129,9 +138,14 @@ public class WeaponOffer
     }
 
     // Sin modo elegido (escena abierta directo desde el editor) se muestra siempre.
+    // Las torretas y los barriles solo existen en Supervivencia, más allá de lo que se marque en 'Modos'.
     public bool SeMuestraEnModo(ConfiguracionPartidaSeleccionada.ModoJuego modo)
     {
         ModosTienda flag = DisponibilidadTienda.AFlag(modo);
+
+        if (EsColocable)
+            return flag == 0 || flag == ModosTienda.Supervivencia;
+
         return flag == 0 || (modos & flag) != 0;
     }
 }

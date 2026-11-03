@@ -10,12 +10,20 @@ using UnityEngine;
 public static class PlayerInputGate
 {
     /// <summary>
-    /// Disparo, recarga, apuntado, cambio de arma,
-    /// granadas, cuchillo, etc.
+    /// Pausa o tienda abierta.
     /// </summary>
-    public static bool ActionsBlocked =>
+    public static bool MenuOpen =>
         PauseController.LocalPlayerPaused ||
         NPCShopUI.LocalShopOpen;
+
+    /// <summary>
+    /// Disparo, recarga, apuntado, cambio de arma,
+    /// granadas, cuchillo, etc.
+    /// También mientras se coloca una torreta o un barril: el clic izquierdo lo coloca y el derecho cancela.
+    /// </summary>
+    public static bool ActionsBlocked =>
+        MenuOpen ||
+        ColocadorObjetos.ColocandoLocal;
 
     /// <summary>
     /// Bloquea movimientos derivados del mouse.

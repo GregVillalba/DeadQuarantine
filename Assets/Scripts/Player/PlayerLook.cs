@@ -54,6 +54,21 @@ public class PlayerLook : MonoBehaviour
         mouseSensitivity = ConfiguracionesJuego.ObtenerSensibilidad();
     }
 
+    /// <summary>
+    /// Gira al jugador a los costados (ej: 180 = de espaldas a lo que miraba) y deja la mirada horizontal.
+    /// Lo usa la tienda al pasar a colocar una torreta o un barril, para no quedar mirando al mercader.
+    /// </summary>
+    public void Girar(float grados)
+    {
+        if (playerTransform == null || cameraTransform == null)
+            return;
+
+        playerTransform.Rotate(Vector3.up * grados);
+
+        pitch = 0f;
+        cameraTransform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+    }
+
     private void OnEnable()
     {
         controls.Player.Enable();

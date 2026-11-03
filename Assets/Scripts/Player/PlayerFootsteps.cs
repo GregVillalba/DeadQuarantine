@@ -44,7 +44,7 @@ public class PlayerFootsteps : MonoBehaviour
             return;
 
         // Menú abierto (pausa / tienda) o movimiento bloqueado: sin pasos.
-        if (PlayerInputGate.ActionsBlocked ||
+        if (PlayerInputGate.MenuOpen ||
             (playerMovement != null && playerMovement.MovementLocked))
         {
             if (audioSource.isPlaying)
