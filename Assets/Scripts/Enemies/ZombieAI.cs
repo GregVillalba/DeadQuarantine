@@ -151,6 +151,8 @@ public class ZombieAI : NetworkBehaviour
     private float nextAttackTime;
     private float nextPathUpdateTime;
     private Transform target;
+    // Si el objetivo es una torreta (Supervivencia) en vez de un jugador.
+    private TorretaAutomatica targetTorreta;
     private bool hayJugadorEnZonaSegura;
 
     private bool isAttacking;
@@ -479,11 +481,8 @@ public class ZombieAI : NetworkBehaviour
             return;
         }
 
-        float distanceToTarget =
-            DistanciaPlana(
-                transform.position,
-                target.position
-            );
+        // Plana (sin altura) hasta el jugador, o hasta el borde de la torreta.
+        float distanceToTarget = DistanciaAlObjetivo();
 
         if (distanceToTarget <= attackRange)
         {
@@ -533,7 +532,7 @@ public class ZombieAI : NetworkBehaviour
     }
 
     // =========================================================
-    // BUSCAR JUGADOR VIVO
+    // BUSCAR JUGADOR VIVO (O TORRETA SANA)
     // =========================================================
 
     private void FindClosestPlayer()
@@ -590,7 +589,48 @@ public class ZombieAI : NetworkBehaviour
             }
         }
 
-        target = closestPlayer;
+        // Torretas sanas: compiten con los jugadores por cercanía (se mide hasta su borde, no hasta el centro).
+        TorretaAutomatica closestTorreta = null;
+
+        foreach (TorretaAutomatica torreta in TorretaAutomatica.Todas)
+        {
+            if (torreta == null || !torreta.IsSpawned || torreta.EstaRota)
+                continue;
+
+            float distance =
+                Vector3.Distance(
+                    transform.position,
+                    torreta.PuntoMasCercano(transform.position)
+                );
+
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestTorreta = torreta;
+            }
+        }
+
+        targetTorreta = closestTorreta;
+        target = closestTorreta != null ? closestTorreta.transform : closestPlayer;
+    }
+
+    // Distancia plana (sin altura) hasta el jugador, o hasta el borde de la torreta
+    // (el NavMeshObstacle no deja llegar a su centro).
+    private float DistanciaAlObjetivo()
+    {
+        if (target == null)
+            return Mathf.Infinity;
+
+        return DistanciaPlana(transform.position, PuntoObjetivo());
+    }
+
+    // Centro del jugador, o el punto de la torreta más cercano al zombie.
+    private Vector3 PuntoObjetivo()
+    {
+        if (targetTorreta != null)
+            return targetTorreta.PuntoMasCercano(transform.position);
+
+        return target != null ? target.position : transform.position;
     }
 
     private static bool EstaEnZonaSegura(ulong clientId)
@@ -636,8 +676,12 @@ public class ZombieAI : NetworkBehaviour
         if (target == null)
             return transform.position;
 
+        // Con la torreta se mide desde su borde: su centro queda dentro del NavMeshObstacle.
+        Vector3 objetivo = PuntoObjetivo();
+        objetivo.y = target.position.y;
+
         Vector3 awayFromTarget =
-            transform.position - target.position;
+            transform.position - objetivo;
         awayFromTarget.y = 0f;
 
         if (awayFromTarget.sqrMagnitude < 0.0001f)
@@ -656,7 +700,7 @@ public class ZombieAI : NetworkBehaviour
             );
 
         Vector3 desired =
-            target.position +
+            objetivo +
             awayFromTarget * desiredDistance;
 
         if (
@@ -805,6 +849,17 @@ public class ZombieAI : NetworkBehaviour
             yield break;
         }
 
+        // Torreta: le saca vida (la misma que a un jugador). Rota en medio del golpe = no le pasa nada.
+        if (targetTorreta != null)
+        {
+            if (!targetTorreta.EstaRota && DistanciaAlObjetivo() <= attackRange)
+                targetTorreta.RecibirDanoZombie(DanoDeAtaque());
+
+            if (animationDriver != null || animator == null)
+                isAttacking = false;
+            yield break;
+        }
+
         if (target != null)
         {
             float distanceToTarget =
@@ -833,17 +888,7 @@ public class ZombieAI : NetworkBehaviour
                         attackDamage
                     );*/
 
-                    DifficultySettings settings =
-                        RoundManager.Instance != null
-                            ? RoundManager.Instance.ActiveSettings
-                            : null;
-
-                    int damage =
-                        (useDifficultyDamageOverride && settings != null && settings.zombieDamage > 0)
-                            ? settings.zombieDamage
-                            : attackDamage;
-
-                    Debug.Log($"[ZombieAI] settings={(settings != null ? settings.name : "NULL")} | zombieDamage={(settings != null ? settings.zombieDamage : -1)} | prefab={attackDamage}");
+                    int damage = DanoDeAtaque();
 
                     playerHealth.TakeDamage(damage);
 
@@ -858,6 +903,24 @@ public class ZombieAI : NetworkBehaviour
 
         if (animationDriver != null || animator == null)
             isAttacking = false;
+    }
+
+    // Daño de la dificultad (si está activo y configurado) o el del prefab.
+    private int DanoDeAtaque()
+    {
+        DifficultySettings settings =
+            RoundManager.Instance != null
+                ? RoundManager.Instance.ActiveSettings
+                : null;
+
+        int damage =
+            (useDifficultyDamageOverride && settings != null && settings.zombieDamage > 0)
+                ? settings.zombieDamage
+                : attackDamage;
+
+        Debug.Log($"[ZombieAI] settings={(settings != null ? settings.name : "NULL")} | zombieDamage={(settings != null ? settings.zombieDamage : -1)} | prefab={attackDamage}");
+
+        return damage;
     }
 
     private IEnumerator FinalizarAtaqueAlTerminarAnimacion()

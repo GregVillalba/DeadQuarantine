@@ -12,6 +12,9 @@ public class NPCShopUI : MonoBehaviour
     [SerializeField] private GameObject interactPrompt;
     [SerializeField] private TextMeshProUGUI interactText;
     [SerializeField] private float interactRange = 3f;
+    [Tooltip("Mirando la torreta propia dañada o rota a menos de esta distancia (m) se muestra el cartel de abajo.")]
+    [SerializeField] private float rangoCartelTorreta = 3f;
+    [SerializeField] private string textoCartelTorretaRota = "Reparar en la tienda";
 
     [Header("Panel de la tienda")]
     [SerializeField] private GameObject shopPanel;
@@ -109,6 +112,8 @@ public class NPCShopUI : MonoBehaviour
     [SerializeField] private string textoMunicionLlena = "MUNICIÓN LLENA";
     [Tooltip("Chaleco / casco comprado y con el escudo lleno.")]
     [SerializeField] private string textoEquipado = "EQUIPADO";
+    [Tooltip("Torreta propia ya colocada y funcionando (una por jugador).")]
+    [SerializeField] private string textoTorretaColocada = "COLOCADA";
     [Tooltip("Chaleco / casco dañado o roto, cuando al jugador le alcanzan los recursos para repararlo.")]
     [SerializeField] private string textoReparar = "REPARAR";
     [SerializeField] private Image progresoCompraFill;
@@ -314,14 +319,26 @@ public class NPCShopUI : MonoBehaviour
     {
         Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
 
-        if (Physics.Raycast(ray, out RaycastHit hit, interactRange))
+        if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Max(interactRange, rangoCartelTorreta)))
         {
+            // Torreta propia dañada o rota a menos de rangoCartelTorreta: el mismo cartel avisa que se repara en la tienda.
+            TorretaAutomatica torreta = hit.collider.GetComponentInParent<TorretaAutomatica>();
+
+            if (torreta != null &&
+                torreta.NecesitaReparacion &&
+                torreta == TorretaPropia() &&
+                hit.distance <= rangoCartelTorreta)
+            {
+                MostrarPrompt(textoCartelTorretaRota);
+                return;
+            }
+
             // GetComponent (no GetComponentInParent): así el raycast solo detecta
             // el propio collider del mercader, no los assets del puesto (mesa,
             // estantería, etc.) que cuelgan de él como hijos.
             NPCWeaponVendor vendor = hit.collider.GetComponent<NPCWeaponVendor>();
 
-            if (vendor != null)
+            if (vendor != null && hit.distance <= interactRange)
             {
                 if (controls.Player.Interact.triggered)
                 {
@@ -354,6 +371,18 @@ public class NPCShopUI : MonoBehaviour
                 ? ConstruirMensajeBloqueado()
                 : controls.Player.Interact.GetBindingDisplayString() + " para hablar con " + vendor.NombreMercader;
         }
+
+        interactPrompt.SetActive(true);
+    }
+
+    // El mismo cartel, con otro texto (ej: la torreta propia rota).
+    private void MostrarPrompt(string texto)
+    {
+        if (interactPrompt == null)
+            return;
+
+        if (interactText != null)
+            interactText.text = texto;
 
         interactPrompt.SetActive(true);
     }
@@ -529,8 +558,13 @@ public class NPCShopUI : MonoBehaviour
     private void ComprarOferta(WeaponOffer oferta)
     {
         // Torreta o barril: la tienda se cierra y el jugador pasa directo a colocarlo. Se cobra al confirmar la colocación.
-        if (oferta.EsColocable)
+        // (La torreta dañada o rota no se coloca: se repara con el mercader, como el chaleco y el casco.)
+        if (oferta.EsColocable && !TorretaReparable(oferta))
         {
+            // Una torreta por jugador: con la suya colocada y sana no se compra otra.
+            if (oferta.esTorreta && TorretaPropia() != null)
+                return;
+
             if (colocadorObjetos == null || !colocadorObjetos.PuedeColocar(oferta.weaponId))
                 return;
 
@@ -701,6 +735,11 @@ public class NPCShopUI : MonoBehaviour
             textoCompra.text = textoEquipado;
             textoCompra.color = colorComprado;
         }
+        else if (ofertaSeleccionada.esTorreta && EstaComprada(ofertaSeleccionada))
+        {
+            textoCompra.text = textoTorretaColocada;
+            textoCompra.color = colorComprado;
+        }
         else if (EstaComprada(ofertaSeleccionada))
         {
             textoCompra.text = textoYaComprado;
@@ -709,7 +748,7 @@ public class NPCShopUI : MonoBehaviour
         else
         {
             bool alcanza = Alcanza(PrecioActual(ofertaSeleccionada));
-            string textoAlcanza = BlindajeReparable(ofertaSeleccionada) ? textoReparar : textoComprar;
+            string textoAlcanza = Reparable(ofertaSeleccionada) ? textoReparar : textoComprar;
             textoCompra.text = alcanza ? textoAlcanza : textoFaltanRecursos;
             textoCompra.color = alcanza ? colorAlcanza : colorNoAlcanza;
         }
@@ -748,7 +787,9 @@ public class NPCShopUI : MonoBehaviour
             ofertaSeleccionada != null &&
             ofertaSeleccionada.disponible &&
             weaponSwitcher != null &&
-            (!ofertaSeleccionada.EsColocable || (colocadorObjetos != null && colocadorObjetos.PuedeColocar(ofertaSeleccionada.weaponId))) &&
+            (!ofertaSeleccionada.EsColocable ||
+             TorretaReparable(ofertaSeleccionada) ||
+             (colocadorObjetos != null && colocadorObjetos.PuedeColocar(ofertaSeleccionada.weaponId))) &&
             !EstaComprada(ofertaSeleccionada) &&
             !InventarioLlenoPara(ofertaSeleccionada) &&
             !MunicionLlenaPara(ofertaSeleccionada) &&
@@ -827,7 +868,14 @@ public class NPCShopUI : MonoBehaviour
         if (grenadeThrow != null && grenadeThrow.EsTipoDeGranada(oferta.weaponId))
             return false;
 
-        // Se pueden comprar (y colocar) varias torretas y barriles.
+        // Una torreta por jugador: "comprada" mientras la tiene colocada con la vida llena. Dañada o rota se puede reparar.
+        if (oferta.esTorreta)
+        {
+            TorretaAutomatica propia = TorretaPropia();
+            return propia != null && !propia.NecesitaReparacion;
+        }
+
+        // Barriles: se pueden comprar (y colocar) varios.
         if (oferta.EsColocable)
             return false;
 
@@ -868,10 +916,36 @@ public class NPCShopUI : MonoBehaviour
                playerHealth.NecesitaReparacion(oferta.piezaBlindaje);
     }
 
-    // Lo que cuesta ahora en recursos: la reparación si la pieza está dañada o rota, si no el precio de compra.
+    private bool TorretaReparable(WeaponOffer oferta)
+    {
+        if (!oferta.esTorreta)
+            return false;
+
+        TorretaAutomatica propia = TorretaPropia();
+        return propia != null && propia.NecesitaReparacion;
+    }
+
+    private bool Reparable(WeaponOffer oferta)
+    {
+        return BlindajeReparable(oferta) || TorretaReparable(oferta);
+    }
+
+    // La torreta que colocó el jugador local (cada uno repara solo la suya). Se busca por el dueño del colocador
+    // del jugador, el mismo id con el que el servidor la registró.
+    private TorretaAutomatica TorretaPropia()
+    {
+        if (colocadorObjetos != null && colocadorObjetos.IsSpawned)
+            return colocadorObjetos.TorretaPropia();
+
+        return NetworkManager.Singleton != null
+            ? TorretaAutomatica.DelJugador(NetworkManager.Singleton.LocalClientId)
+            : null;
+    }
+
+    // Lo que cuesta ahora en recursos: la reparación si la pieza o la torreta está dañada o rota, si no el precio de compra.
     private PrecioRecursos PrecioActual(WeaponOffer oferta)
     {
-        return BlindajeReparable(oferta) && currentVendor != null
+        return Reparable(oferta) && currentVendor != null
             ? currentVendor.PrecioReparacion(oferta)
             : oferta.Precio;
     }
@@ -930,7 +1004,7 @@ public class NPCShopUI : MonoBehaviour
             else if (comprada)
             {
                 if (fila.etiquetaCosto != null)
-                    fila.etiquetaCosto.text = fila.oferta.EsBlindaje ? "Equipado" : "Comprada";
+                    fila.etiquetaCosto.text = fila.oferta.EsBlindaje ? "Equipado" : fila.oferta.esTorreta ? "Colocada" : "Comprada";
 
                 colorFila = colorComprado;
             }

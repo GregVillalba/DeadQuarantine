@@ -247,6 +247,22 @@ public class PlayerRecursos : NetworkBehaviour
         NotificarResultadoCompraClientRpc(itemId, exito, ParametrosParaDueno());
     }
 
+    // Torreta: solo la propia y solo si recibió daño (o está rota). Vuelve con la vida llena y a disparar.
+    [ServerRpc]
+    public void RepararTorretaServerRpc(string itemId, PrecioRecursos precio)
+    {
+        TorretaAutomatica torreta = TorretaAutomatica.DelJugador(OwnerClientId);
+
+        bool exito = torreta != null &&
+                     torreta.NecesitaReparacion &&
+                     GastarRecursos(precio);
+
+        if (exito)
+            torreta.Reparar();
+
+        NotificarResultadoCompraClientRpc(itemId, exito, ParametrosParaDueno());
+    }
+
     private ClientRpcParams ParametrosParaDueno()
     {
         return new ClientRpcParams

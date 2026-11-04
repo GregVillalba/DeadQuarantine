@@ -13,6 +13,11 @@ public class NPCWeaponVendor : MonoBehaviour
     [Range(0f, 1f)]
     [SerializeField] private float porcentajeReparacion = 0.25f;
 
+    [Header("Torreta")]
+    [Tooltip("Precio de reparar la torreta dañada o rota, como fracción de su precio en recursos (0.5 = la mitad, redondeado para arriba).")]
+    [Range(0f, 1f)]
+    [SerializeField] private float porcentajeReparacionTorreta = 0.5f;
+
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip purchaseSuccessSound;
@@ -28,15 +33,26 @@ public class NPCWeaponVendor : MonoBehaviour
     public IReadOnlyList<WeaponOffer> Offers => offers;
     public string NombreMercader => gameObject.name;
 
-    // Cada recurso del precio por porcentajeReparacion, redondeado para arriba.
+    // Cada recurso del precio por el porcentaje de reparación (torreta o blindaje), redondeado para arriba.
     public PrecioRecursos PrecioReparacion(WeaponOffer oferta)
     {
+        float porcentaje = oferta.esTorreta ? porcentajeReparacionTorreta : porcentajeReparacion;
         PrecioRecursos precio = oferta.Precio;
 
         return new PrecioRecursos(
-            Mathf.CeilToInt(precio.Cantidad(TipoRecurso.PilaDeLatas) * porcentajeReparacion),
-            Mathf.CeilToInt(precio.Cantidad(TipoRecurso.Cantimplora) * porcentajeReparacion),
-            Mathf.CeilToInt(precio.Cantidad(TipoRecurso.Bidon) * porcentajeReparacion));
+            Mathf.CeilToInt(precio.Cantidad(TipoRecurso.PilaDeLatas) * porcentaje),
+            Mathf.CeilToInt(precio.Cantidad(TipoRecurso.Cantimplora) * porcentaje),
+            Mathf.CeilToInt(precio.Cantidad(TipoRecurso.Bidon) * porcentaje));
+    }
+
+    /// <summary>La torreta del jugador local recibió daño (o está rota): la oferta de la torreta pasa a ser "reparar".</summary>
+    private static bool TorretaLocalDanada(PlayerRecursos recursosJugador)
+    {
+        if (recursosJugador == null)
+            return false;
+
+        TorretaAutomatica torreta = TorretaAutomatica.DelJugador(recursosJugador.OwnerClientId);
+        return torreta != null && torreta.NecesitaReparacion;
     }
 
     private void Awake()
@@ -56,6 +72,21 @@ public class NPCWeaponVendor : MonoBehaviour
 
         if (!oferta.disponible || !DisponibilidadTienda.SeMuestraEnPartidaActual(oferta))
             return;
+
+        // Torreta dañada o rota del jugador: se repara acá (el servidor revisa que siga dañada y cobra la mitad).
+        PlayerRecursos recursosJugador = oferta.esTorreta ? BuscarRecursosJugadorLocal() : null;
+
+        if (oferta.esTorreta && TorretaLocalDanada(recursosJugador))
+        {
+            pendingSwitcher = null;
+            pendingWeapon = null;
+            pendingRecursos = recursosJugador;
+            pendingWeaponId = weaponId;
+
+            recursosJugador.OnPurchaseResult += OnPurchaseResultInterno;
+            recursosJugador.RepararTorretaServerRpc(weaponId, PrecioReparacion(oferta));
+            return;
+        }
 
         // Torretas y barriles no se cobran acá: NPCShopUI los manda a ColocadorObjetos, que los cobra al colocarlos.
         if (oferta.EsColocable)
@@ -200,6 +231,12 @@ public class NPCWeaponVendor : MonoBehaviour
         pendingWeaponId = null;
 
         OnPurchaseResult?.Invoke(weaponId, exito);
+    }
+
+    private PlayerRecursos BuscarRecursosJugadorLocal()
+    {
+        Camera camara = BuscarCamaraJugadorLocal();
+        return camara != null ? camara.transform.root.GetComponentInChildren<PlayerRecursos>() : null;
     }
 
     private Camera BuscarCamaraJugadorLocal()
