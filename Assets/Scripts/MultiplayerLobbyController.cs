@@ -115,6 +115,9 @@ public class MultiplayerLobbyController : MonoBehaviour
     private bool presenciaActiva;
     private bool saliendoPorCierre;
 
+    private LobbyGameSettingsRuntime configuradorPartida;
+    private bool ultimoPermisoEdicionConfiguracion;
+
     private void Awake()
     {
         if (network == null)
@@ -218,6 +221,9 @@ public class MultiplayerLobbyController : MonoBehaviour
         ActualizarEstadoSala();
         PublicarPersonajeSiCambio();
         AplicarConfiguracionDeSesion();
+        ActualizarPermisosConfiguracion();
+        if (configuradorPartida != null)
+            configuradorPartida.ActualizarVisual();
         LeerCountdownDeSesion();
         ActualizarCountdownVisual();
     }
@@ -288,6 +294,8 @@ public class MultiplayerLobbyController : MonoBehaviour
             else
             {
                 MostrarPanel(salaEsperaPanel);
+                InicializarConfiguradorPartida();
+                ActualizarPermisosConfiguracion();
             }
         }
         catch (Exception e)
@@ -314,7 +322,18 @@ public void OnClick_IrAConfigurarPartida()
     if (!VerificarInternet())
         return;
 
-    MostrarPanel(configuracionPartidaPanel);
+    // Flujo nuevo: el botón CREAR ya no abre las pantallas viejas de
+    // modalidad/dificultad/mapa. Crea la sala y entra al lobby.
+    if (!estoyEnSala)
+    {
+        OnClick_CrearSala();
+        return;
+    }
+
+    // Si ya estamos dentro del lobby, abre el popup de configuración.
+    InicializarConfiguradorPartida();
+    if (configuradorPartida != null)
+        configuradorPartida.Abrir();
 }
 
 /*public void OnClick_AtrasDesdeConfiguracion()
@@ -437,6 +456,8 @@ public void OnClick_IrAConfigurarPartida()
             }
 
             MostrarPanel(salaEsperaPanel);
+            InicializarConfiguradorPartida();
+            ActualizarPermisosConfiguracion();
 
             Debug.Log(
                 "[Lobby] Unido a la sala: " +
@@ -471,6 +492,20 @@ public void OnClick_IrAConfigurarPartida()
             Debug.LogError(
                 "[Lobby] No existe una sesión."
             );
+
+            return;
+        }
+
+        if (network.CurrentSession.IsHost && !LobbyGameSettingsRuntime.ConfiguracionValida())
+        {
+            MostrarMensaje(
+                "FALTA CONFIGURAR",
+                "Elegí Modo, Mapa y Dificultad desde CONFIGURAR PARTIDA antes de marcarte listo."
+            );
+
+            InicializarConfiguradorPartida();
+            if (configuradorPartida != null)
+                configuradorPartida.Abrir();
 
             return;
         }
@@ -604,6 +639,7 @@ public void OnClick_IrAConfigurarPartida()
         // Solo el host inicia la cuenta.
         if (network.CurrentSession.IsHost &&
             todosListos &&
+            LobbyGameSettingsRuntime.ConfiguracionValida() &&
             !countdownIniciado)
         {
             countdownIniciado = true;
@@ -866,7 +902,16 @@ public void OnClick_IrAConfigurarPartida()
 
         if (btnPlayMultiplayer != null)
         {
-            btnPlayMultiplayer.interactable = true;
+            bool puedeUsarReady = true;
+
+            if (network != null &&
+                network.CurrentSession != null &&
+                network.CurrentSession.IsHost)
+            {
+                puedeUsarReady = LobbyGameSettingsRuntime.ConfiguracionValida();
+            }
+
+            btnPlayMultiplayer.interactable = puedeUsarReady;
         }
 
         if (btnPersonaje != null)
@@ -1031,6 +1076,95 @@ public void OnClick_IrAConfigurarPartida()
 
         if (DifficultyManager.Instance != null)
             DifficultyManager.Instance.SincronizarConSeleccion();
+
+        if (configuradorPartida != null)
+            configuradorPartida.ActualizarVisual();
+    }
+
+
+    private void InicializarConfiguradorPartida()
+    {
+        if (configuradorPartida == null)
+            configuradorPartida = GetComponent<LobbyGameSettingsRuntime>();
+
+        if (configuradorPartida == null)
+            configuradorPartida = gameObject.AddComponent<LobbyGameSettingsRuntime>();
+
+        bool puedeEditar =
+            network != null &&
+            network.CurrentSession != null &&
+            network.CurrentSession.IsHost;
+
+        if (!configuradorPartida.Inicializado)
+        {
+            configuradorPartida.Inicializar(
+                null,
+                null,
+                null,
+                puedeEditar,
+                OnConfiguracionLobbyCambiada
+            );
+        }
+        else
+        {
+            configuradorPartida.SetEditable(puedeEditar);
+            configuradorPartida.ActualizarVisual();
+        }
+
+        ultimoPermisoEdicionConfiguracion = puedeEditar;
+    }
+
+    private void ActualizarPermisosConfiguracion()
+    {
+        if (network == null)
+            network = NetworkBootstrap.Instance;
+
+        bool puedeEditar =
+            network != null &&
+            network.CurrentSession != null &&
+            network.CurrentSession.IsHost;
+
+        if (configuradorPartida == null || !configuradorPartida.Inicializado)
+        {
+            InicializarConfiguradorPartida();
+        }
+        else if (puedeEditar != ultimoPermisoEdicionConfiguracion)
+        {
+            configuradorPartida.SetEditable(puedeEditar);
+            ultimoPermisoEdicionConfiguracion = puedeEditar;
+        }
+
+        if (btnPlayMultiplayer != null && puedeEditar)
+            btnPlayMultiplayer.interactable = LobbyGameSettingsRuntime.ConfiguracionValida();
+    }
+
+    private async void OnConfiguracionLobbyCambiada()
+    {
+        if (network == null)
+            network = NetworkBootstrap.Instance;
+
+        if (network == null ||
+            network.CurrentSession == null ||
+            !network.CurrentSession.IsHost)
+        {
+            return;
+        }
+
+        // Si el Host cambia una regla de la partida, deja de estar listo hasta confirmar de nuevo.
+        if (miReady)
+        {
+            miReady = false;
+            await CambiarReady(false);
+            ActualizarBotonReady(false);
+        }
+
+        await EscribirConfiguracionPartida();
+
+        if (DifficultyManager.Instance != null)
+            DifficultyManager.Instance.SincronizarConSeleccion();
+
+        if (configuradorPartida != null)
+            configuradorPartida.ActualizarVisual();
     }
 
     private void LeerCountdownDeSesion()

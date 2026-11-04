@@ -12,7 +12,7 @@ using UnityEngine;
 /// - Hit reactions.
 /// - Ataques.
 /// - Locomoción 8 direcciones Walk/Run (InPlace).
-/// - Variantes aleatorias Forward dentro de los Blend Trees direccionales.
+/// - Variantes Forward asignadas al aparecer y mantenidas durante la vida del zombie.
 /// - Idles.
 /// - Sprint con dos variantes.
 /// - OutOfGround -> CrawlIdle_To_Stand.
@@ -122,6 +122,7 @@ public static class ZombieAnimatorUpgradeBuilder
         // la maneja NavMeshAgent, horneamos Y/XZ/rotación dentro de la pose para que
         // el cuerpo salga de la tierra sin mover físicamente el GameObject.
         ConfigureSpawnClipImportSettings();
+        ConfigureCombatClipRootMotion();
 
         if (!TryLoadClips(out Clips clips, out List<string> missing))
         {
@@ -214,6 +215,116 @@ public static class ZombieAnimatorUpgradeBuilder
         ConfigureSpawnClipImport(
             "Zombie_Crawl_CrawlIdle_To_Stand.FBX"
         );
+    }
+
+    /// <summary>
+    /// Los ataques y reacciones de impacto del pack pueden traer desplazamiento
+    /// en el root. Como el movimiento real del zombie lo controla NavMeshAgent,
+    /// extraemos esa traslación como root motion y ZombieAI la descarta
+    /// (applyRootMotion = false). Así el modelo no da pequeños "saltos" ni
+    /// impulsos hacia delante al cambiar de estado.
+    ///
+    /// La rotación se conserva dentro de la pose para no perder los ataques
+    /// direccionales de 90/180 grados.
+    /// </summary>
+    private static void ConfigureCombatClipRootMotion()
+    {
+        string[] combatClips =
+        {
+            "Zombie_Attack01.FBX",
+            "Zombie_Attack02.FBX",
+            "Zombie_Attack03.FBX",
+            "Zombie_Attack_180Turn.FBX",
+            "Zombie_Attack_90TurnLeft.FBX",
+            "Zombie_Attack_90TurnRight.FBX",
+            "Zombie_Attack_Forward01.fbx",
+            "Zombie_Attack_ForwardJump.fbx",
+            "Zombie_HitReact_Head.fbx",
+            "Zombie_HitReact_LeftArm.fbx",
+            "Zombie_HitReact_RightArm.fbx"
+        };
+
+        foreach (string fileName in combatClips)
+            ConfigureCombatClipImport(fileName);
+    }
+
+    private static void ConfigureCombatClipImport(string exactFileName)
+    {
+        string assetPath = FindExactAssetPath(exactFileName);
+        if (string.IsNullOrEmpty(assetPath))
+            return;
+
+        ModelImporter importer =
+            AssetImporter.GetAtPath(assetPath) as ModelImporter;
+
+        if (importer == null)
+            return;
+
+        ModelImporterClipAnimation[] clipSettings = importer.clipAnimations;
+
+        if (clipSettings == null || clipSettings.Length == 0)
+            clipSettings = importer.defaultClipAnimations;
+
+        if (clipSettings == null || clipSettings.Length == 0)
+            return;
+
+        bool changed = false;
+
+        foreach (ModelImporterClipAnimation clip in clipSettings)
+        {
+            // OFF = la traslación X/Z se extrae como root motion.
+            // Como ZombieAI usa applyRootMotion=false fuera del spawn,
+            // ese impulso se descarta en vez de mover visualmente al zombie.
+            if (clip.lockRootPositionXZ)
+            {
+                clip.lockRootPositionXZ = false;
+                changed = true;
+            }
+
+            // También extraemos pequeños saltos verticales del root.
+            if (clip.lockRootHeightY)
+            {
+                clip.lockRootHeightY = false;
+                changed = true;
+            }
+
+            // Los ataques 90/180 necesitan conservar su giro visual.
+            if (!clip.lockRootRotation)
+            {
+                clip.lockRootRotation = true;
+                changed = true;
+            }
+
+            if (!clip.keepOriginalPositionXZ)
+            {
+                clip.keepOriginalPositionXZ = true;
+                changed = true;
+            }
+
+            if (!clip.keepOriginalPositionY)
+            {
+                clip.keepOriginalPositionY = true;
+                changed = true;
+            }
+
+            if (!clip.keepOriginalOrientation)
+            {
+                clip.keepOriginalOrientation = true;
+                changed = true;
+            }
+
+            if (clip.loopTime)
+            {
+                clip.loopTime = false;
+                changed = true;
+            }
+        }
+
+        if (!changed)
+            return;
+
+        importer.clipAnimations = clipSettings;
+        importer.SaveAndReimport();
     }
 
     private static void ConfigureSpawnClipImport(string exactFileName)
@@ -606,14 +717,14 @@ public static class ZombieAnimatorUpgradeBuilder
             attack.speed = i <= 5 ? 1.75f : 1.55f;
 
             AnimatorStateTransition anyToAttack = root.AddAnyStateTransition(attack);
-            ConfigureImmediate(anyToAttack, 0.07f);
+            ConfigureImmediate(anyToAttack, 0.10f);
             anyToAttack.canTransitionToSelf = false;
             anyToAttack.AddCondition(AnimatorConditionMode.IfNot, 0f, "Spawning");
             anyToAttack.AddCondition(AnimatorConditionMode.If, 0f, "Attack");
             anyToAttack.AddCondition(AnimatorConditionMode.Equals, i, "AttackIndex");
 
             AnimatorStateTransition attackToIdle = attack.AddTransition(idle);
-            ConfigureExit(attackToIdle, 0.94f, 0.10f);
+            ConfigureExit(attackToIdle, 0.98f, 0.14f);
         }
 
         // ---------------- HIT REACTIONS ----------------
@@ -629,14 +740,14 @@ public static class ZombieAnimatorUpgradeBuilder
             hit.speed = 1.55f;
 
             AnimatorStateTransition anyToHit = root.AddAnyStateTransition(hit);
-            ConfigureImmediate(anyToHit, 0.055f);
+            ConfigureImmediate(anyToHit, 0.08f);
             anyToHit.canTransitionToSelf = false;
             anyToHit.AddCondition(AnimatorConditionMode.IfNot, 0f, "Spawning");
             anyToHit.AddCondition(AnimatorConditionMode.If, 0f, "Hit");
             anyToHit.AddCondition(AnimatorConditionMode.Equals, i, "HitIndex");
 
             AnimatorStateTransition hitToIdle = hit.AddTransition(idle);
-            ConfigureExit(hitToIdle, 0.97f, 0.09f);
+            ConfigureExit(hitToIdle, 0.985f, 0.12f);
         }
 
         // ---------------- DEATH EXISTENTE ----------------

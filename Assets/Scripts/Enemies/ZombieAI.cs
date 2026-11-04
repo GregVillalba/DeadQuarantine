@@ -31,11 +31,8 @@ public class ZombieAI : NetworkBehaviour
     [Tooltip("Suavizado de los parámetros direccionales del Animator.")]
     [SerializeField] private float locomotionDampTime = 0.12f;
     [Range(0f, 1f)]
-    [Tooltip("Entre los zombies que corren, porcentaje que visualmente usa Sprint.")]
+    [Tooltip("Al aparecer, cada zombie decide si su estilo de carrera usa Sprint. Esa elección se conserva hasta que muere.")]
     [SerializeField] private float sprintChance = 0.25f;
-    [Tooltip("Al empezar a moverse vuelve a elegir una variante Walk/Run para que no todos caminen igual.")]
-    [SerializeField] private bool rerollLocomotionOnMoveStart = true;
-    [SerializeField] private float idleVariantChangeInterval = 5f;
 
     [Header("Reacción al daño")]
     [Tooltip("Solo afecta al zombie humano legacy (no al perro). Si está activo, el NavMeshAgent se queda quieto hasta que termina el estado HitReaction.")]
@@ -50,6 +47,21 @@ public class ZombieAI : NetworkBehaviour
     [SerializeField] private GameObject groundSpawnEffectPrefab;
     [SerializeField] private float spawnStateEnterTimeout = 0.5f;
     [SerializeField] private float spawnMaxDuration = 8f;
+
+    [Header("Estabilidad en espacios cerrados")]
+    [Tooltip("Distancia a la que el zombie intenta colocarse respecto del jugador. Debe ser menor que Attack Range.")]
+    [SerializeField] private float attackApproachDistance = 1.35f;
+    [Tooltip("Cada cuánto se recalcula el destino. Evita que varios zombies cambien de ruta violentamente cada frame.")]
+    [SerializeField] private float repathInterval = 0.15f;
+    [Tooltip("Radio usado para buscar un punto válido de NavMesh alrededor de la posición de aproximación.")]
+    [SerializeField] private float approachSampleRadius = 0.75f;
+    [Tooltip("Velocidad con la que el zombie se orienta hacia el jugador antes de atacar.")]
+    [SerializeField] private float attackFacingSpeed = 540f;
+    [Tooltip("Ángulo máximo permitido para iniciar un ataque. Si no está mirando al jugador, primero gira en el lugar.")]
+    [Range(10f, 90f)]
+    [SerializeField] private float attackFacingTolerance = 55f;
+    [Tooltip("El ForwardJump tiene mucho desplazamiento visual. Desactivado evita que se use en espacios cerrados.")]
+    [SerializeField] private bool allowForwardJumpAttack = false;
 
     [Header("Aturdimiento (granada aturdidora)")]
     [Tooltip("Efecto que se muestra encima del zombie mientras está aturdido. Vacío = sin efecto visual.")]
@@ -110,14 +122,16 @@ public class ZombieAI : NetworkBehaviour
     private bool spawnAgentSettingsCaptured;
     private bool spawnPreviousUpdatePosition = true;
 
+    // Estas variantes se eligen UNA SOLA VEZ cuando aparece el zombie y
+    // se conservan durante toda su vida.
+    private bool assignedSprintVisual;
     private bool visualSprint;
-    private bool wasMoving;
-    private bool lastRunningState;
-    private float nextIdleVariantChange;
     private int currentIdleVariant;
     private int currentWalkVariant;
     private int currentRunVariant;
     private int currentSprintVariant;
+    private int currentFrontAttackVariant;
+    private int currentRunningFrontAttackVariant;
 
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
     private static readonly int MoveXHash = Animator.StringToHash("MoveX");
@@ -135,6 +149,7 @@ public class ZombieAI : NetworkBehaviour
     private ZombieAudio zombieAudio;
 
     private float nextAttackTime;
+    private float nextPathUpdateTime;
     private Transform target;
     private bool hayJugadorEnZonaSegura;
 
@@ -171,6 +186,11 @@ public class ZombieAI : NetworkBehaviour
         ActualizarEfectoAturdimiento(aturdidoNetwork.Value);
         AplicarPresentacionSpawn(spawningNetwork.Value);
 
+        // Cada instancia elige sus variantes una sola vez al aparecer. Como la
+        // selección usa NetworkObjectId, todos los clientes obtienen la misma
+        // combinación para ese zombie sin volver a sortear durante su vida.
+        InicializarVariantesVisuales();
+
         // A diferencia de la versión anterior, el componente queda habilitado en clientes:
         // Update sale inmediatamente si no somos servidor, pero así las NetworkVariables
         // y la presentación visual del spawn siguen funcionando de forma segura.
@@ -178,9 +198,14 @@ public class ZombieAI : NetworkBehaviour
             return;
 
         if (agent != null)
+        {
             agent.speed = walkSpeed;
+            // El destino ya se calcula a una distancia del jugador, por eso no
+            // necesitamos que el agente intente meterse dentro de su centro.
+            agent.stoppingDistance = 0.05f;
+            agent.autoBraking = true;
+        }
 
-        InicializarVariantesVisuales();
         FindClosestPlayer();
 
         if (emergeFromGround && animationDriver == null)
@@ -337,29 +362,16 @@ public class ZombieAI : NetworkBehaviour
 
     public void SetRunning(bool isRunning)
     {
-        bool changed = IsRunning != isRunning;
         IsRunning = isRunning;
 
-        if (changed)
-        {
-            if (IsRunning)
-            {
-                currentRunVariant = Random.Range(0, 2);
-                currentSprintVariant = Random.Range(0, 2);
-                visualSprint = Random.value < sprintChance;
-            }
-            else
-            {
-                currentWalkVariant = Random.Range(0, 5);
-                visualSprint = false;
-            }
+        // No volvemos a elegir ninguna animación acá. El zombie conserva las
+        // variantes que recibió al aparecer; solo activamos visualmente Sprint
+        // si este zombie fue asignado como "sprint" y actualmente está corriendo.
+        visualSprint = IsRunning && assignedSprintVisual;
 
-            AplicarVariantesLocomocionAnimator();
-        }
-
-        lastRunningState = IsRunning;
         SetAnimatorBool(RunningHash, IsRunning);
         SetAnimatorBool(SprintHash, visualSprint);
+        AplicarVariantesLocomocionAnimator();
 
         AplicarVelocidad();
     }
@@ -468,7 +480,7 @@ public class ZombieAI : NetworkBehaviour
         }
 
         float distanceToTarget =
-            Vector3.Distance(
+            DistanciaPlana(
                 transform.position,
                 target.position
             );
@@ -478,21 +490,41 @@ public class ZombieAI : NetworkBehaviour
             if (AgenteSobreNavMesh())
             {
                 agent.isStopped = true;
+                agent.ResetPath();
+                agent.velocity = Vector3.zero;
             }
 
-            TryAttack();
+            // En espacios cerrados primero gira sobre su propio eje. Evita que
+            // el agente intente rodear al jugador para "buscar" el ángulo.
+            RotarHaciaObjetivo();
+
+            if (EstaMirandoObjetivoParaAtacar())
+                TryAttack();
         }
-        else
+        else if (!isAttacking)
         {
-            if (!isAttacking)
+            // En vez de mandar a todos los zombies al centro exacto del jugador,
+            // cada uno busca un punto de aproximación desde el lado por el que llega.
+            // Esto reduce mucho los círculos, empujones y cambios de ruta en pasillos.
+            if (AgenteSobreNavMesh())
             {
-                // Sin NavMesh (por ejemplo, escenario oculto) isStopped lanza un error.
-                if (AgenteSobreNavMesh())
+                agent.isStopped = false;
+
+                if (Time.time >= nextPathUpdateTime)
                 {
-                    agent.isStopped = false;
-                    agent.SetDestination(
-                        target.position
-                    );
+                    nextPathUpdateTime =
+                        Time.time + Mathf.Max(0.05f, repathInterval);
+
+                    Vector3 destination =
+                        CalcularDestinoAproximacion();
+
+                    if (
+                        !agent.hasPath ||
+                        (agent.destination - destination).sqrMagnitude > 0.04f
+                    )
+                    {
+                        agent.SetDestination(destination);
+                    }
                 }
             }
         }
@@ -587,6 +619,106 @@ public class ZombieAI : NetworkBehaviour
             agent.isOnNavMesh;
     }
 
+    private static float DistanciaPlana(Vector3 a, Vector3 b)
+    {
+        a.y = 0f;
+        b.y = 0f;
+        return Vector3.Distance(a, b);
+    }
+
+    /// <summary>
+    /// Devuelve un punto cercano al jugador, pero no su centro. El zombie conserva
+    /// aproximadamente el lado desde el cual se está acercando, por lo que varios
+    /// enemigos dejan de intentar cruzarse entre sí para ocupar el mismo punto.
+    /// </summary>
+    private Vector3 CalcularDestinoAproximacion()
+    {
+        if (target == null)
+            return transform.position;
+
+        Vector3 awayFromTarget =
+            transform.position - target.position;
+        awayFromTarget.y = 0f;
+
+        if (awayFromTarget.sqrMagnitude < 0.0001f)
+        {
+            awayFromTarget = -target.forward;
+            awayFromTarget.y = 0f;
+        }
+
+        awayFromTarget.Normalize();
+
+        float desiredDistance =
+            Mathf.Clamp(
+                attackApproachDistance,
+                0.25f,
+                Mathf.Max(0.3f, attackRange - 0.15f)
+            );
+
+        Vector3 desired =
+            target.position +
+            awayFromTarget * desiredDistance;
+
+        if (
+            AgenteSobreNavMesh() &&
+            NavMesh.SamplePosition(
+                desired,
+                out NavMeshHit navHit,
+                Mathf.Max(0.2f, approachSampleRadius),
+                agent.areaMask
+            )
+        )
+        {
+            return navHit.position;
+        }
+
+        return desired;
+    }
+
+    private void RotarHaciaObjetivo()
+    {
+        if (target == null)
+            return;
+
+        Vector3 direction =
+            target.position - transform.position;
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude < 0.0001f)
+            return;
+
+        Quaternion desired =
+            Quaternion.LookRotation(direction.normalized, Vector3.up);
+
+        transform.rotation =
+            Quaternion.RotateTowards(
+                transform.rotation,
+                desired,
+                Mathf.Max(90f, attackFacingSpeed) * Time.deltaTime
+            );
+    }
+
+    private bool EstaMirandoObjetivoParaAtacar()
+    {
+        if (target == null)
+            return false;
+
+        Vector3 direction =
+            target.position - transform.position;
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude < 0.0001f)
+            return true;
+
+        float angle =
+            Vector3.Angle(
+                transform.forward,
+                direction.normalized
+            );
+
+        return angle <= Mathf.Clamp(attackFacingTolerance, 10f, 90f);
+    }
+
     // =========================================================
     // ATAQUE
     // =========================================================
@@ -602,6 +734,9 @@ public class ZombieAI : NetworkBehaviour
         if (target == null)
             return;
 
+        if (!EstaMirandoObjetivoParaAtacar())
+            return;
+
         nextAttackTime =
             Time.time +
             attackCooldown;
@@ -611,6 +746,8 @@ public class ZombieAI : NetworkBehaviour
         if (AgenteSobreNavMesh())
         {
             agent.isStopped = true;
+            agent.ResetPath();
+            agent.velocity = Vector3.zero;
         }
 
         if (animationDriver != null)
@@ -671,7 +808,7 @@ public class ZombieAI : NetworkBehaviour
         if (target != null)
         {
             float distanceToTarget =
-                Vector3.Distance(
+                DistanciaPlana(
                     transform.position,
                     target.position
                 );
@@ -803,30 +940,9 @@ public class ZombieAI : NetworkBehaviour
         SetAnimatorBool(RunningHash, IsRunning);
         SetAnimatorBool(SprintHash, visualSprint);
 
-        bool moving = speed > 0.05f;
-
-        if (moving && !wasMoving && rerollLocomotionOnMoveStart)
-        {
-            RerollLocomotionVariants();
-        }
-
-        if (lastRunningState != IsRunning)
-        {
-            lastRunningState = IsRunning;
-            RerollLocomotionVariants();
-        }
-
-        if (!moving)
-        {
-            if (wasMoving || Time.time >= nextIdleVariantChange)
-            {
-                currentIdleVariant = (currentIdleVariant + 1 + DeterministicInt(3, 41)) % 4;
-                nextIdleVariantChange = Time.time + Mathf.Max(1f, idleVariantChangeInterval);
-                SetAnimatorFloat(IdleVariantHash, currentIdleVariant, 0f);
-            }
-        }
-
-        wasMoving = moving;
+        // Las variantes visuales NO cambian durante la vida del zombie.
+        // Idle, Walk, Run, Sprint y el estilo frontal de ataque fueron elegidos
+        // una sola vez en InicializarVariantesVisuales().
     }
 
     // =========================================================
@@ -1067,12 +1183,7 @@ public class ZombieAI : NetworkBehaviour
     /// del suelo y evitar cualquier salto vertical al empezar a perseguir.
     /// </summary>
     private void FinalizarRootMotionSpawn()
-{
-    if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
     {
-        agent.isStopped = true;
-        agent.ResetPath();
-    }
         if (!spawnRootMotionActive && !spawnAgentSettingsCaptured)
             return;
 
@@ -1162,7 +1273,15 @@ public class ZombieAI : NetworkBehaviour
         go.transform.position = transform.position + Vector3.up * 0.04f;
 
         ParticleSystem ps = go.AddComponent<ParticleSystem>();
+
+        // AddComponent<ParticleSystem>() puede arrancar el sistema inmediatamente
+        // porque Play On Awake viene activo por defecto. Unity no permite cambiar
+        // duration mientras el sistema esta reproduciendose, asi que primero se
+        // detiene y limpia, despues se configura y al final se hace Play().
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
         ParticleSystem.MainModule main = ps.main;
+        main.playOnAwake = false;
         main.duration = 0.65f;
         main.loop = false;
         main.startLifetime = new ParticleSystem.MinMaxCurve(0.45f, 0.9f);
@@ -1213,32 +1332,33 @@ public class ZombieAI : NetworkBehaviour
 
     private void InicializarVariantesVisuales()
     {
+        // IMPORTANTE:
+        // Estas elecciones se hacen una sola vez por spawn y nunca se vuelven a
+        // sortear mientras el zombie siga vivo.
         currentWalkVariant = DeterministicInt(5, 13);
         currentRunVariant = DeterministicInt(2, 17);
         currentSprintVariant = DeterministicInt(2, 19);
-        visualSprint = IsRunning && Deterministic01(29) < sprintChance;
         currentIdleVariant = DeterministicInt(4, 7);
-        nextIdleVariantChange = Time.time + Mathf.Max(1f, idleVariantChangeInterval);
-        lastRunningState = IsRunning;
+
+        assignedSprintVisual = Deterministic01(29) < sprintChance;
+        visualSprint = IsRunning && assignedSprintVisual;
+
+        // Ataques frontales fijos para este zombie.
+        // 0/1/2 = ataques base, 6 = forward, 7 = forward jump.
+        int[] frontAttacks = { 0, 1, 2, 6 };
+        int[] runningFrontAttacks = allowForwardJumpAttack
+            ? new[] { 0, 1, 2, 6, 7 }
+            : new[] { 0, 1, 2, 6 };
+
+        currentFrontAttackVariant =
+            frontAttacks[DeterministicInt(frontAttacks.Length, 53)];
+
+        currentRunningFrontAttackVariant =
+            runningFrontAttacks[DeterministicInt(runningFrontAttacks.Length, 59)];
 
         SetAnimatorBool(RunningHash, IsRunning);
         SetAnimatorBool(SprintHash, visualSprint);
         SetAnimatorFloat(IdleVariantHash, currentIdleVariant, 0f);
-        AplicarVariantesLocomocionAnimator();
-    }
-
-    private void RerollLocomotionVariants()
-    {
-        currentWalkVariant = Random.Range(0, 5);
-        currentRunVariant = Random.Range(0, 2);
-        currentSprintVariant = Random.Range(0, 2);
-
-        if (IsRunning)
-            visualSprint = Random.value < sprintChance;
-        else
-            visualSprint = false;
-
-        SetAnimatorBool(SprintHash, visualSprint);
         AplicarVariantesLocomocionAnimator();
     }
 
@@ -1258,8 +1378,15 @@ public class ZombieAI : NetworkBehaviour
 
             if (toTarget.sqrMagnitude > 0.001f)
             {
-                float angle = Vector3.SignedAngle(transform.forward, toTarget.normalized, Vector3.up);
+                float angle = Vector3.SignedAngle(
+                    transform.forward,
+                    toTarget.normalized,
+                    Vector3.up
+                );
 
+                // Los ataques direccionales siguen dependiendo de dónde esté el
+                // jugador, porque no son una variante aleatoria sino una respuesta
+                // a la posición del objetivo.
                 if (Mathf.Abs(angle) > 135f)
                     return 3; // Attack 180
 
@@ -1271,13 +1398,11 @@ public class ZombieAI : NetworkBehaviour
             }
         }
 
-        // 0/1/2 = ataques base, 6 = forward, 7 = forward jump.
-        int[] frontAttacks = IsRunning
-            ? new[] { 0, 1, 2, 6, 7 }
-            : new[] { 0, 1, 2, 6 };
-
-        int index = DeterministicInt(frontAttacks.Length, Mathf.FloorToInt(Time.time * 10f) + 53);
-        return frontAttacks[index];
+        // Para los ataques frontales usamos siempre la variante que este zombie
+        // recibió al aparecer. No cambia entre ataques.
+        return IsRunning
+            ? currentRunningFrontAttackVariant
+            : currentFrontAttackVariant;
     }
 
     private void CacheAnimatorParameters()

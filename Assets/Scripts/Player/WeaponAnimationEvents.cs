@@ -18,10 +18,59 @@ public class WeaponAnimationEvents : MonoBehaviour
         if (casingPrefab == null || casingEjectPoint == null)
             return;
 
-        Vector3 position=casingEjectPoint.position;Quaternion rotation=casingEjectPoint.rotation;
-        if(weapon)weapon.PresentationPose(casingEjectPoint,out position,out rotation);
-        Instantiate(casingPrefab,position,rotation);
-        if(weapon)weapon.PresentationEvent(NetworkWeaponPresentation.WeaponEvent.Eject);
+        Vector3 position = casingEjectPoint.position;
+        Quaternion rotation = casingEjectPoint.rotation;
+        bool isIntegrated = weapon != null && weapon.gameObject.name.StartsWith("DQ_Weapon_", System.StringComparison.Ordinal);
+
+        if (weapon != null)
+        {
+            // Para armas originales se conserva exactamente su camino previo.
+            weapon.PresentationPose(casingEjectPoint, out position, out rotation);
+
+            // Las armas nuevas usan una cámara Overlay para las manos. La posición
+            // de ese espacio no equivale a la profundidad física del mundo.
+            // Proyectamos su punto de expulsión a un rayo de la cámara jugable.
+            if (isIntegrated)
+            {
+                Camera overlay = weapon.GetComponentInParent<Camera>();
+                Camera world = null;
+                Camera[] cameras = weapon.transform.root.GetComponentsInChildren<Camera>(true);
+                foreach (Camera c in cameras)
+                {
+                    if (c == null || c == overlay) continue;
+                    if (c.CompareTag("MainCamera")) { world = c; break; }
+                    if (world == null) world = c;
+                }
+                if (overlay != null && world != null)
+                {
+                    Vector3 v = overlay.WorldToViewportPoint(casingEjectPoint.position);
+                    if (v.z > 0.01f)
+                    {
+                        Ray ray = world.ViewportPointToRay(new Vector3(Mathf.Clamp(v.x, 0.04f, 0.96f),
+                            Mathf.Clamp(v.y, 0.04f, 0.96f), 0f));
+                        position = ray.GetPoint(Mathf.Clamp(v.z, 0.45f, 0.95f));
+                        rotation = world.transform.rotation *
+                                   Quaternion.Inverse(overlay.transform.rotation) * casingEjectPoint.rotation;
+                    }
+                }
+            }
+        }
+
+        GameObject casing = Instantiate(casingPrefab, position, rotation);
+        if (isIntegrated && casing != null)
+        {
+            Rigidbody body = casing.GetComponent<Rigidbody>();
+            if (body != null)
+            {
+                Transform origin = weapon.transform.root;
+                Camera[] cameras = origin.GetComponentsInChildren<Camera>(true);
+                Transform direction = cameras.Length > 0 && cameras[0] != null
+                    ? cameras[0].transform : origin;
+                body.AddForce((direction.right * 0.85f + Vector3.up * 0.45f) *
+                              Mathf.Max(0.5f, casingForce), ForceMode.VelocityChange);
+            }
+        }
+        if (weapon != null) weapon.PresentationEvent(NetworkWeaponPresentation.WeaponEvent.Eject);
     }
     public void OnSlideBack()
     {

@@ -3,10 +3,11 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Una columna del lobby (JUGADOR N): el modelo 3D se muestra encima (lo dibuja CharacterPreviewStage en este slot)
-/// y este componente maneja la tarjeta de abajo: nombre del jugador, rol, personaje elegido (icono + nombre),
-/// conexión y estado de listo. Lo maneja MultiplayerLobbyController (Configure una vez + SetPlayer / SetEmpty).
-/// Lo arma solo Game > Construir UI del Lobby (ver LobbyUIBuilder).
+/// Una columna del lobby (JUGADOR N). Maneja la tarjeta antigua (nombre, rol, personaje, conexión, listo)
+/// y además EXPONE los datos reales del jugador para el lobby cinematográfico:
+/// conectado, local, host, listo, índice de variante, nombre de usuario, nombre del personaje e icono.
+/// Lo maneja MultiplayerLobbyController (Configure una vez + SetPlayer / SetEmpty).
+/// Los campos serializados NO cambiaron: las referencias de la escena siguen funcionando.
 /// </summary>
 public class LobbyPlayerSlot : MonoBehaviour
 {
@@ -22,8 +23,8 @@ public class LobbyPlayerSlot : MonoBehaviour
 
     [Header("Personaje elegido")]
     [SerializeField] private Image characterIcon;
-    [SerializeField] private TMP_Text characterNameText;   // Nombre propio: RYDER / VEGA / NULL...
-    [SerializeField] private TMP_Text characterText;       // EXPLORADOR - HOMBRE / SOLDADO - MUJER / TANQUE
+    [SerializeField] private TMP_Text characterNameText;   // EXPLORADOR
+    [SerializeField] private TMP_Text characterText;       // LIGERO - HOMBRE
 
     [Header("Jugador local")]
     [Tooltip("Marca que se enciende solo en tu propia columna.")]
@@ -40,7 +41,39 @@ public class LobbyPlayerSlot : MonoBehaviour
     private bool hasLast;
     private bool lastConnected, lastLocal, lastHost, lastReady;
     private int lastIndex = -2;
+    private int resolvedIndex = 0;
     private string lastUsername = string.Empty;
+
+    // Datos del personaje elegido, guardados aparte de la UI (la UI vieja puede estar oculta).
+    private string characterDisplayName = string.Empty;
+    private Sprite characterSprite;
+
+    // =========================================================
+    // DATOS PÚBLICOS (solo lectura)
+    // =========================================================
+
+    public int SlotIndex => slotIndex;
+
+    /// <summary>true cuando hay un jugador real en este slot.</summary>
+    public bool IsConnected => hasLast && lastConnected;
+
+    public bool IsLocal => IsConnected && lastLocal;
+    public bool IsHost => IsConnected && lastHost;
+    public bool IsReady => IsConnected && lastReady;
+
+    /// <summary>Número de variante del catálogo elegido por ESTE jugador (el local usa su selección actual; el remoto, el publicado en la sesión).</summary>
+    public int CharacterIndex => resolvedIndex;
+
+    /// <summary>Nombre de usuario publicado por el jugador. Vacío si todavía no llegó.</summary>
+    public string Username => lastUsername ?? string.Empty;
+
+    /// <summary>Nombre de la clase del personaje elegido, tal cual está en el catálogo (sin pasar a mayúsculas).</summary>
+    public string CharacterDisplayName => characterDisplayName ?? string.Empty;
+
+    /// <summary>Icono real de la variante elegida (puede ser null si el catálogo no tiene uno).</summary>
+    public Sprite CharacterSprite => characterSprite;
+
+    // =========================================================
 
     public void Configure(CharacterCatalog catalog, CharacterPreviewStage stage, Color colorRojo, Sprite iconoVerde, Sprite iconoRojo)
     {
@@ -59,8 +92,14 @@ public class LobbyPlayerSlot : MonoBehaviour
 
         hasLast = true;
         lastConnected = false;
+        lastLocal = false;
+        lastHost = false;
+        lastReady = false;
         lastIndex = -2;
+        resolvedIndex = 0;
         lastUsername = string.Empty;
+        characterDisplayName = string.Empty;
+        characterSprite = null;
 
         if (stage != null) stage.Clear(slotIndex);
 
@@ -77,25 +116,17 @@ public class LobbyPlayerSlot : MonoBehaviour
     }
 
     /// <param name="remoteIndex">Personaje publicado por ese jugador en la sesión. Para el local se usa la selección actual.</param>
-    public void SetPlayer(bool isLocal, bool isHost, bool ready, int remoteIndex)
-    {
-        string username = isLocal ? PlayerIdentity.GetUsername() : string.Empty;
-        SetPlayer(isLocal, isHost, ready, remoteIndex, username);
-    }
-
-    public void SetPlayer(bool isLocal, bool isHost, bool ready, int remoteIndex, string username)
+    /// <param name="username">Nombre de usuario publicado por el jugador (opcional).</param>
+    public void SetPlayer(bool isLocal, bool isHost, bool ready, int remoteIndex, string username = "")
     {
         int index = isLocal ? CharacterSelection.SelectedIndex : remoteIndex;
+        string cleanName = string.IsNullOrWhiteSpace(username) ? string.Empty : username.Trim();
 
         if (stage != null)
             stage.Show(slotIndex, index);
 
-        string visibleUsername = !string.IsNullOrWhiteSpace(username)
-            ? username.Trim()
-            : "JUGADOR " + (slotIndex + 1);
-
-        if (hasLast && lastConnected && lastLocal == isLocal && lastHost == isHost &&
-            lastReady == ready && lastIndex == index && lastUsername == visibleUsername)
+        if (hasLast && lastConnected && lastLocal == isLocal && lastHost == isHost && lastReady == ready
+            && lastIndex == index && lastUsername == cleanName)
             return;
 
         hasLast = true;
@@ -104,9 +135,10 @@ public class LobbyPlayerSlot : MonoBehaviour
         lastHost = isHost;
         lastReady = ready;
         lastIndex = index;
-        lastUsername = visibleUsername;
+        lastUsername = cleanName;
 
-        if (titleText != null) titleText.text = visibleUsername;
+        if (titleText != null)
+            titleText.text = cleanName.Length > 0 ? cleanName : "JUGADOR " + (slotIndex + 1);
 
         if (roleText != null)
             roleText.text = "[ " + (isHost ? "ANFITRION" : "CO - OP / REMOTO") + (isLocal ? " / TU" : "") + " ]";
@@ -122,6 +154,10 @@ public class LobbyPlayerSlot : MonoBehaviour
 
     private void ShowCharacter(int index)
     {
+        characterDisplayName = string.Empty;
+        characterSprite = null;
+        resolvedIndex = Mathf.Max(0, index);
+
         if (catalog == null)
         {
             SetCharacterVisible(false);
@@ -137,44 +173,33 @@ public class LobbyPlayerSlot : MonoBehaviour
             return;
         }
 
+        // Si el catálogo resolvió a otra variante jugable, ese es el modelo que realmente se muestra.
+        resolvedIndex = index;
+
         SetCharacterVisible(true);
 
-        if (characterNameText != null)
-        {
-            // El nombre propio pertenece a la VARIANTE, no a la clase.
-            // Ejemplo:
-            // Scout Male   -> RYDER
-            // Scout Female -> VEGA
-            // Tank         -> NULL
-            string characterName = catalog.GetCharacterNameForVariant(index);
+        CharacterCatalog.ClassData data = catalog.GetClassData(v.type);
 
-            characterNameText.text =
-                !string.IsNullOrWhiteSpace(characterName)
-                    ? characterName.ToUpperInvariant()
-                    : v.type.ToString().ToUpperInvariant();
-        }
+        characterDisplayName = data != null && !string.IsNullOrEmpty(data.displayName)
+            ? data.displayName
+            : v.type.ToString();
+
+        characterSprite = catalog.GetIcon(v.type, v.gender);
+
+        if (characterNameText != null)
+            characterNameText.text = characterDisplayName.ToUpperInvariant();
 
         if (characterText != null)
         {
-            // El tipo/clase se mantiene fijo:
-            // EXPLORADOR / SOLDADO / TANQUE.
-            // Solo mostramos HOMBRE/MUJER cuando esa clase realmente tiene elección de género.
             bool genderChoice = catalog.HasGenderChoice(v.type);
-
-            string gender =
-                genderChoice
-                    ? " - " + (v.gender == CharacterGender.Male ? "HOMBRE" : "MUJER")
-                    : "";
-
-            characterText.text =
-                CharacterSelectMenu.TierName(v.type) + gender;
+            string gender = genderChoice ? " - " + (v.gender == CharacterGender.Male ? "HOMBRE" : "MUJER") : "";
+            characterText.text = CharacterSelectMenu.TierName(v.type) + gender;
         }
 
         if (characterIcon != null)
         {
-            Sprite sprite = catalog.GetIcon(v.type, v.gender);
-            characterIcon.sprite = sprite;
-            characterIcon.enabled = sprite != null;
+            characterIcon.sprite = characterSprite;
+            characterIcon.enabled = characterSprite != null;
         }
     }
 

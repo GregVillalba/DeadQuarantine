@@ -858,7 +858,7 @@ public class NPCShopUI : MonoBehaviour
         return oferta.esMunicion &&
                weaponSwitcher != null &&
                weaponSwitcher.CurrentWeapon != null &&
-               weaponSwitcher.CurrentWeapon.MunicionCompleta;
+               !weaponSwitcher.CurrentWeapon.PuedeComprarMunicion;
     }
 
     private bool BlindajeReparable(WeaponOffer oferta)
