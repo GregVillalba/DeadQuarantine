@@ -21,7 +21,7 @@ public class CharacterRenameManager : MonoBehaviour
 
     [Header("Ventanas")]
     [SerializeField] private GameObject ventanaNombre;
-    [SerializeField] private GameObject ventanaClave;
+    //[SerializeField] private GameObject ventanaClave;
 
     [Header("Formulario Nombre (Ventana)")]
     [SerializeField] private TMP_InputField inputNombre;
@@ -36,6 +36,7 @@ public class CharacterRenameManager : MonoBehaviour
     [SerializeField] private Button btnReintentarNombre;
     [SerializeField] private Button btnIrAVentanaClave; // Botón ID CLAVE
 
+    /*
     [Header("Formulario Clave (Ventana_CLAVE)")]
     [SerializeField] private TMP_InputField inputClaveAnterior;
     [SerializeField] private TMP_Text txtValidationClave;
@@ -47,6 +48,7 @@ public class CharacterRenameManager : MonoBehaviour
     [SerializeField] private Button btnCancelarClave;
     [SerializeField] private Button btnSalirClave;     // Botón SALIR (tras éxito)
     [SerializeField] private Button btnReintentarClave; // Botón REINTENTAR (tras fallo)
+    */
 
     [Header("Botones Menú / Lobby")]
     [SerializeField] private TMP_Text txtNombreLobby;
@@ -90,12 +92,12 @@ public class CharacterRenameManager : MonoBehaviour
             inputNombre.onValueChanged.AddListener(OnInputNombreCambiado);
         }
 
-        if (inputClaveAnterior != null)
+        /*if (inputClaveAnterior != null)
         {
             inputClaveAnterior.onValueChanged.RemoveAllListeners();
             inputClaveAnterior.onValueChanged.AddListener(OnInputClaveCambiado);
         }
-
+        */
         ForzarCierreUI();
     }
 
@@ -144,12 +146,12 @@ public class CharacterRenameManager : MonoBehaviour
             btnReintentarNombre.onClick.AddListener(EjecutarConfirmarNombre);
         }
 
-        if (btnIrAVentanaClave != null)
+        /*if (btnIrAVentanaClave != null)
         {
             btnIrAVentanaClave.onClick.RemoveAllListeners();
             btnIrAVentanaClave.onClick.AddListener(BotonIrAClave);
-        }
-
+        }*/
+        /*
         // --- Ventana Clave ---
         if (btnConfirmarClave != null)
         {
@@ -179,7 +181,7 @@ public class CharacterRenameManager : MonoBehaviour
         {
             btnReintentarClave.onClick.RemoveAllListeners();
             btnReintentarClave.onClick.AddListener(EjecutarTransferenciaClave);
-        }
+        }*/
 
         // --- Menú / Lobby ---
         if (btnAbrirPopupCambio != null)
@@ -216,18 +218,18 @@ public class CharacterRenameManager : MonoBehaviour
         Debug.Log("<color=yellow>[UI]</color> Cerrando interfaz.");
         ForzarCierreUI();
     }
-
+    /*
     public void BotonIrAClave()
     {
         Debug.Log("<color=cyan>[UI]</color> Abriendo Ventana Clave.");
         AbrirPantallaClave();
-    }
+    }*/
 
     #region Manejo de Visibilidad
     public void ForzarCierreUI()
     {
         if (ventanaNombre != null) ventanaNombre.SetActive(false);
-        if (ventanaClave != null) ventanaClave.SetActive(false);
+        // if (ventanaClave != null) ventanaClave.SetActive(false);
 
         if (rootCanvasGroup != null)
         {
@@ -271,7 +273,7 @@ public class CharacterRenameManager : MonoBehaviour
         esPrimerInicioActual = esPrimerInicio;
         MostrarRootUI();
 
-        if (ventanaClave != null) ventanaClave.SetActive(false);
+        //if (ventanaClave != null) ventanaClave.SetActive(false);
         if (ventanaNombre != null)
         {
             ventanaNombre.transform.SetAsLastSibling();
@@ -293,30 +295,30 @@ public class CharacterRenameManager : MonoBehaviour
         if (txtFeedbackServidorNombre != null) txtFeedbackServidorNombre.text = "";
     }
 
-    public void AbrirPantallaClave()
-    {
-        MostrarRootUI();
+    /* public void AbrirPantallaClave()
+     {
+         MostrarRootUI();
 
-        if (ventanaNombre != null) ventanaNombre.SetActive(false);
-        if (ventanaClave != null)
-        {
-            ventanaClave.transform.SetAsLastSibling();
-            ventanaClave.SetActive(true);
-        }
+         if (ventanaNombre != null) ventanaNombre.SetActive(false);
+         if (ventanaClave != null)
+         {
+             ventanaClave.transform.SetAsLastSibling();
+             ventanaClave.SetActive(true);
+         }
 
-        SetEstadoBotonesClave(EstadoFormulario.Escribiendo);
+         SetEstadoBotonesClave(EstadoFormulario.Escribiendo);
 
-        if (inputClaveAnterior != null)
-        {
-            inputClaveAnterior.text = "";
-            inputClaveAnterior.Select();
-            inputClaveAnterior.ActivateInputField();
-        }
+         if (inputClaveAnterior != null)
+         {
+             inputClaveAnterior.text = "";
+             inputClaveAnterior.Select();
+             inputClaveAnterior.ActivateInputField();
+         }
 
-        if (txtValidationClave != null) txtValidationClave.text = "";
-        if (txtFeedbackServidorClave != null) txtFeedbackServidorClave.text = "";
-    }
-    #endregion
+         if (txtValidationClave != null) txtValidationClave.text = "";
+         if (txtFeedbackServidorClave != null) txtFeedbackServidorClave.text = "";
+     }*/
+     #endregion
 
     #region Control de Estados de Botones
     private enum EstadoFormulario { Escribiendo, Guardando, GuardadoExito, GuardadoFallo }
@@ -379,7 +381,7 @@ public class CharacterRenameManager : MonoBehaviour
                 break;
         }
     }
-
+    /*
     private void SetEstadoBotonesClave(EstadoFormulario estado)
     {
         switch (estado)
@@ -440,7 +442,7 @@ public class CharacterRenameManager : MonoBehaviour
                 }
                 break;
         }
-    }
+    }*/
     #endregion
 
     #region Guardado y Validación (Nombre)
@@ -550,7 +552,7 @@ public class CharacterRenameManager : MonoBehaviour
     }
     #endregion
 
-    #region Transferencia por Clave
+    /*#region Transferencia por Clave
     private void OnInputClaveCambiado(string texto)
     {
         SetEstadoBotonesClave(EstadoFormulario.Escribiendo);
@@ -601,7 +603,7 @@ public class CharacterRenameManager : MonoBehaviour
         }
 
         StartCoroutine(RutinaTransferirCuentaPorClave(claveIngresada));
-    }
+    }*/
 
     private IEnumerator RutinaTransferirCuentaPorClave(string idClave)
     {
@@ -662,32 +664,34 @@ public class CharacterRenameManager : MonoBehaviour
                 {
                     AchievementsManager.Instance.UsernameJugador = nombreRecuperado;
                 }
-
-                if (txtFeedbackServidorClave != null)
-                {
-                    txtFeedbackServidorClave.text = "¡Cuenta vinculada con éxito!";
-                    txtFeedbackServidorClave.color = colorValido;
-                }
-
-                Debug.Log($"<color=green>[TRANSFERENCIA EXITOSA]</color> Nuevo User ID activo: {idClave}");
-                SetEstadoBotonesClave(EstadoFormulario.GuardadoExito);
-            }
-            else
-            {
-                if (txtFeedbackServidorClave != null)
-                {
-                    txtFeedbackServidorClave.text = "Clave o ID inválido.";
-                    txtFeedbackServidorClave.color = colorInvalido;
-                }
-
-                SetEstadoBotonesClave(EstadoFormulario.GuardadoFallo);
             }
         }
     }
-    #endregion
+    //#endregion
 
     private class BypassCertificateHandler : CertificateHandler
     {
         protected override bool ValidateCertificate(byte[] certificateData) => true;
     }
+} 
+/* if (txtFeedbackServidorClave != null)
+  {
+      txtFeedbackServidorClave.text = "¡Cuenta vinculada con éxito!";
+      txtFeedbackServidorClave.color = colorValido;
+  }
+
+  Debug.Log($"<color=green>[TRANSFERENCIA EXITOSA]</color> Nuevo User ID activo: {idClave}");
+  SetEstadoBotonesClave(EstadoFormulario.GuardadoExito);
 }
+else
+{
+  if (txtFeedbackServidorClave != null)
+  {
+      txtFeedbackServidorClave.text = "Clave o ID inválido.";
+      txtFeedbackServidorClave.color = colorInvalido;
+  }
+
+  SetEstadoBotonesClave(EstadoFormulario.GuardadoFallo);
+} 
+}
+}*/
