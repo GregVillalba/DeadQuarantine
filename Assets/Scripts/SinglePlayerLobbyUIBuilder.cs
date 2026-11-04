@@ -7,6 +7,7 @@ using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -30,6 +31,50 @@ public sealed class SinglePlayerLobbyUIBuilder : EditorWindow
     private const string WorldName = "DQSingleLobbyWorld";
     private const string ControllerName = "DQSingleLobbyWorldToggle";
     private const string GeneratedName = "DQSingleLobbyUI";
+
+    private struct LightingProfile
+    {
+        public bool valid;
+        public Material skybox;
+        public AmbientMode ambientMode;
+        public Color ambientLight, ambientSky, ambientEquator, ambientGround;
+        public float ambientIntensity, reflectionIntensity;
+        public bool fog;
+        public FogMode fogMode;
+        public Color fogColor;
+        public float fogDensity, fogStart, fogEnd;
+    }
+
+    // RenderSettings son especificos de la escena activa en el editor.
+    // Solo LEE la iluminacion de NetworkLobby; no cambia el asset de origen.
+    private static LightingProfile ReadLightingProfile(Scene source, Scene destination)
+    {
+        LightingProfile p = new LightingProfile();
+        try
+        {
+            if (!SceneManager.SetActiveScene(source)) return p;
+            p.skybox = RenderSettings.skybox;
+            p.ambientMode = RenderSettings.ambientMode;
+            p.ambientLight = RenderSettings.ambientLight;
+            p.ambientSky = RenderSettings.ambientSkyColor;
+            p.ambientEquator = RenderSettings.ambientEquatorColor;
+            p.ambientGround = RenderSettings.ambientGroundColor;
+            p.ambientIntensity = RenderSettings.ambientIntensity;
+            p.reflectionIntensity = RenderSettings.reflectionIntensity;
+            p.fog = RenderSettings.fog;
+            p.fogMode = RenderSettings.fogMode;
+            p.fogColor = RenderSettings.fogColor;
+            p.fogDensity = RenderSettings.fogDensity;
+            p.fogStart = RenderSettings.fogStartDistance;
+            p.fogEnd = RenderSettings.fogEndDistance;
+            p.valid = true;
+            return p;
+        }
+        finally
+        {
+            SceneManager.SetActiveScene(destination);
+        }
+    }
 
     private static readonly Color Accent = new Color(0.10f, 0.95f, 0.50f, 1f);
     private static readonly Color Main = new Color(0.93f, 0.96f, 0.98f, 1f);
@@ -68,9 +113,9 @@ public sealed class SinglePlayerLobbyUIBuilder : EditorWindow
     private void OnGUI()
     {
         EditorGUILayout.HelpBox(
-            "Abrí PantallasUI. Este builder copia el mundo y los elementos visuales REALES del lobby multiplayer " +
-            "(tarjeta con retrato, selección actual, botones y título). Usa una sola fila 1/1. " +
-            "Al elegir personaje oculta el HUD y lo restaura al cerrar el selector. NetworkLobby no se modifica.", MessageType.Info);
+            "Abrí PantallasUI. COPIA LITERAL de los GameObjects visuales guardados en NetworkLobby " +
+            "(UI, degradados, botones, márgenes, fuentes y retratos). Solo cambia título, sesión local, " +
+            "JUGADORES 1/1 y COMENZAR. No reconstruye ni modifica NetworkLobby.", MessageType.Info);
         escenaMultiplayer = (SceneAsset)EditorGUILayout.ObjectField("Escena multiplayer de referencia", escenaMultiplayer, typeof(SceneAsset), false);
         catalog = (CharacterCatalog)EditorGUILayout.ObjectField("Catalogo de personajes", catalog, typeof(CharacterCatalog), false);
         escenaJuego = EditorGUILayout.TextField("Escena al comenzar", escenaJuego);
@@ -117,6 +162,17 @@ public sealed class SinglePlayerLobbyUIBuilder : EditorWindow
             Error("La escena NetworkLobby guardada no contiene LobbyCinematicUI (PartyCard / SelectionCard). Guardá esa escena con el lobby multiplayer que ya funciona y volvé a construir el singleplayer.");
             return;
         }
+        // Sin fallback gráfico: para garantizar fidelidad, exigimos los objetos de la escena real.
+        foreach (string required in new[] { "LobbyCinematicBackdrop", "Titulo", "Home", "Btn_Personaje", "PLAY_MULTIPLAYER", "Btn_ConfigurarPartida", "TextxSuperior (1)", "Cuadrado", "placeholder_codigo", "copiar_codigo" })
+        {
+            if (FindDeep(sourcePanel, required) == null)
+            {
+                if (openedHere) EditorSceneManager.CloseScene(source, true);
+                SceneManager.SetActiveScene(dest);
+                Error("No encontré '" + required + "' en NetworkLobby guardada. No voy a inventar un estilo distinto. Guardá el multiplayer que funciona y reintentá.");
+                return;
+            }
+        }
         // El catálogo NO se serializa en LobbyPlayerSlot (se asigna en runtime).
         // Tomarlo del MultiplayerLobbyController real, donde sí está serializado.
         MultiplayerLobbyController sourceController = FindComponentInScene<MultiplayerLobbyController>(source);
@@ -146,6 +202,7 @@ public sealed class SinglePlayerLobbyUIBuilder : EditorWindow
             return;
         }
 
+        LightingProfile lighting = ReadLightingProfile(source, dest);
         SceneManager.SetActiveScene(dest);
         Undo.IncrementCurrentGroup();
         Undo.SetCurrentGroupName("Crear lobby singleplayer cinematográfico");
@@ -157,6 +214,7 @@ public sealed class SinglePlayerLobbyUIBuilder : EditorWindow
             // Lo movemos a un Canvas independiente, fuera de los paneles del menú que se ocultan.
             RectTransform lobbyPanel = FindDeepInScene(dest, PanelName) as RectTransform;
             Canvas canvas = EnsureSingleplayerCanvas(dest);
+            CopyCanvasScaleFromSource(sourcePanel, canvas);
             if (lobbyPanel == null)
             {
                 GameObject panelGO = NewUI(PanelName, canvas.transform);
@@ -211,7 +269,7 @@ public sealed class SinglePlayerLobbyUIBuilder : EditorWindow
             // La UI nueva se crea sobre el panel real. No hay código de sala ni botones remotos.
             GameObject ui = NewUI(GeneratedName, lobbyPanel);
             Stretch((RectTransform)ui.transform);
-            BuildUi(ui.transform, lobbyPanel, canvas, world, cam, actor, sourcePanel, sourceCinematicUi);
+            BuildUi(ui.transform, lobbyPanel, canvas, world, cam, actor, sourcePanel, sourceCinematicUi, lighting);
 
             Image oldBackground = lobbyPanel.GetComponent<Image>();
             if (oldBackground != null)
@@ -260,115 +318,142 @@ public sealed class SinglePlayerLobbyUIBuilder : EditorWindow
 
     private void BuildUi(Transform ui, RectTransform lobbyPanel, Canvas canvas,
         GameObject world, Camera cam, LobbyCinematicPlayerDisplay actor,
-        Transform multiplayerPanel, Transform multiplayerUi)
+        Transform multiplayerPanel, Transform multiplayerUi, LightingProfile lighting)
     {
-        TMP_FontAsset font = null;
-        TMP_Text originalFont = multiplayerUi.GetComponentInChildren<TMP_Text>(true);
-        if (originalFont != null) font = originalFont.font;
+        // No dibujamos aproximaciones: TODOS los elementos del lobby en pantalla
+        // provienen de GameObjects reales de la escena NetworkLobby ya guardada.
+        Transform sourceBack = RequireDirect(multiplayerPanel, "LobbyCinematicBackdrop");
+        CloneVisual(sourceBack, ui, "LobbyCinematicBackdrop").transform.SetAsFirstSibling();
+
+        TMP_FontAsset font = multiplayerUi.GetComponentInChildren<TMP_Text>(true)?.font;
         if (font == null)
+            throw new InvalidOperationException("La UI multiplayer no tiene ninguna fuente TMP. No se creó un reemplazo visual.");
+
+        // Elementos DIRECTOS del panel: el multiplayer reubica estos objetos raiz.
+        // FindDeep seleccionaba a veces un "Titulo" viejo de un submenu y alteraba fuente/posicion.
+        TMP_Text title = RequireCopiedText(multiplayerPanel, ui, "Titulo", "UN JUGADOR // SALA");
+        Button back = CloneButtonExact(multiplayerPanel, ui, "Home", "Atras", "ATRAS");
+        RequireCopiedText(multiplayerPanel, ui, "TextxSuperior (1)", "SESION:");
+        GameObject codeBox = CloneVisual(RequireDirect(multiplayerPanel, "Cuadrado"), ui, "Cuadrado_Local");
+        Image codeBoxImage = codeBox.GetComponent<Image>();
+        if (codeBoxImage != null) codeBoxImage.enabled = true;
+        CanvasGroup codeBoxGroup = codeBox.GetComponent<CanvasGroup>();
+        if (codeBoxGroup != null) codeBoxGroup.alpha = 1f;
+        RequireCopiedText(multiplayerPanel, ui, "placeholder_codigo", "LOCAL");
+        Button noCode = CloneButtonExact(multiplayerPanel, ui, "copiar_codigo", "EstadoLocal", "SIN RED");
+        // El multiplayer usa la misma barra en esta posicion. No agregar ni quitar elementos.
+        FixOriginalLobbyHeader(ui);
+        // Mantener el mismo gráfico/rectángulo que COPIAR, pero no es un botón funcional.
+        noCode.onClick = new Button.ButtonClickedEvent();
+        noCode.enabled = false;
+
+        // Bottom: mismos GameObjects, sprites, estilos, fuentes y posiciones del multiplayer.
+        Button character = CloneButtonExact(multiplayerPanel, ui, "Btn_Personaje", "Personaje", "PERSONAJE");
+        Button start = CloneButtonExact(multiplayerPanel, ui, "PLAY_MULTIPLAYER", "Comenzar", "COMENZAR");
+        Button config = CloneButtonExact(multiplayerPanel, ui, "Btn_ConfigurarPartida", "Configurar", "CONFIGURAR PARTIDA");
+
+        // Clonar el root visual completo: TODAS las imágenes, tarjetas, bordes y tipografías.
+        GameObject exact = CloneVisual(multiplayerUi, ui, "LobbyCinematicUI_Original");
+        RectTransform exactRT = exact.GetComponent<RectTransform>();
+        if (exactRT == null)
+            throw new InvalidOperationException("LobbyCinematicUI no tiene RectTransform.");
+        // Clon real (no redibujado) y mismo orden de render que la UI fuente.
+        Transform partyCard = exact.transform.Find("PartyCard");
+        Transform selectionCard = exact.transform.Find("SelectionCard");
+        if (partyCard == null || selectionCard == null)
+            throw new InvalidOperationException("No encontré PartyCard / SelectionCard en el clon exacto.");
+
+        // ÚNICA diferencia estructural: 1 jugador, no 4. Mantener la fila 1 tal cual.
+        RectTransform partyRect = partyCard as RectTransform;
+        float rowHeight = 52f;
+        Transform row1 = partyCard.Find("Row_1");
+        Transform headerLine = partyCard.Find("HeaderLine");
+        if (row1 == null || row1.Find("Icon") == null || row1.Find("Text") == null)
+            throw new InvalidOperationException("PartyCard no contiene Row_1 con Icon y Text.");
+        if (partyRect != null)
         {
-            TMP_Text oldFont = lobbyPanel.GetComponentInChildren<TMP_Text>(true);
-            if (oldFont != null) font = oldFont.font;
+            // Conservar tamaño horizontal, anclajes, encabezado y estética originales.
+            float headerHeight = headerLine != null
+                ? Mathf.Abs(((RectTransform)headerLine).anchoredPosition.y) + 2f : 46f;
+            partyRect.sizeDelta = new Vector2(partyRect.sizeDelta.x, headerHeight + rowHeight + 8f);
         }
-
-        // Copias VISUALES desde la escena NetworkLobby: tamaños, tipografía,
-        // espaciados, colores, retrato y jerarquía iguales al multiplayer.
-        Transform originalBackdrop = FindDeep(multiplayerPanel, "LobbyCinematicBackdrop");
-        if (originalBackdrop != null)
+        for (int i = 2; i <= 4; i++)
         {
-            GameObject backdrop = CloneVisual(originalBackdrop, ui, "DQSingleLobbyBackdrop");
-            backdrop.transform.SetAsFirstSibling();
+            Transform row = partyCard.Find("Row_" + i);
+            if (row != null) row.gameObject.SetActive(false);
+            Transform otherPlate = exact.transform.Find("Nameplate_" + i);
+            if (otherPlate != null) Undo.DestroyObjectImmediate(otherPlate.gameObject);
         }
-        else
-        {
-            AddFade(ui, true, 280f, .58f);
-            AddFade(ui, false, 390f, .68f);
-        }
-
-        TMP_Text title = CloneTitle(multiplayerPanel, ui, "Titulo", "UN JUGADOR // SALA");
-        if (title == null)
-            title = Text(ui, "Titulo", "UN JUGADOR // SALA", font, 42, Main,
-                new Vector2(0, 1), new Vector2(250, -30), new Vector2(950, 62), TextAlignmentOptions.MidlineLeft);
-
-        Button back = CloneButton(multiplayerPanel, ui, "Home", "Atras", "ATRAS");
-        if (back == null)
-            back = MakeButton(ui, "Atras", "ATRAS", font, new Vector2(0, 1),
-                new Vector2(40, -30), new Vector2(190, 56), false);
-
-        Button character = CloneButton(multiplayerPanel, ui, "Btn_Personaje", "Personaje", "PERSONAJE");
-        if (character == null)
-            character = MakeButton(ui, "Personaje", "PERSONAJE", font, new Vector2(0, 0),
-                new Vector2(40, 40), new Vector2(330, 84), true);
-
-        Button start = CloneButton(multiplayerPanel, ui, "PLAY_MULTIPLAYER", "Comenzar", "COMENZAR");
-        if (start == null)
-            start = MakeButton(ui, "Comenzar", "COMENZAR", font, new Vector2(1, 0),
-                new Vector2(-40, 40), new Vector2(460, 92), true);
-
-        Button config = CloneButton(multiplayerPanel, ui, "Btn_ConfigurarPartida", "Configurar", "CONFIGURAR PARTIDA");
-        if (config == null)
-            config = MakeButton(ui, "Configurar", "CONFIGURAR PARTIDA", font, new Vector2(1, 0),
-                new Vector2(-40, 302), new Vector2(460, 50), false);
-
-        // Tarjeta EXACTA del multiplayer, de 4 filas a una única fila.
-        GameObject partyClone = CloneVisual(multiplayerUi.Find("PartyCard"), ui, "TarjetaJugador");
-        RectTransform partyRect = partyClone.GetComponent<RectTransform>();
-        // En el multiplayer la tarjeta tiene 46 de encabezado, filas de 52 y pie de 8.
-        partyRect.sizeDelta = new Vector2(partyRect.sizeDelta.x, 46f + 52f + 8f);
-        TMP_Text partyHeader = FindDeep(partyClone.transform, "Header")?.GetComponent<TMP_Text>();
+        row1.gameObject.SetActive(true);
+        Image icon = row1.Find("Icon").GetComponent<Image>();
+        TMP_Text partyRowText = row1.Find("Text").GetComponent<TMP_Text>();
+        TMP_Text partyHeader = partyCard.Find("Header")?.GetComponent<TMP_Text>();
         if (partyHeader != null) partyHeader.text = "JUGADORES 1/1";
-        for (int i = 1; i <= 4; i++)
+        if (partyRowText != null) partyRowText.text = "JUGADOR";
+        if (icon != null)
         {
-            Transform row = partyClone.transform.Find("Row_" + i);
-            if (row != null) row.gameObject.SetActive(i == 1);
+            icon.preserveAspect = true;
+            icon.color = Color.white;
         }
-        Transform row1 = partyClone.transform.Find("Row_1");
-        Image icon = row1 != null ? row1.Find("Icon")?.GetComponent<Image>() : null;
-        TMP_Text partyRowText = row1 != null ? row1.Find("Text")?.GetComponent<TMP_Text>() : null;
-        if (icon == null || partyRowText == null)
-            throw new InvalidOperationException("PartyCard del multiplayer no tiene Row_1/Icon y Row_1/Text. No se cambió nada de la escena.");
-        icon.preserveAspect = true;
-        icon.color = Color.white;
-        partyRowText.text = "JUGADOR";
-
-        // Tarjeta de partida real del multiplayer: no superponer una segunda tarjeta.
-        GameObject selectionClone = CloneVisual(multiplayerUi.Find("SelectionCard"), ui, "SeleccionActual");
-        TMP_Text selectedMode = selectionClone.transform.Find("ModeDifficulty")?.GetComponent<TMP_Text>();
-        TMP_Text selectedMap = selectionClone.transform.Find("Map")?.GetComponent<TMP_Text>();
-        if (selectedMode == null || selectedMap == null)
-            throw new InvalidOperationException("SelectionCard del multiplayer no tiene ModeDifficulty / Map.");
-
-        // Placa sobre la cabeza: misma que el multiplayer, sin otra placa flotando.
-        RectTransform plate;
-        TMP_Text plateText;
-        Transform sourcePlate = multiplayerUi.Find("Nameplate_1");
-        if (sourcePlate != null)
-        {
-            GameObject plateGo = CloneVisual(sourcePlate, ui, "NombreSobreCabeza");
-            plate = plateGo.GetComponent<RectTransform>();
-            plateText = plateGo.transform.Find("Name")?.GetComponent<TMP_Text>();
-            Transform readyBadge = plateGo.transform.Find("ReadyBadge");
-            if (readyBadge != null) readyBadge.gameObject.SetActive(false);
-        }
-        else
-        {
-            Image plateImage = Image(ui, "NombreSobreCabeza", new Color(.01f, .02f, .02f, .45f), false);
-            plate = plateImage.rectTransform;
-            plate.anchorMin = plate.anchorMax = new Vector2(.5f, .5f);
-            plate.pivot = new Vector2(.5f, 0f);
-            plate.sizeDelta = new Vector2(180f, 36f);
-            plateText = Text(plate, "Name", "JUGADOR", font, 22, Main,
-                new Vector2(.5f, .5f), Vector2.zero, new Vector2(180, 36), TextAlignmentOptions.Center);
-        }
+        TMP_Text selectedMode = selectionCard.Find("ModeDifficulty")?.GetComponent<TMP_Text>();
+        TMP_Text selectedMap = selectionCard.Find("Map")?.GetComponent<TMP_Text>();
+        if (selectedMode == null || selectedMap == null || icon == null || partyRowText == null)
+            throw new InvalidOperationException("Faltan elementos del clon original para conectar datos locales.");
+        RectTransform plate = exact.transform.Find("Nameplate_1") as RectTransform;
+        TMP_Text plateText = plate != null ? plate.Find("Name")?.GetComponent<TMP_Text>() : null;
+        if (plate == null || plateText == null)
+            throw new InvalidOperationException("La UI de NetworkLobby no contiene Nameplate_1/Name.");
+        Transform badge = plate.Find("ReadyBadge");
+        if (badge != null) badge.gameObject.SetActive(false);
         plate.gameObject.SetActive(false);
 
+        // Copiar también las ventanas modales reales, cuando están guardadas en NetworkLobby.
         GameObject configPopup;
         TMP_Text cfgMode, cfgMap, cfgDifficulty;
-        CreateSettingsPopup(canvas.transform, font, out configPopup, out cfgMode, out cfgMap, out cfgDifficulty);
+        // En NetworkLobby puede haber varios popups con el mismo nombre (incluidos restos
+        // de versiones antiguas). Solo clonar uno que tenga las TRES filas funcionales.
+        // El LobbyUIBuilder original también llama "Pendiente" a los valores anteriores.
+        Transform sourceSettings = FindCompatibleSettingsPopup(multiplayerPanel.gameObject.scene, multiplayerPanel);
+        if (sourceSettings != null)
+        {
+            configPopup = CloneVisual(sourceSettings, canvas.transform, "ConfigurarPartidaPopup");
+            cfgMode = SectionValue(configPopup.transform, "Seccion_Modo", true);
+            cfgMap = SectionValue(configPopup.transform, "Seccion_Mapa", true);
+            cfgDifficulty = SectionValue(configPopup.transform, "Seccion_Dificultad", true);
+            RebindPopupClose(configPopup, "Cerrar");
+            configPopup.SetActive(false);
+        }
+        else
+        {
+            // Este es el diseño del LobbyUIBuilder multiplayer original (1000x640,
+            // tipografias, filas y colores originales). Evita abortar TODO el lobby
+            // al encontrar un popup antiguo o de una jerarquia incompatible.
+            Debug.LogWarning("[SinglePlayerLobby] NetworkLobby no tiene un ConfigurarPartidaPopup " +
+                "compatible con las tres filas editables. Se usa la plantilla visual " +
+                "del LobbyUIBuilder multiplayer original. No se modifica NetworkLobby.");
+            CreateSettingsPopup(canvas.transform, multiplayerPanel, font,
+                out configPopup, out cfgMode, out cfgMap, out cfgDifficulty);
+        }
+
         GameObject messagePopup;
         TMP_Text messageTitle, messageText;
-        CreateMessagePopup(canvas.transform, font, out messagePopup, out messageTitle, out messageText);
+        Transform sourceMessage = FindDeepInScene(multiplayerPanel.gameObject.scene, "MensajePopup");
+        if (sourceMessage != null && FindDeep(sourceMessage, "Titulo") != null &&
+            (FindDeep(sourceMessage, "Texto") != null || FindDeep(sourceMessage, "Mensaje") != null))
+        {
+            messagePopup = CloneVisual(sourceMessage, canvas.transform, "MensajePopup");
+            messageTitle = FindDeep(messagePopup.transform, "Titulo")?.GetComponent<TMP_Text>();
+            Transform messageBody = FindDeep(messagePopup.transform, "Texto");
+            if (messageBody == null) messageBody = FindDeep(messagePopup.transform, "Mensaje");
+            messageText = messageBody != null ? messageBody.GetComponent<TMP_Text>() : null;
+            RebindPopupClose(messagePopup, "Cerrar");
+            messagePopup.SetActive(false);
+        }
+        else
+            CreateMessagePopup(canvas.transform, multiplayerPanel, font,
+                out messagePopup, out messageTitle, out messageText);
 
+        // La selección original queda por ENCIMA pero no oculta el mundo ni la UI del fondo.
         GameObject selector = usarSelectorExistente
             ? FindDeepInScene(SceneManager.GetActiveScene(), "CharacterSelectCanvas")?.gameObject : null;
         SinglePlayerCinematicPresenter presenter = world.AddComponent<SinglePlayerCinematicPresenter>();
@@ -379,20 +464,27 @@ public sealed class SinglePlayerLobbyUIBuilder : EditorWindow
         if (selector == null)
             selector = CreateFallbackSelector(canvas.transform, font, presenter);
         else if (selector.transform.IsChildOf(lobbyPanel))
-        {
-            // El selector nunca puede quedar dentro del grupo que ocultaremos al abrirlo.
-            Undo.SetTransformParent(selector.transform, canvas.transform, "Separar selector del HUD singleplayer");
-        }
+            Undo.SetTransformParent(selector.transform, canvas.transform, "Separar selector del lobby");
         presenter.ConfigureSelector(selector);
+        // Mismo oscurecimiento que el selector real del NetworkLobby, NO alpha inventado.
+        Transform sourceSelector = FindDeepInScene(multiplayerPanel.gameObject.scene, "CharacterSelectCanvas");
+        Transform sourceShade = sourceSelector != null ? FindDeep(sourceSelector, "Fondo") : null;
+        Image sourceShadeImage = sourceShade != null ? sourceShade.GetComponent<Image>() : null;
+        presenter.ConfigureSelectorBackgroundColor(sourceShadeImage != null
+            ? sourceShadeImage.color : new Color(0.03f, 0.04f, 0.05f, 0.94f));
+        if (lighting.valid)
+            presenter.ConfigureLighting(lighting.skybox, lighting.ambientMode,
+                lighting.ambientLight, lighting.ambientSky, lighting.ambientEquator,
+                lighting.ambientGround, lighting.ambientIntensity, lighting.reflectionIntensity,
+                lighting.fog, lighting.fogMode, lighting.fogColor,
+                lighting.fogDensity, lighting.fogStart, lighting.fogEnd);
         Canvas selectorCanvas = selector.GetComponent<Canvas>();
-        if (selectorCanvas != null)
-        {
-            Undo.RecordObject(selectorCanvas, "Prioridad del selector de personaje");
-            selectorCanvas.overrideSorting = true;
-            selectorCanvas.sortingOrder = 100; // Sobre el Canvas singleplayer (orden 50).
-        }
-        // Se oculta TODO el HUD del lobby al seleccionar, sin apagar el mundo
-        // y sin depender de eventos de botones que otros builders podrían cambiar.
+        if (selectorCanvas == null) selectorCanvas = Undo.AddComponent<Canvas>(selector);
+        if (selector.GetComponent<GraphicRaycaster>() == null)
+            Undo.AddComponent<GraphicRaycaster>(selector);
+        selectorCanvas.overrideSorting = true;
+        selectorCanvas.sortingOrder = 100;
+
         CanvasGroup group = lobbyPanel.GetComponent<CanvasGroup>();
         if (group == null) group = Undo.AddComponent<CanvasGroup>(lobbyPanel.gameObject);
         presenter.ConfigureHudGroup(group);
@@ -400,8 +492,8 @@ public sealed class SinglePlayerLobbyUIBuilder : EditorWindow
         group.blocksRaycasts = true;
         group.interactable = true;
 
-        // El movimiento de arrastre afecta únicamente al actor 3D, no a las tarjetas.
-        Image dragZone = Image(ui, "GirarPersonaje", new Color(0, 0, 0, 0), true);
+        // Zona invisible de arrastre: detrás de botones y tarjetas, sin alterar su diseño.
+        Image dragZone = Image(exact.transform, "GirarPersonaje", new Color(0, 0, 0, 0), true);
         Place(dragZone.rectTransform, new Vector2(.5f, .5f), new Vector2(-100, -80), new Vector2(480, 600));
         EventTrigger drag = dragZone.gameObject.AddComponent<EventTrigger>();
         EventTrigger.Entry entry = new EventTrigger.Entry();
@@ -422,7 +514,6 @@ public sealed class SinglePlayerLobbyUIBuilder : EditorWindow
         SerializedObject slotSO = new SerializedObject(slot);
         slotSO.FindProperty("slotIndex").intValue = 0;
         slotSO.ApplyModifiedPropertiesWithoutUndo();
-
         SerializedObject so = new SerializedObject(ctrl);
         Bind(so, "slot", slot);
         Bind(so, "catalogoPersonajes", catalog);
@@ -443,7 +534,6 @@ public sealed class SinglePlayerLobbyUIBuilder : EditorWindow
         Bind(so, "ventanaSeleccionPersonaje", selector);
         so.FindProperty("escenaJuegoSingleplayer").stringValue = escenaJuego;
         so.ApplyModifiedProperties();
-
         UnityEventTools.AddPersistentListener(back.onClick, ctrl.OnClick_Volver);
         UnityEventTools.AddPersistentListener(character.onClick, ctrl.OnClick_Personaje);
         UnityEventTools.AddPersistentListener(start.onClick, ctrl.OnClick_Comenzar);
@@ -453,7 +543,127 @@ public sealed class SinglePlayerLobbyUIBuilder : EditorWindow
         selector.SetActive(false);
     }
 
-    // Trae una copia visual de la escena fuente, SIN controladores de red ni eventos.
+    // Se valida ANTES de clonar para no elegir el primer popup homonimo incorrecto.
+    private static Transform FindCompatibleSettingsPopup(Scene source, Transform referencePanel)
+    {
+        if (!source.IsValid() || !source.isLoaded) return null;
+        // Priorizar el popup del MISMO Canvas del lobby multiplayer visible.
+        // Así no se copia por accidente otro popup antiguo de la misma escena.
+        Canvas referenceCanvas = referencePanel != null
+            ? referencePanel.GetComponentInParent<Canvas>(true) : null;
+        Transform best = null;
+        int bestScore = int.MinValue;
+        foreach (GameObject root in source.GetRootGameObjects())
+        {
+            foreach (Transform candidate in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (candidate.name != "ConfigurarPartidaPopup") continue;
+                if (SectionValue(candidate, "Seccion_Modo") == null ||
+                    SectionValue(candidate, "Seccion_Mapa") == null ||
+                    SectionValue(candidate, "Seccion_Dificultad") == null)
+                    continue;
+
+                Transform close = FindDeep(candidate, "Cerrar");
+                if (close == null) close = FindDeep(candidate, "Btn_Cerrar");
+                if (close == null) close = FindDeep(candidate, "Btn_Aceptar");
+                if (close == null ||
+                    (close.GetComponent<Button>() == null &&
+                     close.GetComponentInChildren<Button>(true) == null))
+                    continue;
+
+                Canvas candidateCanvas = candidate.GetComponentInParent<Canvas>(true);
+                int score = referenceCanvas != null && candidateCanvas == referenceCanvas ? 100 : 0;
+                if (candidate.gameObject.activeInHierarchy) score += 10;
+                if (FindDeep(candidate, "Ventana") != null) score += 2;
+                if (score > bestScore) { best = candidate; bestScore = score; }
+            }
+        }
+        return best;
+    }
+
+    private static TMP_Text SectionValue(Transform popup, string sectionName, bool normalizeName = false)
+    {
+        Transform section = FindDeep(popup, sectionName);
+        Transform content = section != null ? FindDeep(section, "Contenido") : null;
+        if (content == null) return null;
+        Transform value = FindDeep(content, "Valor");
+        if (value == null) value = FindDeep(content, "Pendiente");
+        if (value == null) return null;
+        TMP_Text text = value.GetComponent<TMP_Text>();
+        if (text != null && normalizeName && value.name == "Pendiente")
+            value.name = "Valor"; // Solo modifica el CLON; nunca la escena multiplayer.
+        return text;
+    }
+
+    private static void RebindPopupClose(GameObject popup, string closeName)
+    {
+        // El popup multiplayer original llama Btn_Cerrar / Btn_Aceptar,
+        // mientras algunos menus viejos llaman Cerrar. No heredar eventos de red.
+        Transform closeTransform = FindDeep(popup.transform, closeName);
+        if (closeTransform == null) closeTransform = FindDeep(popup.transform, "Btn_Cerrar");
+        if (closeTransform == null) closeTransform = FindDeep(popup.transform, "Btn_Aceptar");
+        Button close = closeTransform != null ? closeTransform.GetComponent<Button>() : null;
+        if (close == null && closeTransform != null)
+            close = closeTransform.GetComponentInChildren<Button>(true);
+        if (close == null)
+            throw new InvalidOperationException("El popup clonado no tiene boton Cerrar/Aceptar; no se copio una accion multiplayer insegura.");
+        close.onClick = new Button.ButtonClickedEvent();
+        UnityEventTools.AddBoolPersistentListener(close.onClick, popup.SetActive, false);
+    }
+
+    private static TMP_Text RequireCopiedText(Transform source, Transform parent, string originalName, string value)
+    {
+        Transform original = RequireDirect(source, originalName);
+        GameObject copy = CloneVisual(original, parent, "SP_" + originalName);
+        TMP_Text tmp = copy.GetComponent<TMP_Text>();
+        if (tmp == null) tmp = copy.GetComponentInChildren<TMP_Text>(true);
+        if (tmp == null)
+            throw new InvalidOperationException("El objeto original no contiene TMP_Text: " + originalName);
+        tmp.text = value;
+        return tmp;
+    }
+
+    private static Button CloneButtonExact(Transform source, Transform parent, string originalName,
+        string targetName, string value)
+    {
+        Transform original = RequireDirect(source, originalName);
+        GameObject clone = CloneVisual(original, parent, targetName);
+        Button button = clone.GetComponent<Button>();
+        if (button == null) button = clone.GetComponentInChildren<Button>(true);
+        if (button == null)
+        {
+            // Texto con un Button transparente: respeta por completo la apariencia original.
+            Image image = clone.GetComponent<Image>();
+            if (image == null) image = Undo.AddComponent<Image>(clone);
+            image.color = new Color(0, 0, 0, 0);
+            image.raycastTarget = true;
+            button = Undo.AddComponent<Button>(clone);
+            button.targetGraphic = image;
+        }
+        button.onClick = new Button.ButtonClickedEvent(); // Jamás heredar listeners de red.
+        TMP_Text label = clone.GetComponent<TMP_Text>();
+        if (label == null) label = clone.GetComponentInChildren<TMP_Text>(true);
+        if (label != null) label.text = value;
+        return button;
+    }
+
+    private static void CopyCanvasScaleFromSource(Transform sourcePanel, Canvas targetCanvas)
+    {
+        Canvas parentCanvas = sourcePanel.GetComponentInParent<Canvas>(true);
+        CanvasScaler sourceScaler = parentCanvas != null ? parentCanvas.GetComponent<CanvasScaler>() : null;
+        CanvasScaler target = targetCanvas.GetComponent<CanvasScaler>();
+        if (sourceScaler == null || target == null) return;
+        Undo.RecordObject(target, "Reutilizar escala exacta del Canvas multiplayer");
+        target.uiScaleMode = sourceScaler.uiScaleMode;
+        target.referenceResolution = sourceScaler.referenceResolution;
+        target.screenMatchMode = sourceScaler.screenMatchMode;
+        target.matchWidthOrHeight = sourceScaler.matchWidthOrHeight;
+        target.referencePixelsPerUnit = sourceScaler.referencePixelsPerUnit;
+        target.scaleFactor = sourceScaler.scaleFactor;
+    }
+
+    // Copia objetos reales guardados en NetworkLobby. En los botones se limpian los
+    // listeners multiplayer con CloneButtonExact para no conservar acciones de red.
     private static GameObject CloneVisual(Transform source, Transform parent, string ownName)
     {
         if (source == null)
@@ -465,37 +675,67 @@ public sealed class SinglePlayerLobbyUIBuilder : EditorWindow
         return result;
     }
 
+    private static Transform RequireDirect(Transform sourcePanel, string name)
+    {
+        Transform direct = sourcePanel != null ? sourcePanel.Find(name) : null;
+        if (direct == null)
+            throw new InvalidOperationException("El NetworkLobby no tiene el objeto directo '" + name +
+                "'. Guardalo con su lobby cinematografico antes de construir el singleplayer.");
+        return direct;
+    }
+
+    private static void FixOriginalLobbyHeader(Transform ui)
+    {
+        // Replica la jerarquia y medidas finales usadas por LobbyCinematicRebuildBuilder.
+        // Estas coordenadas son las del builder MULTIPLAYER, no valores inventados para SP.
+        PlaceOriginalText(ui.Find("SP_Titulo"), new Vector2(0f, 1f), new Vector2(250f, -30f),
+            new Vector2(1000f, 56f), 44f, TextAlignmentOptions.MidlineLeft);
+        PlaceOriginalText(ui.Find("Atras"), new Vector2(0f, 1f), new Vector2(40f, -30f),
+            new Vector2(190f, 56f), 30f, TextAlignmentOptions.Center);
+        PlaceOriginalText(ui.Find("SP_TextxSuperior (1)"), new Vector2(0f, 1f), new Vector2(40f, -106f),
+            new Vector2(260f, 52f), 30f, TextAlignmentOptions.MidlineLeft);
+        PlaceOriginalRect(ui.Find("Cuadrado_Local") as RectTransform, new Vector2(0f, 1f),
+            new Vector2(306f, -106f), new Vector2(250f, 52f));
+        PlaceOriginalText(ui.Find("SP_placeholder_codigo"), new Vector2(0f, 1f),
+            new Vector2(306f, -106f), new Vector2(250f, 52f), 34f, TextAlignmentOptions.Center);
+        PlaceOriginalText(ui.Find("EstadoLocal"), new Vector2(0f, 1f), new Vector2(572f, -106f),
+            new Vector2(190f, 52f), 28f, TextAlignmentOptions.Center);
+    }
+
+    private static void PlaceOriginalRect(RectTransform rect, Vector2 anchor, Vector2 pos, Vector2 size)
+    {
+        if (rect == null) return;
+        rect.anchorMin = rect.anchorMax = anchor;
+        rect.pivot = anchor;
+        rect.anchoredPosition = pos;
+        rect.sizeDelta = size;
+    }
+
+    private static void PlaceOriginalText(Transform root, Vector2 anchor, Vector2 pos, Vector2 size,
+        float fontSize, TextAlignmentOptions alignment)
+    {
+        if (root == null) return;
+        PlaceOriginalRect(root as RectTransform, anchor, pos, size);
+        foreach (TMP_Text text in root.GetComponentsInChildren<TMP_Text>(true))
+        {
+            text.fontSize = fontSize;
+            text.enableAutoSizing = false;
+            text.alignment = alignment;
+            text.margin = Vector4.zero;
+            text.overflowMode = TextOverflowModes.Overflow;
+        }
+        CanvasGroup cg = root.GetComponent<CanvasGroup>();
+        if (cg != null) cg.alpha = 1f;
+        foreach (Graphic graphic in root.GetComponentsInChildren<Graphic>(true))
+            graphic.enabled = true;
+    }
+
     private static Transform FindDeep(Transform root, string name)
     {
         if (root == null) return null;
         foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
             if (t.name == name) return t;
         return null;
-    }
-
-    private static TMP_Text CloneTitle(Transform sourceRoot, Transform parent, string sourceName, string value)
-    {
-        Transform source = FindDeep(sourceRoot, sourceName);
-        if (source == null) return null;
-        GameObject clone = CloneVisual(source, parent, "Titulo");
-        TMP_Text text = clone.GetComponent<TMP_Text>();
-        if (text == null) text = clone.GetComponentInChildren<TMP_Text>(true);
-        if (text != null) text.text = value;
-        return text;
-    }
-
-    private static Button CloneButton(Transform sourceRoot, Transform parent,
-        string sourceName, string ownName, string value)
-    {
-        Transform source = FindDeep(sourceRoot, sourceName);
-        if (source == null || source.GetComponent<Button>() == null) return null;
-        GameObject clone = CloneVisual(source, parent, ownName);
-        Button button = clone.GetComponent<Button>();
-        // No copiar eventos vinculados a MultiplayerLobbyController ni al código de sala.
-        button.onClick = new Button.ButtonClickedEvent();
-        TMP_Text label = clone.GetComponentInChildren<TMP_Text>(true);
-        if (label != null) label.text = value;
-        return button;
     }
 
     private GameObject CreateFallbackSelector(Transform parent, TMP_FontAsset font, SinglePlayerCinematicPresenter presenter)
@@ -527,66 +767,122 @@ public sealed class SinglePlayerLobbyUIBuilder : EditorWindow
         return overlay;
     }
 
-    private static void CreateSettingsPopup(Transform canvas, TMP_FontAsset font,
+    // Replica de medidas, fuentes y colores de LobbyUIBuilder.BuildGameSettingsUI,
+    // usada SOLO si NetworkLobby no tiene el ConfigurarPartidaPopup guardado.
+    private static void CreateSettingsPopup(Transform canvas, Transform sourcePanel, TMP_FontAsset defaultFont,
         out GameObject popup, out TMP_Text mode, out TMP_Text map, out TMP_Text difficulty)
     {
+        TMP_FontAsset titleFont = FontByGuid("0d82eaf50c142fa4ba34beb1fc9a12e4", defaultFont);
+        TMP_FontAsset monoFont = FontByGuid("102734b590693d240886df79eaaa686c", defaultFont);
+        Color panelInk = new Color(0.04f, 0.07f, 0.11f, 0.97f);
+        Color roleColor = new Color(0.384f, 0.464f, 0.394f, 1f);
+        Color green = new Color(0f, 1f, 0.4f, 1f);
+
         popup = NewUI("ConfigurarPartidaPopup", canvas);
         Stretch((RectTransform)popup.transform);
-        popup.AddComponent<Image>().color = new Color(0, 0, 0, .78f);
-        Image window = Image(popup.transform, "Ventana", new Color(.04f, .07f, .09f, .98f), true);
-        window.rectTransform.anchorMin = window.rectTransform.anchorMax = new Vector2(.5f, .5f);
-        window.rectTransform.pivot = new Vector2(.5f, .5f);
-        window.rectTransform.sizeDelta = new Vector2(900, 620);
-        window.rectTransform.anchoredPosition = Vector2.zero;
-        Text(window.transform, "Titulo", "CONFIGURAR PARTIDA", font, 38, Main, new Vector2(0, 1), new Vector2(30, -22), new Vector2(840, 55), TextAlignmentOptions.MidlineLeft);
-        Text(window.transform, "Subtitulo", "HACE CLICK EN CADA OPCION PARA CAMBIARLA", font, 18, Dim, new Vector2(0, 1), new Vector2(30, -78), new Vector2(840, 35), TextAlignmentOptions.MidlineLeft);
-        mode = SettingsRow(window.transform, font, "Seccion_Modo", "MODO DE JUEGO", -130);
-        map = SettingsRow(window.transform, font, "Seccion_Mapa", "MAPA", -265);
-        difficulty = SettingsRow(window.transform, font, "Seccion_Dificultad", "DIFICULTAD", -400);
-        Button close = MakeButton(window.transform, "Cerrar", "CERRAR", font, new Vector2(.5f, 0), new Vector2(0, 18), new Vector2(280, 62), false);
+        Image fade = popup.AddComponent<Image>();
+        fade.color = new Color(0f, 0f, 0f, 0.78f);
+        fade.raycastTarget = true;
+
+        Image window = Image(popup.transform, "Ventana", panelInk, true);
+        PlaceMiddle(window.rectTransform, new Vector2(1000f, 640f));
+        Image top = Image(window.transform, "LineaSuperior", green, false);
+        RectTransform line = top.rectTransform;
+        line.anchorMin = new Vector2(0f, 1f);
+        line.anchorMax = new Vector2(1f, 1f);
+        line.pivot = new Vector2(0.5f, 1f);
+        line.anchoredPosition = Vector2.zero;
+        line.sizeDelta = new Vector2(0f, 4f);
+
+        Text(window.transform, "Titulo", "CONFIGURAR PARTIDA", titleFont, 44f,
+            new Color(0.70f, 0.79f, 0.71f, 1f), new Vector2(0f, 1f),
+            new Vector2(40f, -26f), new Vector2(920f, 56f), TextAlignmentOptions.Left);
+        Text(window.transform, "Subtitulo", "HACE CLICK EN CADA OPCION PARA CAMBIARLA",
+            monoFont, 18f, roleColor, new Vector2(0f, 1f),
+            new Vector2(40f, -86f), new Vector2(920f, 24f), TextAlignmentOptions.Left);
+        mode = RealSettingsRow(window.transform, monoFont, "Seccion_Modo", "MODO DE JUEGO", -130f);
+        map = RealSettingsRow(window.transform, monoFont, "Seccion_Mapa", "MAPA", -268f);
+        difficulty = RealSettingsRow(window.transform, monoFont, "Seccion_Dificultad", "DIFICULTAD", -406f);
+
+        Button close = CloneButtonExact(sourcePanel, window.transform, "PLAY_MULTIPLAYER", "Btn_Cerrar", "CERRAR");
+        PlaceOriginalRect(close.transform as RectTransform, new Vector2(.5f, 0f),
+            new Vector2(0f, 24f), new Vector2(300f, 64f));
+        foreach (TMP_Text label in close.GetComponentsInChildren<TMP_Text>(true))
+        {
+            label.fontSize = 24f;
+            label.enableAutoSizing = true;
+            label.fontSizeMin = 14f;
+            label.fontSizeMax = 24f;
+        }
         UnityEventTools.AddBoolPersistentListener(close.onClick, popup.SetActive, false);
         popup.SetActive(false);
     }
 
-    private static TMP_Text SettingsRow(Transform parent, TMP_FontAsset font, string name, string caption, float y)
+    private static TMP_FontAsset FontByGuid(string guid, TMP_FontAsset backup)
+    {
+        string path = AssetDatabase.GUIDToAssetPath(guid);
+        TMP_FontAsset result = string.IsNullOrEmpty(path) ? null : AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(path);
+        return result != null ? result : backup;
+    }
+
+    private static void PlaceMiddle(RectTransform rect, Vector2 size)
+    {
+        rect.anchorMin = rect.anchorMax = new Vector2(.5f, .5f);
+        rect.pivot = new Vector2(.5f, .5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = size;
+    }
+
+    private static TMP_Text RealSettingsRow(Transform parent, TMP_FontAsset font, string name, string caption, float y)
     {
         GameObject section = NewUI(name, parent);
-        Place((RectTransform)section.transform, new Vector2(0, 1), new Vector2(30, y), new Vector2(840, 120));
-        Text(section.transform, "Titulo", caption, font, 23, Accent, new Vector2(0, 1), Vector2.zero, new Vector2(820, 38), TextAlignmentOptions.MidlineLeft);
-        Image content = Image(section.transform, "Contenido", new Color(1, 1, 1, .08f), true);
-        Place(content.rectTransform, new Vector2(0, 1), new Vector2(0, -38), new Vector2(840, 77));
-        return Text(content.transform, "Valor", "-", font, 27, Main, new Vector2(.5f, .5f), Vector2.zero, new Vector2(820, 68), TextAlignmentOptions.Center);
+        PlaceOriginalRect((RectTransform)section.transform, new Vector2(0f, 1f),
+            new Vector2(40f, y), new Vector2(920f, 124f));
+        Text(section.transform, "Titulo", caption, font, 24f,
+            new Color(0f, 1f, 0.4f, 1f), new Vector2(0f, 1f),
+            Vector2.zero, new Vector2(920f, 30f), TextAlignmentOptions.Left);
+        Image content = Image(section.transform, "Contenido", new Color(1f, 1f, 1f, .05f), false);
+        PlaceOriginalRect(content.rectTransform, new Vector2(0f, 1f),
+            new Vector2(0f, -36f), new Vector2(920f, 84f));
+        TMP_Text label = Text(content.transform, "Valor", "-  [ CLICK PARA ELEGIR ]", font, 20f,
+            new Color(.384f, .464f, .394f, 1f), new Vector2(.5f, .5f),
+            Vector2.zero, new Vector2(920f, 84f), TextAlignmentOptions.Center);
+        return label;
     }
 
-    private static void CreateMessagePopup(Transform canvas, TMP_FontAsset font,
+    private static void CreateMessagePopup(Transform canvas, Transform sourcePanel, TMP_FontAsset defaultFont,
         out GameObject popup, out TMP_Text title, out TMP_Text message)
     {
+        TMP_FontAsset titleFont = FontByGuid("0d82eaf50c142fa4ba34beb1fc9a12e4", defaultFont);
+        TMP_FontAsset monoFont = FontByGuid("102734b590693d240886df79eaaa686c", defaultFont);
         popup = NewUI("MensajePopup", canvas);
         Stretch((RectTransform)popup.transform);
-        popup.AddComponent<Image>().color = new Color(0, 0, 0, .8f);
-        Image window = Image(popup.transform, "Ventana", new Color(.04f, .07f, .09f, .98f), true);
-        window.rectTransform.anchorMin = window.rectTransform.anchorMax = new Vector2(.5f, .5f);
-        window.rectTransform.pivot = new Vector2(.5f, .5f);
-        window.rectTransform.sizeDelta = new Vector2(800, 370);
-        window.rectTransform.anchoredPosition = Vector2.zero;
-        title = Text(window.transform, "Titulo", "AVISO", font, 40, Accent, new Vector2(.5f, 1), new Vector2(0, -20), new Vector2(730, 70), TextAlignmentOptions.Center);
-        message = Text(window.transform, "Texto", "", font, 24, Main, new Vector2(.5f, .5f), new Vector2(0, 0), new Vector2(725, 130), TextAlignmentOptions.Center);
-        Button close = MakeButton(window.transform, "Cerrar", "ACEPTAR", font, new Vector2(.5f, 0), new Vector2(0, 20), new Vector2(280, 60), false);
+        Image shade = popup.AddComponent<Image>();
+        shade.color = new Color(0f, 0f, 0f, 0.82f);
+        shade.raycastTarget = true;
+
+        Image window = Image(popup.transform, "Ventana", new Color(.04f, .07f, .11f, .98f), true);
+        PlaceMiddle(window.rectTransform, new Vector2(760f, 380f));
+        Image border = Image(window.transform, "LineaSuperior", new Color(1f, 0f, .038f, 1f), false);
+        RectTransform line = border.rectTransform;
+        line.anchorMin = new Vector2(0f, 1f);
+        line.anchorMax = new Vector2(1f, 1f);
+        line.pivot = new Vector2(.5f, 1f);
+        line.anchoredPosition = Vector2.zero;
+        line.sizeDelta = new Vector2(0f, 4f);
+
+        title = Text(window.transform, "Titulo", "AVISO", titleFont, 48f,
+            new Color(.70f, .79f, .71f, 1f), new Vector2(0f, 1f),
+            new Vector2(30f, -40f), new Vector2(700f, 64f), TextAlignmentOptions.Center);
+        message = Text(window.transform, "Texto", "", monoFont, 24f, Color.white,
+            new Vector2(0f, 1f), new Vector2(40f, -130f), new Vector2(680f, 130f),
+            TextAlignmentOptions.Top);
+        message.enableWordWrapping = true;
+        Button close = CloneButtonExact(sourcePanel, window.transform, "PLAY_MULTIPLAYER", "Btn_Aceptar", "ACEPTAR");
+        PlaceOriginalRect(close.transform as RectTransform, new Vector2(.5f, 0f),
+            new Vector2(0f, 30f), new Vector2(300f, 64f));
         UnityEventTools.AddBoolPersistentListener(close.onClick, popup.SetActive, false);
         popup.SetActive(false);
-    }
-
-    private static void AddFade(Transform ui, bool top, float height, float opacity)
-    {
-        for (int i = 0; i < 12; i++)
-        {
-            Image strip = Image(ui, (top ? "FadeSuperior_" : "FadeInferior_") + i, new Color(.01f, .02f, .025f, opacity / 12f), false);
-            RectTransform rt = strip.rectTransform;
-            float anchor = top ? 1 : 0;
-            rt.anchorMin = new Vector2(0, anchor); rt.anchorMax = new Vector2(1, anchor);
-            rt.pivot = new Vector2(.5f, anchor); rt.sizeDelta = new Vector2(0, height * (12 - i) / 12f);
-            rt.anchoredPosition = Vector2.zero;
-        }
     }
 
     // El lobby tiene su propio Canvas. No depende de la jerarquía del menú principal ni

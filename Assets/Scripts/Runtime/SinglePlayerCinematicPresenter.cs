@@ -21,6 +21,8 @@ public sealed class SinglePlayerCinematicPresenter : MonoBehaviour
     [SerializeField] private Image characterIcon;
     [SerializeField] private TMP_Text partyRowText;
     [SerializeField] private CanvasGroup lobbyHudGroup;
+    [SerializeField, Range(0f, 1f)] private float selectorBackgroundOpacity = 0.94f;
+    [SerializeField] private Color selectorBackgroundColor = new Color(0.03f, 0.04f, 0.05f, 0.94f);
     [SerializeField] private CharacterCatalog catalog;
     [SerializeField] private Vector3 playerPosition = new Vector3(-1.2f, -1.26f, -65.6f);
     [SerializeField] private float playerYaw = 180f;
@@ -32,6 +34,27 @@ public sealed class SinglePlayerCinematicPresenter : MonoBehaviour
     private string previousMap;
     private bool previousSelectorOpen;
     [SerializeField] private GameObject fallbackSelector;
+
+    // Ambientacion propia de NetworkLobby, restaurada al volver al menu principal.
+    [SerializeField] private bool hasLightingProfile;
+    [SerializeField] private Material lobbySkybox;
+    [SerializeField] private UnityEngine.Rendering.AmbientMode lobbyAmbientMode;
+    [SerializeField] private Color lobbyAmbientLight, lobbyAmbientSky, lobbyAmbientEquator, lobbyAmbientGround;
+    [SerializeField] private float lobbyAmbientIntensity, lobbyReflectionIntensity;
+    [SerializeField] private bool lobbyFog;
+    [SerializeField] private FogMode lobbyFogMode;
+    [SerializeField] private Color lobbyFogColor;
+    [SerializeField] private float lobbyFogDensity, lobbyFogStart, lobbyFogEnd;
+
+    private bool lightingApplied;
+    private Material oldSkybox;
+    private UnityEngine.Rendering.AmbientMode oldAmbientMode;
+    private Color oldAmbientLight, oldAmbientSky, oldAmbientEquator, oldAmbientGround;
+    private float oldAmbientIntensity, oldReflectionIntensity;
+    private bool oldFog;
+    private FogMode oldFogMode;
+    private Color oldFogColor;
+    private float oldFogDensity, oldFogStart, oldFogEnd;
 
     public void Configure(LobbyCinematicPlayerDisplay display, Camera camera,
         RectTransform panelRect, RectTransform plate, TMP_Text plateName,
@@ -58,6 +81,90 @@ public sealed class SinglePlayerCinematicPresenter : MonoBehaviour
     {
         // Selector original (CharacterSelectCanvas) o selector local de respaldo.
         fallbackSelector = selector;
+        ConfigureSelectorBackground();
+    }
+
+    public void ConfigureSelectorBackgroundColor(Color background)
+    {
+        selectorBackgroundColor = background;
+        selectorBackgroundOpacity = background.a;
+        ConfigureSelectorBackground();
+    }
+
+    public void ConfigureLighting(Material skybox, UnityEngine.Rendering.AmbientMode ambientMode,
+        Color ambientLight, Color ambientSky, Color ambientEquator, Color ambientGround,
+        float ambientIntensity, float reflectionIntensity,
+        bool fog, FogMode fogMode, Color fogColor, float fogDensity, float fogStart, float fogEnd)
+    {
+        hasLightingProfile = true;
+        lobbySkybox = skybox;
+        lobbyAmbientMode = ambientMode;
+        lobbyAmbientLight = ambientLight;
+        lobbyAmbientSky = ambientSky;
+        lobbyAmbientEquator = ambientEquator;
+        lobbyAmbientGround = ambientGround;
+        lobbyAmbientIntensity = ambientIntensity;
+        lobbyReflectionIntensity = reflectionIntensity;
+        lobbyFog = fog;
+        lobbyFogMode = fogMode;
+        lobbyFogColor = fogColor;
+        lobbyFogDensity = fogDensity;
+        lobbyFogStart = fogStart;
+        lobbyFogEnd = fogEnd;
+    }
+
+    private void ApplyLobbyLighting()
+    {
+        if (!hasLightingProfile || lightingApplied) return;
+        oldSkybox = RenderSettings.skybox;
+        oldAmbientMode = RenderSettings.ambientMode;
+        oldAmbientLight = RenderSettings.ambientLight;
+        oldAmbientSky = RenderSettings.ambientSkyColor;
+        oldAmbientEquator = RenderSettings.ambientEquatorColor;
+        oldAmbientGround = RenderSettings.ambientGroundColor;
+        oldAmbientIntensity = RenderSettings.ambientIntensity;
+        oldReflectionIntensity = RenderSettings.reflectionIntensity;
+        oldFog = RenderSettings.fog;
+        oldFogMode = RenderSettings.fogMode;
+        oldFogColor = RenderSettings.fogColor;
+        oldFogDensity = RenderSettings.fogDensity;
+        oldFogStart = RenderSettings.fogStartDistance;
+        oldFogEnd = RenderSettings.fogEndDistance;
+        lightingApplied = true;
+        RenderSettings.skybox = lobbySkybox;
+        RenderSettings.ambientMode = lobbyAmbientMode;
+        RenderSettings.ambientLight = lobbyAmbientLight;
+        RenderSettings.ambientSkyColor = lobbyAmbientSky;
+        RenderSettings.ambientEquatorColor = lobbyAmbientEquator;
+        RenderSettings.ambientGroundColor = lobbyAmbientGround;
+        RenderSettings.ambientIntensity = lobbyAmbientIntensity;
+        RenderSettings.reflectionIntensity = lobbyReflectionIntensity;
+        RenderSettings.fog = lobbyFog;
+        RenderSettings.fogMode = lobbyFogMode;
+        RenderSettings.fogColor = lobbyFogColor;
+        RenderSettings.fogDensity = lobbyFogDensity;
+        RenderSettings.fogStartDistance = lobbyFogStart;
+        RenderSettings.fogEndDistance = lobbyFogEnd;
+    }
+
+    private void RestoreLobbyLighting()
+    {
+        if (!lightingApplied) return;
+        RenderSettings.skybox = oldSkybox;
+        RenderSettings.ambientMode = oldAmbientMode;
+        RenderSettings.ambientLight = oldAmbientLight;
+        RenderSettings.ambientSkyColor = oldAmbientSky;
+        RenderSettings.ambientEquatorColor = oldAmbientEquator;
+        RenderSettings.ambientGroundColor = oldAmbientGround;
+        RenderSettings.ambientIntensity = oldAmbientIntensity;
+        RenderSettings.reflectionIntensity = oldReflectionIntensity;
+        RenderSettings.fog = oldFog;
+        RenderSettings.fogMode = oldFogMode;
+        RenderSettings.fogColor = oldFogColor;
+        RenderSettings.fogDensity = oldFogDensity;
+        RenderSettings.fogStartDistance = oldFogStart;
+        RenderSettings.fogEndDistance = oldFogEnd;
+        lightingApplied = false;
     }
 
     public void ConfigurePartyRow(TMP_Text row)
@@ -71,15 +178,15 @@ public sealed class SinglePlayerCinematicPresenter : MonoBehaviour
         ApplySelectorVisibility(false, true);
     }
 
-    // No desactiva el lobbyPanel: WorldToggle necesita que permanezca abierto.
-    // Oculta su CanvasGroup y evita que botones invisibles intercepten clics.
+    // El selector se muestra sobre el lobby. No apagamos el mundo ni el HUD;
+    // solo bloqueamos sus clics para que interactues con el selector.
     private void ApplySelectorVisibility(bool selecting, bool force = false)
     {
         if (!force && selecting == previousSelectorOpen) return;
         previousSelectorOpen = selecting;
         if (lobbyHudGroup != null)
         {
-            lobbyHudGroup.alpha = selecting ? 0f : 1f;
+            lobbyHudGroup.alpha = 1f;
             lobbyHudGroup.interactable = !selecting;
             lobbyHudGroup.blocksRaycasts = !selecting;
         }
@@ -87,8 +194,26 @@ public sealed class SinglePlayerCinematicPresenter : MonoBehaviour
             nameplate.gameObject.SetActive(false);
     }
 
+    private void ConfigureSelectorBackground()
+    {
+        if (fallbackSelector == null) return;
+
+        // Misma sombra del CharacterSelectCanvas multiplayer. El mundo sigue activo,
+        // solo queda oscurecido, como se ve en el multiplayer.
+        Transform background = fallbackSelector.transform.Find("Fondo");
+        Image image = background != null
+            ? background.GetComponent<Image>()
+            : fallbackSelector.GetComponent<Image>();
+        if (image == null) return;
+
+        Color color = selectorBackgroundColor;
+        color.a = selectorBackgroundOpacity;
+        image.color = color;
+    }
+
     private void OnDisable()
     {
+        RestoreLobbyLighting();
         ApplySelectorVisibility(false, true);
     }
 
@@ -111,7 +236,9 @@ public sealed class SinglePlayerCinematicPresenter : MonoBehaviour
         previousMode = null;
         previousMap = null;
         previousSelectorOpen = false;
+        ConfigureSelectorBackground();
         ApplySelectorVisibility(false, true);
+        ApplyLobbyLighting();
     }
 
     private void Update()
@@ -126,9 +253,9 @@ public sealed class SinglePlayerCinematicPresenter : MonoBehaviour
         if (actor != null)
         {
             actor.SetPose(playerPosition, playerYaw);
-            // Solo se muestra el modelo del lobby cuando NO está abierto el
-            // selector, que tiene su propio CharacterPreviewStage.
-            actor.SetPlayer(!selectorOpen, index);
+            // El personaje del lobby permanece visible en el mundo 3D,
+            // detras del selector de personaje.
+            actor.SetPlayer(true, index);
         }
 
         string username = PlayerIdentity.GetUsername();
