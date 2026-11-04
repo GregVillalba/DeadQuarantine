@@ -1,8 +1,11 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.EventSystems;
 using System.Collections;
 
+// El raycast de ADS se resuelve despues de que CameraRecoil y el rig FPS
+// hayan actualizado la pose FINAL que se renderiza en pantalla.
+[DefaultExecutionOrder(1000)]
 public class Weapon : MonoBehaviour
 {
     [Header("Referencias")]
@@ -45,14 +48,43 @@ public class Weapon : MonoBehaviour
     [Header("Pistola")]
     [SerializeField] private bool isAutomatic = false;
     [SerializeField] private float fireRate = 0.25f;
+
+    [Header("Ráfaga")]
+    [Tooltip("Si está activo, una pulsación dispara Burst Count proyectiles y no usa fuego automático por mantener pulsado.")]
+    [SerializeField] private bool usesBurstFire = false;
+    [Min(1)] [SerializeField] private int burstCount = 3;
+    [Min(0.01f)] [SerializeField] private float burstShotInterval = 0.07f;
+    [Min(0.01f)] [SerializeField] private float burstCooldown = 0.25f;
+
+    [Header("Recarga exacta por arma")]
+    [Tooltip("Solo para armas nuevas. Hace que Reload Time sea la duración base real de la recarga (antes del modificador de clase).")]
+    [SerializeField] private bool enforceReloadDuration = false;
+    [Tooltip("Multiplicador del clip de recarga normal calculado por el integrador para que visualmente dure Reload Time.")]
+    [Min(0.01f)] [SerializeField] private float reloadClipSpeedMultiplier = 1f;
+    [Tooltip("Multiplicador del clip de recarga desde vacío calculado por el integrador.")]
+    [Min(0.01f)] [SerializeField] private float reloadEmptyClipSpeedMultiplier = 1f;
+    [Tooltip("Multiplicador del Animator de PARTES del arma en primera persona durante una recarga normal.")]
+    [Min(0.01f)] [SerializeField] private float partsReloadClipSpeedMultiplier = 1f;
+    [Tooltip("Multiplicador del Animator de PARTES del arma en primera persona durante una recarga desde vacío.")]
+    [Min(0.01f)] [SerializeField] private float partsReloadEmptyClipSpeedMultiplier = 1f;
+    [Tooltip("Multiplicador de la animación corporal TP de recarga normal. Separado del FP para que ambos terminen al mismo tiempo.")]
+    [Min(0.01f)] [SerializeField] private float tpReloadClipSpeedMultiplier = 1f;
+    [Tooltip("Multiplicador de la animación corporal TP de recarga desde vacío.")]
+    [Min(0.01f)] [SerializeField] private float tpReloadEmptyClipSpeedMultiplier = 1f;
+    [Tooltip("Multiplicador del Animator de PARTES del arma en tercera persona durante una recarga normal.")]
+    [Min(0.01f)] [SerializeField] private float tpPartsReloadClipSpeedMultiplier = 1f;
+    [Tooltip("Multiplicador del Animator de PARTES del arma en tercera persona durante una recarga desde vacío.")]
+    [Min(0.01f)] [SerializeField] private float tpPartsReloadEmptyClipSpeedMultiplier = 1f;
     [Tooltip("LEGACY: la duración real de recarga la controla el clip del Animator. Se conserva para no romper prefabs existentes.")]
     [SerializeField] private float reloadTime = 1.5f;
     [SerializeField] private float range = 100f;
     [SerializeField] private int damage = 25;
     [SerializeField] private int maxAmmo = 12;
 
-    [Tooltip("Balas de reserva de esta arma cuando la dificultad limita la reserva.")]
+    [Tooltip("Balas máximas de reserva de esta arma.")]
     [SerializeField] private int reserveAmmoCapacity = 120;
+    [Tooltip("Las armas nuevas usan siempre este límite exacto, independientemente de la dificultad.")]
+    [SerializeField] private bool forceReserveLimit = false;
 
     [SerializeField] private string weaponName = "Pistola";
 
@@ -70,6 +102,12 @@ public class Weapon : MonoBehaviour
 
     private bool boltActionActive = false;
     private bool pendingReload;
+    private Coroutine burstRoutine;
+    private Coroutine reloadFallbackRoutine;
+    private bool burstActive;
+    private bool reloadStartedEmpty;
+    private float reloadCanFillAt;
+    private float reloadCanFinishAt;
     private float lastShellInsert = float.NegativeInfinity;
     private readonly System.Collections.Generic.List<Vector3> presentationTargets = new();
     private NetworkWeaponPresentation presentation;
@@ -77,6 +115,28 @@ public class Weapon : MonoBehaviour
     [Header("Aim")]
     [SerializeField] private float aimFOV = 50f;
     [SerializeField] private float aimTransitionSpeed = 10f;
+
+    [Header("ADS - precisión de mirilla (armas nuevas)")]
+    [Tooltip("Al apuntar, proyecta la dirección del cañón visible de WeaponCamera sobre la cámara jugable. " +
+             "Esto vincula la trayectoria con la mirilla y con el recoil visual. Si el socket está mal orientado, usa el centro de la cámara.")]
+    [SerializeField] private bool adsFireAlongVisualSight = false;
+
+    [Tooltip("Solo para las armas cuyo ADS todavía queda descentrado. Compensa la proyección de WeaponCamera " +
+             "SIN mover el arma, las manos ni sus AnimationClips. Afecta únicamente a la cámara de primera persona.")]
+    [SerializeField] private bool adsCenterVisualSight = false;
+    [Tooltip("Referencia de la mirilla del modelo (SOCKET_Default). Se usa cuando el eje del SOCKET_Muzzle no es válido.")]
+    [SerializeField] private Transform adsSightReference;
+    [Tooltip("Máxima corrección visual en unidades de viewport (0.10 = 10% del ancho/alto).")]
+    [Range(0.01f, 0.45f)] [SerializeField] private float adsMaxViewportCorrection = 0.12f;
+    [Range(0f, 0.25f)]
+    [Tooltip("Solo Vector: cuanto baja el aro de la mira en ADS. 0.116 equivale al desfasaje de 85 px observado a 734 px de altura. No cambia las balas ni mueve brazos.")]
+    [SerializeField] private float vectorAdsVerticalSightDown = 0.116f;
+    private bool adsProjectionWasModified;
+
+    // Solo los disparos ADS se posponen hasta LateUpdate. Fuera de ADS,
+    // el comportamiento de disparo original permanece totalmente igual.
+    private int pendingAdsRounds;
+
 
     [Header("Animator - Blend Aiming")]
     [SerializeField] private float aimingBlendSpeed = 8f;
@@ -107,7 +167,16 @@ public class Weapon : MonoBehaviour
     public UnityEngine.Audio.AudioMixerGroup PresentationMixer => audioSource ? audioSource.outputAudioMixerGroup : null;
     public GameObject PresentationTrail => bulletTrailPrefab;
     public float PresentationRange => range;
-    public float PresentationFireInterval => fireRate;
+    public float PresentationFireInterval => usesBurstFire ? burstShotInterval : fireRate;
+    public float PresentationReloadSpeed(bool empty) =>
+        ClassReloadSpeedMultiplier * (empty ? reloadEmptyClipSpeedMultiplier : reloadClipSpeedMultiplier);
+    public float PresentationPartsReloadSpeed(bool empty) =>
+        ClassReloadSpeedMultiplier * (empty ? partsReloadEmptyClipSpeedMultiplier : partsReloadClipSpeedMultiplier);
+    public float PresentationThirdPersonReloadSpeed(bool empty) =>
+        ClassReloadSpeedMultiplier * (empty ? tpReloadEmptyClipSpeedMultiplier : tpReloadClipSpeedMultiplier);
+    public float PresentationThirdPersonPartsReloadSpeed(bool empty) =>
+        ClassReloadSpeedMultiplier * (empty ? tpPartsReloadEmptyClipSpeedMultiplier : tpPartsReloadClipSpeedMultiplier);
+    public bool UsesBurstFire => usesBurstFire;
     public Vector3 AimOrigin => playerCamera ? playerCamera.transform.position : transform.position;
     public AudioClip PresentationReloadSound(bool empty) => empty ? reloadEmptySound : reloadSound;
     public AudioClip PresentationEventSound(NetworkWeaponPresentation.WeaponEvent kind) => kind switch {
@@ -277,19 +346,21 @@ public class Weapon : MonoBehaviour
             basePartsAnimatorSpeed = Mathf.Max(0.01f, parts.speed);
     }
 
-    private void ApplyReloadAnimationSpeed()
+    private void ApplyReloadAnimationSpeed(bool empty)
     {
         CaptureReloadAnimatorBaseSpeeds();
 
-        float multiplier = ClassReloadSpeedMultiplier;
+        float armsMultiplier = empty ? reloadEmptyClipSpeedMultiplier : reloadClipSpeedMultiplier;
+        float partsMultiplier = empty ? partsReloadEmptyClipSpeedMultiplier : partsReloadClipSpeedMultiplier;
+        float classMultiplier = ClassReloadSpeedMultiplier;
 
         if (weaponAnimator != null)
-            weaponAnimator.speed = baseWeaponAnimatorSpeed * multiplier;
+            weaponAnimator.speed = baseWeaponAnimatorSpeed * classMultiplier * Mathf.Max(0.01f, armsMultiplier);
 
         Animator parts = Parts;
 
         if (parts != null && parts != weaponAnimator)
-            parts.speed = basePartsAnimatorSpeed * multiplier;
+            parts.speed = basePartsAnimatorSpeed * classMultiplier * Mathf.Max(0.01f, partsMultiplier);
     }
 
     private void ResetReloadAnimationSpeed()
@@ -346,6 +417,279 @@ public class Weapon : MonoBehaviour
         CaptureReloadAnimatorBaseSpeeds();
     }
 
+    // La WeaponCamera es una cámara overlay; su raíz TAMBIÉN contiene las manos.
+    // Por eso NO movemos su Transform ni las animaciones del jugador para corregir ADS.
+    // Ajustar solo la matriz de proyección conserva todas las poses FP y sus offsets manuales.
+    private void LateUpdate()
+    {
+        // La correccion de proyeccion debe estar aplicada antes de calcular
+        // en que pixel se ve la mirilla. No movemos ni armas ni camaras.
+        UpdateAdsVisualProjection();
+        FlushPendingAdsShots();
+    }
+
+    private void UpdateAdsVisualProjection()
+    {
+        if (!adsCenterVisualSight || weaponCamera == null || weaponCamera == playerCamera)
+        {
+            RestoreAdsProjection();
+            return;
+        }
+
+        // Remote players / arma no apuntando: proyección normal y sin efectos residuales.
+        if (!weaponCamera.enabled || !IsAiming || aimingBlend <= 0.001f)
+        {
+            RestoreAdsProjection();
+            return;
+        }
+
+        // La Vector no usa SOCKET_Scope como centro de mira: ese socket
+        // es el punto de montaje de DQ_DefaultScope, no el centro optico.
+        // Usar el centro de su renderer SOLO para Vector evita cambiar P90/MAC10
+        // y evita mover FPS_Arms o alterar el disparo fisico.
+        if (weaponName == "Vector")
+        {
+            UpdateVectorScopeProjection();
+            return;
+        }
+
+        weaponCamera.ResetProjectionMatrix();
+        adsProjectionWasModified = false;
+        if (!TryGetSightViewport(out Vector3 viewport)) return;
+
+        float correctionX = Mathf.Clamp(0.5f - viewport.x, -adsMaxViewportCorrection, adsMaxViewportCorrection);
+        float correctionY = Mathf.Clamp(0.5f - viewport.y, -adsMaxViewportCorrection, adsMaxViewportCorrection);
+        float blend = Mathf.Clamp01(aimingBlend);
+        if (Mathf.Abs(correctionX) < 0.0001f && Mathf.Abs(correctionY) < 0.0001f) return;
+
+        // La convención de m02/m12 varía entre proyección y backend de render.
+        // Probar ambas direcciones y conservar la que realmente acerque la mira
+        // al centro. No mover la cámara ni el rig del jugador.
+        Matrix4x4 original = weaponCamera.projectionMatrix;
+        Matrix4x4 candidate = original;
+        candidate.m02 -= 2f * correctionX * blend;
+        candidate.m12 -= 2f * correctionY * blend;
+        weaponCamera.projectionMatrix = candidate;
+        Vector3 measured;
+        if (adsSightReference != null)
+            measured = weaponCamera.WorldToViewportPoint(adsSightReference.position);
+        else
+            measured = viewport; // fallback: no podemos medir el punto preciso
+        float oldError = (new Vector2(viewport.x, viewport.y) - Vector2.one * 0.5f).sqrMagnitude;
+        float candidateError = (new Vector2(measured.x, measured.y) - Vector2.one * 0.5f).sqrMagnitude;
+        if (adsSightReference != null && candidateError >= oldError)
+        {
+            Matrix4x4 alternate = original;
+            alternate.m02 += 2f * correctionX * blend;
+            alternate.m12 += 2f * correctionY * blend;
+            weaponCamera.projectionMatrix = alternate;
+            measured = weaponCamera.WorldToViewportPoint(adsSightReference.position);
+            float alternateError = (new Vector2(measured.x, measured.y) - Vector2.one * 0.5f).sqrMagnitude;
+            if (alternateError >= oldError) { weaponCamera.projectionMatrix = original; return; }
+        }
+        adsProjectionWasModified = true;
+    }
+
+    // CORRECCION VISUAL EXCLUSIVA DE VECTOR
+    // El pivote de montaje (adsSightReference) no coincide con el centro
+    // geometrico del accesorio. El prefab recibido tiene DQ_DefaultScope
+    // como hijo directo de ese socket. Medimos la geometria renderizada
+    // para colocar el centro del accesorio en el pixel central de WeaponCamera.
+    // No tocamos la posicion de brazos, Camera transform ni GetShotAimRay.
+    private Transform vectorDefaultScopeRoot;
+    private Renderer[] vectorDefaultScopeRenderers;
+    private bool vectorScopeWarningShown;
+
+    private void UpdateVectorScopeProjection()
+    {
+        weaponCamera.ResetProjectionMatrix();
+        adsProjectionWasModified = false;
+
+        if (adsSightReference == null) return;
+
+        // Buscar en la jerarquia real del prefab, no por nombre de FBX.
+        if (vectorDefaultScopeRoot == null ||
+            !vectorDefaultScopeRoot.IsChildOf(adsSightReference))
+        {
+            vectorDefaultScopeRoot = adsSightReference.Find("DQ_DefaultScope");
+            vectorDefaultScopeRenderers = vectorDefaultScopeRoot != null
+                ? vectorDefaultScopeRoot.GetComponentsInChildren<Renderer>(true)
+                : null;
+        }
+        if (vectorDefaultScopeRoot == null ||
+            !vectorDefaultScopeRoot.gameObject.activeInHierarchy ||
+            vectorDefaultScopeRenderers == null)
+        {
+            if (!vectorScopeWarningShown)
+            {
+                Debug.LogWarning("[Vector ADS] No se encontro la mira DQ_DefaultScope debajo de adsSightReference. " +
+                    "La proyeccion queda sin modificar. Verifica el Player.prefab.", this);
+                vectorScopeWarningShown = true;
+            }
+            return;
+        }
+
+        bool found = false;
+        Bounds scopeBounds = default(Bounds);
+        foreach (Renderer renderer in vectorDefaultScopeRenderers)
+        {
+            if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy)
+                continue;
+            if (!found) { scopeBounds = renderer.bounds; found = true; }
+            else scopeBounds.Encapsulate(renderer.bounds);
+        }
+        if (!found) return;
+
+        Vector3 scopeCenter = scopeBounds.center;
+        Vector3 viewport = weaponCamera.WorldToViewportPoint(scopeCenter);
+        if (viewport.z <= 0.02f || float.IsNaN(viewport.x) || float.IsNaN(viewport.y) ||
+            Mathf.Abs(viewport.x - 0.5f) > 0.8f || Mathf.Abs(viewport.y - 0.5f) > 0.8f)
+            return;
+
+        float maxCorrection = Mathf.Clamp(adsMaxViewportCorrection, 0.01f, 0.35f);
+        float correctionX = Mathf.Clamp(0.5f - viewport.x, -maxCorrection, maxCorrection);
+        float correctionY = Mathf.Clamp(0.5f - viewport.y, -maxCorrection, maxCorrection);
+        float blend = Mathf.Clamp01(aimingBlend);
+        if (blend <= 0.001f ||
+            (Mathf.Abs(correctionX) < 0.0001f && Mathf.Abs(correctionY) < 0.0001f))
+            return;
+
+        // m02 y m12 desplazan la imagen de la camara overlay. Medimos ambas
+        // direcciones y aceptamos solamente la que REDUCE el error real.
+        Matrix4x4 original = weaponCamera.projectionMatrix;
+        float oldError = (new Vector2(viewport.x - 0.5f, viewport.y - 0.5f)).sqrMagnitude;
+        float bestError = oldError;
+        Matrix4x4 bestProjection = original;
+        for (int sign = -1; sign <= 1; sign += 2)
+        {
+            Matrix4x4 candidate = original;
+            candidate.m02 += sign * 2f * correctionX * blend;
+            candidate.m12 += sign * 2f * correctionY * blend;
+            weaponCamera.projectionMatrix = candidate;
+            Vector3 measured = weaponCamera.WorldToViewportPoint(scopeCenter);
+            if (measured.z <= 0f || float.IsNaN(measured.x) || float.IsNaN(measured.y))
+                continue;
+            float error = (new Vector2(measured.x - 0.5f, measured.y - 0.5f)).sqrMagnitude;
+            if (error < bestError)
+            {
+                bestError = error;
+                bestProjection = candidate;
+            }
+        }
+        // En la captura del juego el aro real de la mira de Vector queda
+        // ~85 px POR ENCIMA del centro (pantalla de 734 px). El centro de
+        // Bounds incluye la base/riel y NO es el centro del aro.
+        // Esta compensacion baja SOLO la imagen dibujada por WeaponCamera;
+        // la direccion fisica del disparo sigue siendo el centro de PlayerCamera.
+        float bajarViewport = Mathf.Clamp(vectorAdsVerticalSightDown, 0f, 0.25f) * blend;
+        if (bajarViewport > 0f)
+        {
+            // Calculamos el sentido de m12 con la camara real para evitar
+            // invertir la correccion con distintas matrices de proyeccion.
+            weaponCamera.projectionMatrix = bestProjection;
+            float yOriginal = weaponCamera.WorldToViewportPoint(scopeCenter).y;
+            Matrix4x4 probe = bestProjection;
+            probe.m12 += 0.02f;
+            weaponCamera.projectionMatrix = probe;
+            float yProbe = weaponCamera.WorldToViewportPoint(scopeCenter).y;
+            float dyDm12 = (yProbe - yOriginal) / 0.02f;
+            float delta = (!float.IsNaN(dyDm12) && !float.IsInfinity(dyDm12) && Mathf.Abs(dyDm12) > 0.0001f)
+                ? -bajarViewport / dyDm12
+                : 2f * bajarViewport;
+            bestProjection.m12 += Mathf.Clamp(delta, -0.5f, 0.5f);
+        }
+        weaponCamera.projectionMatrix = bestProjection;
+        adsProjectionWasModified = bestError < oldError || bajarViewport > 0f;
+    }
+
+    private void RestoreAdsProjection()
+    {
+        if (!adsProjectionWasModified || weaponCamera == null) return;
+        weaponCamera.ResetProjectionMatrix();
+        adsProjectionWasModified = false;
+    }
+
+    private bool TryGetSightViewport(out Vector3 viewport)
+    {
+        viewport = new Vector3(0.5f, 0.5f, 1f);
+        if (firePoint == null || weaponCamera == null || !weaponCamera.enabled) return false;
+
+        // Primero la referencia visual de la mira; no el cañón, que puede
+        // apuntar a un eje distinto al centro del hierro tras la animación.
+        if (adsSightReference != null)
+        {
+            Vector3 rearViewport = weaponCamera.WorldToViewportPoint(adsSightReference.position);
+            if (IsValidSightViewport(rearViewport))
+            {
+                viewport = rearViewport;
+                return true;
+            }
+        }
+        Vector3 barrel = firePoint.forward;
+        if (Vector3.Dot(barrel, weaponCamera.transform.forward) >= 0.90f)
+        {
+            Vector3 farSight = firePoint.position + barrel * 25f;
+            Vector3 boreViewport = weaponCamera.WorldToViewportPoint(farSight);
+            if (IsValidSightViewport(boreViewport))
+            {
+                viewport = boreViewport;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static bool IsValidSightViewport(Vector3 viewport)
+    {
+        return viewport.z > 0.01f && viewport.x > 0.15f && viewport.x < 0.85f &&
+               viewport.y > 0.15f && viewport.y < 0.85f &&
+               !float.IsNaN(viewport.x) && !float.IsNaN(viewport.y);
+
+    }
+
+    private Ray GetShotAimRay()
+    {
+        // ADS: la direccion fisica de la bala es el CENTRO de la camara
+        // jugable. WeaponCamera solo dibuja el arma; sus SOCKET_Default
+        // NO son la posicion real del alza/reticula y provocaban tiros bajos.
+        //
+        // Este metodo se invoca desde FlushPendingAdsShots() en LateUpdate,
+        // DESPUES de CameraRecoil. Asi el raycast utiliza la misma orientacion
+        // de PlayerCamera que se representa en pantalla durante el full auto.
+        if (IsAiming)
+            return playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+
+        // Fuera de ADS se conserva la direccion y dispersion del hipfire.
+        return new Ray(playerCamera.transform.position, playerCamera.transform.forward);
+    }
+
+    private void FlushPendingAdsShots()
+    {
+        int toFire = pendingAdsRounds;
+        if (toFire <= 0) return;
+        pendingAdsRounds = 0;
+        for (int i = 0; i < toFire; i++)
+        {
+            // Primero sale la bala siguiendo la mira visible; DESPUES
+            // comienza la patada de ESTE disparo, que se aplicara el frame
+            // siguiente. Si se aplica antes, hasta la primera bala sube.
+            ShootAndPublish();
+            if (cameraRecoil != null)
+                cameraRecoil.Fire(recoilPreset, true, recoilIntensityMultiplier);
+            if (weaponRecoil != null)
+                weaponRecoil.Fire(recoilPreset, true, recoilIntensityMultiplier);
+        }
+    }
+
+    private void ShootAndPublish()
+    {
+        presentationTargets.Clear();
+        Shoot();
+        if (!presentation)
+            presentation = GetComponentInParent<NetworkWeaponPresentation>();
+        presentation?.PublishShot(this, presentationTargets.ToArray());
+    }
+
     private void OnEnable()
     {
         controls.Player.Enable();
@@ -360,6 +704,13 @@ public class Weapon : MonoBehaviour
 
     private void OnDisable()
     {
+        // Si el jugador cambia de arma en el mismo frame que dispara,
+        // no perder una bala cuyo cargador ya fue descontado.
+        if (pendingAdsRounds > 0 && Application.isPlaying && Time.timeScale > 0f)
+            FlushPendingAdsShots();
+        else
+            pendingAdsRounds = 0;
+
         if (!isAutomatic)
             controls.Player.Fire.performed -= OnFireSemiAuto;
 
@@ -378,7 +729,21 @@ public class Weapon : MonoBehaviour
         pendingReload = false;
         isChambering = false;
         boltActionActive = false;
+        burstActive = false;
+        if (float.IsPositiveInfinity(nextFireTime))
+            nextFireTime = Time.time;
+        if (burstRoutine != null)
+        {
+            StopCoroutine(burstRoutine);
+            burstRoutine = null;
+        }
+        if (reloadFallbackRoutine != null)
+        {
+            StopCoroutine(reloadFallbackRoutine);
+            reloadFallbackRoutine = null;
+        }
         ResetReloadAnimationSpeed();
+        RestoreAdsProjection();
     }
 
     // true mientras se guarda un arma y se saca la otra. Se consulta directo al WeaponSwitcher, así el
@@ -400,6 +765,16 @@ public class Weapon : MonoBehaviour
         // Aunque la bandera ya estuviera apagada, nunca dejamos el Animator con
         // una velocidad de clase aplicada al cambiar de arma o cancelar.
         ResetReloadAnimationSpeed();
+
+        if (reloadFallbackRoutine != null)
+        {
+            StopCoroutine(reloadFallbackRoutine);
+            reloadFallbackRoutine = null;
+        }
+
+        Animator cancelParts = Parts;
+        if (cancelParts != null && cancelParts.HasState(0, Animator.StringToHash("Idle")))
+            cancelParts.Play("Idle", 0, 0f);
 
         if (!estabaRecargando)
             return;
@@ -466,12 +841,15 @@ public class Weapon : MonoBehaviour
             : null;
 
     public bool UsesLimitedReserve =>
-        ActiveDifficulty != null && ActiveDifficulty.limitedReserveAmmo;
+        forceReserveLimit || (ActiveDifficulty != null && ActiveDifficulty.limitedReserveAmmo);
 
     public int ReserveCapacity
     {
         get
         {
+            if (forceReserveLimit)
+                return Mathf.Max(0, reserveAmmoCapacity);
+
             float multiplier = ActiveDifficulty != null
                 ? ActiveDifficulty.reserveAmmoMultiplier
                 : 1f;
@@ -514,10 +892,30 @@ public class Weapon : MonoBehaviour
         currentAmmo >= maxAmmo &&
         (!UsesLimitedReserve || ReserveAmmo >= ReserveCapacity);
 
+    /// <summary>
+    /// C.A. 12: cuando una arma usa reserva limitada, la caja de munición deja de ser comprable
+    /// apenas la RESERVA llega al máximo, aunque el cargador no esté lleno.
+    /// Las armas antiguas sin reserva limitada conservan su comportamiento anterior.
+    /// </summary>
+    public bool PuedeComprarMunicion => UsesLimitedReserve
+        ? ReserveAmmo < ReserveCapacity
+        : currentAmmo < maxAmmo;
+
     public void RestaurarMunicion()
     {
         currentAmmo = maxAmmo;
         RefillReserveAmmo();
+    }
+
+    /// <summary>
+    /// Restaura las cantidades exactas guardadas en el inventario.
+    /// Se conserva la version sin parametros para reabastecer municion en tiendas.
+    /// </summary>
+    public void RestaurarMunicion(int municionCargador, int municionReserva)
+    {
+        currentAmmo = Mathf.Clamp(municionCargador, 0, maxAmmo);
+        reserveAmmo = Mathf.Clamp(municionReserva, 0, ReserveCapacity);
+        reserveInitialized = true;
     }
 
     private void EnsureReserveInitialized()
@@ -568,6 +966,9 @@ public class Weapon : MonoBehaviour
         if (!isReloading || usesMultiPartReload)
             return;
 
+        if (enforceReloadDuration && Time.time + 0.01f < reloadCanFillAt)
+            return;
+
         FillMagazine();
     }
 
@@ -602,17 +1003,31 @@ public class Weapon : MonoBehaviour
         if (!isReloading)
             return;
 
-        if (!usesMultiPartReload)
-        {
-            FillMagazine();
-        }
+        if (enforceReloadDuration && Time.time + 0.01f < reloadCanFinishAt)
+            return;
 
+        FinishReloadInternal();
+    }
+
+    private void FinishReloadInternal()
+    {
+        if (!isReloading)
+            return;
+
+        if (!usesMultiPartReload)
+            FillMagazine();
 
         isReloading = false;
         shellLoading = false;
 
         if (weaponAnimator != null)
             weaponAnimator.SetBool("ShellLoading", false);
+
+        if (reloadFallbackRoutine != null)
+        {
+            StopCoroutine(reloadFallbackRoutine);
+            reloadFallbackRoutine = null;
+        }
 
         ResetReloadAnimationSpeed();
     }
@@ -670,7 +1085,7 @@ public class Weapon : MonoBehaviour
         UpdateJumpSpread();
         UpdateAnimatorParams();
 
-        if (isAutomatic)
+        if (isAutomatic && !usesBurstFire)
         {
             bool tieneBalas = currentAmmo > 0;
 
@@ -965,94 +1380,23 @@ public class Weapon : MonoBehaviour
 
     private void TryFire()
     {
-        if (PlayerInputGate.ActionsBlocked)
+        if (!CanStartShot())
             return;
 
-        if (SwitchBlocked)
+        if (usesBurstFire)
         {
-            Debug.LogWarning(
-                "[Weapon] FIRE BLOQUEADO POR SWITCH | " +
-                "Arma=" + gameObject.name +
-                " | IsSwitching=" + weaponSwitcher.IsSwitching
-            );
+            if (burstActive || Time.time < nextFireTime)
+                return;
 
-            return;
-        }
-
-        if (InputLocked)
-        {
-            Debug.Log("[Weapon] TryFire bloqueado: InputLocked=true");
-            return;
-        }
-
-        if (Time.timeScale == 0f)
-        {
-            Debug.Log("[Weapon] TryFire bloqueado: Time.timeScale == 0");
-            return;
-        }
-
-       /* if (
-            EventSystem.current != null &&
-            EventSystem.current.currentSelectedGameObject != null
-        )
-        {
-            Debug.Log(
-                "[Weapon] TryFire bloqueado: hay un objeto de UI seleccionado -> " +
-                EventSystem.current.currentSelectedGameObject.name
-            );
-
-            return;
-        }*/
-
-       /* if (EventSystem.current != null)
-        {
-            GameObject seleccionado = EventSystem.current.currentSelectedGameObject;
-
-            if (seleccionado != null)
+            // C.A. 7: cada pulsación inicia una ráfaga completa de 3 disparos y consume 3 balas.
+            if (currentAmmo < burstCount)
             {
-                if (!seleccionado.activeInHierarchy)
-                {
-                    EventSystem.current.SetSelectedGameObject(null);
-                }
-                else
-                {
-                    Debug.Log("[Weapon] TryFire bloqueado: hay un objeto de UI seleccionado -> " + seleccionado.name);
-                    return;
-                }
+                PlayEmptyShotFeedback();
+                nextFireTime = Time.time + burstCooldown;
+                return;
             }
-        }*/
 
-        if (EventSystem.current != null)
-        {
-            GameObject seleccionado = EventSystem.current.currentSelectedGameObject;
-
-            if (seleccionado != null)
-            {
-                if (Cursor.lockState != CursorLockMode.Locked)
-                {
-                    Debug.Log("[Weapon] TryFire bloqueado: UI abierta -> " + seleccionado.name);
-                    return;
-                }
-
-            EventSystem.current.SetSelectedGameObject(null);
-            }
-        }
-
-        if (isReloading)
-        {
-            Debug.Log("[Weapon] TryFire bloqueado: isReloading=true");
-            return;
-        }
-
-        if (isChambering)
-        {
-            Debug.Log("[Weapon] TryFire bloqueado: isChambering=true");
-            return;
-        }
-
-        if (playerMovement != null && playerMovement.IsSprinting)
-        {
-            Debug.Log("[Weapon] TryFire bloqueado: IsSprinting=true");
+            burstRoutine = StartCoroutine(FireBurstRoutine());
             return;
         }
 
@@ -1061,46 +1405,125 @@ public class Weapon : MonoBehaviour
 
         if (currentAmmo <= 0)
         {
-            PlaySound(emptySound);
-
-            if (weaponAnimator != null)
-                weaponAnimator.SetTrigger("FireEmpty");
-
+            PlayEmptyShotFeedback();
             nextFireTime = Time.time + fireRate;
             return;
         }
 
         nextFireTime = Time.time + fireRate;
+        FireOneRound();
+    }
+
+    private bool CanStartShot()
+    {
+        if (PlayerInputGate.ActionsBlocked)
+            return false;
+
+        if (SwitchBlocked)
+            return false;
+
+        if (InputLocked || Time.timeScale == 0f)
+            return false;
+
+        if (EventSystem.current != null)
+        {
+            GameObject seleccionado = EventSystem.current.currentSelectedGameObject;
+            if (seleccionado != null)
+            {
+                if (Cursor.lockState != CursorLockMode.Locked)
+                    return false;
+
+                EventSystem.current.SetSelectedGameObject(null);
+            }
+        }
+
+        if (isReloading || isChambering)
+            return false;
+
+        if (playerMovement != null && playerMovement.IsSprinting)
+            return false;
+
+        return true;
+    }
+
+    private IEnumerator FireBurstRoutine()
+    {
+        burstActive = true;
+        nextFireTime = float.PositiveInfinity;
+
+        for (int i = 0; i < burstCount; i++)
+        {
+            if (!isActiveAndEnabled || currentAmmo <= 0 || SwitchBlocked || InputLocked)
+                break;
+
+            FireOneRound();
+
+            if (i < burstCount - 1)
+                yield return new WaitForSeconds(burstShotInterval);
+        }
+
+        burstActive = false;
+        burstRoutine = null;
+        nextFireTime = Time.time + burstCooldown;
+    }
+
+    private void PlayEmptyShotFeedback()
+    {
+        PlaySound(emptySound);
+        if (weaponAnimator != null)
+            weaponAnimator.SetTrigger("FireEmpty");
+    }
+
+    private void FireOneRound()
+    {
+        if (currentAmmo <= 0)
+            return;
+
         currentAmmo--;
 
         if (playerScore != null)
             playerScore.RegistrarDisparoServerRpc();
 
-        currentSpread = Mathf.Clamp(
-            currentSpread + spreadIncreasePerShot,
-            0f,
-            maxSpread
-        );
+        // Apuntando NO introducimos dispersión invisible. El desvío del disparo
+        // sigue la mirilla y el recoil; fuera de ADS conserva el spread original.
+        if (!IsAiming)
+        {
+            currentSpread = Mathf.Clamp(
+                currentSpread + spreadIncreasePerShot,
+                0f,
+                maxSpread
+            );
+        }
 
-        if (cameraRecoil != null)
-            cameraRecoil.Fire(recoilPreset, IsAiming, recoilIntensityMultiplier);
-
-        if (weaponRecoil != null)
-            weaponRecoil.Fire(recoilPreset, IsAiming, recoilIntensityMultiplier);
+        // Solo para armas nuevas con ADS visual: recoil DESPUES del impacto.
+        // Las armas originales y el hipfire mantienen su orden sin cambios.
+        if (!IsAiming || !adsFireAlongVisualSight)
+        {
+            if (cameraRecoil != null)
+                cameraRecoil.Fire(recoilPreset, false, recoilIntensityMultiplier);
+            if (weaponRecoil != null)
+                weaponRecoil.Fire(recoilPreset, false, recoilIntensityMultiplier);
+        }
 
         PlaySound(shootSound);
 
-        if (weaponAnimator != null) {
+        if (weaponAnimator != null)
+        {
             weaponAnimator.SetTrigger("Fire");
             weaponAnimator.SetTrigger("WeaponPartsFire");
         }
 
+        PlayPartsState("Fire");
         muzzle?.PlayEffect();
 
-        presentationTargets.Clear();
-        Shoot();
-        if(!presentation)presentation=GetComponentInParent<NetworkWeaponPresentation>();
-        presentation?.PublishShot(this,presentationTargets.ToArray());
+        // En ADS, el raycast se resuelve despues de CameraRecoil.LateUpdate
+        // (con el recoil de las balas ANTERIORES), pero antes de iniciar la
+        // patada de ESTA bala. Asi el disparo sigue la mira que se ve,
+        // y el retroceso mueve la mira para la bala siguiente.
+        if (IsAiming && adsFireAlongVisualSight)
+            pendingAdsRounds++;
+        else
+            ShootAndPublish();
 
         if (requiresBoltActionAfterFire)
         {
@@ -1111,6 +1534,17 @@ public class Weapon : MonoBehaviour
             if (weaponAnimator != null)
                 weaponAnimator.SetBool("BoltAction", true);
         }
+    }
+
+    private void PlayPartsState(string stateName)
+    {
+        Animator a = Parts;
+        if (a == null)
+            return;
+
+        int hash = Animator.StringToHash(stateName);
+        if (a.HasState(0, hash))
+            a.Play(hash, 0, 0f);
     }
 
     private IEnumerator PlayBoltActionAfterFire()
@@ -1159,12 +1593,25 @@ public class Weapon : MonoBehaviour
         lastShellInsert=float.NegativeInfinity;
         if(weaponAnimator) {weaponAnimator.ResetTrigger("Fire");weaponAnimator.SetBool("BoltAction",false);}
 
-        // La velocidad de recarga pertenece a la CLASE, no al arma.
-        // Se aplica al Animator completo para que también aceleren/ralenticen
-        // los Animation Events (cargar cargador, insertar cartucho, cerrar, etc.).
-        ApplyReloadAnimationSpeed();
-
         bool wasEmpty = currentAmmo == 0;
+        reloadStartedEmpty = wasEmpty;
+
+        // Mantiene el modificador de clase, y para las armas nuevas además ajusta
+        // el clip específico para que su duración base coincida con Reload Time.
+        ApplyReloadAnimationSpeed(wasEmpty);
+
+        if (enforceReloadDuration)
+        {
+            float classSpeed = Mathf.Max(0.01f, ClassReloadSpeedMultiplier);
+            float duration = Mathf.Max(0.05f, reloadTime / classSpeed);
+            reloadCanFillAt = Time.time + duration * 0.68f;
+            reloadCanFinishAt = Time.time + duration;
+
+            if (reloadFallbackRoutine != null)
+                StopCoroutine(reloadFallbackRoutine);
+
+            reloadFallbackRoutine = StartCoroutine(ReloadDurationFallback(duration));
+        }
 
         if (wasEmpty)
             PlaySound(reloadEmptySound);
@@ -1181,6 +1628,31 @@ public class Weapon : MonoBehaviour
 
             weaponAnimator.SetTrigger("Reload");
             weaponAnimator.SetTrigger("WeaponPartsReload");
+        }
+
+        PlayPartsState(wasEmpty ? "Reload Empty" : "Reload");
+    }
+
+    private IEnumerator ReloadDurationFallback(float duration)
+    {
+        float fillDelay = duration * 0.68f;
+        yield return new WaitForSeconds(fillDelay);
+
+        if (isReloading && !usesMultiPartReload)
+            FillMagazine();
+
+        yield return new WaitForSeconds(Mathf.Max(0f, duration - fillDelay));
+
+        if (isReloading)
+        {
+            // La corrutina ya está terminando: se limpia primero para que FinishReloadInternal
+            // no intente detener la misma corrutina desde adentro.
+            reloadFallbackRoutine = null;
+            FinishReloadInternal();
+        }
+        else
+        {
+            reloadFallbackRoutine = null;
         }
     }
 
@@ -1199,14 +1671,17 @@ public class Weapon : MonoBehaviour
     // Cada disparo comienza sin headshots registrados.
     headshotRegistradoEnDisparo = false;
 
+    // En ADS, una bala individual siempre viaja por la dirección de la mirilla.
+    // La escopeta conserva su distribución de perdigones alrededor de ese centro.
+    float spreadForThisShot = IsAiming ? 0f : currentSpread;
     if (firesMultiplePellets)
     {
         for (int i = 0; i < pelletsPerShot; i++)
-            FirePellet(currentSpread + pelletSpreadAngle, pelletCenterBias);
+            FirePellet(spreadForThisShot + pelletSpreadAngle, pelletCenterBias);
     }
     else
     {
-        FirePellet(currentSpread);
+        FirePellet(spreadForThisShot);
     }
 }
 
@@ -1215,16 +1690,13 @@ public class Weapon : MonoBehaviour
         if (playerCamera == null)
             return;
 
+        Ray aimRay = GetShotAimRay();
         Vector3 spreadDirection = ApplySpreadToDirection(
-            playerCamera.transform.forward,
+            aimRay.direction,
             spreadDegrees,
             centerBias
         );
-
-        Ray ray = new Ray(
-            playerCamera.transform.position,
-            spreadDirection
-        );
+        Ray ray = new Ray(aimRay.origin, spreadDirection);
 
         RaycastHit[] hits = Physics.RaycastAll(
             ray,
@@ -1500,13 +1972,4 @@ if (zombieHealth != null)
 
         return aim * Quaternion.Euler(offsetY, offsetX, 0f) * Vector3.forward;
     }
-    public void RestaurarMunicion(int cargador, int reserva)
-{
-    EnsureReserveInitialized();
-
-    currentAmmo = Mathf.Clamp(cargador, 0, EffectiveMaxAmmo);
-    reserveAmmo = Mathf.Clamp(reserva, 0, ReserveCapacity);
-
-    reserveInitialized = true;
-}
 }

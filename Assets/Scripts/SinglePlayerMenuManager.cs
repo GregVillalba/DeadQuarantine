@@ -385,13 +385,27 @@ public class SingleplayerMenuManager : MonoBehaviour
     }
 
     public void MostrarConfiguracionSingleplayer()
-{
-    if (enLobby)
-        return;
+    {
+        // Flujo nuevo: al elegir UN JUGADOR se entra directamente al lobby.
+        // Modo, mapa y dificultad se configuran dentro del propio lobby.
+        AbrirLobbyDirecto();
+    }
 
-    if (modalidadPanel != null)
-        modalidadPanel.SetActive(true);
-}
+    private bool AbrirLobbyDirecto()
+    {
+        if (enLobby)
+            return false;
+
+        if (!BuscarReferenciasDelLobby())
+            return false;
+
+        enLobby = true;
+
+        OcultarMenusParaLobby();
+        MostrarLobby();
+
+        return true;
+    }
 
     public void BotonContinuar()
 {

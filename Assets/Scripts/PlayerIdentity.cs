@@ -6,106 +6,42 @@ using TMPro;
 
 public static class PlayerIdentity
 {
-    private const string PrefKeyUserId = "DQ_USER_ID";
-    private const string PrefKeyUsername = "DQ_USERNAME";
+    // Claves estándar compatibles con los controladores de UI y Achievements
+    private const string PREF_KEY_USER_ID = "DQ_USER_ID";
+    private const string PREF_KEY_USERNAME = "DQ_USERNAME";
+
+    // Claves persistentes para autenticación de Google
+    private const string PREF_KEY_GOOGLE_LINKED = "DQ_GOOGLE_LINKED";
+    private const string PREF_KEY_GOOGLE_ID = "DQ_GOOGLE_ID";
+    private const string PREF_KEY_GOOGLE_EMAIL = "DQ_GOOGLE_EMAIL";
 
     public const int MaxUsernameLength = 10;
     private static readonly Regex patronAlfanumerico = new Regex("^[a-zA-Z0-9]{1,10}$");
 
+    // ============================================================
+    // GESTIÓN DE ID ÚNICO DEL JUGADOR
+    // ============================================================
+
     /// <summary>
-    /// Retorna el User ID actual guardado o genera un UUID nuevo si es la primera vez.
+    /// Retorna el User ID persistente o genera un UUID nuevo si es la primera vez.
     /// </summary>
     public static string GetUserId()
     {
-        if (!PlayerPrefs.HasKey(PrefKeyUserId))
+        string currentId = PlayerPrefs.GetString(PREF_KEY_USER_ID, string.Empty);
+
+        if (string.IsNullOrEmpty(currentId))
         {
-            string nuevoId = Guid.NewGuid().ToString("N");
-            PlayerPrefs.SetString(PrefKeyUserId, nuevoId);
+            currentId = Guid.NewGuid().ToString("N");
+            PlayerPrefs.SetString(PREF_KEY_USER_ID, currentId);
             PlayerPrefs.Save();
-            return nuevoId;
+            Debug.Log($"[IDENTITY] Nuevo ID único generado: {currentId}");
         }
 
-        return PlayerPrefs.GetString(PrefKeyUserId);
+        return currentId;
     }
 
     /// <summary>
-    /// Retorna el nombre de usuario actual o string vacío si no tiene.
-    /// </summary>
-    public static string GetUsername()
-    {
-        return PlayerPrefs.GetString(PrefKeyUsername, string.Empty);
-    }
-
-    /// <summary>
-    /// Indica si el jugador ya configuró un nombre válido previamente.
-    /// </summary>
-    public static bool HasUsername()
-    {
-        return !string.IsNullOrWhiteSpace(GetUsername());
-    }
-
-    /// <summary>
-    /// Valida si un nombre de usuario cumple con los requisitos de formato y longitud.
-    /// </summary>
-    public static bool IsValidUsername(string username, out string error)
-    {
-        error = string.Empty;
-
-        if (string.IsNullOrWhiteSpace(username))
-        {
-            error = "El nombre no puede estar vacío.";
-            return false;
-        }
-
-        string nombreLimpio = username.Trim();
-
-        if (nombreLimpio.Length > MaxUsernameLength)
-        {
-            error = $"Máximo {MaxUsernameLength} caracteres.";
-            return false;
-        }
-
-        if (!patronAlfanumerico.IsMatch(nombreLimpio))
-        {
-            error = "Solo letras y números (sin espacios).";
-            return false;
-        }
-
-        return true;
-    }
-
-    /// <summary>
-    /// Crea el nombre de usuario por primera vez tras validarlo.
-    /// </summary>
-    public static bool TryCreateUsername(string nuevoNombre, out string error)
-    {
-        if (!IsValidUsername(nuevoNombre, out error))
-        {
-            return false;
-        }
-
-        PlayerPrefs.SetString(PrefKeyUsername, nuevoNombre.Trim());
-        PlayerPrefs.Save();
-        return true;
-    }
-
-    /// <summary>
-    /// Actualiza el nombre de usuario localmente si pasa la validación.
-    /// </summary>
-    public static bool TryUpdateUsername(string nuevoNombre, out string error)
-    {
-        if (!IsValidUsername(nuevoNombre, out error))
-        {
-            return false;
-        }
-
-        PlayerPrefs.SetString(PrefKeyUsername, nuevoNombre.Trim());
-        PlayerPrefs.Save();
-        return true;
-    }
-
-    /// <summary>
-    /// Pisa el ID local con el ID de una cuenta importada/transferida.
+    /// Pisa el ID local con el ID de una cuenta importada o transferida.
     /// </summary>
     public static bool TryImportarUserId(string idImportado, out string error)
     {
@@ -117,14 +53,145 @@ public static class PlayerIdentity
         }
 
         string idLimpio = idImportado.Trim();
-        PlayerPrefs.SetString(PrefKeyUserId, idLimpio);
+        PlayerPrefs.SetString(PREF_KEY_USER_ID, idLimpio);
         PlayerPrefs.Save();
+        Debug.Log($"[IDENTITY] ID importado con éxito: {idLimpio}");
         return true;
     }
 
+    // ============================================================
+    // GESTIÓN DE USERNAME
+    // ============================================================
+
+    public static bool HasUsername()
+    {
+        if (!PlayerPrefs.HasKey(PREF_KEY_USERNAME))
+            return false;
+
+        return IsValidUsername(PlayerPrefs.GetString(PREF_KEY_USERNAME, string.Empty));
+    }
+
+    public static string GetUsername()
+    {
+        if (!HasUsername())
+            return string.Empty;
+
+        return PlayerPrefs.GetString(PREF_KEY_USERNAME, string.Empty).Trim();
+    }
+
+    public static void SetUsername(string newUsername)
+    {
+        if (!TryUpdateUsername(newUsername, out string error))
+        {
+            Debug.LogWarning("[IDENTITY] No se pudo guardar el username: " + error);
+        }
+    }
+
+    public static bool TryCreateUsername(string newUsername, out string error)
+    {
+        if (!IsValidUsername(newUsername, out error))
+            return false;
+
+        string cleanUsername = newUsername.Trim();
+        PlayerPrefs.SetString(PREF_KEY_USERNAME, cleanUsername);
+        PlayerPrefs.Save();
+
+        GetUserId(); // Asegura la existencia del ID
+
+        Debug.Log($"[IDENTITY] Nombre de usuario creado: {cleanUsername}");
+        return true;
+    }
+
+    public static bool TryUpdateUsername(string newUsername, out string error)
+    {
+        if (!IsValidUsername(newUsername, out error))
+            return false;
+
+        string cleanUsername = newUsername.Trim();
+        PlayerPrefs.SetString(PREF_KEY_USERNAME, cleanUsername);
+        PlayerPrefs.Save();
+
+        Debug.Log($"[IDENTITY] Nombre de usuario actualizado: {cleanUsername}");
+        return true;
+    }
+
+    public static bool IsValidUsername(string username)
+    {
+        return IsValidUsername(username, out _);
+    }
+
+    public static bool IsValidUsername(string username, out string error)
+    {
+        error = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            error = "El nombre no puede estar vacío.";
+            return false;
+        }
+
+        string limpio = username.Trim();
+
+        if (limpio.Length > MaxUsernameLength)
+        {
+            error = $"Máximo {MaxUsernameLength} caracteres.";
+            return false;
+        }
+
+        if (!patronAlfanumerico.IsMatch(limpio))
+        {
+            error = "Usá solo letras y números, sin espacios.";
+            return false;
+        }
+
+        return true;
+    }
+
+    // ============================================================
+    // INTEGRACIÓN GOOGLE AUTH PERSISTENTE
+    // ============================================================
+
     /// <summary>
-    /// Copia el User ID completo al portapapeles y activa un mensaje temporal en UI.
+    /// Devuelve true si la cuenta ya inició sesión con Google en este equipo.
     /// </summary>
+    public static bool IsGoogleLinked()
+    {
+        return PlayerPrefs.GetInt(PREF_KEY_GOOGLE_LINKED, 0) == 1;
+    }
+
+    /// <summary>
+    /// Guarda la vinculación con Google de manera permanente en disco.
+    /// </summary>
+    public static void SetGoogleSession(string googleId, string email)
+    {
+        PlayerPrefs.SetInt(PREF_KEY_GOOGLE_LINKED, 1);
+        PlayerPrefs.SetString(PREF_KEY_GOOGLE_ID, googleId ?? string.Empty);
+        PlayerPrefs.SetString(PREF_KEY_GOOGLE_EMAIL, email ?? string.Empty);
+
+        // Si se vincula por Google, sincronizamos el User ID con su Google ID
+        if (!string.IsNullOrEmpty(googleId))
+        {
+            PlayerPrefs.SetString(PREF_KEY_USER_ID, googleId);
+        }
+
+        PlayerPrefs.Save();
+        Debug.Log($"[IDENTITY] Sesión de Google guardada en disco: {email}");
+    }
+
+    public static string GetGoogleEmail()
+    {
+        return PlayerPrefs.GetString(PREF_KEY_GOOGLE_EMAIL, string.Empty);
+    }
+
+    public static string GetGoogleId()
+    {
+        return PlayerPrefs.GetString(PREF_KEY_GOOGLE_ID, string.Empty);
+    }
+
+    // ============================================================
+    // UTILIDADES DE UI (FEEDBACK Y PORTAPAPELES)
+    // ============================================================
+
     public static void CopiarIdConFeedback(MonoBehaviour runner, TMP_Text txtFeedback, float duracionSegundos = 2.0f)
     {
         string id = GetUserId();

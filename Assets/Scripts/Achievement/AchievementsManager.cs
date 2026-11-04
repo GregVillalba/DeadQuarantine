@@ -780,7 +780,13 @@ public class AchievementsManager : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning($"<color=red>[ACHIEVEMENTS API] Error al sincronizar '{sublogroClave}':</color> {request.error} (HTTP {httpCode}) | Detalle: {request.downloadHandler?.text}");
+                Debug.LogWarning($"<color=red>[ACHIEVEMENTS API] Error al sincronizar '{sublogroClave}':</color> {request.error} (HTTP {httpCode})");
+
+                // Si el servidor está apagado (503) o inalcanzable, detenemos reintentos masivos temporales
+                if (httpCode == 503 || request.result == UnityWebRequest.Result.ConnectionError)
+                {
+                    Debug.LogWarning("[ACHIEVEMENTS API] El servidor no está disponible en este momento. El progreso permanecerá guardado localmente.");
+                }
             }
         }
     }

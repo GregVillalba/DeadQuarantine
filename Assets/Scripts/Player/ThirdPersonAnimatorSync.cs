@@ -38,6 +38,7 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
 
     private float groundedTimer;
     private float aimW;
+    private float actualAimW; // Peso del input real: no cambia al adoptar pose Aim en Idle.
     private float crouchW;
     private bool wasGrounded = true;
 
@@ -160,6 +161,40 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
         return weaponSwitcher != null ? weaponSwitcher.CurrentWeapon : null;
     }
 
+    /// <summary>
+    /// Usa la pose corporal de apuntado solo cuando el personaje está quieto
+    /// con un rifle o la MAC-10. No toca las poses de P90, Vector, pistola ni escopeta.
+    /// Los nombres corresponden a los WeaponRoots del Player y a WeaponName,
+    /// por lo que funciona con el Rifle original y los dos rifles nuevos.
+    /// </summary>
+    private bool ShouldUseAimPoseAsIdle(Weapon weapon, bool reloading)
+    {
+        if (weapon == null || reloading || characterController == null)
+            return false;
+
+        if (weaponSwitcher != null && weaponSwitcher.IsSwitching)
+            return false;
+
+        if (playerMovement != null &&
+            (playerMovement.IsSprinting || playerMovement.IsCrouching))
+            return false;
+
+        Vector3 v = characterController.velocity;
+        if (new Vector2(v.x, v.z).sqrMagnitude > 0.25f * 0.25f)
+            return false;
+
+        string rootName = weapon.gameObject.name;
+        string displayName = weapon.WeaponName ?? string.Empty;
+
+        bool rifle = rootName == "SK_AR_01" ||
+                     rootName == "DQ_Weapon_SemiRifle" ||
+                     rootName == "DQ_Weapon_BurstRifle" ||
+                     displayName.IndexOf("rifle", System.StringComparison.OrdinalIgnoreCase) >= 0;
+        bool mac10 = rootName == "DQ_Weapon_MAC10" ||
+                     displayName.IndexOf("MAC-10", System.StringComparison.OrdinalIgnoreCase) >= 0;
+        return rifle || mac10;
+    }
+
     private void UpdateWeaponParams()
     {
         Animator a = thirdPersonAnimator;
@@ -170,20 +205,31 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
             // Se mantiene por los estados viejos que todavía usan TP_WeaponID.
             a.SetFloat(
                 "TP_WeaponID",
-                weapon != null ? weaponSwitcher.CurrentWeaponIndex + 1 : 0
+                weapon != null ? weaponSwitcher.CurrentThirdPersonWeaponId : 0
             );
         }
 
         bool aiming = weapon != null && weapon.IsAiming;
         bool reloading = weapon != null && weapon.IsReloading;
 
-        // El peso de apuntado se actualiza SIEMPRE, haya arma o no.
-        aimW = Mathf.MoveTowards(aimW, aiming ? 1f : 0f, Time.deltaTime * aimBlendSpeed);
+        // Congela si la recarga comenzó con cargador vacío ANTES de calcular la velocidad TP.
+        if (weapon != null && reloading && !wasReloading)
+            reloadStartedEmpty = weapon.CurrentAmmo == 0;
+
+        // Postura TP de reposo: el Animator base usa TP_AimWeight en un Blend Tree,
+        // no un estado Idle independiente. En estas armas queremos la misma postura
+        // corporal que al apuntar mientras están quietas, SIN simular que apuntan
+        // (TP_IsAiming sigue reflejando el input real).
+        bool aimPoseAsIdle = ShouldUseAimPoseAsIdle(weapon, reloading);
+        actualAimW = Mathf.MoveTowards(actualAimW, aiming ? 1f : 0f,
+            Time.deltaTime * aimBlendSpeed);
+        aimW = Mathf.MoveTowards(aimW, (aiming || aimPoseAsIdle) ? 1f : 0f,
+            Time.deltaTime * aimBlendSpeed);
 
         a.SetFloat("TP_AimWeight", aimW);
         a.SetBool("TP_IsAiming", aiming);
         a.SetBool("TP_IsReloading", reloading);
-        a.SetFloat("TP_ReloadSpeed",reloading?playerCharacterSpeed():1f);
+        a.SetFloat("TP_ReloadSpeed", reloading && weapon != null ? weapon.PresentationThirdPersonReloadSpeed(reloadStartedEmpty) : 1f);
         // NUEVO: gatilla la rama de recarga por partes (Shotgun_01, Sniper_01).
         a.SetBool("TP_MultiPartReload", weapon != null && weapon.UsesMultiPartReload);
 
@@ -204,11 +250,7 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
             return;
         }
 
-        // TP_IsEmpty se "congela" al empezar la recarga: durante la animación la
-        // munición se rellena y sin esto el estado cambiaría de Reload_Empty a Reload.
-        if (reloading && !wasReloading)
-            reloadStartedEmpty = weapon.CurrentAmmo == 0;
-
+        // TP_IsEmpty se mantiene con el valor congelado durante toda la recarga.
         wasReloading = reloading;
 
         a.SetBool("TP_IsEmpty", reloading ? reloadStartedEmpty : weapon.CurrentAmmo == 0);
@@ -272,7 +314,7 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
         // para que los brazos no "salten" a la pose de cadera en cada tiro.
         if (actionsLayer >= 0)
         {
-            float actionWeight = upperBodyWeight * Mathf.Lerp(1f, actionWeightWhileAiming, aimW);
+            float actionWeight = upperBodyWeight * Mathf.Lerp(1f, actionWeightWhileAiming, actualAimW);
             thirdPersonAnimator.SetLayerWeight(actionsLayer, actionWeight);
         }
     }

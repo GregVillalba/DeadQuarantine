@@ -22,6 +22,8 @@ public class WeaponSwitcher : MonoBehaviour
         public Weapon weaponComponent;
         public AnimatorOverrideController overrideController;
         public AnimatorOverrideController tpOverrideController;
+        [Tooltip("Familia del Animator TP: 1=Pistola, 2=Rifle/SMG, 3=Escopeta. 0=índice histórico.")]
+        public int tpWeaponId;
         public bool unlockedByDefault;
 
         [Tooltip("Objeto de UI del icono del slot.")]
@@ -79,6 +81,20 @@ public class WeaponSwitcher : MonoBehaviour
             : null;
 
     public int CurrentWeaponIndex => currentIndex;
+
+    /// <summary>Familia visual de tercera persona para el arma equipada.</summary>
+    public int CurrentThirdPersonWeaponId
+    {
+        get
+        {
+            if (slots == null || currentIndex < 0 || currentIndex >= slots.Length ||
+                slots[currentIndex] == null)
+                return 0;
+
+            int configured = slots[currentIndex].tpWeaponId;
+            return configured > 0 ? configured : currentIndex + 1;
+        }
+    }
 
     public bool IsSwitching => isSwitching;
     public bool IsHolstering => isSwitching && !unholsterPhase;
@@ -395,7 +411,21 @@ public class WeaponSwitcher : MonoBehaviour
             }
         }
 
-        return images.Length > 0 ? images[0].sprite : null;
+        // Los iconos por capas pueden traer Scope/Magazine antes que Body.
+        for (int i = 0; i < images.Length; i++)
+        {
+            if (string.Equals(images[i].gameObject.name, "Body",
+                System.StringComparison.OrdinalIgnoreCase) && images[i].sprite != null)
+                return images[i].sprite;
+        }
+
+        for (int i = 0; i < images.Length; i++)
+        {
+            if (images[i].sprite != null)
+                return images[i].sprite;
+        }
+
+        return null;
     }
 
     public WeaponSlotCategory GetCategory(int index)
@@ -650,6 +680,8 @@ public class WeaponSwitcher : MonoBehaviour
 
         WeaponSlot current = slots[currentIndex];
 
+        // Cambiar de arma cancela la recarga en curso y bloquea disparo/recarga/apuntado
+        // sin ocultar el modelo todavía.
         if (current.weaponComponent != null)
         {
             current.weaponComponent.CancelReload();
@@ -659,31 +691,34 @@ public class WeaponSwitcher : MonoBehaviour
         if (weaponAnimator != null)
             weaponAnimator.SetBool("Holstered", true);
 
+        // Protección para clips importados de las nuevas armas que no traen Animation Events.
+        // Las tres armas originales mantienen su flujo previo sin cambios.
+        bool requiresSafeCompletion = IsNewIntegratedWeapon(currentIndex) || IsNewIntegratedWeapon(pendingIndex);
+
+        // Esperar a que termine el clip de Holster antes de tapar el modelo.
         if (weaponAnimator != null && holsterLayerIndex >= 0)
         {
-            yield return null;
+            yield return null; // Deja que el Animator entre en la transición.
+            float startWaiting = Time.unscaledTime;
 
             while (true)
             {
-                bool inTransition =
-                    weaponAnimator.IsInTransition(holsterLayerIndex);
-
-                AnimatorStateInfo info =
-                    weaponAnimator.GetCurrentAnimatorStateInfo(
-                        holsterLayerIndex
-                    );
-
-                if (!inTransition &&
-                    info.IsName("Holster") &&
-                    info.normalizedTime >= 1f)
+                if (requiresSafeCompletion && Time.unscaledTime - startWaiting >= 2.5f)
                 {
+                    Debug.LogWarning("[WeaponSwitcher] Holster sin finalización en arma integrada: sigo al arma siguiente para evitar bloqueo.");
                     break;
                 }
+                bool inTransition = weaponAnimator.IsInTransition(holsterLayerIndex);
+                AnimatorStateInfo info = weaponAnimator.GetCurrentAnimatorStateInfo(holsterLayerIndex);
+
+                if (!inTransition && info.IsName("Holster") && info.normalizedTime >= 1f)
+                    break;
 
                 yield return null;
             }
         }
 
+        // Se corta cualquier animación que haya quedado a medias (por ejemplo una recarga) antes de cambiar de arma.
         ResetBaseLayerToIdle();
 
         if (current.weaponRoot != null)
@@ -692,11 +727,16 @@ public class WeaponSwitcher : MonoBehaviour
         currentIndex = pendingIndex;
         WeaponSlot next = slots[currentIndex];
 
+        // El arma nueva se apaga ANTES de activar su modelo: si nunca se había usado, su componente
+        // seguía encendido y habría podido disparar/recargar/apuntar durante la animación de sacarla.
+        // NotifyUnholsterFinished() la vuelve a encender al terminar el Unholster.
         if (next.weaponComponent != null)
             next.weaponComponent.enabled = false;
 
         ApplyControllerAndVisuals(next);
 
+        // El Animator es el mismo para todas las armas: sin esto el arma nueva continuaba el estado
+        // (por ejemplo una recarga) del arma anterior.
         ResetBaseLayerToIdle();
 
         if (weaponAnimator != null)
@@ -704,9 +744,49 @@ public class WeaponSwitcher : MonoBehaviour
 
         unholsterPhase = true;
 
+        // Un cuadro después: cambiar el controller puede reconstruir el Animator y perder el reset anterior.
         yield return null;
-
         ResetBaseLayerToIdle();
+
+        // NotifyUnholsterFinished() (llamado por el Animation Event al
+        // terminar el Unholster) reactiva el disparo y baja isSwitching.
+        // Algunos FBX importados (AR_02/AR_03) no contienen ese evento.
+        // Solo para las nuevas armas, cerramos por estado de Animator o por timeout.
+        if (requiresSafeCompletion)
+        {
+            float startUnholster = Time.unscaledTime;
+            int expectedIndex = currentIndex;
+            while (isSwitching && unholsterPhase && currentIndex == expectedIndex)
+            {
+                if (weaponAnimator != null && holsterLayerIndex >= 0 &&
+                    !weaponAnimator.IsInTransition(holsterLayerIndex))
+                {
+                    AnimatorStateInfo state = weaponAnimator.GetCurrentAnimatorStateInfo(holsterLayerIndex);
+                    if (state.IsName("Unholster") && state.normalizedTime >= 0.98f)
+                    {
+                        NotifyUnholsterFinished();
+                        break;
+                    }
+                }
+                if (Time.unscaledTime - startUnholster > 2.5f)
+                {
+                    Debug.LogWarning("[WeaponSwitcher] Unholster sin Animation Event: desbloqueo seguro del arma integrada " +
+                                     slots[currentIndex].weaponId);
+                    NotifyUnholsterFinished();
+                    break;
+                }
+                yield return null;
+            }
+        }
+    }
+
+    private bool IsNewIntegratedWeapon(int index)
+    {
+        if (slots == null || index < 0 || index >= slots.Length || slots[index] == null)
+            return false;
+        string id = slots[index].weaponId;
+        return id == "AutoPistol" || id == "SemiRifle" || id == "BurstRifle" ||
+               id == "P90" || id == "Vector" || id == "MAC10";
     }
 
     private void ApplyControllerAndVisuals(WeaponSlot slot)
