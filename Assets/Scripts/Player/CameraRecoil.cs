@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// "Motion" de la CÁMARA: recoil + salto / caída / aterrizaje. Equivale al
@@ -64,6 +64,13 @@ public class CameraRecoil : MonoBehaviour
     private Vector3 rootBasePosition;
     private Quaternion rootBaseRotation = Quaternion.identity;
     private bool rootCached;
+
+    // Cuando PlayerLook actualiza la inclinacion en Update, no podemos
+    // sustituirla por la rotacion guardada en Awake. Recordar el ultimo recoil
+    // aplicado permite quitarlo SOLO si nadie reescribio la camara luego.
+    private bool rootRotationApplied;
+    private Quaternion lastRootRecoil = Quaternion.identity;
+    private Quaternion lastRootWritten = Quaternion.identity;
 
     private int shotsFired;
     private float lastFireTime = -999f;
@@ -134,7 +141,11 @@ public class CameraRecoil : MonoBehaviour
         if (rootCached && motionRoot != null)
         {
             motionRoot.localPosition = rootBasePosition;
-            motionRoot.localRotation = rootBaseRotation;
+            // Mantener el pitch actual de PlayerLook al quitar el recoil.
+            if (rootRotationApplied &&
+                Quaternion.Angle(motionRoot.localRotation, lastRootWritten) < 0.001f)
+                motionRoot.localRotation *= Quaternion.Inverse(lastRootRecoil);
+            rootRotationApplied = false;
         }
 
         if (emergencyApplied && Quaternion.Angle(transform.localRotation, emergencyLastWritten) < 0.0005f)
@@ -259,7 +270,21 @@ public class CameraRecoil : MonoBehaviour
             }
 
             motionRoot.localPosition = rootBasePosition + p;
-            motionRoot.localRotation = rootBaseRotation * q;
+
+            // PlayerLook ya escribio el pitch en Update. Tomarlo como base
+            // en vez de rootBaseRotation (que se capturo una sola vez en Awake).
+            Quaternion lookRotation = motionRoot.localRotation;
+            if (rootRotationApplied &&
+                Quaternion.Angle(lookRotation, lastRootWritten) < 0.001f)
+            {
+                // PlayerLook estaba desactivado / no cambio la camara en
+                // este frame: quitar nuestro recoil anterior antes de sumar.
+                lookRotation *= Quaternion.Inverse(lastRootRecoil);
+            }
+            motionRoot.localRotation = lookRotation * q;
+            lastRootWritten = motionRoot.localRotation;
+            lastRootRecoil = q;
+            rootRotationApplied = true;
         }
         else
         {

@@ -12,6 +12,8 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
         public Weapon Source;
         public GameObject Model;
         public RuntimeAnimatorController Controller;
+        [Tooltip("Familia visual TP: 1=Pistola, 2=Rifle/SMG, 3=Escopeta. 0=usar índice histórico.")]
+        public int AnimatorWeaponId;
         public GameObject Casing;
         public Vector3 GripPosition, GripRotation;
     }
@@ -94,6 +96,7 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
             shown=value.Weapon;appliedFlags=0;
             if(audioOutput)audioOutput.outputAudioMixerGroup=definition.Source.PresentationMixer;
             if(BodyAnimator && definition.Controller && BodyAnimator.runtimeAnimatorController!=definition.Controller)BodyAnimator.runtimeAnimatorController=definition.Controller;
+            if(BodyAnimator)BodyAnimator.SetFloat("TP_WeaponID", definition.AnimatorWeaponId>0?definition.AnimatorWeaponId:value.Weapon+1);
             if(held)Destroy(held);
             if(!definition.Model)return;
             held = Instantiate(definition.Model, hand);
@@ -111,7 +114,7 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
                 held.transform,
                 Body.gameObject.layer
             );
-            muzzle=Find(held.transform,"SOCKET_Muzzle");eject=Find(held.transform,"SOCKET_Eject_C");
+            muzzle=Find(held.transform,"SOCKET_Muzzle");eject=Find(held.transform,"SOCKET_Eject_C") ?? Find(held.transform,"SOCKET_Eject");
             flash=muzzle?muzzle.GetComponent<Muzzle>():null;parts=held.GetComponent<Animator>();
             foreach(var renderer in held.GetComponentsInChildren<Renderer>(true))renderer.forceRenderingOff=IsOwner && !ShowLocalBodyForTesting;
             bodyRenderers=Body.GetComponentsInChildren<Renderer>(true);
@@ -121,7 +124,7 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
             var reloadSound=definition.Source.PresentationReloadSound((value.Flags&16)!=0);
             if(reloadSound && !IsOwner)audioOutput.PlayOneShot(reloadSound);
         }
-        if(parts)parts.speed=(value.Flags&1)!=0?GetComponent<PlayerCharacter>().ReloadSpeedMultiplier:1;
+        if(parts)parts.speed=(value.Flags&1)!=0?definition.Source.PresentationThirdPersonPartsReloadSpeed((value.Flags&16)!=0):1;
         if (BodyAnimator)
         {
             int switchLayer =
@@ -204,9 +207,9 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
 
                 BodyAnimator.SetFloat(
                     "TP_ReloadSpeed",
-                    character != null
-                        ? character.ReloadSpeedMultiplier
-                        : 1f
+                    definition.Source != null
+                        ? definition.Source.PresentationThirdPersonReloadSpeed(empty)
+                        : (character != null ? character.ReloadSpeedMultiplier : 1f)
                 );
             }
         }
@@ -254,7 +257,20 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
         if(IsOwner && !ShowLocalBodyForTesting)return;Apply(new State{Weapon=index,Flags=state.Value.Weapon==index?state.Value.Flags:(byte)0});if(!held)return;
         var source=Weapons[index].Source;var sound=source.PresentationEventSound(kind);
         if(sound && !IsOwner)audioOutput.PlayOneShot(sound);
-        if(!IsOwner && kind==WeaponEvent.Eject && eject && Weapons[index].Casing){Instantiate(Weapons[index].Casing,eject.position,eject.rotation);EjectCount++;}
+        if((!IsOwner || ShowLocalBodyForTesting) && kind==WeaponEvent.Eject && eject && Weapons[index].Casing)
+        {
+            bool newWeapon = Array.Exists(new[] { "AutoPistol", "SemiRifle", "BurstRifle", "P90", "Vector", "MAC10" },
+                                           id => id == Weapons[index].Id);
+            Vector3 origin = eject.position + (newWeapon ? eject.right * 0.025f + eject.up * 0.015f : Vector3.zero);
+            GameObject casing = Instantiate(Weapons[index].Casing, origin, eject.rotation);
+            if(newWeapon && casing)
+            {
+                Rigidbody body = casing.GetComponent<Rigidbody>();
+                if(body) body.AddForce((held.transform.right * 0.8f + Vector3.up * 0.4f) * 1.5f,
+                                       ForceMode.VelocityChange);
+            }
+            EjectCount++;
+        }
         string clip=kind switch {WeaponEvent.ReloadOpen=>null,WeaponEvent.Insert=>null,WeaponEvent.ReloadClose=>"Reload Close",WeaponEvent.BoltOpen=>null,_=>null};
         if(clip!=null)PlayParts(clip);
     }

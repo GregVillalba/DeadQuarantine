@@ -121,7 +121,7 @@ public class NPCWeaponVendor : MonoBehaviour
             // Restaura el arma que se tiene en la mano. Si ya está llena no se cobra.
             Weapon arma = switcher.CurrentWeapon;
 
-            if (arma == null || arma.MunicionCompleta)
+            if (arma == null || !arma.PuedeComprarMunicion)
             {
                 PlaySound(purchaseDeniedSound);
                 OnPurchaseResult?.Invoke(weaponId, false);

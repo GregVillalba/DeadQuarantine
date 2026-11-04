@@ -67,6 +67,7 @@ public class SinglePlayerLobbyController : MonoBehaviour
 
     // True mientras el lobby está abierto. Mientras está cerrado, Update no hace nada.
     private bool abierto;
+    private LobbyGameSettingsRuntime configuradorPartida;
 
     // =========================================================
     // CICLO DE VIDA
@@ -95,14 +96,8 @@ public class SinglePlayerLobbyController : MonoBehaviour
         if (slot != null)
             slot.Configure(catalogoPersonajes, escenarioPersonajes, colorRojo, iconoVerde, iconoRojo);
 
+        InicializarConfiguradorPartida();
         ActualizarResumen();
-
-        if (!ConfiguracionValida())
-        {
-            MostrarMensaje(
-                "SIN CONFIGURACION",
-                "No hay una partida configurada. Volve al menu, elegi modalidad, dificultad y escenario, y entra de nuevo.");
-        }
     }
 
     // Lo llama SingleplayerMenuManager al volver al menú: deja cerradas las ventanas que hayan quedado abiertas.
@@ -115,6 +110,9 @@ public class SinglePlayerLobbyController : MonoBehaviour
 
         if (popupMensaje != null)
             popupMensaje.SetActive(false);
+
+        if (configuradorPartida != null)
+            configuradorPartida.Cerrar();
     }
 
     private void Update()
@@ -129,6 +127,14 @@ public class SinglePlayerLobbyController : MonoBehaviour
         // El slot escribe "ANFITRION / TU": acá es un solo jugador.
         if (rolTexto != null && rolTexto.text != TextoRol)
             rolTexto.text = TextoRol;
+
+        if (configuradorPartida != null)
+            configuradorPartida.ActualizarVisual();
+
+        ActualizarResumen();
+
+        if (!cargando && btnComenzar != null)
+            btnComenzar.interactable = ConfiguracionValida();
     }
 
     // =========================================================
@@ -144,7 +150,7 @@ public class SinglePlayerLobbyController : MonoBehaviour
         {
             MostrarMensaje(
                 "SIN CONFIGURACION",
-                "Falta elegir modalidad, dificultad o escenario. Volve al menu y elegilos de nuevo.");
+                "Elegí Modo, Mapa y Dificultad desde CONFIGURAR PARTIDA antes de comenzar.");
             return;
         }
 
@@ -241,12 +247,37 @@ public class SinglePlayerLobbyController : MonoBehaviour
 
     private static bool ConfiguracionValida()
     {
-        ConfiguracionPartidaSeleccionada cfg = ConfiguracionPartidaSeleccionada.Instancia;
+        return LobbyGameSettingsRuntime.ConfiguracionValida();
+    }
 
-        return cfg != null &&
-               cfg.modoSeleccionado != ConfiguracionPartidaSeleccionada.ModoJuego.Ninguno &&
-               cfg.escenarioSeleccionado != ConfiguracionPartidaSeleccionada.Escenario.Ninguno &&
-               cfg.dificultadSeleccionada != ConfiguracionPartidaSeleccionada.Dificultad.Ninguna;
+    private void InicializarConfiguradorPartida()
+    {
+        if (configuradorPartida == null)
+            configuradorPartida = GetComponent<LobbyGameSettingsRuntime>();
+
+        if (configuradorPartida == null)
+            configuradorPartida = gameObject.AddComponent<LobbyGameSettingsRuntime>();
+
+        if (!configuradorPartida.Inicializado)
+        {
+            configuradorPartida.Inicializar(
+                popupModo,
+                popupMapa,
+                popupDificultad,
+                true,
+                OnConfiguracionLobbyCambiada
+            );
+        }
+        else
+        {
+            configuradorPartida.SetEditable(true);
+            configuradorPartida.ActualizarVisual();
+        }
+    }
+
+    private void OnConfiguracionLobbyCambiada()
+    {
+        ActualizarResumen();
     }
 
     private void ActualizarResumen()
@@ -268,9 +299,8 @@ public class SinglePlayerLobbyController : MonoBehaviour
         if (resumenMapa != null) resumenMapa.text = mapa;
         if (resumenDificultad != null) resumenDificultad.text = dificultad;
 
-        if (popupModo != null) popupModo.text = modo;
-        if (popupMapa != null) popupMapa.text = mapa;
-        if (popupDificultad != null) popupDificultad.text = dificultad;
+        // Los textos del popup los maneja LobbyGameSettingsRuntime porque además
+        // indica si la opción es editable o está bloqueada (por ejemplo Historia/Laboratorio).
     }
 
     private static string NombreModo(ConfiguracionPartidaSeleccionada.ModoJuego modo)
