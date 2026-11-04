@@ -34,9 +34,18 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
 
     private float proximoReintento;
 
+    // Solo servidor: si en este tiempo ningún spawner le dio lugar, se lo asigna el propio jugador.
+    private const float EsperaAsignacionPropia = 1f;
+    private float momentoSpawn;
+
     private void Update()
     {
-        if (!IsSpawned || !IsOwner || IsAtSpawn.Value)
+        if (!IsSpawned)
+            return;
+
+        AsignarIndiceSiNadieLoHizo();
+
+        if (!IsOwner || IsAtSpawn.Value)
             return;
 
         // No utilizar el spawn normal mientras se carga un checkpoint.
@@ -63,6 +72,7 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
         );
 
         AssignedSpawnIndex.OnValueChanged += OnSpawnIndexChanged;
+        momentoSpawn = Time.unscaledTime;
 
         if (
             IsOwner &&
@@ -94,6 +104,67 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
         MoveToAssignedSpawn(newValue);
     }
 
+    // Los spawners viven dentro de cada escenario y solo asigna lugar el del escenario activo.
+    // Si ese escenario no tiene spawner (ej: Escenario_2), nadie lo haría y el jugador quedaría
+    // donde lo creó Netcode, fuera del mapa: en ese caso el servidor le asigna el lugar acá.
+    private void AsignarIndiceSiNadieLoHizo()
+    {
+        if (!IsServer || AssignedSpawnIndex.Value >= 0)
+            return;
+
+        if (Time.unscaledTime < momentoSpawn + EsperaAsignacionPropia)
+            return;
+
+        if (MultiplayerPlayerSpawner.BuscarDelEscenarioActivo() != null)
+            return;
+
+        // Todavía no se eligió el escenario: se espera para no mandarlo a uno oculto.
+        if (FaltaElegirEscenario())
+            return;
+
+        MultiplayerPlayerSpawner cualquiera = FindAnyObjectByType<MultiplayerPlayerSpawner>();
+        int maxJugadores = cualquiera != null ? cualquiera.MaxPlayers : 4;
+
+        AssignedSpawnIndex.Value =
+            MultiplayerPlayerSpawner.CalcularIndiceLibre(OwnerClientId, maxJugadores);
+
+        Debug.Log(
+            "[SpawnAssigner] El escenario activo no tiene spawner: ClientId " + OwnerClientId +
+            " asignado a SpawnIndex " + AssignedSpawnIndex.Value
+        );
+    }
+
+    // Hay escenarios en la escena (no es el tutorial) pero ninguno activo todavía.
+    private static bool FaltaElegirEscenario()
+    {
+        GestorEscenariosPartida gestor = GestorEscenariosPartida.Instance;
+        return gestor != null && gestor.ObtenerEscenarioActivo() == null;
+    }
+
+    // Punto de spawn del escenario que se está jugando (no el de un escenario oculto).
+    private static Transform ObtenerPuntoSpawn(int index)
+    {
+        // Sin escenario elegido todavía, el spawner devolvería el punto de un escenario oculto
+        // (sin colliders): se reintenta más tarde (Update cada 0.5 s).
+        if (FaltaElegirEscenario())
+            return null;
+
+        MultiplayerPlayerSpawner spawner =
+            MultiplayerPlayerSpawner.BuscarDelEscenarioActivo();
+
+        if (spawner == null)
+            spawner = FindAnyObjectByType<MultiplayerPlayerSpawner>();
+
+        if (spawner != null)
+            return spawner.GetSpawnPoint(index);
+
+        GestorEscenariosPartida gestor = GestorEscenariosPartida.Instance;
+        ConfiguracionEscenarioJugable activo =
+            gestor != null ? gestor.ObtenerEscenarioActivo() : null;
+
+        return activo != null ? activo.ObtenerSpawnJugador(index) : null;
+    }
+
     // =========================================================
     // COMPROBAR SI ESTÁ EN SU SPAWN
     // =========================================================
@@ -103,14 +174,8 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
         if (AssignedSpawnIndex.Value < 0)
             return false;
 
-        MultiplayerPlayerSpawner spawner =
-            FindAnyObjectByType<MultiplayerPlayerSpawner>();
-
-        if (spawner == null)
-            return false;
-
         Transform spawnPoint =
-            spawner.GetSpawnPoint(AssignedSpawnIndex.Value);
+            ObtenerPuntoSpawn(AssignedSpawnIndex.Value);
 
         if (spawnPoint == null)
             return false;
@@ -172,19 +237,7 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
         if (HayCheckpointPendiente() || SpawnCheckpointActivo.Value)
             return;
 
-        MultiplayerPlayerSpawner spawner =
-            FindAnyObjectByType<MultiplayerPlayerSpawner>();
-
-        if (spawner == null)
-        {
-            Debug.LogWarning(
-                "[SpawnAssigner] No se encontró MultiplayerPlayerSpawner en la escena."
-            );
-
-            return;
-        }
-
-        Transform spawnPoint = spawner.GetSpawnPoint(index);
+        Transform spawnPoint = ObtenerPuntoSpawn(index);
 
         if (spawnPoint == null)
         {

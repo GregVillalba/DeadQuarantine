@@ -220,6 +220,15 @@ public class MultiplayerPlayerSpawner : MonoBehaviour
 
     private int GetFreeSpawnIndex(ulong clientId)
     {
+        return CalcularIndiceLibre(clientId, maxPlayers);
+    }
+
+    /// <summary>
+    /// El host siempre toma el 0; los demás, el lugar libre más bajo. Lo usa también
+    /// MultiplayerPlayerSpawnAssigner cuando el escenario activo no tiene spawner propio.
+    /// </summary>
+    public static int CalcularIndiceLibre(ulong clientId, int maxPlayers)
+    {
         if (NetworkManager.Singleton != null &&
             clientId == NetworkManager.ServerClientId)
         {
@@ -260,8 +269,44 @@ public class MultiplayerPlayerSpawner : MonoBehaviour
         return 1 + (int)(clientId % (ulong)(slots - 1));
     }
 
+    public int MaxPlayers => maxPlayers;
+
+    /// <summary>
+    /// Spawner del escenario activo (o el del tutorial). null si el escenario activo no tiene uno.
+    /// Los escenarios ocultos siguen activos en la jerarquía (solo se apagan colliders y scripts),
+    /// así que FindAnyObjectByType puede devolver el spawner de un escenario que no se está jugando.
+    /// </summary>
+    public static MultiplayerPlayerSpawner BuscarDelEscenarioActivo()
+    {
+        foreach (MultiplayerPlayerSpawner spawner in
+                 FindObjectsByType<MultiplayerPlayerSpawner>(FindObjectsSortMode.None))
+        {
+            if (spawner != null && spawner.EsSpawnerDelEscenarioActivo())
+                return spawner;
+        }
+
+        return null;
+    }
+
     public Transform GetSpawnPoint(int index)
     {
+        // Primero el escenario que se está jugando, aunque este spawner sea de otro.
+        if (!EsSpawnerTutorial())
+        {
+            GestorEscenariosPartida gestor = GestorEscenariosPartida.Instance != null
+                ? GestorEscenariosPartida.Instance
+                : FindAnyObjectByType<GestorEscenariosPartida>();
+
+            ConfiguracionEscenarioJugable activo =
+                gestor != null ? gestor.ObtenerEscenarioActivo() : null;
+
+            Transform puntoActivo =
+                activo != null ? activo.ObtenerSpawnJugador(index) : null;
+
+            if (puntoActivo != null)
+                return puntoActivo;
+        }
+
         if (configuracionPropia == null)
             ResolverConfiguracionPropia();
 
