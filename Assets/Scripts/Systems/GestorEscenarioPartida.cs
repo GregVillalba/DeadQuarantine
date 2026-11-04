@@ -330,6 +330,98 @@ public class GestorEscenariosPartida : MonoBehaviour
         safeZone2.SetActive(true);
         Debug.Log("[Escenarios] SafeZone2 activada.");
     }
+public bool PrepararCheckpoint(
+    CheckpointManager.EscenarioCheckpoint checkpoint,
+    Transform jugador
+)
+{
+    if (jugador == null)
+    {
+        Debug.LogError(
+            "[Escenarios] No se puede preparar el checkpoint: jugador nulo."
+        );
+        return false;
+    }
+
+    switch (checkpoint)
+    {
+        case CheckpointManager.EscenarioCheckpoint.SafeZone1:
+
+            if (safeZone1 == null || spawnSafeZone1 == null)
+            {
+                Debug.LogError(
+                    "[Escenarios] SafeZone1 o su punto de aparición no están asignados."
+                );
+                return false;
+            }
+
+            if (ConfiguracionPartidaSeleccionada.Instancia != null)
+            {
+                ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado =
+                    ConfiguracionPartidaSeleccionada.Escenario.Ciudad;
+            }
+
+            ActivarSafeZone1();
+            TrasladarJugadorACheckpoint(jugador, spawnSafeZone1);
+
+            StoryIntroController introCiudad =
+                jugador.GetComponentInChildren<StoryIntroController>(true);
+
+            if (introCiudad != null)
+                introCiudad.MostrarAvisoContinuarSafeZone();
+            else
+                Debug.LogWarning(
+                    "[Escenarios] No se encontró StoryIntroController para SafeZone1."
+                );
+
+            break;
+
+        case CheckpointManager.EscenarioCheckpoint.SafeZone2:
+
+            if (safeZone2 == null || spawnSafeZone2 == null)
+            {
+                Debug.LogError(
+                    "[Escenarios] SafeZone2 o su punto de aparición no están asignados."
+                );
+                return false;
+            }
+
+            if (ConfiguracionPartidaSeleccionada.Instancia != null)
+            {
+                ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado =
+                    ConfiguracionPartidaSeleccionada.Escenario.Cabana;
+            }
+
+            ActivarSafeZone2();
+            TrasladarJugadorACheckpoint(jugador, spawnSafeZone2);
+
+            StoryIntroController introMansion =
+                jugador.GetComponentInChildren<StoryIntroController>(true);
+
+            if (introMansion != null)
+                introMansion.MostrarAvisoContinuarAMansion();
+            else
+                Debug.LogWarning(
+                    "[Escenarios] No se encontró StoryIntroController para SafeZone2."
+                );
+
+            break;
+
+        default:
+
+            Debug.LogError(
+                "[Escenarios] Checkpoint inválido: " + checkpoint
+            );
+            return false;
+    }
+
+    Debug.Log(
+        "[Escenarios] Checkpoint preparado correctamente: " + checkpoint
+    );
+
+    return true;
+}
+
 
     public void MostrarSafeZone1()
     {
@@ -581,4 +673,32 @@ public void TransicionarAScenarioCabana(Transform jugador)
 
         return escenarioActivo.SpawnsZombies;
     }
+    private void TrasladarJugadorACheckpoint(
+    Transform jugador,
+    Transform destino
+)
+{
+    if (jugador == null || destino == null)
+        return;
+
+    MultiplayerPlayerSpawnAssigner assigner =
+        jugador.GetComponent<MultiplayerPlayerSpawnAssigner>();
+
+    if (
+        NetworkManager.Singleton != null &&
+        NetworkManager.Singleton.IsServer &&
+        assigner != null &&
+        assigner.IsSpawned
+    )
+    {
+        assigner.AplicarSpawnCheckpoint(
+            destino.position,
+            destino.rotation
+        );
+
+        return;
+    }
+
+    TrasladarJugador(jugador, destino);
+}
 }

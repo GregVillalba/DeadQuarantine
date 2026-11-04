@@ -2,7 +2,7 @@ using System;
 using Unity.Netcode;
 using UnityEngine;
 
-public class PlayerScore : NetworkBehaviour
+public partial class PlayerScore : NetworkBehaviour
 {
     public NetworkVariable<int> ScoreNetwork = new NetworkVariable<int>(
         0,

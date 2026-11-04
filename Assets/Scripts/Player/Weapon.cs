@@ -1500,4 +1500,13 @@ if (zombieHealth != null)
 
         return aim * Quaternion.Euler(offsetY, offsetX, 0f) * Vector3.forward;
     }
+    public void RestaurarMunicion(int cargador, int reserva)
+{
+    EnsureReserveInitialized();
+
+    currentAmmo = Mathf.Clamp(cargador, 0, EffectiveMaxAmmo);
+    reserveAmmo = Mathf.Clamp(reserva, 0, ReserveCapacity);
+
+    reserveInitialized = true;
+}
 }
