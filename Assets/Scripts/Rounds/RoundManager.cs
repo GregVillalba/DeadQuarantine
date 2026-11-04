@@ -79,6 +79,7 @@ public class RoundManager : NetworkBehaviour
 private bool misionMansionActiva;
 private bool bossMansionAparecio;
 private Coroutine misionMansionRoutine;
+private bool iniciarRondaDesdeGuardado;
 
 
     // =========================================================
@@ -272,11 +273,25 @@ private Coroutine misionMansionRoutine;
 
         ApplyModeAndDifficulty();
 
-        if (LoadGameMenuController.CargandoPartidaDesdeMenu)
+   if (LoadGameMenuController.CargandoPartidaDesdeMenu)
 {
+    if (LoadGameMenuController.CargandoSupervivenciaDesdeMenu)
+    {
+        Debug.Log(
+            "[RoundManager] Se detectó una partida guardada "
+            + "de Supervivencia."
+        );
+
+        ConfigurarSpawnPointsDelEscenario();
+
+        StartCoroutine(CargarPartidaSupervivencia());
+
+        return;
+    }
+
     Debug.Log(
-        "[RoundManager] Se detectó una partida guardada. " +
-        "Se espera la restauración del checkpoint."
+        "[RoundManager] Se detectó una partida guardada de Historia. "
+        + "Se espera la restauración del checkpoint."
     );
 
     return;
@@ -525,114 +540,152 @@ private IEnumerator EsperarFinIntroLocal()
     // =========================================================
     // INICIAR RONDA
     // =========================================================
-
-    public void StartRound(int round)
-    {
-        if (!IsServer)
-            return;
-
-        if (infiniteMode && round == 1 && debugStartRound > 1)
-            round = debugStartRound;
-
-        CurrentRoundNetwork.Value = round;
-
-        // Logro de Supervivencia: alcanzar la ronda 20.
-if (infiniteMode &&
-    round >= 20 &&
-    !logroSupervivenciaDesbloqueado)
+public void StartRound(int round)
 {
-    logroSupervivenciaDesbloqueado = true;
+    if (!IsServer)
+        return;
 
-    DesbloquearLogroModoClientRpc(
-        true,
-        DifficultyNetwork.Value
-    );
+    if (infiniteMode && round == 1 && debugStartRound > 1)
+        round = debugStartRound;
 
-    Debug.Log(
-        "[RoundManager] Logro de Supervivencia desbloqueado. Ronda: " +
-        round
-    );
-}
+    CurrentRoundNetwork.Value = round;
 
-        RespawnSpectatingPlayers();
+    // Logro de Supervivencia: alcanzar la ronda 20.
+    if (infiniteMode &&
+        round >= 20 &&
+        !logroSupervivenciaDesbloqueado)
+    {
+        logroSupervivenciaDesbloqueado = true;
 
-        // =====================================================
-        // RECUPERAR VIDA DE LOS JUGADORES
-        // =====================================================
+        DesbloquearLogroModoClientRpc(
+            true,
+            DifficultyNetwork.Value
+        );
 
-        RecoverPlayerLivesForNewRound();
-
-        // =====================================================
-        // ZOMBIES
-        // =====================================================
-
-        int zombiesThisRound = infiniteMode
-            ? Mathf.RoundToInt(activeMode.GetBaseZombieCount(round) * countMultiplier)
-            : Mathf.RoundToInt((startingZombies + (round - 1) * zombiesPerRound) * countMultiplier);
-
-        int bossCount = 0;
-
-        if (HasBossPrefab())
-        {
-            bossCount = infiniteMode
-                ? activeMode.GetBossCount(round)
-                : (round == bossRound ? 1 : 0);
-        }
-
-        zombiesThisRound = Mathf.Max(zombiesThisRound, bossCount);
-
-        // Reproduce el aullido solamente si esta ronda de Supervivencia
-        // realmente va a contener al menos un perro zombie.
-        int nonBossEnemyCount = Mathf.Max(0, zombiesThisRound - bossCount);
-        bool willSpawnDogsThisRound =
-            infiniteMode &&
-            activeMode != null &&
-            dogZombiePrefab != null &&
-            activeMode.GetDogCount(round, nonBossEnemyCount) > 0;
-
-        if (willSpawnDogsThisRound)
-            PlayDogRoundHowlClientRpc();
-
-        zombiesSpawnedThisRound = 0;
-        zombiesKilledThisRound = 0;
-
-        ZombiesThisRoundNetwork.Value =
-            zombiesThisRound;
-
-        AliveZombiesNetwork.Value =
-            zombiesThisRound;
-
-        roundInProgress = true;
-        countdownInProgress = false;
-
-        CountdownNetwork.Value = 0;
-
-        if (roundStartHUD != null)
-        {
-            roundStartHUD.Hide();
-        }
-
-       /* bool esRondaFinal = round >= maxRounds;*/
-        bool esRondaFinal = !infiniteMode && round >= maxRounds;
-        MostrarPanelRondaClientRpc(round, esRondaFinal);
-
-        if (spawnRoutine != null)
-        {
-            StopCoroutine(
-                spawnRoutine
-            );
-        }
-
-        spawnRoutine =
-            StartCoroutine(
-                SpawnZombiesRoutine(
-                    zombiesThisRound,
-                   // spawnBoss
-                   bossCount
-                )
-            );
+        Debug.Log(
+            "[RoundManager] Logro de Supervivencia desbloqueado. Ronda: " +
+            round
+        );
     }
 
+    // =====================================================
+    // RECUPERAR JUGADORES
+    // =====================================================
+
+    bool esCargaDesdeCheckpoint = iniciarRondaDesdeGuardado;
+
+    if (!esCargaDesdeCheckpoint)
+    {
+        RespawnSpectatingPlayers();
+        RecoverPlayerLivesForNewRound();
+    }
+    else
+    {
+        // Los datos de vida y estado del jugador ya fueron restaurados.
+        iniciarRondaDesdeGuardado = false;
+
+        Debug.Log(
+            "[RoundManager] Se conserva el estado de vida restaurado."
+        );
+    }
+
+    // =====================================================
+    // GUARDADO AUTOMÁTICO DE SUPERVIVENCIA
+    // =====================================================
+
+    if (!esCargaDesdeCheckpoint &&
+        ModoNetwork.Value ==
+        (int)ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia)
+    {
+        if (round >= 5 && round % 5 == 0)
+        {
+            if (SurvivalSaveManager.Instance != null)
+            {
+                SurvivalSaveManager.Instance.GuardarPartida(round);
+            }
+            else
+            {
+                Debug.LogError(
+                    "[RoundManager] No se encontró SurvivalSaveManager."
+                );
+            }
+        }
+    }
+
+    // =====================================================
+    // ZOMBIES
+    // =====================================================
+
+    int zombiesThisRound = infiniteMode
+        ? Mathf.RoundToInt(
+            activeMode.GetBaseZombieCount(round) * countMultiplier
+        )
+        : Mathf.RoundToInt(
+            (startingZombies + (round - 1) * zombiesPerRound) *
+            countMultiplier
+        );
+
+    int bossCount = 0;
+
+    if (HasBossPrefab())
+    {
+        bossCount = infiniteMode
+            ? activeMode.GetBossCount(round)
+            : (round == bossRound ? 1 : 0);
+    }
+
+    zombiesThisRound = Mathf.Max(zombiesThisRound, bossCount);
+
+    // =====================================================
+    // AUDIO DE PERROS
+    // =====================================================
+
+    int nonBossEnemyCount = Mathf.Max(
+        0,
+        zombiesThisRound - bossCount
+    );
+
+    bool willSpawnDogsThisRound =
+        infiniteMode &&
+        activeMode != null &&
+        dogZombiePrefab != null &&
+        activeMode.GetDogCount(round, nonBossEnemyCount) > 0;
+
+    if (willSpawnDogsThisRound)
+        PlayDogRoundHowlClientRpc();
+
+    // =====================================================
+    // ESTADO DE RONDA
+    // =====================================================
+
+    zombiesSpawnedThisRound = 0;
+    zombiesKilledThisRound = 0;
+
+    ZombiesThisRoundNetwork.Value = zombiesThisRound;
+    AliveZombiesNetwork.Value = zombiesThisRound;
+
+    roundInProgress = true;
+    countdownInProgress = false;
+
+    CountdownNetwork.Value = 0;
+
+    if (roundStartHUD != null)
+        roundStartHUD.Hide();
+
+    bool esRondaFinal = !infiniteMode && round >= maxRounds;
+
+    MostrarPanelRondaClientRpc(round, esRondaFinal);
+
+    if (spawnRoutine != null)
+        StopCoroutine(spawnRoutine);
+
+    spawnRoutine = StartCoroutine(
+        SpawnZombiesRoutine(
+            zombiesThisRound,
+            bossCount
+        )
+    );
+}
     // =========================================================
     // AUDIO DE RONDA CON PERROS
     // =========================================================
@@ -2358,5 +2411,64 @@ public void PrepararHistoriaDesdeCheckpoint()
         "[RoundManager] Historia preparada desde checkpoint. " +
         "Esperando que el jugador abandone la zona segura."
     );
+}
+private IEnumerator CargarPartidaSupervivencia()
+{
+    if (!IsServer)
+        yield break;
+
+    SurvivalSaveManager gestor =
+        SurvivalSaveManager.Instance;
+
+    if (gestor == null)
+    {
+        Debug.LogError(
+            "[RoundManager] No se encontró SurvivalSaveManager."
+        );
+        yield break;
+    }
+
+    SupervivenciaSaveData datos =
+        gestor.ObtenerPartidaGuardada();
+
+    if (datos == null)
+    {
+        Debug.LogError(
+            "[RoundManager] No se encontraron datos guardados "
+            + "de Supervivencia."
+        );
+        yield break;
+    }
+
+    if (datos.rondaActual < 1)
+    {
+        Debug.LogError(
+            "[RoundManager] La ronda guardada no es válida."
+        );
+        yield break;
+    }
+
+    // Esperar a que el jugador esté disponible y termine la introducción.
+    yield return StartCoroutine(EsperarFinIntroLocal());
+
+    Debug.Log(
+        "[RoundManager] Restaurando partida de Supervivencia. Ronda: " +
+        datos.rondaActual
+    );
+
+    gestor.RestaurarPartida(datos, () =>
+{
+    if (!IsServer) return;
+
+    Debug.Log(
+        "[RoundManager] Partida de Supervivencia restaurada correctamente."
+    );
+
+    LoadGameMenuController.FinalizarCargaDesdeMenu();
+
+    iniciarRondaDesdeGuardado = true;
+
+    StartRound(datos.rondaActual);
+});
 }
 }
