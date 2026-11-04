@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using Unity.Netcode;
 
 /// <summary>
@@ -11,10 +12,15 @@ using Unity.Netcode;
 /// El objetivo se sincroniza para que en todos los clientes
 /// el cabezal gire hacia el mismo zombie y se vean los disparos. El daño lo hace solo el servidor, a nombre del
 /// jugador que la colocó (las kills y los puntos son suyos).
+///
+/// Los zombies también la atacan (ZombieAI). Con la vida en 0 queda rota en el lugar: deja de disparar, baja el cañón y
+/// echa humo negro. Su dueño la puede reparar en la tienda apenas recibe daño (PlayerRecursos.RepararTorretaServerRpc).
+/// Cada jugador puede tener una sola.
 /// </summary>
 public class TorretaAutomatica : NetworkBehaviour
 {
     private const ulong SinObjetivo = ulong.MaxValue;
+    private const ulong SinDueno = ulong.MaxValue;
 
     [Header("Ataque")]
     [Tooltip("Rango de detección (m).")]
@@ -28,6 +34,29 @@ public class TorretaAutomatica : NetworkBehaviour
     [Tooltip("Capas que tapan los disparos (paredes, casas, árboles...). Los zombies, los jugadores y la propia torreta nunca tapan.")]
     [SerializeField] private LayerMask capasBloqueanDisparo = ~(1 << 2);
 
+    [Header("Vida")]
+    [SerializeField] private int vidaMaxima = 300;
+
+    [Header("Barra de vida flotante (como la de los zombies)")]
+    [SerializeField] private Slider barraVida;
+    [SerializeField] private Image rellenoBarra;
+    [Tooltip("Canvas de la barra. Se oculta mientras la torreta está rota.")]
+    [SerializeField] private GameObject canvasBarra;
+    [SerializeField] private Color colorVidaAlta = Color.green;
+    [SerializeField] private Color colorVidaMedia = Color.yellow;
+    [SerializeField] private Color colorVidaBaja = Color.red;
+
+    [Header("Rota")]
+    [Tooltip("Humo que sale mientras está rota (ej: PolygonApocalypse/Prefabs/FX/Prefabbed/FX_Smoke_Black_01).")]
+    [SerializeField] private GameObject efectoRota;
+    [Tooltip("Opcional. De dónde sale el humo. Vacío = del pivote de giro del cañón.")]
+    [SerializeField] private Transform puntoHumo;
+    [Tooltip("Pinta todas las partículas del humo de este color (algunas del efecto original salen grises claras).")]
+    [SerializeField] private bool forzarColorHumo = true;
+    [SerializeField] private Color colorHumo = new Color(0.06f, 0.06f, 0.06f, 1f);
+    [Tooltip("Qué tan rápido cae el cañón al romperse, comparado con la velocidad de giro normal.")]
+    [SerializeField] private float velocidadCaidaCanon = 0.3f;
+
     [Header("Cabezal")]
     [Tooltip("Parte que gira a los costados (en el AA Gun: SM_Wep_AAGun_Swivel_01).")]
     [SerializeField] private Transform pivoteGiro;
@@ -37,6 +66,7 @@ public class TorretaAutomatica : NetworkBehaviour
     [SerializeField] private Transform bocaCanon;
     [Tooltip("Grados por segundo.")]
     [SerializeField] private float velocidadGiro = 360f;
+    [Tooltip("También es lo más abajo que queda el cañón cuando la torreta se rompe.")]
     [SerializeField] private float elevacionMinima = -80f;
     [SerializeField] private float elevacionMaxima = 85f;
     [Tooltip("Dispara cuando el cañón está a menos de estos grados del zombie.")]
@@ -60,8 +90,64 @@ public class TorretaAutomatica : NetworkBehaviour
             NetworkVariableWritePermission.Server
         );
 
+    // Jugador que la colocó: la tienda y el cartel de reparar lo leen en cada cliente.
+    private readonly NetworkVariable<ulong> duenoNetwork =
+        new NetworkVariable<ulong>(
+            SinDueno,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+
+    // Arranca en 1 (sana) hasta que el servidor la pone en vidaMaxima al spawnear.
+    private readonly NetworkVariable<int> vidaNetwork =
+        new NetworkVariable<int>(
+            1,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+
+    // Torretas spawneadas en la partida: las recorren los zombies (para atacarlas) y la tienda (la de cada jugador).
+    private static readonly List<TorretaAutomatica> torretas = new List<TorretaAutomatica>();
+
+    // Con "Enter Play Mode Options" (sin recargar dominio) los estaticos sobreviven entre partidas.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticState()
+    {
+        torretas.Clear();
+    }
+
+    public static IReadOnlyList<TorretaAutomatica> Todas => torretas;
+
+    /// <summary>La torreta de ese jugador (rota o no), o null si no colocó ninguna.</summary>
+    public static TorretaAutomatica DelJugador(ulong clientId)
+    {
+        foreach (TorretaAutomatica torreta in torretas)
+        {
+            if (torreta != null && torreta.EsDe(clientId))
+                return torreta;
+        }
+
+        return null;
+    }
+
+    // En el servidor también vale el dueño asignado antes de spawnear (por si la variable de red todavía no se escribió).
+    private bool EsDe(ulong clientId)
+    {
+        if (IsServer && duenoAsignado && duenoClientId == clientId)
+            return true;
+
+        return IsSpawned && Dueno == clientId;
+    }
+
+    public ulong Dueno => duenoNetwork.Value;
+    public bool EstaRota => vidaNetwork.Value <= 0;
+
+    /// <summary>Recibió daño (o está rota): su dueño la puede reparar en la tienda.</summary>
+    public bool NecesitaReparacion => vidaNetwork.Value < vidaMaxima;
+
     // Solo servidor.
     private ulong duenoClientId;
+    private bool duenoAsignado;
     private float proximaBusqueda;
 
     private ZombieHealth objetivo;
@@ -70,17 +156,77 @@ public class TorretaAutomatica : NetworkBehaviour
     private float proximoDisparo;
 
     private readonly RaycastHit[] impactosVision = new RaycastHit[16];
+    private Collider[] collidersPropios;
+    private GameObject humoActivo;
 
     /// <summary>Solo servidor, antes de spawnearla: el jugador que la colocó.</summary>
     public void AsignarDueno(ulong clientId)
     {
         duenoClientId = clientId;
+        duenoAsignado = true;
+
+        // Cuenta desde ya para el límite de una por jugador, aunque todavía no terminó de spawnear.
+        if (!torretas.Contains(this))
+            torretas.Add(this);
+    }
+
+    private void Awake()
+    {
+        List<Collider> solidos = new List<Collider>();
+
+        foreach (Collider propio in GetComponentsInChildren<Collider>(true))
+        {
+            if (!propio.isTrigger)
+                solidos.Add(propio);
+        }
+
+        collidersPropios = solidos.ToArray();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        if (!torretas.Contains(this))
+            torretas.Add(this);
+
+        vidaNetwork.OnValueChanged += OnVidaCambiada;
+
+        if (IsServer)
+        {
+            duenoNetwork.Value = duenoClientId;
+            vidaNetwork.Value = vidaMaxima;
+        }
+
+        ActualizarBarraDeVida();
+        ActualizarHumo();
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        torretas.Remove(this);
+        vidaNetwork.OnValueChanged -= OnVidaCambiada;
+        ApagarHumo();
+    }
+
+    public override void OnDestroy()
+    {
+        torretas.Remove(this);
+        base.OnDestroy();
     }
 
     private void Update()
     {
         if (!IsSpawned)
             return;
+
+        // Rota: no busca ni dispara, solo deja caer el cañón.
+        if (EstaRota)
+        {
+            if (IsServer && objetivoNetwork.Value != SinObjetivo)
+                objetivoNetwork.Value = SinObjetivo;
+
+            BajarCanon();
+            return;
+        }
 
         if (IsServer)
             ActualizarObjetivoServidor();
@@ -116,6 +262,145 @@ public class TorretaAutomatica : NetworkBehaviour
             if (actual.IsDead)
                 break;
         }
+    }
+
+    // =========================================================
+    // VIDA (servidor)
+    // =========================================================
+
+    /// <summary>Solo servidor. Golpe de un zombie (ZombieAI). Con la vida en 0 la torreta queda rota.</summary>
+    public void RecibirDanoZombie(int cantidad)
+    {
+        if (!IsServer || EstaRota || cantidad <= 0)
+            return;
+
+        vidaNetwork.Value = Mathf.Max(0, vidaNetwork.Value - cantidad);
+    }
+
+    /// <summary>Solo servidor. La deja con la vida llena (dañada o rota) y vuelve a funcionar (la cobra PlayerRecursos).</summary>
+    public void Reparar()
+    {
+        if (!IsServer || !NecesitaReparacion)
+            return;
+
+        vidaNetwork.Value = vidaMaxima;
+    }
+
+    /// <summary>Punto de la torreta más cercano a 'desde', para que los zombies midan si llegan a pegarle.</summary>
+    public Vector3 PuntoMasCercano(Vector3 desde)
+    {
+        Vector3 masCercano = transform.position;
+        float menorDistancia = float.PositiveInfinity;
+
+        foreach (Collider propio in collidersPropios)
+        {
+            if (propio == null || !propio.enabled)
+                continue;
+
+            Vector3 punto = propio.bounds.ClosestPoint(desde);
+            float distancia = (punto - desde).sqrMagnitude;
+
+            if (distancia < menorDistancia)
+            {
+                menorDistancia = distancia;
+                masCercano = punto;
+            }
+        }
+
+        return masCercano;
+    }
+
+    private void OnVidaCambiada(int anterior, int actual)
+    {
+        ActualizarBarraDeVida();
+        ActualizarHumo();
+    }
+
+    private void ActualizarBarraDeVida()
+    {
+        int vida = vidaNetwork.Value;
+        float porcentaje = vidaMaxima > 0 ? (float)vida / vidaMaxima : 0f;
+
+        if (canvasBarra != null && canvasBarra.activeSelf == EstaRota)
+            canvasBarra.SetActive(!EstaRota);
+
+        if (barraVida != null)
+        {
+            barraVida.maxValue = vidaMaxima;
+            barraVida.value = vida;
+        }
+
+        if (rellenoBarra != null)
+        {
+            rellenoBarra.fillAmount = porcentaje;
+            rellenoBarra.color = porcentaje > 0.66f ? colorVidaAlta : porcentaje > 0.33f ? colorVidaMedia : colorVidaBaja;
+        }
+    }
+
+    // =========================================================
+    // ROTA: HUMO Y CAÑÓN
+    // =========================================================
+
+    private void ActualizarHumo()
+    {
+        if (EstaRota)
+            PrenderHumo();
+        else
+            ApagarHumo();
+    }
+
+    // Sale derecho hacia arriba aunque la torreta esté girada, y el humo no sigue al cañón (espacio del mundo).
+    private void PrenderHumo()
+    {
+        if (humoActivo != null || efectoRota == null)
+            return;
+
+        Vector3 origen = puntoHumo != null
+            ? puntoHumo.position
+            : pivoteGiro != null ? pivoteGiro.position : transform.position + Vector3.up;
+
+        humoActivo = Instantiate(efectoRota, origen, efectoRota.transform.rotation, transform);
+
+        foreach (ParticleSystem particulas in humoActivo.GetComponentsInChildren<ParticleSystem>(true))
+        {
+            ParticleSystem.MainModule main = particulas.main;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+
+            if (forzarColorHumo)
+                main.startColor = colorHumo;
+        }
+    }
+
+    // Deja de echar humo; el que ya salió se disipa solo.
+    private void ApagarHumo()
+    {
+        if (humoActivo == null)
+            return;
+
+        humoActivo.transform.SetParent(null, true);
+
+        float duracion = 0f;
+
+        foreach (ParticleSystem particulas in humoActivo.GetComponentsInChildren<ParticleSystem>(true))
+        {
+            particulas.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+            duracion = Mathf.Max(duracion, particulas.main.startLifetime.constantMax);
+        }
+
+        Destroy(humoActivo, duracion + 0.5f);
+        humoActivo = null;
+    }
+
+    // El cañón cae hacia el piso (hasta elevacionMinima) mirando hacia donde quedó.
+    private void BajarCanon()
+    {
+        Vector3 frente = Vector3.ProjectOnPlane(DireccionCanon(), transform.up);
+
+        if (frente.sqrMagnitude < 0.0001f)
+            frente = transform.forward;
+
+        Vector3 abajo = OrigenDisparo() + frente.normalized * 0.01f - transform.up * 10f;
+        Apuntar(abajo, velocidadCaidaCanon);
     }
 
     // =========================================================
@@ -269,7 +554,7 @@ public class TorretaAutomatica : NetworkBehaviour
 
     // Gira de a poco hacia el punto. Funciona con cualquier orientación del modelo:
     // usa la dirección real del cañón (bocaCanon) en vez de los ejes del FBX.
-    private bool Apuntar(Vector3 punto)
+    private bool Apuntar(Vector3 punto, float multiplicadorVelocidad = 1f)
     {
         Transform giro = pivoteGiro != null ? pivoteGiro : pivoteElevacion;
 
@@ -280,7 +565,7 @@ public class TorretaAutomatica : NetworkBehaviour
         Transform elevacion = pivoteElevacion != null ? pivoteElevacion : giro;
         Vector3 arriba = transform.up;
         Vector3 haciaObjetivo = punto - OrigenDisparo();
-        float paso = velocidadGiro * Time.deltaTime;
+        float paso = velocidadGiro * multiplicadorVelocidad * Time.deltaTime;
 
         // Giro a los costados.
         Vector3 frentePlano = Vector3.ProjectOnPlane(DireccionCanon(), arriba);

@@ -39341,6 +39341,7 @@ MonoBehaviour:
   textoReparar: REPARAR
   progresoCompraFill: {fileID: 72000000000000614}
   tiempoMantenerParaComprar: 2
+  gradosGiroAlColocar: 180
   listoButton: {fileID: 8393856206885822360}
   listoButtonText: {fileID: 7367092547247016315}
   tiempoTiendaText: {fileID: 1375822524226189817}
@@ -71044,6 +71045,11 @@ MonoBehaviour:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
+  SpawnCheckpointActivo:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
 --- !u!114 &6118534843392074237
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -71413,7 +71419,7 @@ MonoBehaviour:
   objetos:
   - weaponId: torreta_aa
     prefab: {fileID: 64173039401082289, guid: d3148c9f78e270b429643c00ee361256, type: 3}
-    distancia: 6
+    distancia: 3
   - weaponId: Barril explosivo
     prefab: {fileID: 1390552192308306460, guid: 9d966f5f3bdde0e4994bffcfa1dcb618, type: 3}
     distancia: 3

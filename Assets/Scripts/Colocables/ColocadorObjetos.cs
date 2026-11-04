@@ -161,7 +161,7 @@ public class ColocadorObjetos : NetworkBehaviour
     public bool PuedeColocar(string weaponId)
     {
         ObjetoColocable objeto = BuscarObjeto(weaponId);
-        return objeto != null && objeto.prefab != null;
+        return objeto != null && objeto.prefab != null && !TieneTorretaColocada(objeto);
     }
 
     /// <summary>
@@ -182,6 +182,10 @@ public class ColocadorObjetos : NetworkBehaviour
         }
 
         if (!ModoPermiteColocables())
+            return false;
+
+        // Una torreta por jugador: con una ya colocada (sana, dañada o rota) no se entra a colocar otra.
+        if (TieneTorretaColocada(objeto))
             return false;
 
         if (playerCamera == null)
@@ -708,9 +712,13 @@ public class ColocadorObjetos : NetworkBehaviour
         PlayerRecursos recursos = transform.root.GetComponentInChildren<PlayerRecursos>();
         ObjetoColocable objeto = BuscarObjeto(weaponId);
 
+        // Una torreta por jugador: la que tiene (aunque esté rota) se repara, no se reemplaza.
+        bool torretaRepetida = TieneTorretaColocada(objeto);
+
         bool exito =
             objeto != null &&
             objeto.prefab != null &&
+            !torretaRepetida &&
             ModoPermiteColocables() &&
             (playerHealth == null || playerHealth.IsAlive) &&
             recursos != null &&
@@ -720,7 +728,7 @@ public class ColocadorObjetos : NetworkBehaviour
         {
             NetworkObject colocado = Instantiate(objeto.prefab, posicion, rotacion);
 
-            TorretaAutomatica torreta = colocado.GetComponent<TorretaAutomatica>();
+            TorretaAutomatica torreta = colocado.GetComponentInChildren<TorretaAutomatica>(true);
             if (torreta != null)
                 torreta.AsignarDueno(OwnerClientId);
 
@@ -728,6 +736,21 @@ public class ColocadorObjetos : NetworkBehaviour
         }
 
         ResultadoColocacionClientRpc(exito, ParametrosParaDueno());
+    }
+
+    // El objeto es una torreta (en la raíz o en un hijo del prefab) y este jugador ya tiene una colocada.
+    private bool TieneTorretaColocada(ObjetoColocable objeto)
+    {
+        return objeto != null &&
+               objeto.prefab != null &&
+               objeto.prefab.GetComponentInChildren<TorretaAutomatica>(true) != null &&
+               TorretaAutomatica.DelJugador(OwnerClientId) != null;
+    }
+
+    /// <summary>La torreta del jugador dueño de este colocador (null si no colocó ninguna).</summary>
+    public TorretaAutomatica TorretaPropia()
+    {
+        return TorretaAutomatica.DelJugador(OwnerClientId);
     }
 
     private ClientRpcParams ParametrosParaDueno()
