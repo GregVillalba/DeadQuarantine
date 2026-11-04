@@ -122,9 +122,10 @@ public class CheckpointManager : MonoBehaviour
         if (NetworkManager.Singleton != null &&
             NetworkManager.Singleton.IsListening &&
             !NetworkManager.Singleton.IsServer)
+        {
             return;
+        }
 
-        // Cargar los datos anteriores de Historia.
         HistoriaSaveData datosHistoria =
             SaveSystem.CargarHistoria();
 
@@ -211,14 +212,24 @@ public class CheckpointManager : MonoBehaviour
 
         // Guardar información específica de Historia.
         datosHistoria.checkpoint = (int)escenarioActual;
-        datosHistoria.dificultad =
-            (int)ConfiguracionPartidaSeleccionada.Instancia.dificultadSeleccionada;
+
+        if (ConfiguracionPartidaSeleccionada.Instancia != null)
+        {
+            datosHistoria.dificultad =
+                (int)ConfiguracionPartidaSeleccionada.Instancia.dificultadSeleccionada;
+        }
 
         if (SaveSystem.GuardarHistoria(datosHistoria))
         {
             Debug.Log(
                 "[CheckpointManager] Checkpoint guardado correctamente: " +
                 escenarioActual
+            );
+        }
+        else
+        {
+            Debug.LogError(
+                "[CheckpointManager] No se pudo guardar el checkpoint."
             );
         }
     }
@@ -255,8 +266,17 @@ public class CheckpointManager : MonoBehaviour
 
     public void CargarCheckpoint()
     {
+        Debug.Log(
+            "[Checkpoint] CargarCheckpoint() ejecutado."
+        );
+
         if (cargandoPartida)
+        {
+            Debug.LogWarning(
+                "[Checkpoint] Ya hay una carga en progreso."
+            );
             return;
+        }
 
         if (!EsModoHistoria())
         {
@@ -276,6 +296,24 @@ public class CheckpointManager : MonoBehaviour
             return;
         }
 
+        if (datos.jugador == null)
+        {
+            Debug.LogError(
+                "[CheckpointManager] El guardado no contiene datos del jugador."
+            );
+            return;
+        }
+
+        if (datos.checkpoint != (int)EscenarioCheckpoint.SafeZone1 &&
+            datos.checkpoint != (int)EscenarioCheckpoint.SafeZone2)
+        {
+            Debug.LogError(
+                "[CheckpointManager] El valor del checkpoint guardado no es válido: " +
+                datos.checkpoint
+            );
+            return;
+        }
+
         escenarioActual =
             (EscenarioCheckpoint)datos.checkpoint;
 
@@ -287,7 +325,10 @@ public class CheckpointManager : MonoBehaviour
         );
 
         if (rutinaRestauracionDatos != null)
+        {
             StopCoroutine(rutinaRestauracionDatos);
+            rutinaRestauracionDatos = null;
+        }
 
         rutinaRestauracionDatos =
             StartCoroutine(
@@ -302,6 +343,10 @@ public class CheckpointManager : MonoBehaviour
     private IEnumerator RestaurarDatosCuandoJugadorEsteListo(
         HistoriaSaveData datos)
     {
+        Debug.Log(
+            "[Checkpoint] Iniciando espera para restaurar datos."
+        );
+
         float tiempoEspera = 0f;
         const float tiempoMaximo = 30f;
 
@@ -315,28 +360,40 @@ public class CheckpointManager : MonoBehaviour
         while (tiempoEspera < tiempoMaximo)
         {
             if (weaponSwitcher == null || !weaponSwitcher.IsInitialized)
+            {
                 weaponSwitcher =
                     FindAnyObjectByType<WeaponSwitcher>();
+            }
 
             if (playerHealth == null || !playerHealth.IsSpawned)
+            {
                 playerHealth =
                     FindAnyObjectByType<PlayerHealth>();
+            }
 
             if (playerRecursos == null || !playerRecursos.IsSpawned)
+            {
                 playerRecursos =
                     FindAnyObjectByType<PlayerRecursos>();
+            }
 
             if (playerScore == null || !playerScore.IsSpawned)
+            {
                 playerScore =
                     FindAnyObjectByType<PlayerScore>();
+            }
 
             if (gestorEscenarios == null)
+            {
                 gestorEscenarios =
                     FindAnyObjectByType<GestorEscenariosPartida>();
+            }
 
             if (gestorHistoria == null || !gestorHistoria.IsSpawned)
+            {
                 gestorHistoria =
                     FindAnyObjectByType<GestorHistoriaPartida>();
+            }
 
             bool sistemasListos =
                 weaponSwitcher != null &&
@@ -352,12 +409,20 @@ public class CheckpointManager : MonoBehaviour
                 gestorHistoria.IsSpawned;
 
             if (sistemasListos)
+            {
+                Debug.Log(
+                    "[Checkpoint] Todos los sistemas están listos. " +
+                    "Preparando checkpoint: " + escenarioActual
+                );
+
                 break;
+            }
 
             tiempoEspera += Time.unscaledDeltaTime;
             yield return null;
         }
 
+        // Comprobar nuevamente que todos los sistemas estén listos.
         if (weaponSwitcher == null || !weaponSwitcher.IsInitialized ||
             playerHealth == null || !playerHealth.IsSpawned ||
             playerRecursos == null || !playerRecursos.IsSpawned ||
@@ -367,7 +432,13 @@ public class CheckpointManager : MonoBehaviour
         {
             Debug.LogError(
                 "[CheckpointManager] No se pudieron inicializar todos los sistemas " +
-                "necesarios después de " + tiempoMaximo + " segundos."
+                "necesarios después de " + tiempoMaximo + " segundos. " +
+                "WeaponSwitcher: " + (weaponSwitcher != null && weaponSwitcher.IsInitialized) +
+                " | PlayerHealth: " + (playerHealth != null && playerHealth.IsSpawned) +
+                " | PlayerRecursos: " + (playerRecursos != null && playerRecursos.IsSpawned) +
+                " | PlayerScore: " + (playerScore != null && playerScore.IsSpawned) +
+                " | GestorEscenarios: " + (gestorEscenarios != null) +
+                " | GestorHistoria: " + (gestorHistoria != null && gestorHistoria.IsSpawned)
             );
 
             FinalizarCarga();
@@ -384,16 +455,42 @@ public class CheckpointManager : MonoBehaviour
             yield break;
         }
 
+        // Comprobar que la carga se ejecute desde el servidor.
+        if (!gestorHistoria.IsServer)
+        {
+            Debug.LogError(
+                "[CheckpointManager] La carga del checkpoint debe ejecutarse en el servidor."
+            );
+
+            FinalizarCarga();
+            yield break;
+        }
+
         DatosJugadorSaveData datosJugador = datos.jugador;
 
         // Activar la zona segura y trasladar al jugador.
         Transform jugador = playerHealth.transform.root;
+
+        Debug.Log(
+            "[Checkpoint] Antes de preparar zona: " +
+            escenarioActual +
+            " | Posición jugador: " +
+            jugador.position
+        );
 
         bool zonaPreparada =
             gestorEscenarios.PrepararCheckpoint(
                 escenarioActual,
                 jugador
             );
+
+        Debug.Log(
+            "[Checkpoint] Después de preparar zona: " +
+            escenarioActual +
+            " | Resultado: " + zonaPreparada +
+            " | Posición jugador: " +
+            jugador.position
+        );
 
         if (!zonaPreparada)
         {
@@ -407,16 +504,6 @@ public class CheckpointManager : MonoBehaviour
         }
 
         // Restaurar el estado de la historia.
-        if (!gestorHistoria.IsServer)
-        {
-            Debug.LogError(
-                "[CheckpointManager] La carga del checkpoint debe ejecutarse en el servidor."
-            );
-
-            FinalizarCarga();
-            yield break;
-        }
-
         gestorHistoria.RestaurarDesdeCheckpoint(escenarioActual);
 
         // RESTAURAR ARMAS Y ACCESORIOS.

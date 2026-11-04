@@ -362,7 +362,7 @@ public bool PrepararCheckpoint(
             }
 
             ActivarSafeZone1();
-            TrasladarJugador(jugador, spawnSafeZone1);
+            TrasladarJugadorACheckpoint(jugador, spawnSafeZone1);
 
             StoryIntroController introCiudad =
                 jugador.GetComponentInChildren<StoryIntroController>(true);
@@ -393,7 +393,7 @@ public bool PrepararCheckpoint(
             }
 
             ActivarSafeZone2();
-            TrasladarJugador(jugador, spawnSafeZone2);
+            TrasladarJugadorACheckpoint(jugador, spawnSafeZone2);
 
             StoryIntroController introMansion =
                 jugador.GetComponentInChildren<StoryIntroController>(true);
@@ -673,4 +673,32 @@ public void TransicionarAScenarioCabana(Transform jugador)
 
         return escenarioActivo.SpawnsZombies;
     }
+    private void TrasladarJugadorACheckpoint(
+    Transform jugador,
+    Transform destino
+)
+{
+    if (jugador == null || destino == null)
+        return;
+
+    MultiplayerPlayerSpawnAssigner assigner =
+        jugador.GetComponent<MultiplayerPlayerSpawnAssigner>();
+
+    if (
+        NetworkManager.Singleton != null &&
+        NetworkManager.Singleton.IsServer &&
+        assigner != null &&
+        assigner.IsSpawned
+    )
+    {
+        assigner.AplicarSpawnCheckpoint(
+            destino.position,
+            destino.rotation
+        );
+
+        return;
+    }
+
+    TrasladarJugador(jugador, destino);
+}
 }

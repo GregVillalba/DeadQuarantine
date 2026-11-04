@@ -16,27 +16,37 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
         NetworkVariableWritePermission.Owner
     );
 
+    public NetworkVariable<bool> SpawnCheckpointActivo =
+    new NetworkVariable<bool>(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
     /// <summary>Número de jugador (1 a 4) según su lugar de spawn. 0 mientras el servidor no le asignó uno.</summary>
     public int PlayerNumber => AssignedSpawnIndex.Value + 1;
 
     private float proximoReintento;
 
-    private void Update()
-    {
-        // Si soy el dueño y todavia no me ubique, reintento cada medio segundo.
-        if (!IsSpawned || !IsOwner || IsAtSpawn.Value)
-            return;
+   private void Update()
+{
+    if (!IsSpawned || !IsOwner || IsAtSpawn.Value)
+        return;
 
-        if (AssignedSpawnIndex.Value < 0)
-            return;
+    // Si estamos cargando un checkpoint, no usar el spawn normal.
+    if (SpawnCheckpointActivo.Value)
+        return;
 
-        if (Time.unscaledTime < proximoReintento)
-            return;
+    if (AssignedSpawnIndex.Value < 0)
+        return;
 
-        proximoReintento = Time.unscaledTime + 0.5f;
+    if (Time.unscaledTime < proximoReintento)
+        return;
 
-        MoveToAssignedSpawn(AssignedSpawnIndex.Value);
-    }
+    proximoReintento = Time.unscaledTime + 0.5f;
+
+    MoveToAssignedSpawn(AssignedSpawnIndex.Value);
+}
 
     public override void OnNetworkSpawn()
     {
@@ -165,6 +175,9 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
 
     private void MoveToAssignedSpawn(int index)
     {
+
+        if (SpawnCheckpointActivo.Value)
+    return;
         MultiplayerPlayerSpawner spawner =
             FindFirstObjectByType<
                 MultiplayerPlayerSpawner
@@ -235,4 +248,52 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
             OnSpawnIndexChanged;
         base.OnNetworkDespawn();
     }
+    public void AplicarSpawnCheckpoint(Vector3 posicion, Quaternion rotacion)
+{
+    if (!IsServer || !IsSpawned)
+        return;
+
+    // Impide que Update vuelva a utilizar el spawn normal.
+    SpawnCheckpointActivo.Value = true;
+
+    AplicarSpawnCheckpointClientRpc(posicion, rotacion);
+}
+
+[ClientRpc]
+private void AplicarSpawnCheckpointClientRpc(
+    Vector3 posicion,
+    Quaternion rotacion
+)
+{
+    if (!IsOwner)
+        return;
+
+    CharacterController cc = GetComponent<CharacterController>();
+
+    if (cc != null)
+        cc.enabled = false;
+
+    transform.SetPositionAndRotation(posicion, rotacion);
+
+    if (cc != null)
+        cc.enabled = true;
+
+    NetworkTransform networkTransform =
+        GetComponent<NetworkTransform>();
+
+    if (networkTransform != null && networkTransform.IsSpawned)
+    {
+        networkTransform.Teleport(
+            posicion,
+            rotacion,
+            transform.localScale
+        );
+    }
+
+    IsAtSpawn.Value = true;
+
+    Debug.Log(
+        "[SpawnAssigner] Jugador trasladado al checkpoint."
+    );
+}
 }

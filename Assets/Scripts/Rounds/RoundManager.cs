@@ -272,6 +272,16 @@ private Coroutine misionMansionRoutine;
 
         ApplyModeAndDifficulty();
 
+        if (LoadGameMenuController.CargandoPartidaDesdeMenu)
+{
+    Debug.Log(
+        "[RoundManager] Se detectó una partida guardada. " +
+        "Se espera la restauración del checkpoint."
+    );
+
+    return;
+}
+
         if (roundStartHUD != null)
             roundStartHUD.Hide();
 
