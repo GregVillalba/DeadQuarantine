@@ -2,6 +2,7 @@
 using System.Collections;
 using UnityEngine;
 using Unity.Netcode;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Administra el guardado y la carga de checkpoints del modo Historia.
@@ -28,6 +29,11 @@ public class CheckpointManager : MonoBehaviour
 
     private bool cargandoPartida;
     private Coroutine rutinaRestauracionDatos;
+    private string escenaEsperadaCarga;
+    private bool cargaPendienteDesdeMenu;
+
+    public bool CargaPendiente =>
+        cargaPendienteDesdeMenu || cargandoPartida;
 
     private void Awake()
     {
@@ -39,13 +45,16 @@ public class CheckpointManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        SceneManager.sceneLoaded += AlCargarEscena;
     }
 
-    private void OnDestroy()
-    {
-        if (Instance == this)
-            Instance = null;
-    }
+  private void OnDestroy()
+{
+    SceneManager.sceneLoaded -= AlCargarEscena;
+
+    if (Instance == this)
+        Instance = null;
+}
 
     // =====================================================
     // REGISTRAR ZONA SEGURA
@@ -505,6 +514,20 @@ public class CheckpointManager : MonoBehaviour
 
         // Restaurar el estado de la historia.
         gestorHistoria.RestaurarDesdeCheckpoint(escenarioActual);
+        RoundManager roundManager =
+            FindAnyObjectByType<RoundManager>();
+
+        if (roundManager != null)
+        {
+            roundManager.PrepararHistoriaDesdeCheckpoint();
+        }
+        else
+        {
+            Debug.LogError(
+                "[CheckpointManager] No se encontró RoundManager " +
+                "para preparar la Historia desde el checkpoint."
+            );
+        }
 
         // RESTAURAR ARMAS Y ACCESORIOS.
         bool restauracionArmasCorrecta =
@@ -568,15 +591,21 @@ public class CheckpointManager : MonoBehaviour
     // FINALIZAR CARGA
     // =====================================================
 
-    public void FinalizarCarga()
-    {
-        cargandoPartida = false;
-        rutinaRestauracionDatos = null;
+  
+public void FinalizarCarga()
+{
+    cargandoPartida = false;
+    cargaPendienteDesdeMenu = false;
+    escenaEsperadaCarga = null;
+    rutinaRestauracionDatos = null;
 
-        Debug.Log(
-            "[CheckpointManager] Proceso de carga finalizado."
-        );
-    }
+    LoadGameMenuController.FinalizarCargaDesdeMenu();
+
+    Debug.Log(
+        "[CheckpointManager] Proceso de carga finalizado."
+    );
+}
+
 
     // =====================================================
     // UTILIDADES
@@ -588,4 +617,68 @@ public class CheckpointManager : MonoBehaviour
                ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado ==
                ConfiguracionPartidaSeleccionada.ModoJuego.Historia;
     }
+
+    // =====================================================
+// PREPARAR CARGA DESDE EL MENÚ
+// =====================================================
+
+public void PrepararCargaDesdeMenu(string nombreEscena)
+{
+    if (string.IsNullOrEmpty(nombreEscena))
+    {
+        Debug.LogError(
+            "[CheckpointManager] El nombre de la escena está vacío."
+        );
+        return;
+    }
+
+    escenaEsperadaCarga = nombreEscena;
+    cargaPendienteDesdeMenu = true;
+
+    Debug.Log(
+        "[CheckpointManager] Carga pendiente preparada para: " +
+        nombreEscena
+    );
+}
+
+// =====================================================
+// DETECTAR CARGA DE ESCENA
+// =====================================================
+
+private void AlCargarEscena(Scene escena, LoadSceneMode modo)
+{
+    if (!cargaPendienteDesdeMenu)
+        return;
+
+    if (escena.name != escenaEsperadaCarga)
+        return;
+
+    Debug.Log(
+        "[CheckpointManager] Escena de juego cargada. " +
+        "Iniciando restauración del checkpoint."
+    );
+
+    escenaEsperadaCarga = null;
+
+    CargarCheckpoint();
+}
+public void PrepararNuevaPartida()
+{
+    if (rutinaRestauracionDatos != null)
+    {
+        StopCoroutine(rutinaRestauracionDatos);
+        rutinaRestauracionDatos = null;
+    }
+
+    escenarioActual = EscenarioCheckpoint.Ninguno;
+
+    cargandoPartida = false;
+    cargaPendienteDesdeMenu = false;
+    escenaEsperadaCarga = null;
+
+    Debug.Log(
+        "[CheckpointManager] Nueva partida preparada. " +
+        "El progreso de checkpoints fue reiniciado."
+    );
+}
 }

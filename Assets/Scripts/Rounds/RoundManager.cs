@@ -2339,5 +2339,24 @@ private void DesbloquearLogroHistoriaClientRpc(
         "Rango: " + rango
     );
 }
+public void PrepararHistoriaDesdeCheckpoint()
+{
+    if (!IsServer || !EsModoHistoria)
+        return;
 
+    historiaPartidaIniciada = true;
+    historiaSpawningActivo = false;
+    roundInProgress = true;
+
+    if (historiaSpawnRoutine != null)
+    {
+        StopCoroutine(historiaSpawnRoutine);
+        historiaSpawnRoutine = null;
+    }
+
+    Debug.Log(
+        "[RoundManager] Historia preparada desde checkpoint. " +
+        "Esperando que el jugador abandone la zona segura."
+    );
+}
 }

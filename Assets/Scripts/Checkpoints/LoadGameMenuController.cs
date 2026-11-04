@@ -194,6 +194,10 @@ public class LoadGameMenuController : MonoBehaviour
             SeleccionarHistoria();
             return;
         }
+        if (CheckpointManager.Instance != null)
+        {
+            CheckpointManager.Instance.PrepararNuevaPartida();
+        }
 
         if (CheckpointManager.Instance == null)
         {
@@ -267,7 +271,9 @@ public class LoadGameMenuController : MonoBehaviour
             "CARGANDO PARTIDA...\n\n" +
             "Preparando escenario y restaurando datos.";
 
-        SceneManager.sceneLoaded += AlCargarEscena;
+        CheckpointManager.Instance.PrepararCargaDesdeMenu(
+            escenaJuego
+        );
 
         if (networkManager != null &&
             networkManager.IsListening)
@@ -286,38 +292,6 @@ public class LoadGameMenuController : MonoBehaviour
         }
     }
 
-    // =====================================================
-    // ESCENA CARGADA
-    // =====================================================
-
-    private void AlCargarEscena(
-        Scene escena,
-        LoadSceneMode modo)
-    {
-        if (escena.name != escenaJuego)
-            return;
-
-        SceneManager.sceneLoaded -= AlCargarEscena;
-
-        CheckpointManager manager =
-            CheckpointManager.Instance;
-
-        if (manager == null)
-        {
-            Debug.LogError(
-                "[LoadGameMenuController] No se encontró CheckpointManager."
-            );
-            return;
-        }
-
-        Debug.Log(
-            "[LoadGameMenuController] Escena cargada. Restaurando checkpoint."
-        );
-
-        manager.CargarCheckpoint();
-
-        Destroy(gameObject);
-    }
 
     // =====================================================
     // UTILIDADES
@@ -346,7 +320,6 @@ public class LoadGameMenuController : MonoBehaviour
 
     private void OnDestroy()
     {
-        SceneManager.sceneLoaded -= AlCargarEscena;
 
         if (botonHistoria != null)
             botonHistoria.onClick.RemoveListener(SeleccionarHistoria);
@@ -357,4 +330,21 @@ public class LoadGameMenuController : MonoBehaviour
         if (botonVolver != null)
             botonVolver.onClick.RemoveListener(Volver);
     }
+    [RuntimeInitializeOnLoadMethod(
+    RuntimeInitializeLoadType.SubsystemRegistration
+    )]
+    private static void ReiniciarEstadoDeCarga()
+    {
+        CargandoPartidaDesdeMenu = false;
+    }
+    
+public static void FinalizarCargaDesdeMenu()
+{
+    CargandoPartidaDesdeMenu = false;
+
+    Debug.Log(
+        "[LoadGameMenu] Estado de carga desde menú restablecido."
+    );
+}
+
 }

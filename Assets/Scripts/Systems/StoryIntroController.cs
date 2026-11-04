@@ -98,30 +98,82 @@ private void Update()
 }
 
 
-    public void MostrarAvisoContinuarSafeZone()
-    {
-        continuarHaciaCabana = false;
-        if (!IsOwner)
-            return;
-
-        esperandoContinuarSafeZone = true;
-
-        if (popupContinuarSafeZone != null)
-            popupContinuarSafeZone.SetActive(true);
-
-        Debug.Log("[StoryIntro] Esperando Enter para continuar a Ciudad.");
-    }
-  
-public void MostrarAvisoContinuarAMansion()
+ 
+public void MostrarAvisoContinuarSafeZone()
 {
     Debug.Log(
-        "[StoryIntro] Se llamó a MostrarAvisoContinuarAMansion(). IsOwner=" +
+        "[StoryIntro] Preparando jugador en SafeZone1. IsOwner=" +
         IsOwner
     );
 
     if (!IsOwner)
         return;
 
+    // Evitar que quede activa la introducción del laboratorio.
+    historiaActiva = false;
+
+    if (popupHistoria != null)
+        popupHistoria.SetActive(false);
+
+    // Habilitar HUD y controles para utilizar la zona segura.
+    if (hud != null)
+        hud.SetActive(true);
+
+    ReanudarTiempoSiSinglePlayer();
+    HabilitarJugador();
+
+    Cursor.visible = false;
+    Cursor.lockState = CursorLockMode.Locked;
+
+    // Preparar la continuación hacia Ciudad.
+    continuarHaciaCabana = false;
+    esperandoContinuarSafeZone = true;
+
+    if (popupContinuarSafeZone != null)
+    {
+        popupContinuarSafeZone.SetActive(true);
+    }
+    else
+    {
+        Debug.LogError(
+            "[StoryIntro] popupContinuarSafeZone no está asignado."
+        );
+    }
+
+    Debug.Log(
+        "[StoryIntro] SafeZone1 preparada. HUD activo y controles habilitados."
+    );
+}
+
+  
+
+public void MostrarAvisoContinuarAMansion()
+{
+    Debug.Log(
+        "[StoryIntro] Preparando jugador en SafeZone2. IsOwner=" +
+        IsOwner
+    );
+
+    if (!IsOwner)
+        return;
+
+    // No hay una introducción pendiente.
+    historiaActiva = false;
+
+    if (popupHistoria != null)
+        popupHistoria.SetActive(false);
+
+    // La zona segura debe permitir jugar e interactuar.
+    if (hud != null)
+        hud.SetActive(true);
+
+    ReanudarTiempoSiSinglePlayer();
+    HabilitarJugador();
+
+    Cursor.visible = false;
+    Cursor.lockState = CursorLockMode.Locked;
+
+    // Mantener el aviso para continuar hacia la Mansión.
     continuarHaciaCabana = true;
     esperandoContinuarSafeZone = true;
 
@@ -132,14 +184,15 @@ public void MostrarAvisoContinuarAMansion()
     else
     {
         Debug.LogError(
-            "[StoryIntro] popupContinuarSafeZone no está asignado en el Inspector."
+            "[StoryIntro] popupContinuarSafeZone no está asignado."
         );
     }
 
     Debug.Log(
-        "[StoryIntro] Esperando Enter para continuar a la Mansión."
+        "[StoryIntro] SafeZone2 preparada. HUD activo y controles habilitados."
     );
 }
+
 
 
     public void OcultarAvisoContinuarSafeZone()
@@ -257,18 +310,38 @@ public void MostrarAvisoContinuarAMansion()
         );
     }
 
-    public override void OnNetworkSpawn()
-    {
-        if (!IsOwner)
-        {
-            enabled = false;
-            return;
-        }
+   public override void OnNetworkSpawn()
+{
+    base.OnNetworkSpawn();
 
-        if (EsSinglePlayer())
-            MostrarHistoriaInicial();
+    if (!IsOwner)
+    {
+        enabled = false;
+        return;
     }
 
+    // Si estamos cargando un checkpoint, no mostrar la introducción
+    // normal del escenario. CheckpointManager mostrará el aviso
+    // correspondiente a la zona segura.
+    if (CheckpointManager.Instance != null &&
+        CheckpointManager.Instance.CargaPendiente)
+    {
+        historiaActiva = false;
+
+        if (popupHistoria != null)
+            popupHistoria.SetActive(false);
+
+        Debug.Log(
+            "[StoryIntro] Carga de checkpoint detectada. " +
+            "Se omite la introducción inicial."
+        );
+
+        return;
+    }
+
+    if (EsSinglePlayer())
+        MostrarHistoriaInicial();
+}
     private bool EsSinglePlayer()
     {
         return SceneManager.GetActiveScene().name == "MainSceneSinglePlayer";
@@ -525,7 +598,6 @@ private void ReanudarTiempoSiSinglePlayer()
             weaponSwitcher.CurrentWeapon.enabled = true;
     }
 
-    
 private void IniciarTransicionACabana()
 {
     esperandoContinuarSafeZone = false;
@@ -534,7 +606,8 @@ private void IniciarTransicionACabana()
     if (popupContinuarSafeZone != null)
         popupContinuarSafeZone.SetActive(false);
 
-    GestorEscenariosPartida gestor = GestorEscenariosPartida.Instance;
+    GestorEscenariosPartida gestor =
+        GestorEscenariosPartida.Instance;
 
     if (gestor == null)
     {
@@ -551,52 +624,62 @@ private void IniciarTransicionACabana()
 
     BloquearJugador();
 
-    // Activar la Mansión y desactivar la zona segura.
+    // 1. Activar la Mansión y desactivar la zona segura.
     gestor.ActivarEscenario(
         ConfiguracionPartidaSeleccionada.Escenario.Cabana
     );
 
- 
-if (IsServer)
-{
-    if (GestorHistoriaPartida.Instance != null)
+    // 2. Preparar los puntos de aparición y eliminar
+    // los zombies que pudieran quedar de la Ciudad.
+    if (IsServer)
     {
-        GestorHistoriaPartida.Instance.IniciarMisionCabana();
-    }
-    else
-    {
-        Debug.LogError(
-            "[StoryIntro] No se encontró GestorHistoriaPartida " +
-            "para iniciar la misión final."
-        );
+        if (RoundManager.Instance != null)
+        {
+            RoundManager.Instance.ActualizarSpawnPointsDelEscenario();
+
+            RoundManager.Instance.EliminarZombiesHistoria();
+        }
+        else
+        {
+            Debug.LogError(
+                "[StoryIntro] No se encontró RoundManager " +
+                "para preparar los zombies de la Mansión."
+            );
+        }
     }
 
-    if (GestorMansionHistoria.Instance != null)
-    {
-        GestorMansionHistoria.Instance.IniciarMision();
-    }
-    else
-    {
-        Debug.LogError(
-            "[StoryIntro] No se encontró GestorMansionHistoria " +
-            "para iniciar la misión de la mansión."
-        );
-    }
-}
-
-
-    // Actualizar los puntos de aparición de los zombis.
-    if (IsServer && RoundManager.Instance != null)
-    {
-        RoundManager.Instance.ActualizarSpawnPointsDelEscenario();
-        RoundManager.Instance.EliminarZombiesHistoria();
-        RoundManager.Instance.ReanudarSpawnsHistoria();
-    }
-
-    // Llevar al jugador al punto de aparición de la Mansión.
+    // 3. Trasladar al jugador al punto inicial de la Mansión.
     gestor.TrasladarJugadorAInicioDeEscenario(transform.root);
 
-    // Mostrar la introducción del escenario final.
+    // 4. Iniciar las misiones desde el servidor.
+    if (IsServer)
+    {
+        if (GestorHistoriaPartida.Instance != null)
+        {
+            GestorHistoriaPartida.Instance.IniciarMisionCabana();
+        }
+        else
+        {
+            Debug.LogError(
+                "[StoryIntro] No se encontró GestorHistoriaPartida " +
+                "para iniciar la misión final."
+            );
+        }
+
+        if (GestorMansionHistoria.Instance != null)
+        {
+            GestorMansionHistoria.Instance.IniciarMision();
+        }
+        else
+        {
+            Debug.LogError(
+                "[StoryIntro] No se encontró GestorMansionHistoria " +
+                "para iniciar la misión de la Mansión."
+            );
+        }
+    }
+
+    // 5. Mostrar la introducción del escenario final.
     DatosHistoria datos = ObtenerDatosHistoria(
         ConfiguracionPartidaSeleccionada.ModoJuego.Historia,
         ConfiguracionPartidaSeleccionada.Escenario.Cabana
@@ -638,5 +721,6 @@ if (IsServer)
         "[StoryIntro] Mansión activada. Introducción mostrada."
     );
 }
+
 
 }
