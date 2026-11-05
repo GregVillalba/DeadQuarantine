@@ -239940,7 +239940,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Seleccion\xE1 Historia para consultar tu partida."
+  m_text: "Seleccion\xE1 un Modo para restarurar una  partida guardada."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -379607,6 +379607,7 @@ MonoBehaviour:
   panelCarga: {fileID: 92159244}
   escenaJuego: MainSceneSinglePlayer
   botonHistoria: {fileID: 1481589644}
+  botonSupervivencia: {fileID: 2028306108}
   botonCargar: {fileID: 2046483696}
   botonVolver: {fileID: 1450279353}
   informacion: {fileID: 837279245}
@@ -472385,8 +472386,9 @@ GameObject:
   m_Component:
   - component: {fileID: 1578634262}
   - component: {fileID: 1578634261}
+  - component: {fileID: 1578634263}
   m_Layer: 0
-  m_Name: CheckpointManager
+  m_Name: SaveDataManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -472792,6 +472794,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1579520110}
   m_Mesh: {fileID: 4300000, guid: bf66c996903e9c7438f58ae109090762, type: 3}
+--- !u!114 &1578634263
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1578634260}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0dae944aa6772194b8e80bb136d00038, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Scripts::SurvivalSaveManager
 --- !u!1 &1579631843
 GameObject:
   m_ObjectHideFlags: 0
@@ -539042,7 +539056,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: SUPERVIVENCIA - NO DISPONIBLE
+  m_text: MODO SUPERVIVENCIA
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -610053,7 +610067,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 0
+  m_Interactable: 1
   m_TargetGraphic: {fileID: 2028306109}
   m_OnClick:
     m_PersistentCalls:
@@ -610071,7 +610085,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.12, g: 0.12, b: 0.12, a: 1}
+  m_Color: {r: 0.16078432, g: 0.21176471, b: 0.27058825, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1

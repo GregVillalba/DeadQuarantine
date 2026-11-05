@@ -16,6 +16,7 @@ public class LoadGameMenuController : MonoBehaviour
 
     [Header("Botones")]
     [SerializeField] private Button botonHistoria;
+    [SerializeField] private Button botonSupervivencia;
     [SerializeField] private Button botonCargar;
     [SerializeField] private Button botonVolver;
 
@@ -24,10 +25,13 @@ public class LoadGameMenuController : MonoBehaviour
     [SerializeField] private TMP_Text subtitulo;
 
     public static bool CargandoPartidaDesdeMenu { get; private set; }
+    public static bool CargandoSupervivenciaDesdeMenu { get; private set; }
 
     private HistoriaSaveData datosCheckpoint;
+    private SupervivenciaSaveData datosSupervivencia;
 
     private bool historiaSeleccionada;
+    private bool supervivenciaSeleccionada;
     private bool eventosConectados;
 
     // =====================================================
@@ -56,6 +60,7 @@ public class LoadGameMenuController : MonoBehaviour
             return;
 
         if (botonHistoria == null ||
+            botonSupervivencia == null ||
             botonCargar == null ||
             botonVolver == null)
         {
@@ -66,6 +71,7 @@ public class LoadGameMenuController : MonoBehaviour
         }
 
         botonHistoria.onClick.AddListener(SeleccionarHistoria);
+        botonSupervivencia.onClick.AddListener(SeleccionarSupervivencia);
         botonCargar.onClick.AddListener(CargarPartida);
         botonVolver.onClick.AddListener(Volver);
 
@@ -90,6 +96,7 @@ public class LoadGameMenuController : MonoBehaviour
         }
 
         historiaSeleccionada = false;
+        supervivenciaSeleccionada = false;
 
         ComprobarPartidaGuardada();
 
@@ -102,7 +109,7 @@ public class LoadGameMenuController : MonoBehaviour
         if (informacion != null)
         {
             informacion.text =
-                "Seleccioná Historia para consultar tu partida.";
+                "Seleccioná un Modo para restaurar una partida guardada.";
         }
 
         panelCarga.SetActive(true);
@@ -117,6 +124,10 @@ public class LoadGameMenuController : MonoBehaviour
             panelCarga.SetActive(false);
 
         historiaSeleccionada = false;
+        supervivenciaSeleccionada = false;
+
+        if (botonCargar != null)
+            botonCargar.interactable = false;
 
         Debug.Log(
             "[LoadGameMenuController] Se cerró el menú de carga."
@@ -124,16 +135,17 @@ public class LoadGameMenuController : MonoBehaviour
     }
 
     // =====================================================
-    // COMPROBAR PARTIDA
+    // COMPROBAR PARTIDAS GUARDADAS
     // =====================================================
 
-    private void ComprobarPartidaGuardada()
+
+private void ComprobarPartidaGuardada()
+{
+    // Historia
+    datosCheckpoint = SaveSystem.CargarHistoria();
+
+    if (datosCheckpoint != null)
     {
-        datosCheckpoint = SaveSystem.CargarHistoria();
-
-        if (datosCheckpoint == null)
-            return;
-
         bool valido =
             datosCheckpoint.checkpoint ==
                 (int)CheckpointManager.EscenarioCheckpoint.SafeZone1 ||
@@ -144,6 +156,42 @@ public class LoadGameMenuController : MonoBehaviour
             datosCheckpoint = null;
     }
 
+    // Supervivencia
+    datosSupervivencia = null;
+
+    if (!SaveSystem.ExisteGuardadoSupervivencia())
+        return;
+
+    SupervivenciaSaveData datos =
+        SaveSystem.CargarSupervivencia();
+
+    if (datos == null)
+        return;
+
+    // Validar que realmente exista un checkpoint válido.
+    bool rondaValida =
+        datos.rondaActual >= 5 &&
+        datos.rondaActual % 5 == 0;
+
+    bool escenarioValido =
+        datos.escenario !=
+        (int)ConfiguracionPartidaSeleccionada.Escenario.Ninguno;
+
+    bool jugadorValido = datos.jugador != null;
+
+    if (!rondaValida || !escenarioValido || !jugadorValido)
+    {
+        Debug.LogWarning(
+            "[LoadGameMenuController] El guardado de Supervivencia está vacío o es inválido."
+        );
+
+        return;
+    }
+
+    datosSupervivencia = datos;
+}
+
+
     // =====================================================
     // SELECCIONAR HISTORIA
     // =====================================================
@@ -151,31 +199,91 @@ public class LoadGameMenuController : MonoBehaviour
     private void SeleccionarHistoria()
     {
         historiaSeleccionada = true;
+        supervivenciaSeleccionada = false;
 
         ComprobarPartidaGuardada();
 
         if (datosCheckpoint == null)
         {
-            informacion.text =
-                "NO HAY PARTIDAS GUARDADAS\n\n" +
-                "Primero tenés que alcanzar una zona segura.";
+            if (informacion != null)
+            {
+                informacion.text =
+                    "NO HAY PARTIDAS GUARDADAS\n\n" +
+                    "Primero tenés que alcanzar una zona segura.";
+            }
 
-            botonCargar.interactable = false;
-            subtitulo.text = "Modo Historia";
+            if (botonCargar != null)
+                botonCargar.interactable = false;
+
+            if (subtitulo != null)
+                subtitulo.text = "Modo Historia";
 
             return;
         }
 
-        informacion.text =
-            "PARTIDA ENCONTRADA\n\n" +
-            "Checkpoint: " +
-            ObtenerNombreCheckpoint(datosCheckpoint.checkpoint) +
-            "\nDificultad: " +
-            ObtenerNombreDificultad(datosCheckpoint.dificultad);
+        if (informacion != null)
+        {
+            informacion.text =
+                "PARTIDA ENCONTRADA\n\n" +
+                "Checkpoint: " +
+                ObtenerNombreCheckpoint(datosCheckpoint.checkpoint) +
+                "\nDificultad: " +
+                ObtenerNombreDificultad(datosCheckpoint.dificultad);
+        }
 
-        subtitulo.text = "Continuar modo Historia";
+        if (subtitulo != null)
+            subtitulo.text = "Continuar modo Historia";
 
-        botonCargar.interactable = true;
+        if (botonCargar != null)
+            botonCargar.interactable = true;
+    }
+
+    // =====================================================
+    // SELECCIONAR SUPERVIVENCIA
+    // =====================================================
+
+    private void SeleccionarSupervivencia()
+    {
+        historiaSeleccionada = false;
+        supervivenciaSeleccionada = true;
+
+        ComprobarPartidaGuardada();
+
+        if (datosSupervivencia == null)
+        {
+            if (informacion != null)
+            {
+                informacion.text =
+                    "NO HAY PARTIDAS GUARDADAS\n\n" +
+                    "El modo Supervivencia todavía no tiene un checkpoint disponible.";
+            }
+
+            if (botonCargar != null)
+                botonCargar.interactable = false;
+
+            if (subtitulo != null)
+                subtitulo.text = "Modo Supervivencia";
+
+            return;
+        }
+
+        if (informacion != null)
+        {
+            informacion.text =
+                "PARTIDA ENCONTRADA\n\n" +
+                "Escenario: " +
+                ObtenerNombreEscenario(datosSupervivencia.escenario) +
+                "\nDificultad: " +
+                ObtenerNombreDificultad(datosSupervivencia.dificultad) +
+                "\nÚltima ronda guardada: " +
+                datosSupervivencia.rondaActual;
+        }
+
+        if (subtitulo != null)
+            subtitulo.text = "Continuar modo Supervivencia";
+
+        if (botonCargar != null)
+            botonCargar.interactable = true;
     }
 
     // =====================================================
@@ -184,19 +292,34 @@ public class LoadGameMenuController : MonoBehaviour
 
     private void CargarPartida()
     {
-        if (CargandoPartidaDesdeMenu || !historiaSeleccionada)
+        if (CargandoPartidaDesdeMenu)
             return;
 
+        if (historiaSeleccionada)
+        {
+            CargarHistoria();
+            return;
+        }
+
+        if (supervivenciaSeleccionada)
+        {
+            CargarSupervivencia();
+            return;
+        }
+    }
+
+    // =====================================================
+    // CARGAR HISTORIA
+    // =====================================================
+
+    private void CargarHistoria()
+    {
         ComprobarPartidaGuardada();
 
         if (datosCheckpoint == null)
         {
             SeleccionarHistoria();
             return;
-        }
-        if (CheckpointManager.Instance != null)
-        {
-            CheckpointManager.Instance.PrepararNuevaPartida();
         }
 
         if (CheckpointManager.Instance == null)
@@ -218,17 +341,8 @@ public class LoadGameMenuController : MonoBehaviour
             return;
         }
 
-        NetworkManager networkManager = NetworkManager.Singleton;
-
-        if (networkManager != null &&
-            networkManager.IsListening &&
-            !networkManager.IsServer)
-        {
-            Debug.LogError(
-                "[LoadGameMenuController] Solo el servidor puede cargar."
-            );
+        if (!ValidarServidor())
             return;
-        }
 
         configuracion.modoSeleccionado =
             ConfiguracionPartidaSeleccionada.ModoJuego.Historia;
@@ -255,25 +369,142 @@ public class LoadGameMenuController : MonoBehaviour
                 break;
 
             default:
+
                 Debug.LogError(
                     "[LoadGameMenuController] Checkpoint inválido."
                 );
+
                 return;
         }
 
         CargandoPartidaDesdeMenu = true;
+        CargandoSupervivenciaDesdeMenu = false;
 
-        botonHistoria.interactable = false;
-        botonCargar.interactable = false;
-        botonVolver.interactable = false;
+        BloquearBotonesDuranteCarga();
 
-        informacion.text =
-            "CARGANDO PARTIDA...\n\n" +
-            "Preparando escenario y restaurando datos.";
+        if (informacion != null)
+        {
+            informacion.text =
+                "CARGANDO PARTIDA...\n\n" +
+                "Preparando escenario y restaurando datos.";
+        }
 
         CheckpointManager.Instance.PrepararCargaDesdeMenu(
             escenaJuego
         );
+
+        CargarEscena();
+    }
+
+    // =====================================================
+    // CARGAR SUPERVIVENCIA
+    // =====================================================
+
+    private void CargarSupervivencia()
+    {
+        ComprobarPartidaGuardada();
+
+        if (datosSupervivencia == null)
+        {
+            SeleccionarSupervivencia();
+            return;
+        }
+
+        if (datosSupervivencia.rondaActual < 5 ||
+            datosSupervivencia.rondaActual % 5 != 0)
+        {
+            Debug.LogError(
+                "[LoadGameMenuController] La ronda guardada de Supervivencia es inválida."
+            );
+            return;
+        }
+
+        ConfiguracionPartidaSeleccionada configuracion =
+            ConfiguracionPartidaSeleccionada.Instancia;
+
+        if (configuracion == null)
+        {
+            Debug.LogError(
+                "[LoadGameMenuController] No existe ConfiguracionPartidaSeleccionada."
+            );
+            return;
+        }
+
+        if (!ValidarServidor())
+            return;
+
+        configuracion.modoSeleccionado =
+            ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia;
+
+        configuracion.escenarioSeleccionado =
+            (ConfiguracionPartidaSeleccionada.Escenario)
+            datosSupervivencia.escenario;
+
+        configuracion.dificultadSeleccionada =
+            (ConfiguracionPartidaSeleccionada.Dificultad)
+            datosSupervivencia.dificultad;
+
+        PrepararCargaSupervivencia();
+
+        BloquearBotonesDuranteCarga();
+
+        if (informacion != null)
+        {
+            informacion.text =
+                "CARGANDO SUPERVIVENCIA...\n\n" +
+                "Restaurando la ronda " +
+                datosSupervivencia.rondaActual +
+                " y los datos del jugador.";
+        }
+
+        Debug.Log(
+            "[LoadGameMenuController] Cargando Supervivencia. Ronda: " +
+            datosSupervivencia.rondaActual
+        );
+
+        CargarEscena();
+    }
+
+    // =====================================================
+    // UTILIDADES DE CARGA
+    // =====================================================
+
+    private bool ValidarServidor()
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+
+        if (networkManager != null &&
+            networkManager.IsListening &&
+            !networkManager.IsServer)
+        {
+            Debug.LogError(
+                "[LoadGameMenuController] Solo el servidor puede cargar."
+            );
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private void BloquearBotonesDuranteCarga()
+    {
+        if (botonHistoria != null)
+            botonHistoria.interactable = false;
+
+        if (botonSupervivencia != null)
+            botonSupervivencia.interactable = false;
+
+        if (botonCargar != null)
+            botonCargar.interactable = false;
+
+        if (botonVolver != null)
+            botonVolver.interactable = false;
+    }
+
+    private void CargarEscena()
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
 
         if (networkManager != null &&
             networkManager.IsListening)
@@ -292,9 +523,8 @@ public class LoadGameMenuController : MonoBehaviour
         }
     }
 
-
     // =====================================================
-    // UTILIDADES
+    // UTILIDADES DE INFORMACIÓN
     // =====================================================
 
     private string ObtenerNombreCheckpoint(int checkpoint)
@@ -312,17 +542,57 @@ public class LoadGameMenuController : MonoBehaviour
         }
     }
 
+    private string ObtenerNombreEscenario(int escenario)
+    {
+        return ((ConfiguracionPartidaSeleccionada.Escenario)
+            escenario).ToString();
+    }
+
     private string ObtenerNombreDificultad(int dificultad)
     {
         return ((ConfiguracionPartidaSeleccionada.Dificultad)
             dificultad).ToString();
     }
 
+    // =====================================================
+    // ESTADO DE CARGA
+    // =====================================================
+
+    public static void PrepararCargaSupervivencia()
+    {
+        CargandoPartidaDesdeMenu = true;
+        CargandoSupervivenciaDesdeMenu = true;
+    }
+
+    public static void FinalizarCargaDesdeMenu()
+    {
+        CargandoPartidaDesdeMenu = false;
+        CargandoSupervivenciaDesdeMenu = false;
+
+        Debug.Log(
+            "[LoadGameMenu] Estado de carga desde menú restablecido."
+        );
+    }
+
+    [RuntimeInitializeOnLoadMethod(
+        RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ReiniciarEstadoDeCarga()
+    {
+        CargandoPartidaDesdeMenu = false;
+        CargandoSupervivenciaDesdeMenu = false;
+    }
+
+    // =====================================================
+    // DESTRUCCIÓN
+    // =====================================================
+
     private void OnDestroy()
     {
-
         if (botonHistoria != null)
             botonHistoria.onClick.RemoveListener(SeleccionarHistoria);
+
+        if (botonSupervivencia != null)
+            botonSupervivencia.onClick.RemoveListener(SeleccionarSupervivencia);
 
         if (botonCargar != null)
             botonCargar.onClick.RemoveListener(CargarPartida);
@@ -330,21 +600,4 @@ public class LoadGameMenuController : MonoBehaviour
         if (botonVolver != null)
             botonVolver.onClick.RemoveListener(Volver);
     }
-    [RuntimeInitializeOnLoadMethod(
-    RuntimeInitializeLoadType.SubsystemRegistration
-    )]
-    private static void ReiniciarEstadoDeCarga()
-    {
-        CargandoPartidaDesdeMenu = false;
-    }
-    
-public static void FinalizarCargaDesdeMenu()
-{
-    CargandoPartidaDesdeMenu = false;
-
-    Debug.Log(
-        "[LoadGameMenu] Estado de carga desde menú restablecido."
-    );
-}
-
 }
