@@ -48,6 +48,14 @@ public class ZombieAI : NetworkBehaviour
     [SerializeField] private float spawnStateEnterTimeout = 0.5f;
     [SerializeField] private float spawnMaxDuration = 8f;
 
+    [Header("Alcance del golpe")]
+    [Tooltip("Diferencia de altura máxima (m) con el objetivo para poder pegarle. Evita golpes a otro piso.")]
+    [SerializeField] private float alturaMaximaAtaque = 1.6f;
+    [Tooltip("Capas que tapan el golpe (paredes, puertas...). Los zombies, los jugadores y la torreta objetivo nunca tapan.")]
+    [SerializeField] private LayerMask capasBloqueanAtaque = ~(1 << 2);
+    [Tooltip("Altura (m) desde los pies de la línea que se revisa entre el zombie y el objetivo.")]
+    [SerializeField] private float alturaLineaAtaque = 1.1f;
+
     [Header("Estabilidad en espacios cerrados")]
     [Tooltip("Distancia a la que el zombie intenta colocarse respecto del jugador. Debe ser menor que Attack Range.")]
     [SerializeField] private float attackApproachDistance = 1.35f;
@@ -484,7 +492,7 @@ public class ZombieAI : NetworkBehaviour
         // Plana (sin altura) hasta el jugador, o hasta el borde de la torreta.
         float distanceToTarget = DistanciaAlObjetivo();
 
-        if (distanceToTarget <= attackRange)
+        if (distanceToTarget <= attackRange && PuedeGolpearObjetivo())
         {
             if (AgenteSobreNavMesh())
             {
@@ -624,6 +632,57 @@ public class ZombieAI : NetworkBehaviour
         return DistanciaPlana(transform.position, PuntoObjetivo());
     }
 
+    // La distancia de ataque es plana: sin estos chequeos un zombie del otro lado de una pared
+    // (o en otro piso) a menos de attackRange le pegaría igual.
+    private readonly RaycastHit[] impactosAtaque = new RaycastHit[16];
+
+    private bool PuedeGolpearObjetivo()
+    {
+        if (target == null)
+            return false;
+
+        Vector3 punto = PuntoObjetivo();
+
+        float pieObjetivo = targetTorreta != null ? targetTorreta.transform.position.y : target.position.y;
+
+        if (Mathf.Abs(pieObjetivo - transform.position.y) > alturaMaximaAtaque)
+            return false;
+
+        Vector3 origen = transform.position + Vector3.up * alturaLineaAtaque;
+        Vector3 destino = new Vector3(punto.x, pieObjetivo + alturaLineaAtaque, punto.z);
+        Vector3 haciaDestino = destino - origen;
+        float distancia = haciaDestino.magnitude;
+
+        if (distancia < 0.01f)
+            return true;
+
+        int cantidad = Physics.RaycastNonAlloc(
+            origen,
+            haciaDestino / distancia,
+            impactosAtaque,
+            distancia,
+            capasBloqueanAtaque,
+            QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < cantidad; i++)
+        {
+            Collider impacto = impactosAtaque[i].collider;
+
+            if (impacto == null ||
+                impacto.transform.IsChildOf(transform) ||
+                impacto.transform.IsChildOf(target))
+                continue;
+
+            if (impacto.GetComponentInParent<ZombieHealth>() != null ||
+                impacto.GetComponentInParent<PlayerHealth>() != null)
+                continue;
+
+            return false;
+        }
+
+        return true;
+    }
+
     // Centro del jugador, o el punto de la torreta más cercano al zombie.
     private Vector3 PuntoObjetivo()
     {
@@ -713,7 +772,28 @@ public class ZombieAI : NetworkBehaviour
             )
         )
         {
-            return navHit.position;
+            // El punto tiene que estar del mismo lado que el objetivo: si hay una pared en el medio
+            // (el zombie viene de otra habitación) se va derecho al objetivo y la ruta rodea por la puerta.
+            if (
+                !NavMesh.SamplePosition(
+                    objetivo,
+                    out NavMeshHit objetivoEnNavMesh,
+                    1.5f,
+                    agent.areaMask
+                )
+            )
+            {
+                return navHit.position;
+            }
+
+            bool paredEnElMedio = NavMesh.Raycast(
+                objetivoEnNavMesh.position,
+                navHit.position,
+                out _,
+                agent.areaMask
+            );
+
+            return paredEnElMedio ? objetivoEnNavMesh.position : navHit.position;
         }
 
         return desired;
@@ -852,7 +932,7 @@ public class ZombieAI : NetworkBehaviour
         // Torreta: le saca vida (la misma que a un jugador). Rota en medio del golpe = no le pasa nada.
         if (targetTorreta != null)
         {
-            if (!targetTorreta.EstaRota && DistanciaAlObjetivo() <= attackRange)
+            if (!targetTorreta.EstaRota && DistanciaAlObjetivo() <= attackRange && PuedeGolpearObjetivo())
                 targetTorreta.RecibirDanoZombie(DanoDeAtaque());
 
             if (animationDriver != null || animator == null)
@@ -868,7 +948,7 @@ public class ZombieAI : NetworkBehaviour
                     target.position
                 );
 
-            if (distanceToTarget <= attackRange)
+            if (distanceToTarget <= attackRange && PuedeGolpearObjetivo())
             {
                 PlayerHealth playerHealth =
                     target.GetComponentInParent<PlayerHealth>();

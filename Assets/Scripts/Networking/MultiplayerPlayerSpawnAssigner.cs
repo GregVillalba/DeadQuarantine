@@ -1,5 +1,6 @@
 
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 
@@ -72,6 +73,7 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
         );
 
         AssignedSpawnIndex.OnValueChanged += OnSpawnIndexChanged;
+        SceneManager.activeSceneChanged += OnEscenaActivaCambiada;
         momentoSpawn = Time.unscaledTime;
 
         if (
@@ -115,11 +117,12 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
         if (Time.unscaledTime < momentoSpawn + EsperaAsignacionPropia)
             return;
 
-        if (MultiplayerPlayerSpawner.BuscarDelEscenarioActivo() != null)
+        // Solo en la escena de juego con el escenario ya elegido: en el lobby (multijugador) no hay
+        // escenario jugable y el lugar lo asigna el spawner al cargar la partida.
+        if (EscenarioActivo() == null)
             return;
 
-        // Todavía no se eligió el escenario: se espera para no mandarlo a uno oculto.
-        if (FaltaElegirEscenario())
+        if (MultiplayerPlayerSpawner.BuscarDelEscenarioActivo() != null)
             return;
 
         MultiplayerPlayerSpawner cualquiera = FindAnyObjectByType<MultiplayerPlayerSpawner>();
@@ -134,34 +137,28 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
         );
     }
 
-    // Hay escenarios en la escena (no es el tutorial) pero ninguno activo todavía.
-    private static bool FaltaElegirEscenario()
+    // Escenario que se está jugando. null en el lobby, en el tutorial o mientras la partida lo elige.
+    private static ConfiguracionEscenarioJugable EscenarioActivo()
     {
         GestorEscenariosPartida gestor = GestorEscenariosPartida.Instance;
-        return gestor != null && gestor.ObtenerEscenarioActivo() == null;
+        return gestor != null ? gestor.ObtenerEscenarioActivo() : null;
     }
 
     // Punto de spawn del escenario que se está jugando (no el de un escenario oculto).
     private static Transform ObtenerPuntoSpawn(int index)
     {
-        // Sin escenario elegido todavía, el spawner devolvería el punto de un escenario oculto
-        // (sin colliders): se reintenta más tarde (Update cada 0.5 s).
-        if (FaltaElegirEscenario())
-            return null;
-
+        // Spawner del escenario activo (o el del tutorial).
         MultiplayerPlayerSpawner spawner =
             MultiplayerPlayerSpawner.BuscarDelEscenarioActivo();
-
-        if (spawner == null)
-            spawner = FindAnyObjectByType<MultiplayerPlayerSpawner>();
 
         if (spawner != null)
             return spawner.GetSpawnPoint(index);
 
-        GestorEscenariosPartida gestor = GestorEscenariosPartida.Instance;
-        ConfiguracionEscenarioJugable activo =
-            gestor != null ? gestor.ObtenerEscenarioActivo() : null;
-
+        // Escenario activo sin spawner propio (ej: Escenario_2): su punto directo.
+        // Sin escenario activo (lobby, o la partida todavía eligiendo) no hay dónde ir: se
+        // reintenta más tarde (Update cada 0.5 s). Nunca se usa el spawner de un escenario
+        // oculto o del fondo del menú: sus colliders están apagados y el jugador cae al vacío.
+        ConfiguracionEscenarioJugable activo = EscenarioActivo();
         return activo != null ? activo.ObtenerSpawnJugador(index) : null;
     }
 
@@ -361,8 +358,30 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
     // DESPAWN
     // =========================================================
 
+    // El jugador de multijugador se crea en el lobby y pasa a la escena de juego: lo que haya
+    // quedado de la escena anterior no sirve, hay que volver a ubicarlo en el spawn de la nueva.
+    private void OnEscenaActivaCambiada(Scene anterior, Scene escena)
+    {
+        if (!IsSpawned || !IsOwner)
+            return;
+
+        IsAtSpawn.Value = false;
+        proximoReintento = 0f;
+
+        Debug.Log(
+            "[SpawnAssigner] Escena '" + escena.name + "' cargada: se vuelve a ubicar al jugador."
+        );
+    }
+
+    public override void OnDestroy()
+    {
+        SceneManager.activeSceneChanged -= OnEscenaActivaCambiada;
+        base.OnDestroy();
+    }
+
     public override void OnNetworkDespawn()
     {
+        SceneManager.activeSceneChanged -= OnEscenaActivaCambiada;
         AssignedSpawnIndex.OnValueChanged -= OnSpawnIndexChanged;
 
         base.OnNetworkDespawn();

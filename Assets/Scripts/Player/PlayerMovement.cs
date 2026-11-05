@@ -174,6 +174,7 @@ public class PlayerMovement : NetworkBehaviour
     private CharacterController characterController;
     private PlayerControls controls;
     private PlayerHealth playerHealth;
+    private MultiplayerPlayerSpawnAssigner spawnAssigner;
 
     private Vector2 moveInput;
     private float velocityY;
@@ -2106,6 +2107,17 @@ public class PlayerMovement : NetworkBehaviour
     private void ActualizarCaida()
     {
         Vector3 posicion = transform.position;
+
+        // Todavía no lo ubicaron en su spawn (multijugador: viene del lobby y la escena de juego
+        // está eligiendo el escenario, sin piso debajo): lo que caiga hasta entonces no cuenta.
+        if (spawnAssigner == null)
+            spawnAssigner = GetComponentInParent<MultiplayerPlayerSpawnAssigner>();
+
+        if (spawnAssigner != null && spawnAssigner.IsSpawned && !spawnAssigner.IsAtSpawn.Value)
+        {
+            CancelarCaida();
+            return;
+        }
 
         // Teletransporte (spawn, cambio de escenario, espectador...): no es una caída.
         bool teletransporte =
