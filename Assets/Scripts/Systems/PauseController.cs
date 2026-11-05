@@ -936,6 +936,9 @@ public class PauseController : NetworkBehaviour
 
     public void MostrarValoracion()
     {
+        if (victoriaActiva != null)
+            victoriaActiva.gameObject.SetActive(false);
+
         if (popupValoracion != null)
             popupValoracion.SetActive(true);
     }

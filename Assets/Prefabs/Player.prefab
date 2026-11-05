@@ -952,9 +952,9 @@ MonoBehaviour:
       m_Calls: []
   m_text: "Tras escapar del laboratorio hacia una ciudad infestada, el objetivo es
     llegar a la antena de radio para pedir auxilio, ya que la \xFAnica salida viable
-    es por aire. Abri\xE9ndose paso entre los infectados y tras una breve parada t\xE1ctica,
-    logran entrar a la estaci\xF3n junto a otros refugiados para resistir hasta la
-    evacuaci\xF3n militar.\n\nOBJETIVO: Comunicarte con otros sobrevivientes."
+    es por aire. Abri\xE9ndose paso entre los infectados y tras una breve parada
+    t\xE1ctica, logran entrar a la estaci\xF3n junto a otros refugiados para resistir
+    hasta la evacuaci\xF3n militar.\n\nOBJETIVO: Comunicarte con otros sobrevivientes."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -6761,7 +6761,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 4516312890393998974}
         m_TargetAssemblyTypeName: PauseController, Scripts
-        m_MethodName: MostrarValoracion
+        m_MethodName: OnSiguienteRondaVictoriaPresionado
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -25271,7 +25271,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2203598667333698862
 RectTransform:
   m_ObjectHideFlags: 0
@@ -25458,7 +25458,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 4516312890393998974}
         m_TargetAssemblyTypeName: PauseController, Scripts
-        m_MethodName: OnVolverAlMenuDesdeDerrota
+        m_MethodName: OnClickBotonVolverAlMenuDerrota
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -39264,6 +39264,8 @@ MonoBehaviour:
   interactPrompt: {fileID: 978750385819119589}
   interactText: {fileID: 5695280401888012746}
   interactRange: 3
+  rangoCartelTorreta: 3
+  textoCartelTorretaRota: Reparar en la tienda
   shopPanel: {fileID: 2319079853589907955}
   rowsContainer: {fileID: 4981829284665445819}
   rowPrefab: {fileID: 8538199299126543742, guid: 3e4b9f5a927cb534686208e1f4e192f3, type: 3}
@@ -39344,6 +39346,7 @@ MonoBehaviour:
   textoInventarioLleno: INVENTARIO LLENO
   textoMunicionLlena: "MUNICI\xD3N LLENA"
   textoEquipado: EQUIPADO
+  textoTorretaColocada: COLOCADA
   textoReparar: REPARAR
   progresoCompraFill: {fileID: 72000000000000614}
   tiempoMantenerParaComprar: 2
@@ -45957,8 +45960,8 @@ MonoBehaviour:
   m_text: "Nos encontramos en el laboratorio donde todo empez\xF3: un virus desatado
     que transforma a todo aquel que lo inhala. Avanzamos sigilosamente hacia la salida,
     tratando de no alertar a nadie. Sin embargo, como era de esperarse, la puerta
-    est\xE1 bloqueada. Tu misi\xF3n sera encontrar la tarjeta magn\xE9tica de la puerta
-    principal.\n\nOBJETIVO: Encontrar la tarjeta y escapar."
+    est\xE1 bloqueada. Tu misi\xF3n sera encontrar la tarjeta magn\xE9tica de la
+    puerta principal.\n\nOBJETIVO: Encontrar la tarjeta y escapar."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -53895,9 +53898,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_text: "Nos encontramos en el laboratorio donde todo empez\xF3: un virus desatado
-    que transforma a todo aquel que lo tenga una mordida zombie. Debemos escapar de
-    esta instalaci\xF3n antes de que los infectados nos conviertan. Tenemos que acabar
-    con todos, inclutyendo a Billy, un infectado mutante enorme capaz de comandar
+    que transforma a todo aquel que lo tenga una mordida zombie. Debemos escapar
+    de esta instalaci\xF3n antes de que los infectados nos conviertan. Tenemos que
+    acabar con todos, inclutyendo a Billy, un infectado mutante enorme capaz de comandar
     oleadas de infectados.\n\nOBJETIVO: Acabar con las hordas y zombie mutante."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -66068,6 +66071,7 @@ MonoBehaviour:
   adsCenterVisualSight: 0
   adsSightReference: {fileID: 0}
   adsMaxViewportCorrection: 0.12
+  vectorAdsVerticalSightDown: 0.116
   aimingBlendSpeed: 8
   spreadIdle: 0.5
   spreadMoving: 3
@@ -70668,7 +70672,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1614284941
+  GlobalObjectIdHash: 3516423437
   InScenePlacedSourceGlobalObjectIdHash: 477224611
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -77024,9 +77028,9 @@ MonoBehaviour:
       m_Calls: []
   m_text: "Estamos ante un panorama aterrador: el virus se ha propagado por la ciudad.
     Nos ordenaron mantener la calma, aunque nos advirtieron de un infectado mutante
-    enorme capaz de comandar oleadas de infectados que atacan bases militares en grupo.
-    Ese mutante es la prioridad m\xE1xima, en caso de verlo hay que eliminarlo para
-    acabar con esta pesadilla.\n\nOBJETIVO: Acabar con las hordas y zombie mutante."
+    enorme capaz de comandar oleadas de infectados que atacan bases militares en
+    grupo. Ese mutante es la prioridad m\xE1xima, en caso de verlo hay que eliminarlo
+    para acabar con esta pesadilla.\n\nOBJETIVO: Acabar con las hordas y zombie mutante."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -97643,7 +97647,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 4516312890393998974}
         m_TargetAssemblyTypeName: PauseController, Scripts
-        m_MethodName: MostrarValoracion
+        m_MethodName: OnSiguienteRondaVictoriaPresionado
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -103012,9 +103016,9 @@ MonoBehaviour:
       m_Calls: []
   m_text: "El grupo de refugiados fue dividido en distintos puntos seguros del bosque.
     Nos ordenaron mantener la calma, aunque nos advirtieron de un infectado mutante
-    enorme capaz de comandar oleadas de infectados que atacan bases militares en grupo.
-    Ese mutante es la prioridad m\xE1xima, en caso de verlo hay que eliminarlo para
-    acabar con esta pesadilla.\n\nOBJETIVO: Acabar con las hordas y zombie mutante."
+    enorme capaz de comandar oleadas de infectados que atacan bases militares en
+    grupo. Ese mutante es la prioridad m\xE1xima, en caso de verlo hay que eliminarlo
+    para acabar con esta pesadilla.\n\nOBJETIVO: Acabar con las hordas y zombie mutante."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -113244,6 +113248,7 @@ MonoBehaviour:
   adsCenterVisualSight: 0
   adsSightReference: {fileID: 0}
   adsMaxViewportCorrection: 0.12
+  vectorAdsVerticalSightDown: 0.116
   aimingBlendSpeed: 8
   spreadIdle: 0.5
   spreadMoving: 3
@@ -113364,7 +113369,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: c8dbd703e3bdfb8488b1c4fda0e33ac1, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 84deee04ce530a442a42d378bf808079, type: 2}
     - target: {fileID: 919132149155446097, guid: c8dbd703e3bdfb8488b1c4fda0e33ac1, type: 3}
@@ -114170,6 +114175,7 @@ MonoBehaviour:
   adsCenterVisualSight: 0
   adsSightReference: {fileID: 5995742526114459954}
   adsMaxViewportCorrection: 0.12
+  vectorAdsVerticalSightDown: 0.116
   aimingBlendSpeed: 8
   spreadIdle: 0.5
   spreadMoving: 3
@@ -114293,11 +114299,11 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 7e6b984d2fd188442be27f12f0f305ab, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 84deee04ce530a442a42d378bf808079, type: 2}
     - target: {fileID: -7511558181221131132, guid: 7e6b984d2fd188442be27f12f0f305ab, type: 3}
-      propertyPath: m_Materials.Array.data[1]
+      propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 84deee04ce530a442a42d378bf808079, type: 2}
     - target: {fileID: 919132149155446097, guid: 7e6b984d2fd188442be27f12f0f305ab, type: 3}
@@ -114372,11 +114378,11 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: d278954465bed204da058fa16e88aa40, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 84deee04ce530a442a42d378bf808079, type: 2}
     - target: {fileID: -7511558181221131132, guid: d278954465bed204da058fa16e88aa40, type: 3}
-      propertyPath: m_Materials.Array.data[1]
+      propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 84deee04ce530a442a42d378bf808079, type: 2}
     - target: {fileID: 919132149155446097, guid: d278954465bed204da058fa16e88aa40, type: 3}
@@ -115392,6 +115398,7 @@ MonoBehaviour:
   adsCenterVisualSight: 0
   adsSightReference: {fileID: 7820360497789648388}
   adsMaxViewportCorrection: 0.12
+  vectorAdsVerticalSightDown: 0.116
   aimingBlendSpeed: 8
   spreadIdle: 0.6
   spreadMoving: 4
@@ -115548,7 +115555,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 3fb9a16929ebae44588561efa31a0c81, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 84deee04ce530a442a42d378bf808079, type: 2}
     - target: {fileID: 919132149155446097, guid: 3fb9a16929ebae44588561efa31a0c81, type: 3}
@@ -115760,7 +115767,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 3d2b856b2d22f4b4bb1a99e19628fca3, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 84deee04ce530a442a42d378bf808079, type: 2}
     - target: {fileID: 919132149155446097, guid: 3d2b856b2d22f4b4bb1a99e19628fca3, type: 3}
@@ -116240,7 +116247,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 0434f8e1c9325004e8125c862a41450f, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 84deee04ce530a442a42d378bf808079, type: 2}
     - target: {fileID: 919132149155446097, guid: 0434f8e1c9325004e8125c862a41450f, type: 3}
@@ -116534,6 +116541,7 @@ MonoBehaviour:
   adsCenterVisualSight: 1
   adsSightReference: {fileID: 3358122452012199341}
   adsMaxViewportCorrection: 0.35
+  vectorAdsVerticalSightDown: 0.116
   aimingBlendSpeed: 8
   spreadIdle: 0.6
   spreadMoving: 4
@@ -116660,7 +116668,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: a9cd4f284f201204a93c637da12223bf, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 84deee04ce530a442a42d378bf808079, type: 2}
     - target: {fileID: 919132149155446097, guid: a9cd4f284f201204a93c637da12223bf, type: 3}
@@ -116916,7 +116924,7 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -5675355151119989895, guid: f2fc14639e04fde4db228e4d14874d6c, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 9bea14ef0920fb4469a0db3542252ea1, type: 2}
     - target: {fileID: -5441733475878552817, guid: f2fc14639e04fde4db228e4d14874d6c, type: 3}
@@ -119309,6 +119317,7 @@ MonoBehaviour:
   adsCenterVisualSight: 0
   adsSightReference: {fileID: 0}
   adsMaxViewportCorrection: 0.12
+  vectorAdsVerticalSightDown: 0.116
   aimingBlendSpeed: 8
   spreadIdle: 0.6
   spreadMoving: 4
@@ -119437,7 +119446,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: ebd0537abf6033e4e951aac5e9b8324a, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 84deee04ce530a442a42d378bf808079, type: 2}
     - target: {fileID: 919132149155446097, guid: ebd0537abf6033e4e951aac5e9b8324a, type: 3}
@@ -119749,6 +119758,7 @@ MonoBehaviour:
   adsCenterVisualSight: 1
   adsSightReference: {fileID: 3906636812230480920}
   adsMaxViewportCorrection: 0.35
+  vectorAdsVerticalSightDown: 0.116
   aimingBlendSpeed: 8
   spreadIdle: 0.6
   spreadMoving: 4
@@ -119857,11 +119867,11 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 5fa2471b62db3d34b89451c262bf6e7f, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 84deee04ce530a442a42d378bf808079, type: 2}
     - target: {fileID: -7511558181221131132, guid: 5fa2471b62db3d34b89451c262bf6e7f, type: 3}
-      propertyPath: m_Materials.Array.data[1]
+      propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 84deee04ce530a442a42d378bf808079, type: 2}
     - target: {fileID: 919132149155446097, guid: 5fa2471b62db3d34b89451c262bf6e7f, type: 3}
@@ -119936,7 +119946,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: cc2a33e2e88ac924ca4325e047e332af, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 84deee04ce530a442a42d378bf808079, type: 2}
     - target: {fileID: 919132149155446097, guid: cc2a33e2e88ac924ca4325e047e332af, type: 3}
@@ -120322,6 +120332,7 @@ MonoBehaviour:
   adsCenterVisualSight: 1
   adsSightReference: {fileID: 8978838259509853388}
   adsMaxViewportCorrection: 0.35
+  vectorAdsVerticalSightDown: 0.116
   aimingBlendSpeed: 8
   spreadIdle: 0.6
   spreadMoving: 4
@@ -120659,6 +120670,7 @@ MonoBehaviour:
   adsCenterVisualSight: 0
   adsSightReference: {fileID: 5376759637543820829}
   adsMaxViewportCorrection: 0.12
+  vectorAdsVerticalSightDown: 0.116
   aimingBlendSpeed: 8
   spreadIdle: 0.6
   spreadMoving: 4
