@@ -277,7 +277,7 @@ namespace ithappy.Casino
             if (spinAudioSource != null)
                 spinAudioSource.Stop();
 
-            PlayResult(preset.isWin);
+            PlayResult(preset); // Pasamos el preset completo
             isSpinning = false;
             OnSpinFinished?.Invoke(preset.isWin);
             isSpinning = false;
@@ -511,9 +511,11 @@ namespace ithappy.Casino
                 FindAndConfigureCharacter();
         }
 
-        private void PlayResult(bool win)
+        private void PlayResult(ResultPreset preset)
         {
             EnsureCharacter();
+
+            bool win = preset != null && preset.isWin;
 
             if (characterAnimator != null)
             {
@@ -528,11 +530,22 @@ namespace ithappy.Casino
                 {
                     characterAnimator.SetTrigger(loseHash);
                 }
-                // Если шанс Lose не сработал, персонаж продолжает Sitting/Idle.
             }
 
-            if (win)
+            // SOLO activa serpentinas/partículas si el preset es de 4 sietes:
+            // Comprueba si el nombre contiene "7" o si las 4 filas son iguales a la fila del 7
+            bool esCuatroSietes = preset != null &&
+                                  (preset.presetName.Contains("7") ||
+                                   preset.presetName.ToLower().Contains("seven") ||
+                                   (preset.reel1Row == preset.reel2Row &&
+                                    preset.reel2Row == preset.reel3Row &&
+                                    preset.reel3Row == preset.reel4Row &&
+                                    preset.isWin));
+
+            if (win && esCuatroSietes)
+            {
                 PlayWinFeedback();
+            }
         }
 
         private void PlaySitting()
@@ -647,17 +660,24 @@ namespace ithappy.Casino
         {
             if (Application.isPlaying) SpinRandom();
         }
-
         [ContextMenu("TEST/Win")]
         private void TestWin()
         {
-            if (Application.isPlaying) PlayResult(true);
+            if (!Application.isPlaying) return;
+
+            // Busca el primer preset que sea ganador (4 sietes)
+            ResultPreset winPreset = presets.Find(p => p != null && p.isWin);
+            PlayResult(winPreset);
         }
 
         [ContextMenu("TEST/Lose")]
         private void TestLose()
         {
-            if (Application.isPlaying) PlayResult(false);
+            if (!Application.isPlaying) return;
+
+            // Busca el primer preset que sea perdedor
+            ResultPreset losePreset = presets.Find(p => p != null && !p.isWin);
+            PlayResult(losePreset);
         }
 
         [ContextMenu("TEST/Sitting")]
