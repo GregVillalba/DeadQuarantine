@@ -217711,7 +217711,6 @@ RectTransform:
   m_Children:
   - {fileID: 1666024830}
   - {fileID: 23303310}
-  - {fileID: 2074383125}
   - {fileID: 301751005}
   - {fileID: 1347664731}
   - {fileID: 951389687}
@@ -281179,6 +281178,7 @@ MonoBehaviour:
     esBarril: 0
     esTorreta: 0
   porcentajeReparacion: 0.25
+  porcentajeReparacionTorreta: 0.5
   audioSource: {fileID: 959011461}
   purchaseSuccessSound: {fileID: 8300000, guid: 487c0b5596520c2498ec1af8b8abc0a0, type: 3}
   purchaseDeniedSound: {fileID: 8300000, guid: 3a0bb452de8298a4692e50e90fc5192f, type: 3}
@@ -327832,7 +327832,7 @@ MonoBehaviour:
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 1920, y: 1080}
   m_ScreenMatchMode: 0
-  m_MatchWidthOrHeight: 0
+  m_MatchWidthOrHeight: 0.5
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
@@ -472422,6 +472422,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1578634263
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1578634260}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0dae944aa6772194b8e80bb136d00038, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::SurvivalSaveManager
 --- !u!1 &1579096564
 GameObject:
   m_ObjectHideFlags: 0
@@ -472794,18 +472806,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1579520110}
   m_Mesh: {fileID: 4300000, guid: bf66c996903e9c7438f58ae109090762, type: 3}
---- !u!114 &1578634263
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1578634260}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0dae944aa6772194b8e80bb136d00038, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Scripts::SurvivalSaveManager
 --- !u!1 &1579631843
 GameObject:
   m_ObjectHideFlags: 0
@@ -623619,16 +623619,16 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2074383124}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 772373286}
+  m_Father: {fileID: 23303310}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 90, y: 620}
+  m_AnchoredPosition: {x: -9.999985, y: -9.833221}
   m_SizeDelta: {x: 500, y: 250}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2074383126
@@ -654171,7 +654171,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3609197317698938975, guid: 2eca976f2540b9f48909882b7a98e40f, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 715.8873
+      value: 7130
       objectReference: {fileID: 0}
     - target: {fileID: 3609197317698938975, guid: 2eca976f2540b9f48909882b7a98e40f, type: 3}
       propertyPath: m_SizeDelta.y
@@ -654211,7 +654211,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3609197317698938975, guid: 2eca976f2540b9f48909882b7a98e40f, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -306
+      value: -220
       objectReference: {fileID: 0}
     - target: {fileID: 3609197317698938975, guid: 2eca976f2540b9f48909882b7a98e40f, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -654227,7 +654227,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 3609197317698938975, guid: 2eca976f2540b9f48909882b7a98e40f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2074383125}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2eca976f2540b9f48909882b7a98e40f, type: 3}
 --- !u!1660057539 &9223372036854775807
