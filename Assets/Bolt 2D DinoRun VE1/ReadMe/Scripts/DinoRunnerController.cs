@@ -123,7 +123,7 @@ public class DinoPlayer : MonoBehaviour
     {
         if (scoreText != null)
         {
-            scoreText.text = $"SCORE: {score:D5}"; // Formato con ceros a la izquierda: 00100, 00200
+            scoreText.text = $"PUNTOS: {score:D5}"; // Formato con ceros a la izquierda: 00100, 00200
         }
     }
 
