@@ -531,6 +531,8 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
     /// </summary>
     public void Dispose()
     {
+        // Asegura que no queden acciones activas al destruir el asset.
+        Disable();
         UnityEngine.Object.Destroy(asset);
     }
 

@@ -63,9 +63,20 @@ public sealed class ControlesRebind : MonoBehaviour
 
         if (controls != null)
         {
+            controls.Player.Disable();
             controls.Dispose();
             controls = null;
         }
+    }
+
+    private void OnDisable()
+    {
+        // CancelActiveRebind puede restaurar el mapa antes de cerrar la ventana.
+        // Lo apagamos después para que no sobreviva al panel ni al cambio de escena.
+        CancelActiveRebind();
+
+        if (controls != null)
+            controls.Player.Disable();
     }
 
     public void ReloadSaved()

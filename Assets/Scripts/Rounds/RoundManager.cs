@@ -269,7 +269,29 @@ private bool iniciarRondaDesdeGuardado;
         }
 
         if (!IsServer)
-    return;
+            return;
+
+        GestorEscenariosPartida gestor = GestorEscenariosPartida.Instance;
+        if (gestor != null && gestor.UsaEscenasAditivasMultiplayer && !gestor.MapaMultiplayerListo)
+        {
+            gestor.EventoMapaMultiplayerListo += InicializarServidorTrasCargaMapa;
+            return;
+        }
+
+        InicializarServidorTrasCargaMapa();
+    }
+
+    private bool inicializacionServidorRealizada;
+
+    private void InicializarServidorTrasCargaMapa()
+    {
+        if (!IsSpawned || !IsServer || inicializacionServidorRealizada)
+            return;
+
+        inicializacionServidorRealizada = true;
+        GestorEscenariosPartida gestor = GestorEscenariosPartida.Instance;
+        if (gestor != null)
+            gestor.EventoMapaMultiplayerListo -= InicializarServidorTrasCargaMapa;
 
         ApplyModeAndDifficulty();
 

@@ -47,6 +47,7 @@ public class NetworkBootstrap : MonoBehaviour
     private bool isIntentionalLeave;
 
     private readonly HashSet<ulong> clientesSincronizados = new HashSet<ulong>();
+    private bool multiplayerGameStartInProgress;
 
 
     // ============================================================
@@ -133,6 +134,7 @@ public class NetworkBootstrap : MonoBehaviour
 
     public async Task<string> StartHost()
     {
+        multiplayerGameStartInProgress = false;
         isIntentionalLeave = false;
 
         if (!await EnsureServicesInitialized())
@@ -187,6 +189,7 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
 
     public async Task<bool> StartClient(string joinCode)
     {
+        multiplayerGameStartInProgress = false;
         isIntentionalLeave = false;
         LastJoinFailReason = JoinFailReason.None;
 
@@ -293,7 +296,36 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
     // EMPEZAR PARTIDA
     // ============================================================
 
-    public async Task StartMultiplayerGame()
+    public async Task<bool> StartMultiplayerGame()
+    {
+        if (multiplayerGameStartInProgress)
+        {
+            Debug.LogWarning("[Network] Se ignoró un segundo intento de iniciar la partida.");
+            return false;
+        }
+
+        if (currentSession != null && currentSession.Network.State != NetworkState.Stopped)
+        {
+            Debug.LogWarning("[Network] No se puede iniciar: la red ya está en estado " + currentSession.Network.State + ".");
+            return false;
+        }
+
+        multiplayerGameStartInProgress = true;
+        bool started = false;
+        try
+        {
+            started = await StartMultiplayerGameCore();
+            return started;
+        }
+        finally
+        {
+            // Si Relay ya inició, conservar el bloqueo durante toda la partida.
+            if (!started && (currentSession == null || currentSession.Network.State == NetworkState.Stopped))
+                multiplayerGameStartInProgress = false;
+        }
+    }
+
+    private async Task<bool> StartMultiplayerGameCore()
     {
         Debug.Log(
             "[Network] ===== START MULTIPLAYER GAME ====="
@@ -309,7 +341,7 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
                 "[Network] currentSession es NULL."
             );
 
-            return;
+            return false;
         }
 
         if (!currentSession.IsHost)
@@ -318,7 +350,7 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
                 "[Network] Esta instancia no es el Host."
             );
 
-            return;
+            return false;
         }
 
         if (!BothPlayersConnected())
@@ -327,7 +359,7 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
                 "[Network] No hay dos jugadores."
             );
 
-            return;
+            return false;
         }
 
         Debug.Log(
@@ -350,7 +382,9 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
             // EVENTOS DE RED
             // ========================================================
 
+            currentSession.Network.StateChanged -= OnNetworkStateChanged;
             currentSession.Network.StateChanged += OnNetworkStateChanged;
+            currentSession.Network.StartFailed -= OnNetworkStartFailed;
             currentSession.Network.StartFailed += OnNetworkStartFailed;
 
 
@@ -363,6 +397,7 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
             );
 
             clientesSincronizados.Clear();
+            NetworkManager.Singleton.OnServerStarted -= RegistrarSincronizacion;
             NetworkManager.Singleton.OnServerStarted += RegistrarSincronizacion;
 
             Task relayTask =
@@ -414,7 +449,7 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
                         "[Network] La red no llegó a NetworkState.Started."
                     );
 
-                    return;
+                    return false;
                 }
             }
 
@@ -434,7 +469,7 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
                     "[Network] NetworkManager.Singleton es NULL."
                 );
 
-                return;
+                return false;
             }
 
             Debug.Log(
@@ -480,7 +515,7 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
                         "[Network] Los invitados no se conectaron a tiempo."
                     );
 
-                    return;
+                    return false;
                 }
             }
 
@@ -508,7 +543,7 @@ while (true)
             break;
         }
         Debug.LogError("[Network] Ningún invitado terminó de sincronizar.");
-        return;
+        return false;
     }
 
     await Task.Delay(100);
@@ -536,6 +571,7 @@ NetworkManager.Singleton.SceneManager.OnSynchronizeComplete -= OnClienteSincroni
                 "[Network] Resultado LoadScene: " +
                 resultado
             );
+            return resultado == SceneEventProgressStatus.Started;
         }
         catch (Exception e)
         {
@@ -544,6 +580,7 @@ NetworkManager.Singleton.SceneManager.OnSynchronizeComplete -= OnClienteSincroni
             );
 
             Debug.LogException(e);
+            return false;
         }
     }
 
