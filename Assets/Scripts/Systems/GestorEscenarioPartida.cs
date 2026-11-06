@@ -1,11 +1,20 @@
 
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Unity.Netcode;
 
 public class GestorEscenariosPartida : MonoBehaviour
 {
     public static GestorEscenariosPartida Instance { get; private set; }
+
+    [Header("Escenas multiplayer aditivas")]
+    [SerializeField] private bool usarEscenasAditivasMultiplayer;
+    public bool UsaEscenasAditivasMultiplayer => usarEscenasAditivasMultiplayer;
+    public bool MapaMultiplayerListo { get; private set; }
+    public event System.Action EventoMapaMultiplayerListo;
+
 
     [Header("Escenarios disponibles")]
     [SerializeField] private ConfiguracionEscenarioJugable escenarioLaboratorio;
@@ -21,6 +30,9 @@ public class GestorEscenariosPartida : MonoBehaviour
     [SerializeField] private Transform spawnSafeZone2;
 
     private ConfiguracionEscenarioJugable escenarioActivo;
+    private Scene escenaAditivaActiva;
+    private string escenaAditivaAnterior;
+    private bool cargaInicialAditivaIniciada;
 
     private class EstadoEscenario
     {
@@ -50,6 +62,9 @@ public class GestorEscenariosPartida : MonoBehaviour
 
         Instance = this;
 
+        if (usarEscenasAditivasMultiplayer)
+            return;
+
         PrepararEscenario(escenarioLaboratorio);
         PrepararEscenario(escenarioCiudad);
         PrepararEscenario(escenarioCabana);
@@ -57,8 +72,206 @@ public class GestorEscenariosPartida : MonoBehaviour
         ConfigurarEscenarioInicial();
     }
 
+    private void Start()
+    {
+        if (!usarEscenasAditivasMultiplayer || NetworkManager.Singleton == null ||
+            !NetworkManager.Singleton.IsListening)
+            return;
+
+        NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnLoadAditivoCompletado;
+        if (NetworkManager.Singleton.IsServer && !cargaInicialAditivaIniciada)
+            StartCoroutine(CargarEscenaInicialAditiva());
+    }
+
+    private System.Collections.IEnumerator CargarEscenaInicialAditiva()
+    {
+        cargaInicialAditivaIniciada = true;
+        yield return null;
+        yield return null;
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
+            yield break;
+
+        var checkpoint = CheckpointManager.Instance != null
+            ? CheckpointManager.Instance.EscenarioActual
+            : CheckpointManager.EscenarioCheckpoint.Ninguno;
+        if (checkpoint == CheckpointManager.EscenarioCheckpoint.SafeZone1)
+            SolicitarMapaServidor("MP_ZonaSegura1");
+        else if (checkpoint == CheckpointManager.EscenarioCheckpoint.SafeZone2)
+            SolicitarMapaServidor("MP_ZonaSegura2");
+        else
+        {
+            var escenario = ConfiguracionPartidaSeleccionada.Instancia != null
+                ? ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado
+                : ConfiguracionPartidaSeleccionada.Escenario.Laboratorio;
+            SolicitarMapaServidor(NombreEscenaMP(escenario));
+        }
+    }
+
+    private void OnLoadAditivoCompletado(string sceneName, LoadSceneMode mode,
+        List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+    {
+        if (!usarEscenasAditivasMultiplayer || !sceneName.StartsWith("MP_"))
+            return;
+
+        Scene nueva = SceneManager.GetSceneByName(sceneName);
+        if (!nueva.IsValid() || !nueva.isLoaded)
+            return;
+
+        string anterior = escenaAditivaActiva.IsValid()
+            ? escenaAditivaActiva.name
+            : escenaAditivaAnterior;
+        escenaAditivaActiva = nueva;
+        BindearMapaAditivo(nueva);
+        SceneManager.SetActiveScene(nueva);
+        MapaMultiplayerListo = true;
+
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
+            return;
+
+        AplicarMapaALosJugadores(sceneName);
+        EventoMapaMultiplayerListo?.Invoke();
+        if (!string.IsNullOrEmpty(anterior) && anterior != sceneName)
+        {
+            Scene escenaVieja = SceneManager.GetSceneByName(anterior);
+            if (escenaVieja.IsValid() && escenaVieja.isLoaded)
+                NetworkManager.Singleton.SceneManager.UnloadScene(escenaVieja);
+        }
+    }
+
+    private void BindearMapaAditivo(Scene scene)
+    {
+        escenarioActivo = null;
+        safeZone1 = null;
+        safeZone2 = null;
+        spawnSafeZone1 = null;
+        spawnSafeZone2 = null;
+
+        foreach (GameObject raiz in scene.GetRootGameObjects())
+        {
+            if (raiz == null) continue;
+            if (raiz.name == "ZonaSegura1") safeZone1 = raiz;
+            if (raiz.name == "ZonaSegura2") safeZone2 = raiz;
+            if (raiz.name == "ZonaSegura1")
+                spawnSafeZone1 = BuscarHijo(raiz.transform, "spawnZonaSegura1");
+            if (raiz.name == "ZonaSegura2")
+                spawnSafeZone2 = BuscarHijo(raiz.transform, "spawnZonaSegura2");
+
+            ConfiguracionEscenarioJugable config =
+                raiz.GetComponentInChildren<ConfiguracionEscenarioJugable>(true);
+            if (config != null) escenarioActivo = config;
+        }
+
+        if (escenarioActivo != null && ConfiguracionPartidaSeleccionada.Instancia != null)
+            ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado = escenarioActivo.TipoEscenario;
+    }
+
+    private static Transform BuscarHijo(Transform raiz, string nombre)
+    {
+        foreach (Transform hijo in raiz.GetComponentsInChildren<Transform>(true))
+            if (hijo.name == nombre) return hijo;
+        return null;
+    }
+
+    private static void AvisarAlJugadorLocalSobreZonaSegura(string sceneName)
+    {
+        if (NetworkManager.Singleton == null || NetworkManager.Singleton.LocalClient == null)
+            return;
+        NetworkObject jugador = NetworkManager.Singleton.LocalClient.PlayerObject;
+        if (jugador == null) return;
+        StoryIntroController intro = jugador.GetComponentInChildren<StoryIntroController>(true);
+        if (intro == null) return;
+        if (sceneName == "MP_ZonaSegura1") intro.MostrarAvisoContinuarSafeZone();
+        else if (sceneName == "MP_ZonaSegura2") intro.MostrarAvisoContinuarAMansion();
+    }
+    private void AplicarMapaALosJugadores(string sceneName)
+    {
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
+            return;
+
+        bool zona1 = sceneName == "MP_ZonaSegura1";
+        bool zona2 = sceneName == "MP_ZonaSegura2";
+        foreach (NetworkClient cliente in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            if (cliente.PlayerObject == null) continue;
+            MultiplayerPlayerSpawnAssigner assigner =
+                cliente.PlayerObject.GetComponent<MultiplayerPlayerSpawnAssigner>();
+            if (assigner == null) continue;
+
+            if (zona1 && spawnSafeZone1 != null)
+                assigner.AplicarSpawnCheckpoint(spawnSafeZone1.position, spawnSafeZone1.rotation);
+            else if (zona2 && spawnSafeZone2 != null)
+                assigner.AplicarSpawnCheckpoint(spawnSafeZone2.position, spawnSafeZone2.rotation);
+            else if (escenarioActivo != null)
+            {
+                Transform spawn = escenarioActivo.ObtenerSpawnJugador(assigner.AssignedSpawnIndex.Value);
+                if (spawn != null) assigner.AplicarSpawnDeEscenario(spawn.position, spawn.rotation);
+            }
+        }
+    }
+
+    private static string NombreEscenaMP(ConfiguracionPartidaSeleccionada.Escenario escenario)
+    {
+        switch (escenario)
+        {
+            case ConfiguracionPartidaSeleccionada.Escenario.Ciudad: return "MP_Ciudad";
+            case ConfiguracionPartidaSeleccionada.Escenario.Cabana: return "MP_Cabana";
+            default: return "MP_Laboratorio";
+        }
+    }
+
+    private void SolicitarMapaAditivo(string sceneName)
+    {
+        if (!usarEscenasAditivasMultiplayer || NetworkManager.Singleton == null ||
+            !NetworkManager.Singleton.IsListening)
+            return;
+
+        if (NetworkManager.Singleton.IsServer)
+        {
+            SolicitarMapaServidor(sceneName);
+            return;
+        }
+
+        NetworkObject jugador = NetworkManager.Singleton.LocalClient != null
+            ? NetworkManager.Singleton.LocalClient.PlayerObject : null;
+        MultiplayerPlayerSpawnAssigner assigner = jugador != null
+            ? jugador.GetComponent<MultiplayerPlayerSpawnAssigner>() : null;
+        if (assigner != null) assigner.SolicitarMapaMultiplayer(sceneName);
+    }
+
+    public void SolicitarMapaDesdeRpc(string sceneName)
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+            SolicitarMapaServidor(sceneName);
+    }
+
+    private void SolicitarMapaServidor(string sceneName)
+    {
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
+            return;
+        Scene existente = SceneManager.GetSceneByName(sceneName);
+        if (existente.IsValid() && existente.isLoaded)
+        {
+            escenaAditivaAnterior = escenaAditivaActiva.IsValid()
+                ? escenaAditivaActiva.name : string.Empty;
+            BindearMapaAditivo(existente);
+            SceneManager.SetActiveScene(existente);
+            AplicarMapaALosJugadores(sceneName);
+            MapaMultiplayerListo = true;
+            EventoMapaMultiplayerListo?.Invoke();
+            return;
+        }
+
+        escenaAditivaAnterior = escenaAditivaActiva.IsValid()
+            ? escenaAditivaActiva.name : string.Empty;
+        var resultado = NetworkManager.Singleton.SceneManager.LoadScene(
+            sceneName, LoadSceneMode.Additive);
+        if (resultado != SceneEventProgressStatus.Started)
+            Debug.LogError("[Escenarios MP] No se pudo cargar " + sceneName + ": " + resultado);
+    }
     private void OnDestroy()
     {
+        if (usarEscenasAditivasMultiplayer && NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
+            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnLoadAditivoCompletado;
         if (Instance == this)
             Instance = null;
     }
@@ -257,6 +470,13 @@ public class GestorEscenariosPartida : MonoBehaviour
         ConfiguracionPartidaSeleccionada.Escenario escenario
     )
     {
+        if (usarEscenasAditivasMultiplayer)
+        {
+            if (ConfiguracionPartidaSeleccionada.Instancia != null)
+                ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado = escenario;
+            SolicitarMapaAditivo(NombreEscenaMP(escenario));
+            return;
+        }
         DesactivarTodasLasUbicaciones();
 
         switch (escenario)
@@ -301,6 +521,7 @@ public class GestorEscenariosPartida : MonoBehaviour
 
     public void ActivarSafeZone1()
     {
+        if (usarEscenasAditivasMultiplayer) { SolicitarMapaAditivo("MP_ZonaSegura1"); return; }
         DesactivarTodasLasUbicaciones();
 
         if (safeZone1 == null)
@@ -317,6 +538,7 @@ public class GestorEscenariosPartida : MonoBehaviour
 
     public void ActivarSafeZone2()
     {
+        if (usarEscenasAditivasMultiplayer) { SolicitarMapaAditivo("MP_ZonaSegura2"); return; }
         DesactivarTodasLasUbicaciones();
 
         if (safeZone2 == null)
@@ -335,6 +557,12 @@ public bool PrepararCheckpoint(
     Transform jugador
 )
 {
+    if (usarEscenasAditivasMultiplayer)
+    {
+        SolicitarMapaAditivo(checkpoint == CheckpointManager.EscenarioCheckpoint.SafeZone1
+            ? "MP_ZonaSegura1" : "MP_ZonaSegura2");
+        return true;
+    }
     if (jugador == null)
     {
         Debug.LogError(
@@ -483,6 +711,7 @@ public bool PrepararCheckpoint(
 
     public void TransicionarASafeZone1(Transform jugador)
     {
+        if (usarEscenasAditivasMultiplayer) { SolicitarMapaAditivo("MP_ZonaSegura1"); return; }
         if (safeZone1 == null || spawnSafeZone1 == null)
         {
             Debug.LogError(
@@ -507,6 +736,7 @@ public bool PrepararCheckpoint(
 
     public void TransicionarASafeZone2(Transform jugador)
     {
+        if (usarEscenasAditivasMultiplayer) { SolicitarMapaAditivo("MP_ZonaSegura2"); return; }
         if (safeZone2 == null || spawnSafeZone2 == null)
         {
             Debug.LogError(
@@ -539,6 +769,7 @@ public bool PrepararCheckpoint(
    
 public void TransicionarAScenarioCabana(Transform jugador)
 {
+    if (usarEscenasAditivasMultiplayer) { SolicitarMapaAditivo("MP_Cabana"); return; }
     if (escenarioCabana == null)
     {
         Debug.LogError("[Escenarios] No asignaste el escenario Cabana.");
@@ -702,3 +933,7 @@ public void TransicionarAScenarioCabana(Transform jugador)
     TrasladarJugador(jugador, destino);
 }
 }
+
+
+
+

@@ -231,6 +231,10 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
 
     private void MoveToAssignedSpawn(int index)
     {
+        GestorEscenariosPartida gestor = GestorEscenariosPartida.Instance;
+        if (gestor != null && gestor.UsaEscenasAditivasMultiplayer && !gestor.MapaMultiplayerListo)
+            return;
+
         if (HayCheckpointPendiente() || SpawnCheckpointActivo.Value)
             return;
 
@@ -344,6 +348,45 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
         );
     }
 
+    public void SolicitarMapaMultiplayer(string sceneName)
+    {
+        if (!IsOwner || !IsSpawned) return;
+        SolicitarMapaMultiplayerServerRpc(sceneName);
+    }
+
+    [ServerRpc]
+    private void SolicitarMapaMultiplayerServerRpc(string sceneName)
+    {
+        GestorEscenariosPartida gestor = GestorEscenariosPartida.Instance;
+        if (gestor != null) gestor.SolicitarMapaDesdeRpc(sceneName);
+    }
+
+    public void AplicarSpawnDeEscenario(Vector3 posicion, Quaternion rotacion)
+    {
+        if (!IsServer || !IsSpawned) return;
+        SpawnCheckpointActivo.Value = false;
+        AplicarSpawnEscenarioClientRpc(posicion, rotacion);
+    }
+
+    [ClientRpc]
+    private void AplicarSpawnEscenarioClientRpc(Vector3 posicion, Quaternion rotacion)
+    {
+        if (!IsOwner) return;
+        IsAtSpawn.Value = false;
+        AplicarTeletransporteLocal(posicion, rotacion);
+        IsAtSpawn.Value = true;
+    }
+
+    private void AplicarTeletransporteLocal(Vector3 posicion, Quaternion rotacion)
+    {
+        CharacterController cc = GetComponent<CharacterController>();
+        if (cc != null) cc.enabled = false;
+        transform.SetPositionAndRotation(posicion, rotacion);
+        if (cc != null) cc.enabled = true;
+        NetworkTransform nt = GetComponent<NetworkTransform>();
+        if (nt != null && nt.IsSpawned)
+            nt.Teleport(posicion, rotacion, transform.localScale);
+    }
     // =========================================================
     // CHECKPOINT PENDIENTE
     // =========================================================
@@ -387,3 +430,4 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
         base.OnNetworkDespawn();
     }
 }
+

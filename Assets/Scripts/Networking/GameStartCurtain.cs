@@ -14,6 +14,7 @@ public class GameStartCurtain : MonoBehaviour
     private float proximoLog;
 
     private float inicioEspera;
+    private bool mapaAditivoListoDetectado;
 
     private void Awake()
     {
@@ -128,6 +129,19 @@ public class GameStartCurtain : MonoBehaviour
 
             return;
         }
+        GestorEscenariosPartida gestor = GestorEscenariosPartida.Instance;
+        if (gestor != null && gestor.UsaEscenasAditivasMultiplayer)
+        {
+            if (!gestor.MapaMultiplayerListo)
+                return;
+
+            if (!mapaAditivoListoDetectado)
+            {
+                mapaAditivoListoDetectado = true;
+                inicioEspera = Time.unscaledTime;
+            }
+        }
+
         if (!TodosListos())
         {
             if (Time.unscaledTime - inicioEspera < 20f)

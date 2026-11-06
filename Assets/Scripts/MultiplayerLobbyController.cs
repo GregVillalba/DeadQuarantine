@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Threading;
 
 using TMPro;
 using UnityEngine;
@@ -89,6 +90,9 @@ public class MultiplayerLobbyController : MonoBehaviour
 
     private bool creandoSala;
     private bool countdownIniciado = false;
+    private bool iniciandoPartida = false;
+    private int countdownGeneration;
+    private readonly SemaphoreSlim countdownWriteLock = new SemaphoreSlim(1, 1);
     private bool miReady = false;
     private float tiempoCountdown = -1f;
 
@@ -636,15 +640,18 @@ public void OnClick_IrAConfigurarPartida()
                 todosListos = false;
         }
 
-        // Solo el host inicia la cuenta.
-        if (network.CurrentSession.IsHost &&
-            todosListos &&
-            LobbyGameSettingsRuntime.ConfiguracionValida() &&
-            !countdownIniciado)
+        bool host = network.CurrentSession.IsHost;
+        bool configuracionValida = LobbyGameSettingsRuntime.ConfiguracionValida();
+
+        if (host && countdownIniciado && (!todosListos || !configuracionValida))
+            CancelarCountdown();
+
+        // Solo el host inicia la cuenta y la cancela si algún jugador cambia su estado.
+        if (host && todosListos && configuracionValida && !countdownIniciado && !iniciandoPartida)
         {
             countdownIniciado = true;
-
-            _ = IniciarCountdown();
+            int generation = ++countdownGeneration;
+            _ = IniciarCountdown(generation);
         }
     }
 
@@ -924,79 +931,173 @@ public void OnClick_IrAConfigurarPartida()
     // COUNTDOWN
     // =========================================================
 
-    private async Task IniciarCountdown()
+    private async Task IniciarCountdown(int generation)
     {
-        if (network == null ||
-            network.CurrentSession == null ||
-            !network.CurrentSession.IsHost)
+        if (!EsCountdownActual(generation))
+            return;
+
+        if (network == null || network.CurrentSession == null || !network.CurrentSession.IsHost)
         {
-            countdownIniciado = false;
+            CancelarCountdown();
             return;
         }
 
-        // El host escribe una única vez
-        // cuándo debe terminar la cuenta.
-        DateTime countdownEndTime =
-            DateTime.UtcNow.AddSeconds(5);
-
-        await EscribirConfiguracionPartida();
-
-        await EscribirCountdown(
-            countdownEndTime.Ticks
-        );
-
-        while (true)
+        if (!SesionListaParaIniciar())
         {
-            double remainingSeconds =
-                (countdownEndTime - DateTime.UtcNow)
-                    .TotalSeconds;
-
-            tiempoCountdown =
-                Mathf.Max(
-                    0f,
-                    (float)remainingSeconds
-                );
-
-            ActualizarCountdownVisual();
-
-            if (remainingSeconds <= 0d)
-                break;
-
-            // Solo espera localmente; no escribe
-            // propiedades online cada segundo.
-            await Task.Delay(50);
+            CancelarCountdown();
+            return;
         }
 
-        if (network != null &&
-            network.CurrentSession != null &&
-            network.CurrentSession.IsHost)
+        DateTime countdownEndTime = DateTime.UtcNow.AddSeconds(5);
+
+        try
         {
-            await network.StartMultiplayerGame();
+            await EscribirConfiguracionPartida();
+            if (!EsCountdownActual(generation))
+                return;
+            if (!SesionListaParaIniciar())
+            {
+                CancelarCountdown();
+                return;
+            }
+
+            await EscribirCountdown(countdownEndTime.Ticks);
+            if (!EsCountdownActual(generation))
+            {
+                if (!countdownIniciado)
+                    await EscribirCountdown(0);
+                return;
+            }
+            if (!SesionListaParaIniciar())
+            {
+                CancelarCountdown();
+                return;
+            }
+
+            while (true)
+            {
+                if (!EsCountdownActual(generation))
+                {
+                    if (!countdownIniciado)
+                        await EscribirCountdown(0);
+                    return;
+                }
+                if (!SesionListaParaIniciar())
+                {
+                    CancelarCountdown();
+                    return;
+                }
+
+                double remainingSeconds = (countdownEndTime - DateTime.UtcNow).TotalSeconds;
+                tiempoCountdown = Mathf.Max(0f, (float)remainingSeconds);
+                ActualizarCountdownVisual();
+
+                if (remainingSeconds <= 0d)
+                    break;
+
+                await Task.Delay(50);
+            }
+
+            if (!EsCountdownActual(generation))
+                return;
+            if (!SesionListaParaIniciar())
+            {
+                CancelarCountdown();
+                return;
+            }
+
+            countdownIniciado = false;
+            iniciandoPartida = true;
+            tiempoCountdown = -1f;
+            bool partidaIniciada = await network.StartMultiplayerGame();
+            if (!partidaIniciada)
+            {
+                iniciandoPartida = network.CurrentSession != null &&
+                    network.CurrentSession.Network.State != Unity.Services.Multiplayer.NetworkState.Stopped;
+                if (!iniciandoPartida)
+                    ActualizarEstadoSala();
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("[Lobby] Falló la cuenta atrás: " + e.Message);
+            if (EsCountdownActual(generation))
+                CancelarCountdown();
         }
     }
 
-    private async Task EscribirCountdown(
-        long endUtcTicks
-    )
+    private bool EsCountdownActual(int generation)
     {
-        if (network == null ||
-            network.CurrentSession == null ||
-            !network.CurrentSession.IsHost)
-        {
+        return countdownIniciado && countdownGeneration == generation;
+    }
+
+    private bool SesionListaParaIniciar()
+    {
+        if (network == null || network.CurrentSession == null ||
+            !network.CurrentSession.IsHost || !LobbyGameSettingsRuntime.ConfiguracionValida())
+            return false;
+
+        List<IReadOnlyPlayer> jugadores =
+            FiltrarJugadoresVivos(network.CurrentSession.Players);
+        if (jugadores.Count < 2)
+            return false;
+
+        for (int i = 0; i < jugadores.Count; i++)
+            if (!ObtenerReadyJugador(jugadores[i]))
+                return false;
+
+        return true;
+    }
+
+    private void CancelarCountdown()
+    {
+        if (!countdownIniciado)
             return;
+
+        countdownIniciado = false;
+        countdownGeneration++;
+        tiempoCountdown = -1f;
+
+        if (countdownPanel != null)
+            countdownPanel.SetActive(false);
+
+        if (network != null && network.CurrentSession != null && network.CurrentSession.IsHost)
+            _ = LimpiarCountdownPublicado();
+
+        Debug.Log("[Lobby] Cuenta atrás cancelada: ya no están todos listos.");
+    }
+
+    private async Task LimpiarCountdownPublicado()
+    {
+        try
+        {
+            await EscribirCountdown(0);
         }
+        catch (Exception e)
+        {
+            Debug.LogWarning("[Lobby] No se pudo publicar la cancelación del countdown: " + e.Message);
+        }
+    }
 
-        var hostSession =
-            network.CurrentSession.AsHost();
+    private async Task EscribirCountdown(long endUtcTicks)
+    {
+        await countdownWriteLock.WaitAsync();
+        try
+        {
+            if (network == null || network.CurrentSession == null || !network.CurrentSession.IsHost)
+                return;
 
-        hostSession.SetProperty(
-            COUNTDOWN_PROPERTY,
-            new SessionProperty(
-                endUtcTicks.ToString()
-            )
-        );
-
-        await hostSession.SavePropertiesAsync();
+            var hostSession = network.CurrentSession.AsHost();
+            hostSession.SetProperty(
+                COUNTDOWN_PROPERTY,
+                new SessionProperty(endUtcTicks.ToString())
+            );
+            await hostSession.SavePropertiesAsync();
+        }
+        finally
+        {
+            countdownWriteLock.Release();
+        }
     }
 
     // HOST: publica en la sesion lo que eligio (escenario, modo y dificultad).
@@ -1323,6 +1424,7 @@ public void OnClick_IrAConfigurarPartida()
     {
         estoyEnSala = false;
         countdownIniciado = false;
+        countdownGeneration++;
         tiempoCountdown = -1f;
 
         if (network != null &&
@@ -1547,6 +1649,9 @@ private static bool HayNetcodeActivo()
 
     private void OnDestroy()
     {
+        countdownIniciado = false;
+        countdownGeneration++;
+
         if (botonCopiarCodigo != null)
         {
             botonCopiarCodigo.onClick.RemoveListener(
