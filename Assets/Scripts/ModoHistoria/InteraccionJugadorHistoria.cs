@@ -72,9 +72,7 @@ public class InteraccionJugadorHistoria : MonoBehaviour
 
         ConfigurarHUDPorModo();
 
-        if (ConfiguracionPartidaSeleccionada.Instancia == null ||
-            ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado !=
-            ConfiguracionPartidaSeleccionada.ModoJuego.Historia)
+        if (!EsModoHistoria())
         {
             OcultarCartel();
             return;
@@ -388,12 +386,20 @@ public class InteraccionJugadorHistoria : MonoBehaviour
         if (hud == null)
             return;
 
-        bool esHistoria =
-            ConfiguracionPartidaSeleccionada.Instancia != null &&
-            ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado ==
-            ConfiguracionPartidaSeleccionada.ModoJuego.Historia;
+        // En el tutorial el panel de objetivos lo maneja TutorialSecciones (y queda visible).
+        bool mostrar = EsModoHistoria() || TutorialEscena.EsActiva;
 
-        hud.gameObject.SetActive(esHistoria);
+        if (hud.gameObject.activeSelf != mostrar)
+            hud.gameObject.SetActive(mostrar);
+    }
+
+    // La configuración del menú sobrevive entre escenas: en el tutorial no cuenta el modo de la última partida.
+    private static bool EsModoHistoria()
+    {
+        return !TutorialEscena.EsActiva &&
+               ConfiguracionPartidaSeleccionada.Instancia != null &&
+               ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado ==
+               ConfiguracionPartidaSeleccionada.ModoJuego.Historia;
     }
 
     private void OnDrawGizmosSelected()

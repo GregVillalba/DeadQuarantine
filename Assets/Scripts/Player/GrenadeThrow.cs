@@ -47,6 +47,16 @@ public class GrenadeThrow : MonoBehaviour
         }
     }
 
+    /// <summary>Solo servidor: cuántas granadas se tiraron en la partida (lo usa el tutorial).</summary>
+    public static int LanzadasServidor { get; private set; }
+
+    // Con "Enter Play Mode Options" (sin recargar dominio) los estaticos sobreviven entre partidas.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticState()
+    {
+        LanzadasServidor = 0;
+    }
+
     /// <summary>true si el jugador tiene al menos una granada en el slot G.</summary>
     public bool TieneGranadas => Salud != null && !Salud.SlotGranada.Value.Vacio;
 
@@ -209,6 +219,7 @@ public class GrenadeThrow : MonoBehaviour
 
         networkObject.Spawn(true);
         projectile.Launch(velocity, lanzadorClientId);
+        LanzadasServidor++;
         return true;
     }
 

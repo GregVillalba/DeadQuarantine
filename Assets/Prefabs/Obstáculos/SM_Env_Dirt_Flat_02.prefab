@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 33102547455372882}
   - component: {fileID: 23403947249843592}
   - component: {fileID: -4538374870313766809}
+  - component: {fileID: 6510000000000000012}
   m_Layer: 0
   m_Name: SM_Env_Dirt_Flat_02
   m_TagString: Untagged
@@ -104,9 +105,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Scripts::ObstaculoTerreno
   tipo: 0
-  zona: {fileID: 0}
+  zona: {fileID: 6510000000000000012}
   alturaMinimaZona: 1
   margen: 0.25
+  coberturaModelo: 0.8
   reduccionJugador: 0.3
   escalarConClase: 1
   reduccionZombieCaminando: 0.1
@@ -115,3 +117,24 @@ MonoBehaviour:
   intervaloDano: 1
   escudoAbsorbe: 1
   zombiesLoRodean: 1
+--- !u!65 &6510000000000000012
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1639365813099460}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 9.602542, y: 1, z: 9.54485}
+  m_Center: {x: -0.057345, y: 0.386038, z: -0.105414}

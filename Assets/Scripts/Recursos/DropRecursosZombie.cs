@@ -5,7 +5,8 @@ using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Va en el prefab del zombie. Al morir (lo llama ZombieHealth.Die, solo en el servidor) tira la tabla
-/// de drop y deja en el piso el recurso que toque. En el tutorial no suelta nada.
+/// de drop y deja en el piso el recurso que toque. En el tutorial no se usa la tabla: los zombies que reviven
+/// solos (TutorialZombieRespawn) sueltan siempre el recurso que tienen configurado, y el resto nada.
 /// </summary>
 public class DropRecursosZombie : MonoBehaviour
 {
@@ -15,7 +16,7 @@ public class DropRecursosZombie : MonoBehaviour
     [Tooltip("Prefab del recurso en el piso (RecursoDrop). Tiene que estar en DefaultNetworkPrefabs.")]
     [SerializeField] private RecursoDrop prefabRecurso;
 
-    [Tooltip("En esta escena los zombies no sueltan recursos.")]
+    [Tooltip("En esta escena no se usa la tabla: solo sueltan los zombies con TutorialZombieRespawn (su recurso fijo).")]
     [SerializeField] private string escenaSinDrops = "TutorialScene";
 
     [Header("Ubicación en el piso")]
@@ -24,6 +25,11 @@ public class DropRecursosZombie : MonoBehaviour
     [Tooltip("Desde qué altura sobre el zombie se busca el piso hacia abajo.")]
     [SerializeField] private float alturaBusquedaPiso = 1.5f;
     [SerializeField] private float distanciaBusquedaPiso = 6f;
+
+    // Drop fijo puesto por código (ConfigurarDropTutorial). Solo servidor.
+    private bool dropTutorialAsignado;
+    private TipoRecurso tipoDropTutorial;
+    private int cantidadDropTutorial;
 
     // Recursos soltados en la ronda actual por cada tabla (para TablaDropRecursos.MaximoPorRonda).
     private static readonly Dictionary<TablaDropRecursos, int> soltadosEnRonda = new Dictionary<TablaDropRecursos, int>();
@@ -42,29 +48,80 @@ public class DropRecursosZombie : MonoBehaviour
     {
         NetworkManager red = NetworkManager.Singleton;
 
-        if (red == null || !red.IsServer || !PuedeSoltar())
+        if (red == null || !red.IsServer || prefabRecurso == null)
             return null;
 
-        TablaDropRecursos.Drop drop = tabla.Elegir(Random.value);
+        TipoRecurso tipo;
+        int cantidad;
+        bool enTutorial = EsZombieDelTutorial();
 
-        if (drop == null)
-            return null;
+        if (enTutorial)
+        {
+            if (!DropDelTutorial(out tipo, out cantidad))
+                return null;
+        }
+        else
+        {
+            if (!PuedeSoltar())
+                return null;
+
+            TablaDropRecursos.Drop drop = tabla.Elegir(Random.value);
+
+            if (drop == null)
+                return null;
+
+            tipo = drop.tipo;
+            cantidad = drop.cantidad;
+        }
 
         RecursoDrop recurso = Instantiate(prefabRecurso, PosicionEnElPiso(), Quaternion.identity);
-        recurso.Configurar(drop.tipo, drop.cantidad);
+        recurso.Configurar(tipo, cantidad);
         recurso.NetworkObject.Spawn(true);
 
-        ContarSoltado();
+        // El tope por ronda es de la tabla; el tutorial no tiene rondas.
+        if (!enTutorial)
+            ContarSoltado();
+
         return recurso;
     }
 
+    private bool EsZombieDelTutorial()
+    {
+        return SceneManager.GetActiveScene().name == escenaSinDrops || GetComponent<TutorialZombieRespawn>() != null;
+    }
+
+    /// <summary>
+    /// Solo servidor. Tutorial: este zombie (creado por código, sin TutorialZombieRespawn) suelta siempre este
+    /// recurso al morir. Lo usa TutorialSecciones con los zombies que aparecen a atacar la torreta.
+    /// </summary>
+    public void ConfigurarDropTutorial(TipoRecurso tipo, int cantidad)
+    {
+        dropTutorialAsignado = true;
+        tipoDropTutorial = tipo;
+        cantidadDropTutorial = Mathf.Max(1, cantidad);
+    }
+
+    // Tutorial: sin tabla ni azar. Sueltan los zombies que reviven solos (siempre lo mismo) y los que
+    // se configuraron por código; el resto nada.
+    private bool DropDelTutorial(out TipoRecurso tipo, out int cantidad)
+    {
+        TutorialZombieRespawn tutorial = GetComponent<TutorialZombieRespawn>();
+
+        if (tutorial != null)
+            return tutorial.DropFijo(out tipo, out cantidad);
+
+        tipo = tipoDropTutorial;
+        cantidad = cantidadDropTutorial;
+        return dropTutorialAsignado;
+    }
+
+    // Si puede tirar la tabla de drop. En el tutorial nunca (ahí suelta el recurso fijo de DropDelTutorial).
     private bool PuedeSoltar()
     {
         if (tabla == null || prefabRecurso == null)
             return false;
 
-        // Tutorial: por escena y, por las dudas, por los zombies que reviven solos.
-        if (SceneManager.GetActiveScene().name == escenaSinDrops || GetComponent<TutorialZombieRespawn>() != null)
+        if (EsZombieDelTutorial())
             return false;
 
         return tabla.MaximoPorRonda <= 0 || SoltadosEnEstaRonda() < tabla.MaximoPorRonda;

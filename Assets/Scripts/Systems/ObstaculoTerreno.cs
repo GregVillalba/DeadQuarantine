@@ -37,6 +37,10 @@ public class ObstaculoTerreno : MonoBehaviour
     [Tooltip("Margen (m) alrededor de la zona: cuenta como adentro aunque los pies estén apenas por encima.")]
     [SerializeField] private float margen = 0.25f;
 
+    [Tooltip("Qué parte del ancho y el largo del modelo cubre la caja (1 = todo). Los charcos son redondos: con ~0.8 " +
+             "la caja no se come las esquinas sin barro. Lo usan la zona automática y 'Ajustar zona al modelo'.")]
+    [Range(0.3f, 1f)] [SerializeField] private float coberturaModelo = 1f;
+
     [Header("Jugadores")]
     [Tooltip("Cuánto ralentiza a un personaje de velocidad Normal (0.25 = 25%).")]
     [Range(0f, 0.9f)] [SerializeField] private float reduccionJugador = 0.25f;
@@ -114,9 +118,78 @@ public class ObstaculoTerreno : MonoBehaviour
         return CrearZonaAutomatica();
     }
 
-    // Caja trigger que cubre todos los renderers del modelo (en espacio local), con un alto mínimo desde abajo.
+    /// <summary>
+    /// Caja de la zona en espacio local, ajustada a la malla de ESTE objeto (MeshFilter): sus límites exactos, sin
+    /// agrandarse por la rotación, con la cobertura del Inspector y el alto mínimo desde abajo. false = sin malla.
+    /// </summary>
+    public bool CalcularCajaDelModelo(out Vector3 centro, out Vector3 tamano)
+    {
+        MeshFilter filtro = GetComponent<MeshFilter>();
+
+        if (filtro == null || filtro.sharedMesh == null)
+        {
+            centro = Vector3.zero;
+            tamano = Vector3.zero;
+            return false;
+        }
+
+        float altoMinimo = alturaMinimaZona / Mathf.Max(0.0001f, Mathf.Abs(transform.lossyScale.y));
+        CajaDelModelo(filtro.sharedMesh.bounds, coberturaModelo, altoMinimo, out centro, out tamano);
+        return true;
+    }
+
+    /// <summary>Achica ancho y largo con la cobertura (desde el centro) y estira el alto hasta el mínimo desde abajo.</summary>
+    public static void CajaDelModelo(Bounds malla, float cobertura, float altoMinimo, out Vector3 centro, out Vector3 tamano)
+    {
+        float c = Mathf.Clamp(cobertura, 0.01f, 1f);
+        float alto = Mathf.Max(malla.size.y, altoMinimo);
+
+        tamano = new Vector3(malla.size.x * c, alto, malla.size.z * c);
+        centro = new Vector3(malla.center.x, malla.min.y + alto * 0.5f, malla.center.z);
+    }
+
+#if UNITY_EDITOR
+    // Click derecho en el componente → "Ajustar zona al modelo": crea (o ajusta) el BoxCollider trigger de la zona
+    // con el tamaño de la malla, para verlo y retocarlo en el editor. En el prefab se aplica a todas las copias.
+    [ContextMenu("Ajustar zona al modelo")]
+    private void AjustarZonaAlModelo()
+    {
+        if (!CalcularCajaDelModelo(out Vector3 centro, out Vector3 tamano))
+        {
+            Debug.LogWarning("[ObstaculoTerreno] '" + name + "' no tiene MeshFilter con malla: ajustá la caja a mano.", this);
+            return;
+        }
+
+        BoxCollider caja = GetComponent<BoxCollider>();
+
+        if (caja == null)
+            caja = UnityEditor.Undo.AddComponent<BoxCollider>(gameObject);
+        else
+            UnityEditor.Undo.RecordObject(caja, "Ajustar zona al modelo");
+
+        caja.isTrigger = true;
+        caja.center = centro;
+        caja.size = tamano;
+
+        UnityEditor.Undo.RecordObject(this, "Ajustar zona al modelo");
+        zona = caja;
+        UnityEditor.EditorUtility.SetDirty(this);
+    }
+#endif
+
+    // Caja trigger del tamaño del modelo (en espacio local), con un alto mínimo desde abajo.
     private Collider CrearZonaAutomatica()
     {
+        // Con malla propia: sus límites locales exactos (los renderers dan una caja del mundo, más grande si está rotado).
+        if (CalcularCajaDelModelo(out Vector3 centroMalla, out Vector3 tamanoMalla))
+        {
+            BoxCollider cajaMalla = gameObject.AddComponent<BoxCollider>();
+            cajaMalla.center = centroMalla;
+            cajaMalla.size = tamanoMalla;
+            cajaMalla.isTrigger = true;
+            return cajaMalla;
+        }
+
         Renderer[] renders = GetComponentsInChildren<Renderer>();
 
         if (renders.Length == 0)

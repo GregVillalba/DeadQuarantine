@@ -104,6 +104,68 @@ public class DropRecursosTests
     }
 
     [Test]
+    public void DropFijo_ZombieDelTutorialPorDefecto_SueltaUnaPilaDeLatas()
+    {
+        TutorialZombieRespawn tutorial = CrearGameObject("ZombieTutorial").AddComponent<TutorialZombieRespawn>();
+
+        Assert.IsTrue(tutorial.DropFijo(out TipoRecurso tipo, out int cantidad));
+        Assert.AreEqual(TipoRecurso.PilaDeLatas, tipo);
+        Assert.AreEqual(1, cantidad);
+    }
+
+    [Test]
+    public void DropFijo_ConfiguradoEnElInspector_DevuelveEseRecursoYNuncaMenosDeUno()
+    {
+        TutorialZombieRespawn tutorial = CrearGameObject("JefeTutorial").AddComponent<TutorialZombieRespawn>();
+        SetCampo(tutorial, "recursoQueSuelta", TipoRecurso.Cantimplora);
+        SetCampo(tutorial, "cantidadQueSuelta", 0);
+
+        Assert.IsTrue(tutorial.DropFijo(out TipoRecurso tipo, out int cantidad));
+        Assert.AreEqual(TipoRecurso.Cantimplora, tipo);
+        Assert.AreEqual(1, cantidad);
+    }
+
+    [Test]
+    public void DropFijo_ConSoltarRecursoDesmarcado_EsFalse()
+    {
+        TutorialZombieRespawn tutorial = CrearGameObject("ZombieTutorial").AddComponent<TutorialZombieRespawn>();
+        SetCampo(tutorial, "soltarRecurso", false);
+
+        Assert.IsFalse(tutorial.DropFijo(out _, out _));
+    }
+
+    [Test]
+    public void DropDelTutorial_ZombieConTutorialZombieRespawn_UsaSuRecursoFijo()
+    {
+        DropRecursosZombie drop = CrearDropZombie(CrearTabla(0, (TipoRecurso.Bidon, 1f)));
+        TutorialZombieRespawn tutorial = drop.gameObject.AddComponent<TutorialZombieRespawn>();
+        SetCampo(tutorial, "recursoQueSuelta", TipoRecurso.Cantimplora);
+
+        Assert.IsTrue(DropDelTutorial(drop, out TipoRecurso tipo, out int cantidad), "Suelta aunque no use la tabla.");
+        Assert.AreEqual(TipoRecurso.Cantimplora, tipo, "No usa la tabla (que daría Bidón).");
+        Assert.AreEqual(1, cantidad);
+    }
+
+    [Test]
+    public void DropDelTutorial_ConfiguradoPorCodigo_SueltaEseRecurso()
+    {
+        DropRecursosZombie drop = CrearDropZombie(CrearTabla(0, (TipoRecurso.Bidon, 1f)));
+        drop.ConfigurarDropTutorial(TipoRecurso.Cantimplora, 0);
+
+        Assert.IsTrue(DropDelTutorial(drop, out TipoRecurso tipo, out int cantidad));
+        Assert.AreEqual(TipoRecurso.Cantimplora, tipo);
+        Assert.AreEqual(1, cantidad, "Nunca menos de uno.");
+    }
+
+    [Test]
+    public void DropDelTutorial_ZombieSinTutorialZombieRespawn_NoSueltaNada()
+    {
+        DropRecursosZombie drop = CrearDropZombie(CrearTabla(0, (TipoRecurso.PilaDeLatas, 1f)));
+
+        Assert.IsFalse(DropDelTutorial(drop, out _, out _));
+    }
+
+    [Test]
     public void PuedeSoltar_SinTabla_EsFalse()
     {
         Assert.IsFalse(PuedeSoltar(CrearDropZombie(null)));
@@ -251,6 +313,18 @@ public class DropRecursosTests
     private static bool PuedeSoltar(DropRecursosZombie drop)
     {
         return (bool)Invocar(drop, "PuedeSoltar");
+    }
+
+    private static bool DropDelTutorial(DropRecursosZombie drop, out TipoRecurso tipo, out int cantidad)
+    {
+        object[] argumentos = { null, null };
+        bool suelta = (bool)typeof(DropRecursosZombie)
+            .GetMethod("DropDelTutorial", BindingFlags.NonPublic | BindingFlags.Instance)
+            .Invoke(drop, argumentos);
+
+        tipo = (TipoRecurso)argumentos[0];
+        cantidad = (int)argumentos[1];
+        return suelta;
     }
 
     private static object Invocar(object objeto, string metodo)

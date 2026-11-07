@@ -71,6 +71,8 @@ public class ColocadorObjetos : NetworkBehaviour
     [Tooltip("{0} = tecla de colocar, {1} = tecla de cancelar, {2} = nombre del objeto (el de la oferta).")]
     [SerializeField] private string formatoAyuda = "{0} Colocar {2}    {1} Cancelar";
     [SerializeField] private string textoEspacioOcupado = "Espacio ocupado";
+    [Tooltip("Tutorial: el fantasma está fuera de la zona marcada en el piso.")]
+    [SerializeField] private string textoFueraDeZona = "Colocala en la zona marcada";
 
     [Header("Audio (opcional)")]
     [SerializeField] private AudioSource audioSource;
@@ -94,6 +96,7 @@ public class ColocadorObjetos : NetworkBehaviour
 
     private bool colocando;
     private bool posicionValida;
+    private bool fueraDeZona;
     private bool esperandoSoltarFire;
     private PrecioRecursos precioPendiente;
     private ObjetoColocable objetoActual;
@@ -366,6 +369,12 @@ public class ColocadorObjetos : NetworkBehaviour
         else
             motivo = BuscarObstaculo(pisoMaximo) ?? BuscarParedEnElMedio(camara.position, punto);
 
+        // Tutorial: mientras hay una zona marcada para colocar, solo se puede dentro de ella.
+        fueraDeZona = motivo == null && ZonaTutorial.ColocacionActiva != null && !ZonaTutorial.ColocacionActiva.Contiene(punto);
+
+        if (fueraDeZona)
+            motivo = "fuera de la zona marcada del tutorial";
+
         posicionValida = motivo == null;
 
         if (depurarChoques && motivo != ultimoMotivo && motivo != null)
@@ -565,7 +574,8 @@ public class ColocadorObjetos : NetworkBehaviour
             controls.Player.Aim.GetBindingDisplayString(),
             nombreActual);
 
-        textoAyuda.text = posicionValida ? ayuda : textoEspacioOcupado + "    " + ayuda;
+        string motivoInvalido = fueraDeZona ? textoFueraDeZona : textoEspacioOcupado;
+        textoAyuda.text = posicionValida ? ayuda : motivoInvalido + "    " + ayuda;
     }
 
     // Copia solo visual del prefab: sin scripts, red, física ni efectos, y con el material translúcido.

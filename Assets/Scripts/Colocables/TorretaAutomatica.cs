@@ -37,6 +37,12 @@ public class TorretaAutomatica : NetworkBehaviour
     [Header("Vida")]
     [SerializeField] private int vidaMaxima = 300;
 
+    [Header("Tutorial")]
+    [Tooltip("Vida en el tutorial: baja a propósito para que un zombie la rompa y el jugador aprenda a repararla.")]
+    [SerializeField, Min(1)] private int vidaMaximaTutorial = 30;
+    [Tooltip("Daño por disparo en el tutorial: más bajo, para que algún zombie llegue a pegarle.")]
+    [SerializeField, Min(1)] private int danoTutorial = 25;
+
     [Header("Barra de vida flotante (como la de los zombies)")]
     [SerializeField] private Slider barraVida;
     [SerializeField] private Image rellenoBarra;
@@ -143,7 +149,12 @@ public class TorretaAutomatica : NetworkBehaviour
     public bool EstaRota => vidaNetwork.Value <= 0;
 
     /// <summary>Recibió daño (o está rota): su dueño la puede reparar en la tienda.</summary>
-    public bool NecesitaReparacion => vidaNetwork.Value < vidaMaxima;
+    public bool NecesitaReparacion => vidaNetwork.Value < VidaMaxima;
+
+    /// <summary>Vida máxima en esta partida (en el tutorial es menor, ver vidaMaximaTutorial).</summary>
+    public int VidaMaxima => TutorialEscena.EsActiva ? vidaMaximaTutorial : vidaMaxima;
+
+    private int Dano => TutorialEscena.EsActiva ? danoTutorial : dano;
 
     // Solo servidor.
     private ulong duenoClientId;
@@ -193,7 +204,7 @@ public class TorretaAutomatica : NetworkBehaviour
         if (IsServer)
         {
             duenoNetwork.Value = duenoClientId;
-            vidaNetwork.Value = vidaMaxima;
+            vidaNetwork.Value = VidaMaxima;
         }
 
         ActualizarBarraDeVida();
@@ -283,7 +294,7 @@ public class TorretaAutomatica : NetworkBehaviour
         if (!IsServer || !NecesitaReparacion)
             return;
 
-        vidaNetwork.Value = vidaMaxima;
+        vidaNetwork.Value = VidaMaxima;
     }
 
     /// <summary>Punto de la torreta más cercano a 'desde', para que los zombies midan si llegan a pegarle.</summary>
@@ -319,14 +330,14 @@ public class TorretaAutomatica : NetworkBehaviour
     private void ActualizarBarraDeVida()
     {
         int vida = vidaNetwork.Value;
-        float porcentaje = vidaMaxima > 0 ? (float)vida / vidaMaxima : 0f;
+        float porcentaje = VidaMaxima > 0 ? (float)vida / VidaMaxima : 0f;
 
         if (canvasBarra != null && canvasBarra.activeSelf == EstaRota)
             canvasBarra.SetActive(!EstaRota);
 
         if (barraVida != null)
         {
-            barraVida.maxValue = vidaMaxima;
+            barraVida.maxValue = VidaMaxima;
             barraVida.value = vida;
         }
 
@@ -627,7 +638,7 @@ public class TorretaAutomatica : NetworkBehaviour
             Vector3 direccion = (punto - OrigenDisparo()).normalized;
 
             // Sin hit marker: el dueño puede estar en otro lado del mapa.
-            zombie.RecibirDanoServidor(dano, punto, -direccion, duenoClientId, true, false);
+            zombie.RecibirDanoServidor(Dano, punto, -direccion, duenoClientId, true, false);
         }
 
         // Efectos en cada cliente (y en el host), sin RPC por disparo. Igual que las armas: fogonazo con luz y estela.
