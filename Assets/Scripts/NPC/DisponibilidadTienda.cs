@@ -47,13 +47,19 @@ public static class DisponibilidadTienda
         return true;
     }
 
+    /// <summary>Escena del tutorial: el mercader muestra todo el catálogo (sin filtrar por dificultad ni modo).</summary>
+    public static bool EsTutorial => TutorialEscena.EsActiva;
+
     // En partida manda la dificultad sincronizada por el host. Sin RoundManager (escenas de prueba)
-    // se usa la elegida en el menú; sin nada de eso no se filtra.
+    // se usa la elegida en el menú; sin nada de eso no se filtra. En el tutorial tampoco se filtra.
     private static DifficultyLevel? DificultadActual()
     {
         RoundManager rm = RoundManager.Instance;
         if (rm != null && rm.IsSpawned)
             return (DifficultyLevel)rm.DifficultyNetwork.Value;
+
+        if (EsTutorial)
+            return null;
 
         if (DifficultyManager.Instance != null)
             return DifficultyManager.Instance.CurrentDifficulty;
@@ -66,6 +72,11 @@ public static class DisponibilidadTienda
         RoundManager rm = RoundManager.Instance;
         if (rm != null && rm.IsSpawned && rm.ModoNetwork.Value != (int)ConfiguracionPartidaSeleccionada.ModoJuego.Ninguno)
             return (ConfiguracionPartidaSeleccionada.ModoJuego)rm.ModoNetwork.Value;
+
+        // La configuración del menú sobrevive entre escenas (DontDestroyOnLoad): en el tutorial no cuenta
+        // el modo de la última partida, así se ve el mercader, todo su catálogo y se pueden colocar objetos.
+        if (EsTutorial)
+            return ConfiguracionPartidaSeleccionada.ModoJuego.Ninguno;
 
         ConfiguracionPartidaSeleccionada config = ConfiguracionPartidaSeleccionada.Instancia;
         return config != null ? config.modoSeleccionado : ConfiguracionPartidaSeleccionada.ModoJuego.Ninguno;

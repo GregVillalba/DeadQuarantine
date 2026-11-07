@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 33370856555113168}
   - component: {fileID: 23194249936433480}
   - component: {fileID: -5804395220124062083}
+  - component: {fileID: 6510000000000000004}
   m_Layer: 0
   m_Name: SM_Prop_Wire_04
   m_TagString: Untagged
@@ -104,9 +105,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Scripts::ObstaculoTerreno
   tipo: 1
-  zona: {fileID: 0}
+  zona: {fileID: 6510000000000000004}
   alturaMinimaZona: 1
   margen: 0.25
+  coberturaModelo: 1
   reduccionJugador: 0.25
   escalarConClase: 1
   reduccionZombieCaminando: 0.1
@@ -115,3 +117,24 @@ MonoBehaviour:
   intervaloDano: 1
   escudoAbsorbe: 1
   zombiesLoRodean: 1
+--- !u!65 &6510000000000000004
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1111128148354914}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 3.69032, y: 1, z: 2.029555}
+  m_Center: {x: 0.251826, y: 0.075548, z: 0.51748}

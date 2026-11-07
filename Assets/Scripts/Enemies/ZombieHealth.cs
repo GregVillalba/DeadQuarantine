@@ -1082,9 +1082,10 @@ private void Die(ulong shooterClientId)
             RoundManager.Instance.ZombieDied();
         }
     }
-    else if (GetComponent<TutorialZombieRespawn>() == null)
+    else if (GetComponent<TutorialZombieRespawn>() == null && !TutorialEscena.EsActiva)
     {
-        // En el tutorial no hay RoundManager: sus zombies se reviven solos (TutorialZombieRespawn).
+        // En el tutorial no hay RoundManager: sus zombies se reviven solos (TutorialZombieRespawn)
+        // o los maneja TutorialSecciones.
         Debug.LogError(
             "[ZombieHealth] No se encontró RoundManager al morir el zombie."
         );

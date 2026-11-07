@@ -37,11 +37,41 @@ public class BarrilExplosivo : NetworkBehaviour
     private int vidaActual;
     private bool exploto;
 
+    private static readonly List<BarrilExplosivo> barriles = new List<BarrilExplosivo>();
+
+    /// <summary>Barriles colocados (spawneados) en este momento.</summary>
+    public static IReadOnlyList<BarrilExplosivo> Todos => barriles;
+
+    /// <summary>Solo servidor: cuántos barriles explotaron en la partida (lo usa el tutorial).</summary>
+    public static int ExplosionesServidor { get; private set; }
+
+    // Con "Enter Play Mode Options" (sin recargar dominio) los estaticos sobreviven entre partidas.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticState()
+    {
+        barriles.Clear();
+        ExplosionesServidor = 0;
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        barriles.Remove(this);
+    }
+
+    public override void OnDestroy()
+    {
+        barriles.Remove(this);
+        base.OnDestroy();
+    }
+
     private Vector3 Centro => transform.position + transform.up * alturaCentro;
 
     public override void OnNetworkSpawn()
     {
         vidaActual = Mathf.Max(1, vida);
+
+        if (!barriles.Contains(this))
+            barriles.Add(this);
     }
 
     /// <summary>Lo llama Weapon en el cliente que disparó. El servidor resta la vida y, si llega a 0, lo hace explotar.</summary>
@@ -69,6 +99,7 @@ public class BarrilExplosivo : NetworkBehaviour
     private void Explotar(ulong atacanteClientId)
     {
         exploto = true;
+        ExplosionesServidor++;
 
         Vector3 centro = Centro;
 
