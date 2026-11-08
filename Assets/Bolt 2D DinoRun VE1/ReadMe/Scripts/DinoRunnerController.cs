@@ -1,12 +1,13 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-#if ENABLE_INPUT_SYSTEM
+using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
-#endif
 
 public class DinoPlayer : MonoBehaviour
 {
+    public static DinoPlayer Instance { get; private set; }
+
     [Header("Salto")]
     [SerializeField] private float jumpForce = 12f;
     [SerializeField] private LayerMask groundLayer;
@@ -14,23 +15,24 @@ public class DinoPlayer : MonoBehaviour
     [SerializeField] private float checkRadius = 0.2f;
 
     [Header("UI / Inicio")]
-    [Tooltip("Objeto que contiene SOLO el texto 'Presiona Espacio para comenzar'. No puede contener al Game Over.")]
+    [Tooltip("Objeto que contiene SOLO el texto 'Presiona Espacio para comenzar'.")]
     [SerializeField] private GameObject startInstructionsUI;
 
     [Header("UI / Game Over")]
     [Tooltip("Imagen de GAME OVER (RawImage_gameover).")]
     [SerializeField] private GameObject gameOverCanvas;
-    [Tooltip("Imagen con componente Button para reiniciar. La secuencia al presionarla la maneja RestartUIRawImage; acá solo se muestra al perder.")]
     [SerializeField] private Button botonReiniciar;
-    [Tooltip("Imagen 'presionado' (RawImage_again_presed). Acá solo se oculta al empezar; RestartUIRawImage la muestra al presionar.")]
     [SerializeField] private GameObject imagenReiniciando;
 
-    [Header("Puntaje")]
+    [Header("Puntaje y Recompensas")]
     [SerializeField] private TextMeshProUGUI scoreText;
-    [SerializeField] private int puntajeMetaPremio = 100;
+    [SerializeField] private int puntosPorCantimplora = 100;
+    [Tooltip("Velocidad con la que sube el puntaje por segundo si no usas obstáculos (ej: 10 pts/seg)")]
+    [SerializeField] private float puntosPorSegundo = 0f;
 
-    private int score = 0;
-    private bool yaOtorgoPremio = false;
+    public int score = 0;
+    private float scoreAcumuladoFloat = 0f;
+    private int cantimplorasEntregadas = 0;
 
     [HideInInspector] public bool isGameStarted = false;
     [HideInInspector] public bool isGameOver = false;
@@ -40,6 +42,8 @@ public class DinoPlayer : MonoBehaviour
 
     private void Awake()
     {
+        Instance = this;
+
         rb = GetComponent<Rigidbody2D>();
         if (rb == null)
         {
@@ -55,11 +59,6 @@ public class DinoPlayer : MonoBehaviour
             gameObject.AddComponent<BoxCollider2D>();
         }
 
-        if (gameOverCanvas == null)
-        {
-            Debug.LogWarning("[DinoPlayer] 'Game Over Canvas' no está asignado: la pantalla de Game Over no se va a poder ocultar ni mostrar.", this);
-        }
-
         if (botonReiniciar == null && gameOverCanvas != null)
         {
             botonReiniciar = gameOverCanvas.GetComponentInChildren<Button>(true);
@@ -69,129 +68,157 @@ public class DinoPlayer : MonoBehaviour
         MostrarGameOver(false);
         if (imagenReiniciando != null) imagenReiniciando.SetActive(false);
 
-        Debug.Log($"[DinoPlayer] Campos de UI -> Start: {NombreDe(startInstructionsUI)} | GameOver: {NombreDe(gameOverCanvas)} | Botón: {(botonReiniciar != null ? botonReiniciar.name : "(vacío)")} | Imagen reinicio: {NombreDe(imagenReiniciando)}", this);
-
-        if (startInstructionsUI != null && gameOverCanvas != null &&
-            gameOverCanvas.transform.IsChildOf(startInstructionsUI.transform))
-        {
-            Debug.LogError($"[DinoPlayer] 'Start Instructions UI' ({startInstructionsUI.name}) CONTIENE al Game Over ({gameOverCanvas.name}): al empezar se oculta junto con las instrucciones. Asigná en 'Start Instructions UI' solo el objeto con el texto 'Presiona espacio para comenzar'.", this);
-        }
-
         ActualizarTextoPuntaje();
     }
 
     private void Start()
     {
-        // Por si otro objeto de la escena dejó el Game Over visible al cargar
-        if (!isGameOver)
-        {
-            MostrarGameOver(false);
-        }
+        Time.timeScale = 1f;
+        Application.runInBackground = true;
+
+        if (rb == null)
+            rb = GetComponent<Rigidbody2D>();
     }
 
     private void Update()
     {
-        bool spacePressed = false;
-        bool spaceReleased = false;
-
-#if ENABLE_INPUT_SYSTEM
-        if (Keyboard.current != null)
+        // -----------------------------------------------------------------
+        // 1. SALIDA POR ESCAPE
+        // -----------------------------------------------------------------
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
-            spacePressed = Keyboard.current.spaceKey.wasPressedThisFrame;
-            spaceReleased = Keyboard.current.spaceKey.wasReleasedThisFrame;
-        }
-#else
-        spacePressed = Input.GetKeyDown(KeyCode.Space);
-        spaceReleased = Input.GetKeyUp(KeyCode.Space);
-#endif
-
-        // Esc: salir del minijuego y volver al juego principal
-        bool escPressed = false;
-#if ENABLE_INPUT_SYSTEM
-        if (Keyboard.current != null)
-        {
-            escPressed = Keyboard.current.escapeKey.wasPressedThisFrame || Keyboard.current.eKey.wasPressedThisFrame;
-        }
-#else
-        escPressed = Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E);
-#endif
-        if (escPressed)
-        {
-            if (MinijuegoArcadeTrigger.InstanciaActiva != null)
-            {
-                MinijuegoArcadeTrigger.InstanciaActiva.SalirDelMinijuego();
-                
-            }
-            else
-            {
-                Debug.Log("[DinoPlayer] Esc: no hay un arcade activo. Si estás probando la escena DEMO sola, no hay a dónde volver; abrila desde la máquina con E.");
-            }
+            SalirDelMinijuego();
+            return;
         }
 
-        // Inicio con el primer salto
+        // -----------------------------------------------------------------
+        // 2. LECTURA DE TECLA ESPACIO
+        // -----------------------------------------------------------------
+        bool espacioPresionado = Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame;
+        bool espacioSoltado = Keyboard.current != null && Keyboard.current.spaceKey.wasReleasedThisFrame;
+
+        // 3. INICIO: El primer Espacio arranca el juego
         if (!isGameStarted)
         {
-            if (spacePressed)
+            if (espacioPresionado)
             {
                 isGameStarted = true;
                 if (startInstructionsUI != null)
-                {
                     startInstructionsUI.SetActive(false);
-                }
-                rb.linearVelocity = new Vector2(0f, jumpForce);
+
+                rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
             }
             return;
         }
 
         if (isGameOver) return;
 
-        // Detección de suelo
-        if (groundCheck != null)
+        // -----------------------------------------------------------------
+        // 4. SUMA DE PUNTOS CONTINUA (Si el juego suma puntos con el tiempo)
+        // -----------------------------------------------------------------
+        if (puntosPorSegundo > 0f)
         {
-            isGrounded = Physics2D.OverlapCircle(groundCheck.position, checkRadius, groundLayer);
-        }
-        else
-        {
-            if (Mathf.Abs(rb.linearVelocity.y) < 0.05f)
+            scoreAcumuladoFloat += puntosPorSegundo * Time.deltaTime;
+            if ((int)scoreAcumuladoFloat > score)
             {
-                isGrounded = true;
+                score = (int)scoreAcumuladoFloat;
+                ActualizarTextoPuntaje();
             }
         }
 
-        // Salto
-        if (spacePressed && isGrounded)
+        // VERIFICAR DROPS EN CADA FRAME (Garantiza que no se pierda ningún múltiplo de 100)
+        VerificarEntregaCantimploras();
+
+        // -----------------------------------------------------------------
+        // 5. CHEQUEO DE PISO Y SALTO
+        // -----------------------------------------------------------------
+        bool tocandoPiso = false;
+        if (groundCheck != null)
         {
-            rb.linearVelocity = new Vector2(0f, jumpForce);
+            tocandoPiso = Physics2D.OverlapCircle(groundCheck.position, checkRadius, groundLayer);
+        }
+
+        bool enSuelo = isGrounded || tocandoPiso || Mathf.Abs(rb.linearVelocity.y) < 0.15f;
+
+        if (espacioPresionado && enSuelo)
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
             isGrounded = false;
         }
 
-        // Salto variable al soltar la tecla
-        if (spaceReleased && rb.linearVelocity.y > 0)
+        if (espacioSoltado && rb.linearVelocity.y > 0)
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * 0.5f);
         }
     }
 
+    /// <summary>
+    /// Suma puntos manualmente (por ejemplo al saltar cactus o desde ScrollAndRecycle).
+    /// </summary>
     public void AddScore(int amount)
     {
         if (isGameOver) return;
+
         score += amount;
+        scoreAcumuladoFloat = score;
         ActualizarTextoPuntaje();
+        VerificarEntregaCantimploras();
+    }
 
-        // Al cruzar la meta de 100 puntos, avisar al arcade físico
-        if (score >= puntajeMetaPremio && !yaOtorgoPremio)
+    /// <summary>
+    /// Calcula cuántas cantimploras tocan según el puntaje total.
+    /// Si tienes 800 puntos, arrojará 8 cantimploras.
+    /// </summary>
+    public void VerificarEntregaCantimploras()
+    {
+        if (puntosPorCantimplora <= 0) return;
+
+        int totalQueCorresponden = score / puntosPorCantimplora;
+
+        while (cantimplorasEntregadas < totalQueCorresponden)
         {
-            yaOtorgoPremio = true;
+            cantimplorasEntregadas++;
+            Debug.Log($"<color=cyan>[DinoPlayer] Entregando cantimplora #{cantimplorasEntregadas} (Score: {score})</color>");
 
-            if (ArcadeDinoMachine.InstanciaActiva != null)
+            if (MinijuegoArcadeTrigger.InstanciaActiva != null)
             {
-                ArcadeDinoMachine.InstanciaActiva.DropearNafta();
+                MinijuegoArcadeTrigger.InstanciaActiva.DropearRecompensa();
             }
             else
             {
-                Debug.LogWarning("[DinoPlayer] ArcadeDinoMachine.InstanciaActiva no encontrada en la escena activa.");
+                var trigger = FindAnyObjectByType<MinijuegoArcadeTrigger>();
+                if (trigger != null)
+                {
+                    trigger.DropearRecompensa();
+                }
+                else
+                {
+                    Debug.LogError("[DinoPlayer] No se encontró MinijuegoArcadeTrigger en ninguna escena activa.");
+                }
             }
         }
+    }
+
+    private void SalirDelMinijuego()
+    {
+        Time.timeScale = 1f;
+
+        if (MinijuegoArcadeTrigger.InstanciaActiva != null)
+        {
+            MinijuegoArcadeTrigger.InstanciaActiva.SalirDelMinijuego();
+            return;
+        }
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        GameObject jugadorLocal = GameObject.FindGameObjectWithTag("Player");
+        if (jugadorLocal != null)
+        {
+            jugadorLocal.SendMessage("SalirMinijuego", SendMessageOptions.DontRequireReceiver);
+        }
+
+        SceneManager.UnloadSceneAsync("DEMO");
     }
 
     private void ActualizarTextoPuntaje()
@@ -228,12 +255,10 @@ public class DinoPlayer : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // Antes de empezar (o ya perdido) los choques no cuentan
         if (!isGameStarted || isGameOver) return;
 
         if (other.gameObject.name.Contains("Cactus") || other.CompareTag("Obstacle"))
         {
-            Debug.Log($"[DinoPlayer] Choque con '{other.gameObject.name}'");
             TriggerGameOver();
         }
     }
@@ -254,25 +279,15 @@ public class DinoPlayer : MonoBehaviour
         Debug.Log("[DinoPlayer] ¡GAME OVER!");
     }
 
-    // ───────────────────────── UI ─────────────────────────
-
-    // Al mostrar, el botón se activa y RestartUIRawImage (en el botón) se encarga de
-    // mostrar el Game Over y manejar la secuencia al presionarlo.
     private void MostrarGameOver(bool mostrar)
     {
         if (mostrar)
         {
-            // Si algún padre quedó desactivado, el Game Over no se vería aunque esté activo
             ActivarJerarquia(gameOverCanvas);
             ActivarJerarquia(botonReiniciar != null ? botonReiniciar.gameObject : null);
 
             BloquearCanvas(gameOverCanvas, true);
             if (botonReiniciar != null) botonReiniciar.gameObject.SetActive(true);
-
-            if (gameOverCanvas != null)
-            {
-                Debug.Log($"[DinoPlayer] Mostrando Game Over: '{gameOverCanvas.name}' | activo en jerarquía={gameOverCanvas.activeInHierarchy} | escena='{gameOverCanvas.scene.name}'", gameOverCanvas);
-            }
         }
         else
         {
@@ -281,7 +296,6 @@ public class DinoPlayer : MonoBehaviour
         }
     }
 
-    /// <summary>Activa el objeto y todos sus padres (y los Canvas desactivados), para que sea realmente visible.</summary>
     private static void ActivarJerarquia(GameObject objeto)
     {
         if (objeto == null) return;
@@ -296,11 +310,6 @@ public class DinoPlayer : MonoBehaviour
 
             t = t.parent;
         }
-    }
-
-    private static string NombreDe(GameObject objeto)
-    {
-        return objeto != null ? objeto.name : "(vacío)";
     }
 
     private void BloquearCanvas(GameObject canvasObj, bool activar)

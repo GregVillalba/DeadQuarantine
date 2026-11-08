@@ -29,7 +29,7 @@ public class DinoGameManager : MonoBehaviour
         }
     }
 
-    void Update()
+    /*void Update()
     {
         // --- 1. DETECTAR tecla ESPACIO para iniciar o reiniciar ---
         bool spacePressed = false;
@@ -75,7 +75,7 @@ public class DinoGameManager : MonoBehaviour
         {
             SalirDelMinijuego();
         }
-    }
+    }*/
 
     public void SalirDelMinijuego()
     {

@@ -1,5 +1,4 @@
 using System.Collections;
-using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -8,15 +7,19 @@ public class ArcadeDinoMachine : MonoBehaviour
 {
     public static ArcadeDinoMachine InstanciaActiva { get; private set; }
 
-    [Header("Configuración")]
+    [Header("Configuración de Escena")]
     [SerializeField] private string nombreEscenaMinijuego = "DEMO";
 
-    [Header("Drop de Nafta (Gasolina)")]
-    [SerializeField] private RecursoDrop prefabRecurso;
-    [SerializeField] private TipoRecurso tipoGasolina;
+    [Header("Suministros (Estilo Tragamonedas)")]
+    [Tooltip("Prefab del recurso que va a arrojar (por ejemplo RecursoDrop).")]
+    [SerializeField] private GameObject prefabRecurso;
+    [Tooltip("De dónde sale el drop. Si queda vacío se usa la máquina.")]
     [SerializeField] private Transform puntoSpawnDrop;
-    [SerializeField] private float alturaSobrePiso = 0.35f;
-    [SerializeField] private int cantidad = 1;
+    [SerializeField, Min(1)] private int cantidadADropear = 1;
+
+    [Header("Lanzamiento e Impulso")]
+    [SerializeField, Min(0f)] private float fuerzaImpulso = 3.5f;
+    [SerializeField, Min(0f)] private float dispersion = 0.35f;
 
     [HideInInspector] public bool estaJugando = false;
 
@@ -36,6 +39,52 @@ public class ArcadeDinoMachine : MonoBehaviour
             InstanciaActiva = null;
     }
 
+    /// <summary>
+    /// Dropea el recurso usando la misma física y lanzamiento que la tragamonedas.
+    /// </summary>
+    public void DropearNafta()
+    {
+        if (prefabRecurso == null)
+        {
+            Debug.LogWarning($"[ArcadeDinoMachine] No hay prefabRecurso asignado en {name}.", this);
+            return;
+        }
+
+        StartCoroutine(RutinaArrojar());
+    }
+
+    private IEnumerator RutinaArrojar()
+    {
+        Transform origen = puntoSpawnDrop != null ? puntoSpawnDrop : transform;
+
+        for (int i = 0; i < cantidadADropear; i++)
+        {
+            Vector2 azar = Random.insideUnitCircle * dispersion;
+            Vector3 posicion = origen.position + new Vector3(azar.x, 0.2f, azar.y);
+
+            GameObject item = Instantiate(prefabRecurso, posicion, Quaternion.identity);
+
+            // Si el objeto tiene Rigidbody (o sus hijos), le damos el salto hacia afuera
+            if (item.TryGetComponent(out Rigidbody rb))
+            {
+                Vector3 direccion = (origen.forward + Vector3.up * 1.2f).normalized;
+                rb.AddForce(direccion * fuerzaImpulso, ForceMode.Impulse);
+            }
+
+            // Si es un prefab de RecursoDrop, nos aseguramos de que su tipo sea Gasolina/Bidón si tiene el método
+            var recursoDrop = item.GetComponent<RecursoDrop>();
+            if (recursoDrop != null)
+            {
+                recursoDrop.Configurar(TipoRecurso.Bidon, 1);
+            }
+
+            yield return new WaitForSeconds(0.1f);
+        }
+
+        Debug.Log("<color=green>[ARCADE] ¡Premio arrojado exitosamente estilo tragamonedas!</color>");
+    }
+
+    // Métodos para cargar y salir de la escena
     public void IniciarMinijuego(GameObject jugador)
     {
         if (estaJugando) return;
@@ -78,7 +127,6 @@ public class ArcadeDinoMachine : MonoBehaviour
     private void AlternarControlJugador(GameObject jugador, bool activar)
     {
         if (jugador == null) return;
-
         MonoBehaviour[] scripts = jugador.GetComponentsInChildren<MonoBehaviour>();
         foreach (var s in scripts)
         {
@@ -88,50 +136,6 @@ public class ArcadeDinoMachine : MonoBehaviour
             {
                 s.enabled = activar;
             }
-        }
-    }
-
-    /// <summary>
-    /// Dropea un bidón cada vez que se superan 100 puntos en el minijuego.
-    /// </summary>
-    public void DropearNafta()
-    {
-        if (prefabRecurso == null)
-        {
-            Debug.LogError("[ARCADE] Falta asignar 'Prefab Recurso' en el inspector de ArcadeDinoMachine.", this);
-            return;
-        }
-
-        Transform origen = puntoSpawnDrop != null ? puntoSpawnDrop : transform;
-        Vector3 posFinal = origen.position + (Vector3.up * alturaSobrePiso);
-
-        posFinal += new Vector3(Random.Range(-0.15f, 0.15f), 0f, Random.Range(-0.15f, 0.15f));
-
-        NetworkManager red = NetworkManager.Singleton;
-        bool enRed = red != null && red.IsListening;
-
-        if (enRed)
-        {
-            if (red.IsServer)
-            {
-                RecursoDrop drop = Instantiate(prefabRecurso, posFinal, Quaternion.identity);
-                drop.Configurar(tipoGasolina, cantidad);
-
-                NetworkObject netObj = drop.GetComponent<NetworkObject>();
-                if (netObj != null)
-                {
-                    netObj.Spawn(true);
-                }
-
-                Debug.Log($"<color=green>[ARCADE] Nafta spawneada en RED en {posFinal}.</color>");
-            }
-        }
-        else
-        {
-            RecursoDrop drop = Instantiate(prefabRecurso, posFinal, Quaternion.identity);
-            drop.Configurar(tipoGasolina, cantidad);
-
-            Debug.Log($"<color=green>[ARCADE] Nafta spawneada LOCAL en {posFinal}.</color>");
         }
     }
 }

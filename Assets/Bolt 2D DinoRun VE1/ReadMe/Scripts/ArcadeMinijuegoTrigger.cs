@@ -1,96 +1,83 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
 
-/// <summary>
-/// Va en el prefab de la máquina arcade (necesita un Collider NO trigger para que el raycast del jugador la detecte).
-/// El cartel y la tecla E los maneja ArcadeInteractor, que está en el Player.
-/// Este script solo abre la escena del minijuego (aditiva) y la cierra con Esc.
-/// </summary>
 public class MinijuegoArcadeTrigger : MonoBehaviour
 {
-    public static event Action MinijuegoIniciado;
-    public static event Action MinijuegoTerminado;
+    public static MinijuegoArcadeTrigger InstanciaActiva { get; private set; }
+    public static bool MinijuegoEnCurso { get; private set; }
 
     [Header("Configuración de Escena")]
-    [Tooltip("Debe estar agregada en File > Build Settings > Scenes In Build")]
     [SerializeField] private string nombreEscenaMinijuego = "DEMO";
 
-    [Header("Recompensa")]
-    public Transform puntoDropRecompensa;
+    [Header("Recompensa (Drop cada 100 puntos)")]
+    [SerializeField] private GameObject prefabRecursoDrop;
+    [SerializeField] private Transform puntoDropRecompensa;
+    [SerializeField] private float fuerzaImpulso = 3.5f;
 
     private bool minijuegoActivo;
     private bool cargando;
     private bool cerrando;
 
+    /// <summary>True si esta máquina está cargando, en partida o cerrando.</summary>
+    public bool Ocupado => minijuegoActivo || cargando || cerrando;
+
     private GameObject jugadorObj;
     private Scene escenaOriginal;
-
-    // Memoria de posición y rotación para evitar teletransporte al salir
     private Vector3 posicionPrevia;
     private Quaternion rotacionPrevia;
 
     private readonly List<Behaviour> componentesDesactivados = new List<Behaviour>();
 
-    public static MinijuegoArcadeTrigger InstanciaActiva { get; private set; }
-    public static bool MinijuegoEnCurso { get; private set; }
-    public bool Ocupado => minijuegoActivo || cargando || cerrando;
-
-    private void Update()
+    private void Awake()
     {
-        if (!Ocupado) return;
-
-        if (PresionoEscape())
-        {
-            if (minijuegoActivo && !cargando && !cerrando)
-                SalirDelMinijuego();
-        }
+        InstanciaActiva = this;
     }
 
-    private bool PresionoEscape()
+    private void OnEnable()
     {
-#if ENABLE_INPUT_SYSTEM
-        return Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
-#else
-        return Input.GetKeyDown(KeyCode.Escape);
-#endif
+        InstanciaActiva = this;
+    }
+
+    private void OnDestroy()
+    {
+        if (InstanciaActiva == this)
+            InstanciaActiva = null;
     }
 
     public void Jugar(GameObject jugador)
     {
         if (Ocupado || MinijuegoEnCurso) return;
-
         jugadorObj = jugador;
         StartCoroutine(CargarMinijuego());
     }
 
+    private void Update()
+    {
+        if (!minijuegoActivo || cargando || cerrando) return;
+
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            SalirDelMinijuego();
+        }
+    }
+
     private IEnumerator CargarMinijuego()
     {
-        if (!Application.CanStreamedLevelBeLoaded(nombreEscenaMinijuego))
-        {
-            Debug.LogError($"[Arcade] La escena '{nombreEscenaMinijuego}' no está en Build Settings o el nombre no coincide.");
-            yield break;
-        }
-
         cargando = true;
         MinijuegoEnCurso = true;
+        InstanciaActiva = this;
 
-        // Guardar la posición exacta antes de abrir el minijuego
         if (jugadorObj != null)
         {
             posicionPrevia = jugadorObj.transform.position;
             rotacionPrevia = jugadorObj.transform.rotation;
-        }
-
-        MinijuegoIniciado?.Invoke();
-
-        if (jugadorObj != null)
-        {
             jugadorObj.SendMessage("EntrarMinijuego", SendMessageOptions.DontRequireReceiver);
         }
 
@@ -113,14 +100,13 @@ public class MinijuegoArcadeTrigger : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        InstanciaActiva = this;
         minijuegoActivo = true;
         cargando = false;
     }
 
     public void SalirDelMinijuego()
     {
-        if (!minijuegoActivo || cerrando) return;
+        if (cerrando) return;
         StartCoroutine(CerrarMinijuego());
     }
 
@@ -161,26 +147,45 @@ public class MinijuegoArcadeTrigger : MonoBehaviour
         cargando = false;
     }
 
-    public IEnumerator CerrarMinijuego()
+    private IEnumerator CerrarMinijuego()
     {
-        if (!minijuegoActivo || cerrando) yield break;
         cerrando = true;
+        minijuegoActivo = false;
 
+        // 1. Restaurar la escena principal del juego 3D ANTES de descargar DEMO
         if (escenaOriginal.IsValid() && escenaOriginal.isLoaded)
         {
             SceneManager.SetActiveScene(escenaOriginal);
         }
-
-        Scene escena = SceneManager.GetSceneByName(nombreEscenaMinijuego);
-        if (escena.isLoaded)
+        else
         {
-            AsyncOperation op = SceneManager.UnloadSceneAsync(escena);
-            while (op != null && !op.isDone) yield return null;
+            // Respaldo: si por alguna razón escenaOriginal se perdió, buscamos la primera que no sea el minijuego
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                Scene s = SceneManager.GetSceneAt(i);
+                if (s.name != nombreEscenaMinijuego && s.isLoaded)
+                {
+                    SceneManager.SetActiveScene(s);
+                    break;
+                }
+            }
         }
 
-        // Restaurar posición y rotación antes de reactivar controles
+        // 2. Descargar la escena DEMO solo si hay más de 1 escena cargada
+        if (SceneManager.sceneCount > 1)
+        {
+            Scene escenaMinijuego = SceneManager.GetSceneByName(nombreEscenaMinijuego);
+            if (escenaMinijuego.isLoaded)
+            {
+                AsyncOperation op = SceneManager.UnloadSceneAsync(escenaMinijuego);
+                while (op != null && !op.isDone) yield return null;
+            }
+        }
+
+        // 3. Restaurar posición en la máquina
         RestaurarPosicionJugador();
 
+        // 4. Reactivar componentes del Player y notificar a PauseController
         AlternarControlJugador(true);
 
         if (jugadorObj != null)
@@ -188,12 +193,12 @@ public class MinijuegoArcadeTrigger : MonoBehaviour
             jugadorObj.SendMessage("SalirMinijuego", SendMessageOptions.DontRequireReceiver);
         }
 
-        minijuegoActivo = false;
-        cerrando = false;
-        InstanciaActiva = null;
-        MinijuegoEnCurso = false;
+        // 5. Bloquear cursor de nuevo para el FPS
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
 
-        MinijuegoTerminado?.Invoke();
+        cerrando = false;
+        MinijuegoEnCurso = false;
     }
 
     private void RestaurarPosicionJugador()
@@ -224,25 +229,18 @@ public class MinijuegoArcadeTrigger : MonoBehaviour
         {
             componentesDesactivados.Clear();
 
-            // 1. Apagar Canvases del HUD e interfaces del jugador
-            Canvas[] canvases = jugadorObj.GetComponentsInChildren<Canvas>(true);
-            foreach (var c in canvases)
+            foreach (var c in jugadorObj.GetComponentsInChildren<Canvas>(true))
             {
-                if (c.name.Contains("HUD") || c.name.Contains("Interface"))
+                if ((c.name.Contains("HUD") || c.name.Contains("Interface")) && c.enabled)
                 {
-                    if (c.enabled)
-                    {
-                        c.enabled = false;
-                        componentesDesactivados.Add(c);
-                    }
+                    c.enabled = false;
+                    componentesDesactivados.Add(c);
                 }
             }
 
-            // 2. Desactivar controles de movimiento, cámara y armas
             foreach (var s in jugadorObj.GetComponentsInChildren<MonoBehaviour>())
             {
                 if (s == null || s == this || !s.enabled) continue;
-
                 string n = s.GetType().Name;
                 if (n.Contains("Movement") || n.Contains("Controller") || n.Contains("Look") || n.Contains("Weapon"))
                 {
@@ -251,7 +249,6 @@ public class MinijuegoArcadeTrigger : MonoBehaviour
                 }
             }
 
-            // 3. Apagar cámaras y listeners 3D del jugador
             foreach (var cam in jugadorObj.GetComponentsInChildren<Camera>())
             {
                 if (cam.enabled)
@@ -269,19 +266,11 @@ public class MinijuegoArcadeTrigger : MonoBehaviour
                 }
             }
 
-            // 4. Activar invulnerabilidad en PlayerHealth
             PlayerHealth ph = jugadorObj.GetComponent<PlayerHealth>();
-            if (ph != null)
-            {
-                ph.invulnerablePorMinijuego = true;
-            }
-
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            if (ph != null) ph.invulnerablePorMinijuego = true;
         }
         else
         {
-            // Reactivar componentes
             foreach (var c in componentesDesactivados)
             {
                 if (c != null) c.enabled = true;
@@ -289,13 +278,79 @@ public class MinijuegoArcadeTrigger : MonoBehaviour
             componentesDesactivados.Clear();
 
             PlayerHealth ph = jugadorObj.GetComponent<PlayerHealth>();
-            if (ph != null)
-            {
-                ph.invulnerablePorMinijuego = false;
-            }
-
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            if (ph != null) ph.invulnerablePorMinijuego = false;
         }
     }
+
+    /// <summary>
+    /// Dropea una cantimplora frente a la máquina arcade cada 100 puntos.
+    /// </summary>
+    /// <summary>
+    /// Dropea una cantimplora frente a la máquina arcade cada 100 puntos y la protege
+    /// asegurando que quede en la escena 3D principal (para que no se borre al cerrar DEMO).
+    /// </summary>
+    public void DropearRecompensa()
+    {
+        if (prefabRecursoDrop == null)
+        {
+            Debug.LogError("[Arcade] ERROR: Falta asignar 'Prefab Recurso Drop' en el Inspector.", this);
+            return;
+        }
+
+        Transform origen = puntoDropRecompensa != null ? puntoDropRecompensa : transform;
+
+        // Spawn frente a la máquina arcade (hacia adelante y un poco elevado del piso)
+        Vector3 spawnPos = origen.position + (transform.forward * 0.7f) + (Vector3.up * 0.4f);
+        Vector2 azar = UnityEngine.Random.insideUnitCircle * 0.2f;
+        spawnPos += new Vector3(azar.x, 0f, azar.y);
+
+        GameObject drop = Instantiate(prefabRecursoDrop, spawnPos, Quaternion.identity);
+
+        // CLAVE: Asegurar que la cantimplora pertenezca a la escena 3D del juego (no a la escena DEMO)
+        Scene escenaDestino = gameObject.scene;
+        if (escenaDestino.IsValid() && escenaDestino.isLoaded)
+        {
+            SceneManager.MoveGameObjectToScene(drop, escenaDestino);
+        }
+
+        // 1. Configurar tipo Cantimplora
+        RecursoDrop recurso = drop.GetComponent<RecursoDrop>();
+        if (recurso != null)
+        {
+            recurso.Configurar(TipoRecurso.Cantimplora, 1);
+        }
+
+        // 2. Encendido forzado del modelo de Cantimplora
+        Transform visual = drop.transform.Find("Visual");
+        if (visual != null)
+        {
+            Transform modeloLatas = visual.Find("Modelo_PilaDeLatas");
+            Transform modeloBidon = visual.Find("Modelo_Bidon");
+            Transform modeloCantimplora = visual.Find("Modelo_Cantimplora");
+
+            if (modeloLatas != null) modeloLatas.gameObject.SetActive(false);
+            if (modeloBidon != null) modeloBidon.gameObject.SetActive(false);
+            if (modeloCantimplora != null) modeloCantimplora.gameObject.SetActive(true);
+        }
+
+        // 3. Física de impulso suave
+        if (drop.TryGetComponent(out Rigidbody rb))
+        {
+            rb.isKinematic = false;
+            rb.useGravity = true;
+            rb.linearVelocity = Vector3.zero;
+            Vector3 direccion = (transform.forward + Vector3.up * 0.8f).normalized;
+            rb.AddForce(direccion * 1.5f, ForceMode.Impulse);
+        }
+
+        // 4. Sincronización en red si está en Netcode
+        NetworkObject netObj = drop.GetComponent<NetworkObject>();
+        if (netObj != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && NetworkManager.Singleton.IsServer)
+        {
+            netObj.Spawn(true);
+        }
+
+        Debug.Log($"<color=green>[Arcade] ¡Cantimplora asegurada en '{escenaDestino.name}' en posición {spawnPos}!</color>");
+    }
+
 }
