@@ -1,137 +1,301 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
 
-[RequireComponent(typeof(Collider))]
-public class ArcadeMinijuegoTrigger : MonoBehaviour
+/// <summary>
+/// Va en el prefab de la máquina arcade (necesita un Collider NO trigger para que el raycast del jugador la detecte).
+/// El cartel y la tecla E los maneja ArcadeInteractor, que está en el Player.
+/// Este script solo abre la escena del minijuego (aditiva) y la cierra con Esc.
+/// </summary>
+public class MinijuegoArcadeTrigger : MonoBehaviour
 {
-    [Header("Escena a Cargar")]
-    [SerializeField] private string nombreEscenaMinijuego = "Demo";
+    public static event Action MinijuegoIniciado;
+    public static event Action MinijuegoTerminado;
 
-    [Header("Configuración del Jugador")]
-    [SerializeField] private string playerTag = "Player";
+    [Header("Configuración de Escena")]
+    [Tooltip("Debe estar agregada en File > Build Settings > Scenes In Build")]
+    [SerializeField] private string nombreEscenaMinijuego = "DEMO";
 
-    // Se asigna automáticamente al detectar al jugador
-    private GameObject promptUI;
-    private bool jugadorCerca = false;
+    [Header("Recompensa")]
+    public Transform puntoDropRecompensa;
 
-    void Awake()
+    private bool minijuegoActivo;
+    private bool cargando;
+    private bool cerrando;
+
+    private GameObject jugadorObj;
+    private Scene escenaOriginal;
+
+    // Memoria de posición y rotación para evitar teletransporte al salir
+    private Vector3 posicionPrevia;
+    private Quaternion rotacionPrevia;
+
+    private readonly List<Behaviour> componentesDesactivados = new List<Behaviour>();
+
+    public static MinijuegoArcadeTrigger InstanciaActiva { get; private set; }
+    public static bool MinijuegoEnCurso { get; private set; }
+    public bool Ocupado => minijuegoActivo || cargando || cerrando;
+
+    private void Update()
     {
-        // Asegurar que el collider sea de tipo disparador
-        Collider col = GetComponent<Collider>();
-        if (col != null)
+        if (!Ocupado) return;
+
+        if (PresionoEscape())
         {
-            col.isTrigger = true;
+            if (minijuegoActivo && !cargando && !cerrando)
+                SalirDelMinijuego();
         }
     }
 
-    void Update()
+    private bool PresionoEscape()
     {
-        if (!jugadorCerca) return;
-
-        bool ePressed = false;
-
 #if ENABLE_INPUT_SYSTEM
-        if (Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
-        {
-            ePressed = true;
-        }
+        return Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
 #else
-        if (Input.GetKeyDown(KeyCode.E))
-        {
-            ePressed = true;
-        }
+        return Input.GetKeyDown(KeyCode.Escape);
 #endif
-
-        if (ePressed)
-        {
-            IniciarMinijuego();
-        }
     }
 
-    private void OnTriggerEnter(Collider other)
+    public void Jugar(GameObject jugador)
     {
-        // Detectar si el objeto que entró es el Player
-        if (other.CompareTag(playerTag) || other.name.ToLower().Contains("player"))
-        {
-            jugadorCerca = true;
+        if (Ocupado || MinijuegoEnCurso) return;
 
-            // Busca el cartel Interface_T-REX dentro de la jerarquía del Player si aún no lo tiene
-            if (promptUI == null)
-            {
-                Transform found = BuscarTransformRecursivo(other.transform.root, "Interface_T-REX");
-                if (found != null)
-                {
-                    promptUI = found.gameObject;
-                }
-                else
-                {
-                    // Alternativa: buscarlo en toda la escena activa
-                    promptUI = GameObject.Find("Interface_T-REX");
-                }
-            }
-
-            if (promptUI != null)
-            {
-                promptUI.SetActive(true);
-            }
-        }
+        jugadorObj = jugador;
+        StartCoroutine(CargarMinijuego());
     }
 
-    private void OnTriggerExit(Collider other)
+    private IEnumerator CargarMinijuego()
     {
-        if (other.CompareTag(playerTag) || other.name.ToLower().Contains("player"))
+        if (!Application.CanStreamedLevelBeLoaded(nombreEscenaMinijuego))
         {
-            jugadorCerca = false;
-
-            if (promptUI != null)
-            {
-                promptUI.SetActive(false);
-            }
+            Debug.LogError($"[Arcade] La escena '{nombreEscenaMinijuego}' no está en Build Settings o el nombre no coincide.");
+            yield break;
         }
-    }
 
-    private void IniciarMinijuego()
-    {
-        if (promptUI != null)
+        cargando = true;
+        MinijuegoEnCurso = true;
+
+        // Guardar la posición exacta antes de abrir el minijuego
+        if (jugadorObj != null)
         {
-            promptUI.SetActive(false);
+            posicionPrevia = jugadorObj.transform.position;
+            rotacionPrevia = jugadorObj.transform.rotation;
+        }
+
+        MinijuegoIniciado?.Invoke();
+
+        if (jugadorObj != null)
+        {
+            jugadorObj.SendMessage("EntrarMinijuego", SendMessageOptions.DontRequireReceiver);
+        }
+
+        escenaOriginal = SceneManager.GetActiveScene();
+        AlternarControlJugador(false);
+
+        Scene yaCargada = SceneManager.GetSceneByName(nombreEscenaMinijuego);
+        if (!yaCargada.isLoaded)
+        {
+            AsyncOperation op = SceneManager.LoadSceneAsync(nombreEscenaMinijuego, LoadSceneMode.Additive);
+            while (op != null && !op.isDone) yield return null;
+        }
+
+        Scene escena = SceneManager.GetSceneByName(nombreEscenaMinijuego);
+        if (escena.isLoaded)
+        {
+            SceneManager.SetActiveScene(escena);
         }
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        if (Application.CanStreamedLevelBeLoaded(nombreEscenaMinijuego))
+        InstanciaActiva = this;
+        minijuegoActivo = true;
+        cargando = false;
+    }
+
+    public void SalirDelMinijuego()
+    {
+        if (!minijuegoActivo || cerrando) return;
+        StartCoroutine(CerrarMinijuego());
+    }
+
+    public void ReiniciarMinijuego()
+    {
+        if (!minijuegoActivo || cargando || cerrando) return;
+        StartCoroutine(RecargarMinijuego());
+    }
+
+    private IEnumerator RecargarMinijuego()
+    {
+        cargando = true;
+
+        if (escenaOriginal.IsValid() && escenaOriginal.isLoaded)
         {
-            SceneManager.LoadScene(nombreEscenaMinijuego);
+            SceneManager.SetActiveScene(escenaOriginal);
+        }
+
+        Scene vieja = SceneManager.GetSceneByName(nombreEscenaMinijuego);
+        if (vieja.isLoaded)
+        {
+            AsyncOperation descarga = SceneManager.UnloadSceneAsync(vieja);
+            while (descarga != null && !descarga.isDone) yield return null;
+        }
+
+        AsyncOperation carga = SceneManager.LoadSceneAsync(nombreEscenaMinijuego, LoadSceneMode.Additive);
+        while (carga != null && !carga.isDone) yield return null;
+
+        Scene nueva = SceneManager.GetSceneByName(nombreEscenaMinijuego);
+        if (nueva.isLoaded)
+        {
+            SceneManager.SetActiveScene(nueva);
+        }
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        cargando = false;
+    }
+
+    public IEnumerator CerrarMinijuego()
+    {
+        if (!minijuegoActivo || cerrando) yield break;
+        cerrando = true;
+
+        if (escenaOriginal.IsValid() && escenaOriginal.isLoaded)
+        {
+            SceneManager.SetActiveScene(escenaOriginal);
+        }
+
+        Scene escena = SceneManager.GetSceneByName(nombreEscenaMinijuego);
+        if (escena.isLoaded)
+        {
+            AsyncOperation op = SceneManager.UnloadSceneAsync(escena);
+            while (op != null && !op.isDone) yield return null;
+        }
+
+        // Restaurar posición y rotación antes de reactivar controles
+        RestaurarPosicionJugador();
+
+        AlternarControlJugador(true);
+
+        if (jugadorObj != null)
+        {
+            jugadorObj.SendMessage("SalirMinijuego", SendMessageOptions.DontRequireReceiver);
+        }
+
+        minijuegoActivo = false;
+        cerrando = false;
+        InstanciaActiva = null;
+        MinijuegoEnCurso = false;
+
+        MinijuegoTerminado?.Invoke();
+    }
+
+    private void RestaurarPosicionJugador()
+    {
+        if (jugadorObj == null) return;
+
+        CharacterController cc = jugadorObj.GetComponent<CharacterController>();
+        if (cc != null) cc.enabled = false;
+
+        Rigidbody rb = jugadorObj.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        jugadorObj.transform.position = posicionPrevia;
+        jugadorObj.transform.rotation = rotacionPrevia;
+
+        if (cc != null) cc.enabled = true;
+    }
+
+    private void AlternarControlJugador(bool activar)
+    {
+        if (jugadorObj == null) return;
+
+        if (!activar)
+        {
+            componentesDesactivados.Clear();
+
+            // 1. Apagar Canvases del HUD e interfaces del jugador
+            Canvas[] canvases = jugadorObj.GetComponentsInChildren<Canvas>(true);
+            foreach (var c in canvases)
+            {
+                if (c.name.Contains("HUD") || c.name.Contains("Interface"))
+                {
+                    if (c.enabled)
+                    {
+                        c.enabled = false;
+                        componentesDesactivados.Add(c);
+                    }
+                }
+            }
+
+            // 2. Desactivar controles de movimiento, cámara y armas
+            foreach (var s in jugadorObj.GetComponentsInChildren<MonoBehaviour>())
+            {
+                if (s == null || s == this || !s.enabled) continue;
+
+                string n = s.GetType().Name;
+                if (n.Contains("Movement") || n.Contains("Controller") || n.Contains("Look") || n.Contains("Weapon"))
+                {
+                    s.enabled = false;
+                    componentesDesactivados.Add(s);
+                }
+            }
+
+            // 3. Apagar cámaras y listeners 3D del jugador
+            foreach (var cam in jugadorObj.GetComponentsInChildren<Camera>())
+            {
+                if (cam.enabled)
+                {
+                    cam.enabled = false;
+                    componentesDesactivados.Add(cam);
+                }
+            }
+            foreach (var al in jugadorObj.GetComponentsInChildren<AudioListener>())
+            {
+                if (al.enabled)
+                {
+                    al.enabled = false;
+                    componentesDesactivados.Add(al);
+                }
+            }
+
+            // 4. Activar invulnerabilidad en PlayerHealth
+            PlayerHealth ph = jugadorObj.GetComponent<PlayerHealth>();
+            if (ph != null)
+            {
+                ph.invulnerablePorMinijuego = true;
+            }
+
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
         }
         else
         {
-            Debug.LogError($"[ArcadeTrigger] La escena '{nombreEscenaMinijuego}' no está en Build Profiles.");
+            // Reactivar componentes
+            foreach (var c in componentesDesactivados)
+            {
+                if (c != null) c.enabled = true;
+            }
+            componentesDesactivados.Clear();
+
+            PlayerHealth ph = jugadorObj.GetComponent<PlayerHealth>();
+            if (ph != null)
+            {
+                ph.invulnerablePorMinijuego = false;
+            }
+
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
         }
-    }
-
-    private Transform BuscarTransformRecursivo(Transform parent, string targetName)
-    {
-        if (parent.name == targetName) return parent;
-
-        for (int i = 0; i < parent.childCount; i++)
-        {
-            Transform result = BuscarTransformRecursivo(parent.GetChild(i), targetName);
-            if (result != null) return result;
-        }
-
-        return null;
-    }
-
-    private void OnDisable()
-    {
-        if (promptUI != null)
-        {
-            promptUI.SetActive(false);
-        }
-        jugadorCerca = false;
     }
 }

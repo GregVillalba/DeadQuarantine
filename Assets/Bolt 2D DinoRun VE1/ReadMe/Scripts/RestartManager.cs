@@ -3,6 +3,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
+/// <summary>
+/// Va en el botón de reinicio (RawImage_again_no presed, que tiene el componente Button).
+/// Al presionarlo muestra la imagen "presionado", espera unos segundos y reinicia el minijuego.
+/// </summary>
 public class RestartUIRawImage : MonoBehaviour
 {
     [Header("Referencias de UI")]
@@ -10,7 +14,8 @@ public class RestartUIRawImage : MonoBehaviour
     [SerializeField] private GameObject rawImageGameOver;  // RawImage_gameover
 
     [Header("Configuración")]
-    [SerializeField] private float delaySeconds = 1f;
+    [Tooltip("Segundos que se ve la imagen 'presionado' antes de reiniciar")]
+    [SerializeField] private float delaySeconds = 2f;
 
     private Button btn;
     private RawImage myRawImage;
@@ -83,12 +88,13 @@ public class RestartUIRawImage : MonoBehaviour
         }
 
         // 2. Ocultar la imagen del botón normal
+        //    (se desactiva el componente, NO el objeto, para que esta corrutina siga corriendo)
         if (myRawImage != null)
         {
             myRawImage.enabled = false;
         }
 
-        // 3. Esperar 1 segundo (ignora pausas de tiempo de juego si se pausó la física)
+        // 3. Esperar (ignora pausas de tiempo de juego)
         yield return new WaitForSecondsRealtime(delaySeconds);
 
         // 4. Ocultar el cartel y la imagen presionada
@@ -102,8 +108,17 @@ public class RestartUIRawImage : MonoBehaviour
             rawImagePressed.SetActive(false);
         }
 
-        // 5. Reiniciar la escena
-        Scene currentScene = SceneManager.GetActiveScene();
-        SceneManager.LoadScene(currentScene.name);
+        // 5. Reiniciar el minijuego
+        if (MinijuegoArcadeTrigger.InstanciaActiva != null)
+        {
+            // Abierto desde la máquina arcade: se recarga solo la escena del minijuego (aditiva),
+            // sin tocar el juego principal.
+            MinijuegoArcadeTrigger.InstanciaActiva.ReiniciarMinijuego();
+        }
+        else
+        {
+            // Probando la escena sola, sin pasar por el arcade
+            SceneManager.LoadScene(gameObject.scene.name);
+        }
     }
 }

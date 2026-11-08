@@ -2336,9 +2336,9 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1176675766}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1864829435}
@@ -3285,12 +3285,16 @@ MonoBehaviour:
   jumpForce: 12
   groundLayer:
     serializedVersion: 2
-    m_Bits: 1
+    m_Bits: 0
   groundCheck: {fileID: 0}
   checkRadius: 0.2
-  startInstructionsUI: {fileID: 0}
-  gameOverCanvas: {fileID: 1864829430}
+  startInstructionsUI: {fileID: 1864829430}
+  gameOverCanvas: {fileID: 888325975}
+  botonReiniciar: {fileID: 1177850505}
+  imagenReiniciando: {fileID: 1176675766}
+  segundosImagenReinicio: 2
   scoreText: {fileID: 993387763}
+  puntajeMetaPremio: 100
   isGameStarted: 0
   isGameOver: 0
 --- !u!61 &1396613340
@@ -3630,7 +3634,6 @@ Transform:
   - {fileID: 565972682}
   - {fileID: 1512203023}
   - {fileID: 45134299}
-  - {fileID: 1864829435}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1543336132
@@ -4398,9 +4401,9 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 888325978}
-  - {fileID: 1177850504}
   - {fileID: 1176675769}
-  m_Father: {fileID: 1543336131}
+  - {fileID: 1177850504}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -4824,6 +4827,7 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 1416413609}
+  - {fileID: 1864829435}
   - {fileID: 1543336131}
   - {fileID: 1310725333}
   - {fileID: 709574587}

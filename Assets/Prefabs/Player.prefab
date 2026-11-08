@@ -70730,6 +70730,7 @@ GameObject:
   - component: {fileID: 2882670168681983299}
   - component: {fileID: 7122332671699174642}
   - component: {fileID: 1727452609831857897}
+  - component: {fileID: 8163218731738343378}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -71673,6 +71674,22 @@ MonoBehaviour:
   audioSource: {fileID: 2770761481342419257}
   sonidoColocar: {fileID: 8300000, guid: 487c0b5596520c2498ec1af8b8abc0a0, type: 3}
   sonidoDenegado: {fileID: 8300000, guid: 3a0bb452de8298a4692e50e90fc5192f, type: 3}
+--- !u!114 &8163218731738343378
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5539736354694109012}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d01e3eb4208e23542ae4c8799e8893d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArcadeInteractor
+  interactPrompt: {fileID: 7575991526064957505}
+  interactText: {fileID: 6882424455743608929}
+  interactRange: 3
+  textoJugar: para jugar
 --- !u!1 &5541150915868226879
 GameObject:
   m_ObjectHideFlags: 0
