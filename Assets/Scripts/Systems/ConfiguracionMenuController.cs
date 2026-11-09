@@ -1,6 +1,8 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
@@ -14,6 +16,14 @@ public sealed class ConfiguracionMenuController : MonoBehaviour
     [SerializeField] private GameObject[] secciones;
     [SerializeField] private Button[] botonesSeccion;
     [SerializeField] private TMP_Text[] textosBotonesSeccion;
+
+    [Header("Usuario / Perfil")]
+    [Tooltip("Botón USUARIO de la barra lateral")]
+    [SerializeField] private Button usuarioButton;
+    [Tooltip("Panel UsernameFirstRunUI que se abrirá")]
+    [SerializeField] private GameObject panelUsuario;
+    [Tooltip("Botón CANCELAR dentro de UsernameFirstRunUI para cerrarlo (opcional)")]
+    [SerializeField] private Button cancelarUsuarioButton;
 
     [Header("Pantalla")]
     [SerializeField] private TMP_Dropdown resolucionDropdown;
@@ -96,12 +106,19 @@ public sealed class ConfiguracionMenuController : MonoBehaviour
 
         ReloadAppliedValues();
         ShowSection(0);
+
+        // Asegurar que el modal de usuario inicie oculto si cerramos y abrimos config
+        if (panelUsuario != null)
+            panelUsuario.SetActive(false);
     }
 
     private void Initialize()
     {
         if (initialized)
             return;
+
+        // El botón USUARIO se conecta primero y por separado
+        WireUsuarioButton();
 
         manager =
             GraphicsSettingsManager.EnsureInstance();
@@ -435,6 +452,104 @@ public sealed class ConfiguracionMenuController : MonoBehaviour
         );
     }
 
+    // ─────────────────────────────────────────────
+    // Usuario / Perfil
+    // ─────────────────────────────────────────────
+
+    private void WireUsuarioButton()
+    {
+        if (usuarioButton == null)
+        {
+            Debug.LogError("[Config] ERROR: El campo 'Usuario Button' NO está asignado en el Inspector de ConfiguracionMenuController.", this);
+            return;
+        }
+
+        usuarioButton.onClick.RemoveListener(AbrirPanelUsuario);
+        usuarioButton.onClick.AddListener(AbrirPanelUsuario);
+
+        Debug.Log($"[Config] Evento de clic en botón USUARIO enlazado. (Interactable: {usuarioButton.interactable}, RaycastTarget: {usuarioButton.targetGraphic?.raycastTarget})", usuarioButton);
+
+        if (cancelarUsuarioButton != null)
+        {
+            cancelarUsuarioButton.onClick.RemoveListener(CerrarPanelUsuario);
+            cancelarUsuarioButton.onClick.AddListener(CerrarPanelUsuario);
+        }
+
+        if (FindFirstObjectByType<EventSystem>() == null)
+        {
+            Debug.LogError("[Config] No se encontró EventSystem en la escena; los botones no recibirán eventos de clic.", this);
+        }
+    }
+
+    public void AbrirPanelUsuario()
+    {
+        Debug.Log(">>> [Config] ¡CLICK RECIBIDO en el botón USUARIO! <<<", this);
+
+        // Si existe la instancia del gestor de renombre, usamos su método oficial
+        if (CharacterRenameManager.Instance != null)
+        {
+            CharacterRenameManager.Instance.AbrirPantallaNombre(esPrimerInicio: false);
+            return;
+        }
+
+        // Si no está la instancia pero está asignado el panel
+        if (panelUsuario != null)
+        {
+            var renameManager = panelUsuario.GetComponentInChildren<CharacterRenameManager>(true);
+            if (renameManager != null)
+            {
+                renameManager.AbrirPantallaNombre(esPrimerInicio: false);
+                return;
+            }
+
+            // Fallback de emergencia: activar raíz y todos sus hijos directos
+            panelUsuario.SetActive(true);
+            panelUsuario.transform.SetAsLastSibling();
+
+            CanvasGroup cg = panelUsuario.GetComponent<CanvasGroup>();
+            if (cg != null)
+            {
+                cg.alpha = 1f;
+                cg.interactable = true;
+                cg.blocksRaycasts = true;
+            }
+
+            for (int i = 0; i < panelUsuario.transform.childCount; i++)
+            {
+                panelUsuario.transform.GetChild(i).gameObject.SetActive(true);
+            }
+        }
+        else
+        {
+            Debug.LogError("[Config] ERROR: 'Panel Usuario' es NULL en el Inspector.", this);
+        }
+    }
+
+    private IEnumerator VerificarPanelUsuario()
+    {
+        yield return null;
+
+        if (panelUsuario != null && !panelUsuario.activeInHierarchy)
+        {
+            Debug.LogWarning(
+                "[Config] AVISO: El panel de usuario se apagó solo en el siguiente frame. " +
+                "Verifica scripts dentro de UsernameFirstRunUI (como GoogleLoginUI) que puedan estar desactivándolo.",
+                panelUsuario
+            );
+        }
+    }
+
+    public void CerrarPanelUsuario()
+    {
+        Debug.Log("[Config] Cerrando panel de usuario.");
+        if (panelUsuario != null)
+        {
+            panelUsuario.SetActive(false);
+        }
+    }
+
+    // ─────────────────────────────────────────────
+
     private void ReloadAppliedValues()
     {
         pending =
@@ -598,7 +713,6 @@ public sealed class ConfiguracionMenuController : MonoBehaviour
         if (syncing)
             return;
 
-        // PERSONALIZADO es un estado, no un preset que se pueda aplicar.
         if (index >= 5)
             return;
 
@@ -647,7 +761,6 @@ public sealed class ConfiguracionMenuController : MonoBehaviour
         if (controles != null)
             controles.Commit();
 
-        // Actualiza PlayerLook y todas las copias de PlayerControls vivas.
         ConfiguracionesJuego.AplicarCambios();
 
         dirty = false;
@@ -657,7 +770,6 @@ public sealed class ConfiguracionMenuController : MonoBehaviour
             Accent
         );
 
-        // Recaptura lo realmente aplicado.
         pending =
             manager.CaptureSnapshot();
 
@@ -684,8 +796,10 @@ public sealed class ConfiguracionMenuController : MonoBehaviour
 
     private void Back()
     {
-        // No aplicar silenciosamente nada.
-        // Los cambios pendientes se descartan al volver a abrir.
+        // Si el modal de usuario quedó abierto, lo cerramos
+        if (panelUsuario != null)
+            panelUsuario.SetActive(false);
+
         gameObject.SetActive(false);
 
         if (menuPrincipalPanel != null)
