@@ -4,6 +4,7 @@ using NUnit.Framework;
 using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 [TestFixture]
 public class NetworkBootstrapTests
@@ -53,6 +54,7 @@ public class NetworkBootstrapTests
     [Test]
     public async Task StartClient_ConJoinCodeVacio_DevuelveFalseSinTocarLaRed()
     {
+        LogAssert.Expect(LogType.Error, "[Network] Código vacío.");
         bool resultado = await bootstrap.StartClient("");
         Assert.IsFalse(resultado);
     }
@@ -60,6 +62,7 @@ public class NetworkBootstrapTests
     [Test]
     public async Task StartClient_ConJoinCodeDeEspacios_DevuelveFalse()
     {
+        LogAssert.Expect(LogType.Error, "[Network] Código vacío.");
         bool resultado = await bootstrap.StartClient("   ");
         Assert.IsFalse(resultado);
     }
@@ -67,6 +70,7 @@ public class NetworkBootstrapTests
     [Test]
     public async Task StartClient_ConJoinCodeNull_DevuelveFalse()
     {
+        LogAssert.Expect(LogType.Error, "[Network] Código vacío.");
         bool resultado = await bootstrap.StartClient(null);
         Assert.IsFalse(resultado);
     }
@@ -89,6 +93,7 @@ public class NetworkBootstrapTests
     [Test]
     public void OnNetworkStartFailed_NoLanzaExcepcion()
     {
+        LogAssert.Expect(LogType.Error, "[Network] ERROR iniciando Network: None");
         Assert.DoesNotThrow(() =>
             InvokePrivateMethod("OnNetworkStartFailed", default(SessionError)));
     }
@@ -141,6 +146,7 @@ public class NetworkBootstrapTests
     [Test]
     public void StartMultiplayerGame_SinSesionActiva_TerminaSinLanzarExcepcion()
     {
+        LogAssert.Expect(LogType.Error, "[Network] currentSession es NULL.");
         Assert.DoesNotThrowAsync(async () => await bootstrap.StartMultiplayerGame());
     }
 }

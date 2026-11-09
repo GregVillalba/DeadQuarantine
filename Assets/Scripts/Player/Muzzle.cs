@@ -19,6 +19,7 @@ public class Muzzle : MonoBehaviour
 
     public bool HasParticleEffect => particles != null;
     private ParticleSystem particles;
+    private bool manualSimulation;
     private Light flashLight;
     private Coroutine lightCoroutine;
 
@@ -45,7 +46,10 @@ public class Muzzle : MonoBehaviour
 
         particles =
             particlesObject.GetComponentInChildren<ParticleSystem>();
-        if(particles){var main=particles.main;main.playOnAwake=false;particles.Stop(true,ParticleSystemStopBehavior.StopEmittingAndClear);}
+        if(particles){var main=particles.main;main.playOnAwake=false;particles.Stop(true,ParticleSystemStopBehavior.StopEmittingAndClear);
+            var owner=GetComponentInParent<Weapon>();var profile=owner?owner.GetComponent<PackWeaponPresentation>():null;
+            if(profile&&!profile.preserveLegacyAnimation){manualSimulation=true;var emission=particles.emission;emission.enabled=false;particles.Play(true);}
+        }
     }
 
         if (flashLightPrefab != null)
@@ -70,6 +74,7 @@ public class Muzzle : MonoBehaviour
         // Partículas.
         if (particles != null)
         {
+            if(manualSimulation&&!particles.isPlaying)particles.Play(true);
             particles.Emit(flashParticlesCount);
         }
 

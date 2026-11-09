@@ -24,7 +24,8 @@ namespace DeadQuarantine.PvPvE.UI
   public PvPvEClassDefinition DisplayedClass {get;private set;}
   void Awake(){selector=GetComponent<PvPvEInitialClassSelection>();Active=this;selector.Changed+=OnChanged;selector.Reply+=OnReply;deployment=GetComponent<PvPvETeamDeployment>();if(deployment)deployment.ClassReply+=OnClassChangeReply;}
   void Update(){
-   if(changingLife&&!PauseController.LocalPlayerPaused)changingLife=false;
+   if(matchEditor&&matchEditor.EditingInMatch)matchEditor.HandleEscape();
+   if(changingLife&&!PauseController.LocalPlayerPaused){if(matchEditor)matchEditor.CancelMatchEditing();changingLife=false;}
    bool desired=changingLife||selector&&selector.ShouldShowLocal;
    if(desired&&root==null)Build();
    if(desired!=shown){shown=desired;if(desired){oldLock=Cursor.lockState;oldVisible=Cursor.visible;store.Load();Refresh();}else RestoreCursor();}
@@ -34,6 +35,14 @@ namespace DeadQuarantine.PvPvE.UI
   void LateUpdate(){if(IsShowing){Cursor.lockState=CursorLockMode.None;Cursor.visible=true;}}
   void OnChanged(){if(!root)return;if(observedEpoch!=selector.Epoch.Value){observedEpoch=selector.Epoch.Value;pending=false;notice="";store.Load();}Refresh();}
   void OnReply(uint epoch,uint id,bool accepted,string error){if(!pending||id!=request||epoch!=selector.Epoch.Value)return;if(!accepted){pending=false;notice=error;}Refresh();}
+  PvPvEClassEditor matchEditor;
+  public void OpenClassEditor(){
+   OpenClassChange();if(!changingLife)return;
+   matchEditor=FindFirstObjectByType<PvPvEClassEditor>(FindObjectsInactive.Include);
+   if(!matchEditor)return;
+   root.SetActive(true);
+   matchEditor.OpenForNextRespawn(root.transform,selected,()=>{if(disposed||!changingLife)return;store.Load();Choose(matchEditor.SelectedClass);Confirm();});
+  }
   public void OpenClassChange(){
    if(!deployment||!deployment.IsSpawned||!PauseController.LocalPlayerPaused)return;
    changingLife=true;pending=false;notice="La nueva clase se aplicará en el próximo respawn.";
@@ -105,7 +114,7 @@ namespace DeadQuarantine.PvPvE.UI
   TMP_Text Text(string name,Transform parent,string value,Vector2 min,Vector2 max,int size,Color color){var r=Rect(name,parent,min,max);var t=r.gameObject.AddComponent<TextMeshProUGUI>();t.font=font;t.text=value;t.fontSize=size;t.color=color;t.richText=false;t.textWrappingMode=TextWrappingModes.Normal;t.raycastTarget=false;return t;}
   Button Button(string name,string value,Vector2 min,Vector2 max){var r=Rect(name,root.transform,min,max);var image=r.gameObject.AddComponent<Image>();image.color=tile;var button=r.gameObject.AddComponent<Button>();button.targetGraphic=image;Text("Label",r,value,new(.04f,.02f),new(.96f,.98f),20,Color.white);return button;}
   void RestoreCursor(){if(shown)return;if(PauseController.LocalPlayerPaused||!selector||!selector.IsSpawned){Cursor.lockState=CursorLockMode.None;Cursor.visible=true;}else{Cursor.lockState=oldLock;Cursor.visible=oldVisible;}}
-  public void DisposeView(){if(disposed)return;disposed=true;selector.Changed-=OnChanged;selector.Reply-=OnReply;if(deployment)deployment.ClassReply-=OnClassChangeReply;if(shown){shown=false;RestoreCursor();}if(root){root.SetActive(false);Destroy(root);}if(ownedEventSystem)Destroy(ownedEventSystem);if(Active==this)Active=null;}
+  public void DisposeView(){if(disposed)return;disposed=true;if(matchEditor)matchEditor.CancelMatchEditing();selector.Changed-=OnChanged;selector.Reply-=OnReply;if(deployment)deployment.ClassReply-=OnClassChangeReply;if(shown){shown=false;RestoreCursor();}if(root){root.SetActive(false);Destroy(root);}if(ownedEventSystem)Destroy(ownedEventSystem);if(Active==this)Active=null;}
   void OnDestroy()=>DisposeView();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
   public void UseValidationProfile(string profile){store=new PvPvEClassStore(selector.Catalog,profile);if(root)Refresh();}

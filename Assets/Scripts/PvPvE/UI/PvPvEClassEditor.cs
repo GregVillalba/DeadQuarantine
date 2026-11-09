@@ -22,6 +22,10 @@ namespace DeadQuarantine.PvPvE.UI
   readonly Color accent=PvPvEUIFactory.Accent,tile=PvPvEUIFactory.Surface;
   public bool IsOpen=>panel&&panel.activeSelf;
   int escapeFrame=-1;
+  Transform matchOriginalParent;int matchOriginalSibling;Action matchClosed;
+  static PvPvEClassEditor matchEditor;static int matchCloseFrame=-1;
+  public static bool BlocksPauseInput=>(matchEditor&&matchEditor.IsOpen)||matchCloseFrame==Time.frameCount;
+  public bool EditingInMatch=>matchOriginalParent;
   public bool ConsumedEscapeThisFrame=>escapeFrame==Time.frameCount;
   public int SelectedClass=>selected;
   public PvPvEClassStore Store=>store;
@@ -31,13 +35,27 @@ namespace DeadQuarantine.PvPvE.UI
   public bool CharacterPreviewReady=>false;
   public GameObject Panel=>panel;
   void Awake(){font=PvPvEUIFactory.BodyFont?PvPvEUIFactory.BodyFont:font;store=new PvPvEClassStore(catalog);Build();panel.SetActive(false);}
-  void Update(){if(!IsOpen)return;if(Keyboard.current!=null&&Keyboard.current.escapeKey.wasPressedThisFrame){escapeFrame=Time.frameCount;if(picker.activeSelf)picker.SetActive(false);else Close();}}
+  void Update()=>HandleEscape();
+  public void HandleEscape(){if(!IsOpen||escapeFrame==Time.frameCount)return;if(Keyboard.current!=null&&Keyboard.current.escapeKey.wasPressedThisFrame){escapeFrame=Time.frameCount;if(picker.activeSelf)picker.SetActive(false);else Close();}}
   public void Open(){
    var lobby=GetComponent<PvPvELobbyView>();if(!lobby||!lobby.IsShowing)return;
    lobby.CloseCharacters();panel.SetActive(true);panel.transform.SetAsLastSibling();picker.SetActive(false);Refresh();
    EventSystem.current?.SetSelectedGameObject(classButtons[selected].gameObject);
   }
-  public void Close(){if(!panel)return;if(picker)picker.SetActive(false);panel.SetActive(false);if(entryButton&&entryButton.IsActive())EventSystem.current?.SetSelectedGameObject(entryButton.gameObject);}
+  public void OpenForNextRespawn(Transform owner,int classIndex,Action closed){
+   if(!owner||!PauseController.LocalPlayerPaused)return;
+   matchOriginalParent=panel.transform.parent;matchOriginalSibling=panel.transform.GetSiblingIndex();matchClosed=closed;matchEditor=this;
+   panel.transform.SetParent(owner,false);panel.transform.SetAsLastSibling();selected=Mathf.Clamp(classIndex,0,4);picker.SetActive(false);panel.SetActive(true);store.Load();Refresh();
+   EventSystem.current?.SetSelectedGameObject(classButtons[selected].gameObject);
+  }
+  public void Close(){FinishMatchEditor(true);}
+  public void CancelMatchEditing(){FinishMatchEditor(false);}
+  void FinishMatchEditor(bool apply){
+   if(!panel)return;if(picker)picker.SetActive(false);panel.SetActive(false);
+   var callback=matchClosed;matchClosed=null;
+   if(matchOriginalParent){panel.transform.SetParent(matchOriginalParent,false);panel.transform.SetSiblingIndex(matchOriginalSibling);matchOriginalParent=null;matchEditor=null;matchCloseFrame=Time.frameCount;if(apply)callback?.Invoke();return;}
+   if(entryButton&&entryButton.IsActive())EventSystem.current?.SetSelectedGameObject(entryButton.gameObject);
+  }
   public void SelectClass(int index){if(index<0||index>=5)return;selected=index;picker.SetActive(false);Refresh();}
   public bool Rename(string value){var c=Current;c.name=value.Trim();return Commit(c);}
   public bool ChooseWeapon(bool secondary,string id){

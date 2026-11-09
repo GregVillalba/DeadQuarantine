@@ -25,7 +25,7 @@ namespace DeadQuarantine.PvPvE.UI {
    if(active&&pauseController&&pauseOwner!=pauseController)InstallPauseAction(pauseController);
    bool pause=active&&PauseController.LocalPlayerPaused&&pauseController&&pauseController.IsPauseHomeVisible;
    if(!pause)Choosing=false;
-   if(pauseClassLabel)pauseClassLabel.text=Choosing?"VOLVER A PAUSA":"CAMBIAR CLASE"+(string.IsNullOrEmpty(Feedback)?"":"\nSe aplicará en el próximo respawn");
+   if(pauseClassLabel)pauseClassLabel.text=Choosing?"VOLVER A PAUSA":"CREAR CLASE"+(string.IsNullOrEmpty(Feedback)?"":"\nSe aplicará en el próximo respawn");
    bool show=active&&(!PauseController.LocalPlayerPaused||pause)&&(dead||pause&&Choosing||start||PvPvETeamDeployment.LocalBlocked);if(show&&!root)Build();if(root)root.SetActive(show);if(!show)return;
    if(backdrop){PvPvEUIFactory.Place(backdrop.rectTransform,dead?new(.28f,.35f):new(.50f,.18f),dead?new(.72f,.69f):new(.98f,.88f));backdrop.gameObject.SetActive(dead||pause);}
    PvPvEUIFactory.Place(heading.rectTransform,dead?new(.32f,.53f):new(.54f,.76f),dead?new(.68f,.64f):new(.94f,.85f));
@@ -41,7 +41,7 @@ namespace DeadQuarantine.PvPvE.UI {
   void InstallPauseAction(PauseController owner){
    if(pauseClassButton)Destroy(pauseClassButton.gameObject);pauseOwner=owner;if(!owner.PauseHomePanel)return;
    var sample=owner.PauseHomePanel.GetComponentsInChildren<Button>(true).FirstOrDefault(b=>b.gameObject.activeSelf&&b.GetComponentInChildren<TMP_Text>(true));if(!sample)return;
-   var clone=Instantiate(sample.gameObject,sample.transform.parent);clone.name="PvPvE_ChangeClass";pauseClassButton=clone.GetComponent<Button>();pauseClassButton.onClick=new Button.ButtonClickedEvent();pauseClassButton.onClick.AddListener(()=>GetComponent<PvPvEInitialClassView>()?.OpenClassChange());pauseClassLabel=clone.GetComponentInChildren<TMP_Text>(true);pauseClassLabel.text="CAMBIAR CLASE";PvPvEUIFactory.StyleButton(pauseClassButton);
+   var clone=Instantiate(sample.gameObject,sample.transform.parent);clone.name="PvPvE_ChangeClass";pauseClassButton=clone.GetComponent<Button>();pauseClassButton.onClick=new Button.ButtonClickedEvent();pauseClassButton.onClick.AddListener(()=>GetComponent<PvPvEInitialClassView>()?.OpenClassEditor());pauseClassLabel=clone.GetComponentInChildren<TMP_Text>(true);pauseClassLabel.text="CREAR CLASE";
    owner.RefreshPausePresentation(pauseClassButton);
 
   }

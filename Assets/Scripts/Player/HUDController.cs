@@ -1313,9 +1313,7 @@ public void ShowHitMarker(bool killedZombie, bool headshot = false)
     hitMarkerCoroutine =
         StartCoroutine(
             HitMarkerRoutine(
-                headshot && !DeadQuarantine.PvPvE.Networking.PvPvECombat.Active
-                    ? headshotHitMarkerDuration
-                    : hitMarkerDuration
+                hitMarkerDuration
             )
         );
 }

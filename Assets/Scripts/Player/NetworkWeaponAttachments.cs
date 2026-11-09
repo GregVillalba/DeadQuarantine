@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Linq;
 using Unity.Collections;
@@ -30,22 +30,12 @@ public sealed class NetworkWeaponAttachments : NetworkBehaviour
     void Awake(){approved=new NetworkList<Row>();presentation=GetComponent<NetworkWeaponPresentation>();}
     public override void OnNetworkSpawn(){
         approved.OnListChanged+=ListChanged;
-        if(IsServer)for(int i=0;i<presentation.Weapons.Length;i++)if(catalog.Eligible(presentation.Weapons[i].Id))approved.Add(new Row(i,default));
+        ResetVisuals();
+        if(IsServer){approved.Clear();for(int i=0;i<presentation.Weapons.Length;i++)if(catalog.Eligible(presentation.Weapons[i].Id))approved.Add(new Row(i,default));}
         ApplyAll();
-        if(IsOwner&&!DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(NetworkObject)&&!Array.Exists(Environment.GetCommandLineArgs(),a=>a=="-dq-attachments-ignore-saved")){
-            StartCoroutine(RestoreSaved());
-        }
     }
-    IEnumerator RestoreSaved(){
-        // WeaponSwitcher may begin its initial draw in Start, after OnNetworkSpawn.
-        yield return null;
-        float deadline=Time.realtimeSinceStartup+10;
-        while(IsSpawned&&presentation.Switcher&&presentation.Switcher.IsSwitching&&Time.realtimeSinceStartup<deadline)yield return null;
-        if(!IsSpawned||!presentation.Switcher||presentation.Switcher.IsSwitching)yield break;
-        foreach(var definition in presentation.Weapons)
-            if(catalog.Eligible(definition.Id)&&TryLoad(definition.Id,out var choice)&&catalog.Validate(definition.Id,choice))Request(definition.Id,choice);
-    }
-    public override void OnNetworkDespawn(){approved.OnListChanged-=ListChanged;base.OnNetworkDespawn();}
+    void ResetVisuals(){lastVisible=null;if(!presentation)return;foreach(var definition in presentation.Weapons)if(definition.Source)definition.Source.GetComponent<WeaponAttachments>()?.ResetRuntimeAttachments();}
+    public override void OnNetworkDespawn(){approved.OnListChanged-=ListChanged;ResetVisuals();base.OnNetworkDespawn();}
     public bool Request(string weaponId,WeaponAttachmentChoice choice){
         if(!IsSpawned||!IsOwner||!catalog.Validate(weaponId,choice))return false;
         int index=Array.FindIndex(presentation.Weapons,d=>d.Id==weaponId);if(index<0)return false;
@@ -65,8 +55,6 @@ public sealed class NetworkWeaponAttachments : NetworkBehaviour
     }
     void ListChanged(NetworkListEvent<Row> change){
         ApplyAll();
-        if(IsOwner&&!DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(NetworkObject)&&change.Type==NetworkListEvent<Row>.EventType.Value&&change.Value.weapon>=0&&change.Value.weapon<presentation.Weapons.Length)
-            Save(presentation.Weapons[change.Value.weapon].Id,change.Value.Choice);
     }
     // Only the trusted deployment coordinator supplies class attachments in PvPvE.
     public bool ApplyClassServer(DeadQuarantine.PvPvE.PvPvEClassDefinition c){

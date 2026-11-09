@@ -6,6 +6,17 @@ using UnityEngine;
 [TestFixture]
 public class MultiplayerPlayerSpawnerTests
 {
+    private UnityEditor.SceneManagement.SceneSetup[] previousScenes;
+    [OneTimeSetUp] public void BeginIsolatedScene()
+    {
+        previousScenes = UnityEditor.SceneManagement.EditorSceneManager.GetSceneManagerSetup();
+        UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.EmptyScene, UnityEditor.SceneManagement.NewSceneMode.Single);
+    }
+    [OneTimeTearDown] public void RestorePreviousScenes()
+    {
+        UnityEditor.SceneManagement.EditorSceneManager.RestoreSceneManagerSetup(previousScenes);
+    }
+
     private GameObject host;
     private MultiplayerPlayerSpawner spawner;
     private GameObject spawn1Object;
@@ -59,11 +70,10 @@ public class MultiplayerPlayerSpawnerTests
     }
  
     [Test]
-    public void GetSpawnPoint_ConIndiceDistintoDeCeroYUno_CaeEnPlayerSpawn2()
+    public void GetSpawnPoint_ConIndiceSinPunto_CaeEnPrimerSpawnConfigurado()
     {
-        // Documenta el comportamiento actual del ternario: cualquier índice
-        // distinto de 0 (incluso uno "inválido") devuelve playerSpawn2.
-        Assert.AreSame(spawn2Object.transform, spawner.GetSpawnPoint(99));
+        // Un índice sin punto usa el primer respaldo disponible del escenario.
+        Assert.AreSame(spawn1Object.transform, spawner.GetSpawnPoint(99));
     }
  
     [Test]

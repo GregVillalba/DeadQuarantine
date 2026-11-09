@@ -122,4 +122,47 @@ public class NPCWeaponVendorTests
         // Verificar limpieza de estados pendientes
         Assert.IsNull(GetPrivateField("pendingWeaponId"), "pendingWeaponId debe limpiarse tras procesar el resultado.");
     }
+
+    [UnityTest]
+    public IEnumerator PurchasePanelStaysAboveOverlappingCatalogAndReceivesPointerHits()
+    {
+        var root = new GameObject("Merchant priority UI",typeof(RectTransform),typeof(UnityEngine.Canvas),typeof(UnityEngine.UI.GraphicRaycaster));
+        var eventsObject = new GameObject("Merchant priority events",typeof(UnityEngine.EventSystems.EventSystem));
+        var shop = root.AddComponent<NPCShopUI>();shop.enabled=false;
+        bool oldVisible=Cursor.visible;var oldLock=Cursor.lockState;
+        var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+        try
+        {
+            root.GetComponent<Canvas>().renderMode=RenderMode.ScreenSpaceOverlay;
+            root.GetComponent<Canvas>().sortingOrder=100;
+            var cameraObject=new GameObject("Merchant priority camera",typeof(Camera));cameraObject.transform.SetParent(root.transform,false);cameraObject.transform.localPosition=new Vector3(0,0,-10);
+            var purchase=new GameObject("Purchase",typeof(RectTransform),typeof(UnityEngine.UI.Image));
+            purchase.transform.SetParent(root.transform,false);
+            var rect=purchase.GetComponent<RectTransform>();rect.anchoredPosition=new Vector2(24,-70);rect.sizeDelta=new Vector2(300,60);
+            var catalog=new GameObject("Catalog",typeof(RectTransform),typeof(Canvas),typeof(UnityEngine.UI.Image),typeof(UnityEngine.UI.GraphicRaycaster));
+            catalog.transform.SetParent(root.transform,false);
+            var catalogRect=catalog.GetComponent<RectTransform>();catalogRect.anchoredPosition=rect.anchoredPosition;catalogRect.sizeDelta=rect.sizeDelta;
+            var catalogCanvas=catalog.GetComponent<Canvas>();catalogCanvas.overrideSorting=true;catalogCanvas.sortingOrder=32000;
+            typeof(NPCShopUI).GetField("panelCompra",flags).SetValue(shop,purchase);
+            typeof(NPCShopUI).GetField("shopPanel",flags).SetValue(shop,root);
+            LogAssert.Expect(LogType.Error,"[NPCShopUI] Falta rowPrefab, rowsContainer o mercader.");
+            typeof(NPCShopUI).GetMethod("AbrirTienda",flags).Invoke(shop,new object[]{vendor});
+            typeof(NPCShopUI).GetMethod("SeleccionarOferta",flags).Invoke(shop,new object[]{new WeaponOffer{weaponId="Rifle",precioPilaDeLatas=3}});
+            yield return null;Canvas.ForceUpdateCanvases();yield return null;Canvas.ForceUpdateCanvases();
+
+            Assert.IsTrue(purchase.activeInHierarchy);
+            Assert.AreEqual(new Vector2(24,-70),rect.anchoredPosition);
+            Assert.AreEqual(new Vector2(300,60),rect.sizeDelta);
+            var pointer=new UnityEngine.EventSystems.PointerEventData(eventsObject.GetComponent<UnityEngine.EventSystems.EventSystem>()) {position=RectTransformUtility.WorldToScreenPoint(null,rect.position)};
+            var hits=new System.Collections.Generic.List<UnityEngine.EventSystems.RaycastResult>();
+            eventsObject.GetComponent<UnityEngine.EventSystems.EventSystem>().RaycastAll(pointer,hits);
+            Assert.IsNotEmpty(hits,"The visible purchase panel receives pointer hits; screen="+Screen.width+"x"+Screen.height+" canvas="+root.GetComponent<Canvas>().pixelRect+" pointer="+pointer.position+" graphicDepth="+purchase.GetComponent<UnityEngine.UI.Image>().depth);
+            Assert.AreEqual(purchase,hits[0].gameObject,"Purchase stays above the overlapping catalog image");
+        }
+        finally
+        {
+            shop.CerrarTienda();Object.Destroy(root);Object.Destroy(eventsObject);Cursor.visible=oldVisible;Cursor.lockState=oldLock;
+        }
+        yield return null;
+    }
 }

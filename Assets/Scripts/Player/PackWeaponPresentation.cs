@@ -24,6 +24,9 @@ public sealed class PackWeaponPresentation:MonoBehaviour {
  void LateUpdate(){
   if(!weapon){weapon=GetComponent<Weapon>();switcher=GetComponentInParent<WeaponSwitcher>();attachments=GetComponent<WeaponAttachments>();socket=WeaponAttachments.Find(transform,"SOCKET_Grip");}
   if(!weapon||!weapon.isActiveAndEnabled||weapon.IsReloading||weapon.IsChambering||switcher&&switcher.IsSwitching)return;
+  var movement=GetComponentInParent<PlayerMovement>();if(movement&&movement.IsSprinting)return;
+  var animator=switcher?switcher.GetComponent<Animator>():null;
+  if(animator){int layer=animator.GetLayerIndex("MovementActions");if(layer>=0&&(animator.GetCurrentAnimatorStateInfo(layer).IsName("Running")||animator.IsInTransition(layer)&&animator.GetNextAnimatorStateInfo(layer).IsName("Running")))return;}
   var pose=SupportPose(attachments,false);if(pose==null||!switcher)return;
   arm??=new WeaponSupportPose.Binding(switcher.GetComponent<Animator>());arm.Apply(SupportFrame(attachments,socket),pose);
  }

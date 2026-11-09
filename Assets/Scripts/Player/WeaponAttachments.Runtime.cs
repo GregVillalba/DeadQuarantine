@@ -29,6 +29,14 @@ public partial class WeaponAttachments
     public void ConfigureRuntime(WeaponAttachmentCatalog source,string weapon,bool remote=false) {
         catalog=source;stableWeaponId=weapon;remoteVisual=remote;
     }
+    public void ResetRuntimeAttachments(){
+        if(!HasRuntimeCatalog)return;
+        foreach(var instance in mounted)if(instance){instance.SetActive(false);Destroy(instance);}
+        Array.Clear(mounted,0,mounted.Length);
+        foreach(var child in GetComponentsInChildren<Transform>(true))if(child!=transform&&child.name.StartsWith("DQ_ATT_",StringComparison.Ordinal)){child.gameObject.SetActive(false);Destroy(child.gameObject);}
+        ClearScope();runtimeOptical=null;laserBeam=null;laserOrigin=null;ApprovedChoice=default;
+        ApplyApproved(default);
+    }
     public bool ApplyApproved(WeaponAttachmentChoice choice) {
         if(!HasRuntimeCatalog||!catalog.Validate(stableWeaponId,choice))return false;
         if(defaultOptical==null)defaultOptical=Find(transform,"DQ_OpticalSight")??GetComponent<Weapon>()?.AttachmentDefaultSight;

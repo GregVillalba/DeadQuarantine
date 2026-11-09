@@ -214,6 +214,12 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
         isIntentionalLeave = false;
         LastJoinFailReason = JoinFailReason.None;
 
+        if (string.IsNullOrWhiteSpace(joinCode))
+        {
+            Debug.LogError("[Network] Código vacío.");
+            return false;
+        }
+
         if (!await EnsureServicesInitialized())
         {
             LastJoinFailReason = JoinFailReason.Other;
@@ -222,15 +228,6 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
 
         try
         {
-            if (string.IsNullOrWhiteSpace(joinCode))
-            {
-                Debug.LogError(
-                    "[Network] Código vacío."
-                );
-
-                return false;
-            }
-
             currentSession =
                 await MultiplayerService.Instance
                     .JoinSessionByCodeAsync(joinCode);

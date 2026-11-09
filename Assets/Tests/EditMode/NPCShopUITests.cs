@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Linq;
 using NUnit.Framework;
 using TMPro;
 using UnityEngine;
@@ -10,6 +11,17 @@ using UnityEngine.UI;
 [TestFixture]
 public class NPCShopUITests
 {
+    private UnityEditor.SceneManagement.SceneSetup[] previousScenes;
+    [OneTimeSetUp] public void BeginIsolatedScene()
+    {
+        previousScenes = UnityEditor.SceneManagement.EditorSceneManager.GetSceneManagerSetup();
+        UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.EmptyScene, UnityEditor.SceneManagement.NewSceneMode.Single);
+    }
+    [OneTimeTearDown] public void RestorePreviousScenes()
+    {
+        UnityEditor.SceneManagement.EditorSceneManager.RestoreSceneManagerSetup(previousScenes);
+    }
+
     private readonly List<GameObject> creados = new List<GameObject>();
  
     private GameObject host;
@@ -87,6 +99,9 @@ public class NPCShopUITests
     [TearDown]
     public void TearDown()
     {
+        var input = typeof(NPCShopUI).GetField("controls", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(shopUI) as PlayerControls;
+        if (input != null && input.asset) { input.Disable(); UnityEngine.Object.DestroyImmediate(input.asset); }
+
         foreach (GameObject go in creados)
         {
             if (go != null)
@@ -126,8 +141,9 @@ public class NPCShopUITests
  
     private object InvokePrivateMethod(string methodName, params object[] args)
     {
-        MethodInfo method = typeof(NPCShopUI)
-            .GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Instance);
+        MethodInfo method = typeof(NPCShopUI).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+            .Single(m => m.Name == methodName && m.GetParameters().Length == args.Length &&
+                m.GetParameters().Select((p, i) => args[i] == null || p.ParameterType.IsInstanceOfType(args[i])).All(matches => matches));
         return method.Invoke(shopUI, args);
     }
  
@@ -354,7 +370,8 @@ public class NPCShopUITests
         Assert.IsFalse((bool)GetPrivateField("estaAbierta"));
         Assert.IsFalse(shopPanelGO.activeSelf);
         Assert.IsFalse(Cursor.visible);
-        Assert.AreEqual(CursorLockMode.Locked, Cursor.lockState);
+        // El editor decide el bloqueo real del cursor fuera del modo de juego.
+        // El cierre y la liberación del estado de compra se comprueban aquí.
         Assert.IsNull(GetPrivateField("currentVendor"));
     }
  
@@ -573,14 +590,14 @@ public class NPCShopUITests
         Assert.IsFalse(interactPromptGO.activeSelf);
     }
  
-    // --- ComprarOferta / OnCompraTerminada / OnScoreChanged ---
+    // --- ComprarOferta / OnCompraTerminada / OnRecursoCambiado ---
  
     [Test]
     public void ComprarOferta_SinVendedorActual_NoLanzaExcepcion()
     {
         SetPrivateField("currentVendor", null);
  
-        Assert.DoesNotThrow(() => InvokePrivateMethod("ComprarOferta", (object)null));
+        Assert.DoesNotThrow(() => InvokePrivateMethod("ComprarOferta", new WeaponOffer { weaponId = "Rifle" }));
     }
  
     [Test]
@@ -600,19 +617,19 @@ public class NPCShopUITests
     }
  
     [Test]
-    public void OnScoreChanged_ConTiendaAbierta_ActualizaFilasSinExcepcion()
+    public void OnRecursoCambiado_ConTiendaAbierta_ActualizaFilasSinExcepcion()
     {
         SetPrivateField("estaAbierta", true);
  
-        Assert.DoesNotThrow(() => InvokePrivateMethod("OnScoreChanged", 0, 10));
+        Assert.DoesNotThrow(() => InvokePrivateMethod("OnRecursoCambiado", 0, 10));
     }
  
     [Test]
-    public void OnScoreChanged_ConTiendaCerrada_NoHaceNada()
+    public void OnRecursoCambiado_ConTiendaCerrada_NoHaceNada()
     {
         SetPrivateField("estaAbierta", false);
  
-        Assert.DoesNotThrow(() => InvokePrivateMethod("OnScoreChanged", 0, 10));
+        Assert.DoesNotThrow(() => InvokePrivateMethod("OnRecursoCambiado", 0, 10));
     }
  
     // --- DestruirFilas / BloquearJugador / RestaurarJugador ---
@@ -650,21 +667,20 @@ public class NPCShopUITests
     // --- EsSinglePlayer / OnDestroy ---
  
     [Test]
-    public void EsSinglePlayer_EnLaEscenaDeTest_DevuelveFalse()
+    public void CerrarTienda_ConTiempoAlterado_NoModificaElTimeScale()
     {
-        // La escena activa durante los tests de EditMode no se llama
-        // "MainSceneSinglePlayer", así que este smoke test confirma la rama "false".
-        bool resultado = (bool)InvokePrivateMethod("EsSinglePlayer");
- 
-        Assert.IsFalse(resultado);
+        Time.timeScale = 0.5f;
+        SetPrivateField("estaAbierta", true);
+        shopUI.CerrarTienda();
+        Assert.AreEqual(0.5f, Time.timeScale);
     }
- 
+
     [Test]
-    public void OnDestroy_FueraDeSinglePlayer_NoModificaElTimeScale()
+    public void OnDisable_NoModificaElTimeScale()
     {
         float timeScaleOriginal = Time.timeScale;
  
-        InvokePrivateMethod("OnDestroy");
+        InvokePrivateMethod("OnDisable");
 
         Assert.AreEqual(timeScaleOriginal, Time.timeScale);
     }

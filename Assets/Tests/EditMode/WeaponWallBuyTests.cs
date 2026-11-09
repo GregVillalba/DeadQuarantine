@@ -6,6 +6,17 @@ using UnityEngine.TestTools;
 
 public class WeaponWallBuyTests
 {
+    private UnityEditor.SceneManagement.SceneSetup[] previousScenes;
+    [OneTimeSetUp] public void BeginIsolatedScene()
+    {
+        previousScenes = UnityEditor.SceneManagement.EditorSceneManager.GetSceneManagerSetup();
+        UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.EmptyScene, UnityEditor.SceneManagement.NewSceneMode.Single);
+    }
+    [OneTimeTearDown] public void RestorePreviousScenes()
+    {
+        UnityEditor.SceneManagement.EditorSceneManager.RestoreSceneManagerSetup(previousScenes);
+    }
+
     private GameObject controllerGO;
     private WeaponWallBuy controller;
  
@@ -25,6 +36,9 @@ public class WeaponWallBuyTests
     [TearDown]
     public void TearDown()
     {
+        var input = typeof(WeaponWallBuy).GetField("controls", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(controller) as PlayerControls;
+        if (input != null && input.asset) { input.Disable(); UnityEngine.Object.DestroyImmediate(input.asset); }
+
         Object.DestroyImmediate(controllerGO);
         foreach (GameObject go in scratch)
         {
@@ -50,6 +64,11 @@ public class WeaponWallBuyTests
  
     private static object InvokePrivateMethod(object target, string methodName, params object[] args)
     {
+        if (methodName == "Awake")
+        {
+            var previous = target.GetType().GetField("controls", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(target) as PlayerControls;
+            if (previous != null && previous.asset) { previous.Disable(); UnityEngine.Object.DestroyImmediate(previous.asset); }
+        }
         MethodInfo mi = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.IsNotNull(mi, $"No se encontró el método privado '{methodName}'.");
         return mi.Invoke(target, args);
@@ -254,7 +273,7 @@ public class WeaponWallBuyTests
         var switcherGO = cam.gameObject; // mismo root que la cámara
         WeaponSwitcher switcher = switcherGO.AddComponent<WeaponSwitcher>();
         SetPrivateField(switcher, "slots", new[] { new WeaponSwitcher.WeaponSlot { weaponId = weaponId } });
-        SetPrivateField(switcher, "unlocked", new[] { true });
+        SetPrivateField(switcher, "inventory", new[] { 0, -1 });
  
         switcherGO.AddComponent<PlayerScore>();
  
@@ -310,7 +329,7 @@ public class WeaponWallBuyTests
         scratch.Add(switcherGO);
         WeaponSwitcher switcher = switcherGO.AddComponent<WeaponSwitcher>();
         SetPrivateField(switcher, "slots", new[] { new WeaponSwitcher.WeaponSlot { weaponId = weaponId } });
-        SetPrivateField(switcher, "unlocked", new[] { false });
+        SetPrivateField(switcher, "inventory", new[] { -1, -1 });
         // currentIndex ya vale 0 por defecto: coincide con el índice del slot
         // desbloqueado, así RequestEquip() corta temprano ("ya es el arma
         // actual") y no hace falta configurar weaponRoot/Animator.

@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.IO;
 using System.Linq;
@@ -78,25 +78,13 @@ public static class Phase11PerksBuild
         File.WriteAllText(path,result); AssetDatabase.ImportAsset(path,ImportAssetOptions.ForceUpdate);
         Directory.CreateDirectory(Output);File.WriteAllText(Path.Combine(Output,health?"AllowedPlayerRecord.txt":"AllowedMerchantRecord.txt"),key);
     }
-    // Small, original outline glyphs for the five pieces of equipment; no external art dependency.
+    // Reuse the supplied equipment artwork in every mode.
     static Sprite Icon(PassivePerk perk)
     {
-        const string folder="Assets/PvPvE/Art/Perks";Directory.CreateDirectory(folder);
-        string path=folder+"/"+perk+".png";
-        if (!File.Exists(path))
-        {
-            var texture=new Texture2D(128,128,TextureFormat.RGBA32,false);texture.SetPixels32(new Color32[128*128]);
-            Vector2Int[] points=perk switch {
-                PassivePerk.Gloves=>new Vector2Int[]{new Vector2Int(36,14),new(91,14),new(94,65),new(105,83),new(97,91),new(83,78),new(85,111),new(73,114),new(68,87),new(64,117),new(52,117),new(50,86),new(43,109),new(31,105),new(34,76),new(20,92),new(12,83),new(35,51),new(36,14)},
-                PassivePerk.Boots=>new Vector2Int[]{new Vector2Int(40,116),new(87,116),new(81,55),new(114,36),new(114,15),new(20,15),new(20,39),new(39,49),new(40,116)},
-                PassivePerk.Kneepads=>new Vector2Int[]{new Vector2Int(39,112),new(91,112),new(108,65),new(91,16),new(39,16),new(22,65),new(39,112),new(91,112),new(94,70),new(64,48),new(34,70),new(39,112)},
-                PassivePerk.Holster=>new Vector2Int[]{new Vector2Int(29,110),new(100,110),new(100,85),new(83,77),new(74,17),new(41,17),new(29,110),new(29,91),new(12,91),new(12,116),new(57,116)},
-                _=>new Vector2Int[]{new Vector2Int(48,116),new(80,116),new(80,99),new(94,83),new(105,60),new(105,24),new(94,13),new(34,13),new(23,24),new(23,60),new(34,83),new(48,99),new(48,116)} };
-            for(int n=1;n<points.Length;n++){var a=points[n-1];var b=points[n];int steps=Math.Max(Math.Abs(a.x-b.x),Math.Abs(a.y-b.y));for(int s=0;s<=steps;s++){var p=Vector2.Lerp(a,b,steps==0?0:(float)s/steps);for(int x=-2;x<=2;x++)for(int y=-2;y<=2;y++){int xx=Mathf.RoundToInt(p.x)+x,yy=Mathf.RoundToInt(p.y)+y;if(xx>=0&&xx<128&&yy>=0&&yy<128)texture.SetPixel(xx,yy,Color.white);}}}
-            texture.Apply();File.WriteAllBytes(path,texture.EncodeToPNG());UnityEngine.Object.DestroyImmediate(texture);AssetDatabase.ImportAsset(path);
-        }
-        var importer=(TextureImporter)AssetImporter.GetAtPath(path);importer.textureType=TextureImporterType.Sprite;importer.spriteImportMode=SpriteImportMode.Single;importer.alphaIsTransparency=true;importer.mipmapEnabled=false;importer.SaveAndReimport();
-        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        string name=perk==PassivePerk.Canteen?"EnergyDrink":perk.ToString();
+        var icon=AssetDatabase.LoadAssetAtPath<Sprite>("Assets/PvPvE/Art/RedesignPerks/"+name+".png");
+        if(!icon)throw new InvalidOperationException("Missing equipment icon: "+name);
+        return icon;
     }
     public static void BuildAll(){Install();try{BuildGame();BuildMenu();}finally{EditorSceneManager.OpenScene(PvPvEMenuPhase2Tools.ScenePath);}}
     public static void BuildGameAndRestoreMenu(){try{BuildGame();}finally{EditorSceneManager.OpenScene(PvPvEMenuPhase2Tools.ScenePath);}}

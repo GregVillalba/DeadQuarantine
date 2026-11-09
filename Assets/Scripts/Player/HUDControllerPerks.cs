@@ -28,11 +28,11 @@ public partial class HUDController
         }
         bool mode=PvPvEPresentationActive;
         if(perkPvPvE!=mode){perkPvPvE=mode;shownPerks=uint.MaxValue;}
-        for(int i=0;i<perkIcons.Count;i++){perkIcons[i].sprite=mode?playerHealth.PerksCatalog.entries[i].IconForPvPvE:playerHealth.PerksCatalog.entries[i].icon;perkIcons[i].rectTransform.sizeDelta=Vector2.one*(mode?72:96);}
-        if(mode){
+        for(int i=0;i<perkIcons.Count;i++){perkIcons[i].sprite=playerHealth.PerksCatalog.entries[i].IconForPvPvE;perkIcons[i].rectTransform.sizeDelta=Vector2.one*(mode?72:96);}
+        {
             if(!perkView){perkView=playerHealth.GetComponentInChildren<PlayerLook>(true);if(perkView)lastPerkView=perkView.transform.eulerAngles;}
             if(perkView){var current=perkView.transform.eulerAngles;var delta=new Vector2(-Mathf.DeltaAngle(lastPerkView.y,current.y),Mathf.DeltaAngle(lastPerkView.x,current.x));lastPerkView=current;perkParallax=Vector2.Lerp(perkParallax,Vector2.ClampMagnitude(delta*1.5f,5),1-Mathf.Exp(-12*Time.unscaledDeltaTime));}
-        }else perkParallax=Vector2.zero;
+        }
         perksRow.anchoredPosition=perkParallax;
         if (shownPerks == playerHealth.Perks.Value) return;
         shownPerks = playerHealth.Perks.Value; int column = 0;

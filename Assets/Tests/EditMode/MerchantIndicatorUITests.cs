@@ -9,10 +9,22 @@ using UnityEngine;
 [TestFixture]
 public class MerchantIndicatorUITests
 {
+    private UnityEditor.SceneManagement.SceneSetup[] previousScenes;
+    [OneTimeSetUp] public void BeginIsolatedScene()
+    {
+        previousScenes = UnityEditor.SceneManagement.EditorSceneManager.GetSceneManagerSetup();
+        UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.EmptyScene, UnityEditor.SceneManagement.NewSceneMode.Single);
+    }
+    [OneTimeTearDown] public void RestorePreviousScenes()
+    {
+        UnityEditor.SceneManagement.EditorSceneManager.RestoreSceneManagerSetup(previousScenes);
+    }
+
     private readonly List<GameObject> creados = new List<GameObject>();
  
     private GameObject indicatorHost;
     private MerchantIndicatorUI indicator;
+    private object previousRound;
  
     private GameObject indicadorRootGO;
     private RectTransform flecha;
@@ -21,6 +33,7 @@ public class MerchantIndicatorUITests
     [SetUp]
     public void SetUp()
     {
+        previousRound = typeof(RoundManager).GetField("<Instance>k__BackingField",BindingFlags.Static|BindingFlags.NonPublic).GetValue(null);
         indicatorHost = CrearGameObject("MerchantIndicator");
         indicator = indicatorHost.AddComponent<MerchantIndicatorUI>();
  
@@ -42,6 +55,9 @@ public class MerchantIndicatorUITests
     [TearDown]
     public void TearDown()
     {
+        var input = typeof(MerchantIndicatorUI).GetField("controls", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(indicator) as PlayerControls;
+        if (input != null && input.asset) { input.Disable(); UnityEngine.Object.DestroyImmediate(input.asset); }
+
         foreach (GameObject go in creados)
         {
             if (go != null)
@@ -49,6 +65,7 @@ public class MerchantIndicatorUITests
         }
  
         creados.Clear();
+        typeof(RoundManager).GetField("<Instance>k__BackingField",BindingFlags.Static|BindingFlags.NonPublic).SetValue(null,previousRound);
     }
  
     private GameObject CrearGameObject(string nombre, params Type[] componentes)
@@ -135,7 +152,7 @@ public class MerchantIndicatorUITests
     [Test]
     public void MostrarIndicador_True_ActivaElRoot()
     {
-        InvokePrivateMethod("MostrarIndicador", true);
+        InvokePrivateMethod("MostrarIndicador", true, true);
  
         Assert.IsTrue(indicadorRootGO.activeSelf);
     }
@@ -145,7 +162,7 @@ public class MerchantIndicatorUITests
     {
         indicadorRootGO.SetActive(true);
  
-        InvokePrivateMethod("MostrarIndicador", false);
+        InvokePrivateMethod("MostrarIndicador", false, false);
  
         Assert.IsFalse(indicadorRootGO.activeSelf);
     }
@@ -155,6 +172,7 @@ public class MerchantIndicatorUITests
     [Test]
     public void Update_MercaderLejos_MuestraIndicadorConDistanciaYRotacionCorrectas()
     {
+        ActivarFaseCompras();
         GameObject mercaderGO = CrearGameObject("Mercader");
         mercaderGO.transform.position = new Vector3(10f, 0f, 0f); // a la derecha
  
@@ -177,6 +195,7 @@ public class MerchantIndicatorUITests
     [Test]
     public void Update_MercaderDentroDelUmbral_OcultaIndicador()
     {
+        ActivarFaseCompras();
         GameObject mercaderGO = CrearGameObject("Mercader");
         mercaderGO.transform.position = new Vector3(1f, 0f, 0f); // a 1m, umbral es 3m
  
@@ -196,6 +215,7 @@ public class MerchantIndicatorUITests
     [Test]
     public void Update_MercaderExactoEnElUmbral_OcultaIndicador()
     {
+        ActivarFaseCompras();
         // El script oculta cuando distancia <= umbral, así que en el límite
         // exacto (3m) también debe ocultarse.
         GameObject mercaderGO = CrearGameObject("Mercader");
@@ -216,6 +236,7 @@ public class MerchantIndicatorUITests
     [Test]
     public void Update_SinMercaderEnEscena_OcultaIndicadorYNoActualizaTexto()
     {
+        ActivarFaseCompras();
         SetPrivateField("jugador", indicatorHost.transform);
         SetPrivateField("mercader", null);
         distanciaText.text = "texto previo";
@@ -225,5 +246,19 @@ public class MerchantIndicatorUITests
         Assert.IsFalse(indicadorRootGO.activeSelf);
         Assert.AreEqual("texto previo", distanciaText.text,
             "Sin mercader encontrado, Update() no debería tocar el texto de distancia.");
+    }
+    private void ActivarFaseCompras()
+    {
+        var round = CrearGameObject("ShopPhase").AddComponent<RoundManager>();
+        typeof(RoundManager).GetField("<Instance>k__BackingField",BindingFlags.Static|BindingFlags.NonPublic).SetValue(null,round);
+        round.ShopPhaseActiveNetwork.Value = true;
+        SetPrivateField("faseComprasAnterior",true);
+    }
+    [Test] public void Update_FueraDeFaseCompras_OcultaElIndicador()
+    {
+        typeof(RoundManager).GetField("<Instance>k__BackingField",BindingFlags.Static|BindingFlags.NonPublic).SetValue(null,null);
+        indicadorRootGO.SetActive(true);
+        InvokePrivateMethod("Update");
+        Assert.IsFalse(indicadorRootGO.activeSelf);
     }
 }

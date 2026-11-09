@@ -15,10 +15,11 @@ public class CoopWeaponRegressionTests
  [Test] public void DuplicateInsertEventAddsOnlyOneShell(){weapon.AnimationInsertOneShell();weapon.AnimationInsertOneShell();Assert.AreEqual(4,weapon.CurrentAmmo);}
  [Test] public void MagazineReloadStillFillsNormally(){Set("usesMultiPartReload",false);weapon.AnimationReloadFinished();Assert.AreEqual(10,weapon.CurrentAmmo);}
  [Test] public void ReloadDuringPumpIsQueued(){Set("isReloading",false);Set("isChambering",true);typeof(Weapon).GetMethod("OnReload",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(weapon,new object[]{default(InputAction.CallbackContext)});Assert.IsFalse(weapon.IsReloading);Assert.IsTrue(Get<bool>("pendingReload"));}
- [Test] public void PlayerPrefabHasAllThreeRealWeaponDefinitions() {
+ [Test] public void PlayerPrefabKeepsOriginalThreeAndAllCatalogWeaponDefinitions() {
   var player=PrefabUtility.LoadPrefabContents("Assets/Prefabs/Player.prefab");
   try {
-   var presentation=player.GetComponent<NetworkWeaponPresentation>();Assert.IsNotNull(presentation);Assert.AreEqual(3,presentation.Weapons.Length);
+   var presentation=player.GetComponent<NetworkWeaponPresentation>();Assert.IsNotNull(presentation);var catalog=AssetDatabase.LoadAssetAtPath<DeadQuarantine.PvPvE.PvPvELoadoutCatalog>("Assets/PvPvE/Data/LoadoutCatalog.asset");Assert.IsNotNull(catalog);Assert.AreEqual(catalog.weapons.Length,presentation.Weapons.Length);
+   foreach(var id in new[]{"Handgun","Rifle","Escopeta"})Assert.IsTrue(System.Array.Exists(presentation.Weapons,w=>w.Id==id),id);
    Assert.IsNotNull(presentation.Body.GetComponent<OwnerNetworkAnimator>());
    foreach(var entry in presentation.Weapons) {
     Assert.IsNotNull(entry.Source);Assert.IsNotNull(entry.Model);Assert.IsNotNull(entry.Controller);Assert.IsNotNull(entry.Casing);
@@ -40,5 +41,35 @@ public class CoopWeaponRegressionTests
    var expected=AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/Animations/CoopPresentation/Shotgun_Run_Additive.anim");Assert.IsNotNull(expected);Assert.IsTrue(expected.isLooping);
    Assert.IsTrue(System.Array.Exists(animator.GetCurrentAnimatorClipInfo(layer),info=>info.clip==expected));
   }finally {PrefabUtility.UnloadPrefabContents(player);}
+ }
+
+ [TestCase(false,false,"Tutorial")]
+ [TestCase(true,false,"Normal")]
+ [TestCase(true,true,"LimitedDifficulty")]
+ public void AllWeaponsFollowTheCurrentModesReserveRule(bool hasRoundSettings,bool limited,string mode) {
+  var roundInstance=typeof(RoundManager).GetField("<Instance>k__BackingField",BindingFlags.NonPublic|BindingFlags.Static);
+  var difficultyInstance=typeof(DifficultyManager).GetField("<Instance>k__BackingField",BindingFlags.NonPublic|BindingFlags.Static);
+  var previousRound=roundInstance.GetValue(null);var previousDifficulty=difficultyInstance.GetValue(null);
+  var roundRoot=new GameObject("Ammo policy round");roundRoot.SetActive(false);
+  var difficultyRoot=new GameObject("Ammo policy difficulty");difficultyRoot.SetActive(false);
+  var rules=ScriptableObject.CreateInstance<DifficultySettings>();rules.level=DifficultyLevel.Normal;rules.limitedReserveAmmo=limited;rules.reserveAmmoMultiplier=0.5f;
+  var player=PrefabUtility.LoadPrefabContents("Assets/Prefabs/Player.prefab");
+  try {
+   var manager=difficultyRoot.AddComponent<DifficultyManager>();typeof(DifficultyManager).GetField("difficulties",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(manager,new[]{rules});
+   difficultyInstance.SetValue(null,manager);roundInstance.SetValue(null,hasRoundSettings?roundRoot.AddComponent<RoundManager>():null);
+   foreach(var definition in player.GetComponent<NetworkWeaponPresentation>().Weapons) {
+    var gun=definition.Source;Assert.AreEqual(limited,gun.UsesLimitedReserve,mode+" "+definition.Id);
+    if(limited){var serialized=new SerializedObject(gun);int capacity=serialized.FindProperty("reserveAmmoCapacity").intValue;bool forced=serialized.FindProperty("forceReserveLimit").boolValue;Assert.AreEqual(forced?capacity:Mathf.RoundToInt(capacity*rules.reserveAmmoMultiplier),gun.ReserveCapacity,"Existing limited-mode capacity "+definition.Id);}
+    for(int reload=0;reload<2;reload++) {
+     gun.RestaurarMunicion(0,0);
+     typeof(Weapon).GetField("reserveInitialized",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(gun,true);
+     typeof(Weapon).GetMethod("FillMagazine",BindingFlags.NonPublic|BindingFlags.Instance).Invoke(gun,null);
+     Assert.AreEqual(limited?0:gun.CapacidadCargador,gun.CurrentAmmo,mode+" empty-reserve reload "+definition.Id);
+    }
+   }
+  } finally {
+   PrefabUtility.UnloadPrefabContents(player);Object.DestroyImmediate(roundRoot);Object.DestroyImmediate(difficultyRoot);Object.DestroyImmediate(rules);
+   roundInstance.SetValue(null,previousRound);difficultyInstance.SetValue(null,previousDifficulty);
+  }
  }
 }

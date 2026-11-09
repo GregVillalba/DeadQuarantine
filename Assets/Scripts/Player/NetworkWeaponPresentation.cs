@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
@@ -114,7 +114,7 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
     }
     bool DeadPvPvEBody=>DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(NetworkObject)&&GetComponent<PlayerHealth>() is {IsAlive:false};
     void ApplySupportHand(){
-        if(!BodyAnimator||!held||shown<0||shown>=Weapons.Length||(appliedFlags&101)!=0)return;
+        if(!BodyAnimator||!held||shown<0||shown>=Weapons.Length||(appliedFlags&101)!=0||BodyAnimator.GetBool("TP_IsSprinting"))return;
         var health=GetComponent<PlayerHealth>();if(!health.IsAlive||health.IsDowned)return;
         var profile=Weapons[shown].Source.GetComponent<PackWeaponPresentation>();var attachments=held.GetComponent<WeaponAttachments>();var pose=profile?profile.SupportPose(attachments,true):null;
         if(pose!=null){supportArm??=new WeaponSupportPose.Binding(BodyAnimator);supportArm.Apply(profile.SupportFrame(attachments,Find(held.transform,"SOCKET_Grip")),pose);}
@@ -323,16 +323,7 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
         if(sound && !IsOwner)audioOutput.PlayOneShot(sound);
         if((!IsOwner || ShowLocalBodyForTesting) && kind==WeaponEvent.Eject && eject && Weapons[index].Casing)
         {
-            bool newWeapon = Array.Exists(new[] { "AutoPistol", "SemiRifle", "BurstRifle", "P90", "Vector", "MAC10" },
-                                           id => id == Weapons[index].Id);
-            Vector3 origin = eject.position + (newWeapon ? eject.right * 0.025f + eject.up * 0.015f : Vector3.zero);
-            GameObject casing = Instantiate(Weapons[index].Casing, origin, eject.rotation);
-            if(newWeapon && casing)
-            {
-                Rigidbody body = casing.GetComponent<Rigidbody>();
-                if(body) body.AddForce((held.transform.right * 0.8f + Vector3.up * 0.4f) * 1.5f,
-                                       ForceMode.VelocityChange);
-            }
+            Instantiate(Weapons[index].Casing, eject.position, eject.rotation);
             EjectCount++;
         }
         string clip=kind switch {WeaponEvent.ReloadOpen=>null,WeaponEvent.Insert=>null,WeaponEvent.ReloadClose=>"Reload Close",WeaponEvent.BoltOpen=>null,_=>null};

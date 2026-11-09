@@ -931,8 +931,18 @@ public partial class Weapon : MonoBehaviour
             ? RoundManager.Instance.ActiveSettings
             : null;
 
+    private bool UsesPvPvEReserve
+    {
+        get
+        {
+            if (!forceReserveLimit) return false;
+            if (!presentation) presentation = GetComponentInParent<NetworkWeaponPresentation>();
+            return presentation && DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(presentation.NetworkObject);
+        }
+    }
+
     public bool UsesLimitedReserve =>
-        forceReserveLimit || (ActiveDifficulty != null && ActiveDifficulty.limitedReserveAmmo);
+        UsesPvPvEReserve || (ActiveDifficulty != null && ActiveDifficulty.limitedReserveAmmo);
 
     public int ReserveCapacity
     {

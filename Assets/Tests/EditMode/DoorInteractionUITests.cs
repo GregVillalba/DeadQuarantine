@@ -6,7 +6,18 @@ using UnityEngine;
 
 public class DoorInteractionUITests
 {
-    private const string DoorIsOpenMemberName = "IsOpen";
+    private UnityEditor.SceneManagement.SceneSetup[] previousScenes;
+    [OneTimeSetUp] public void BeginIsolatedScene()
+    {
+        previousScenes = UnityEditor.SceneManagement.EditorSceneManager.GetSceneManagerSetup();
+        UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.EmptyScene, UnityEditor.SceneManagement.NewSceneMode.Single);
+    }
+    [OneTimeTearDown] public void RestorePreviousScenes()
+    {
+        UnityEditor.SceneManagement.EditorSceneManager.RestoreSceneManagerSetup(previousScenes);
+    }
+
+    private const string DoorIsOpenMemberName = "isOpenLocal";
     private const float TestInteractRange = 5f;
  
     private GameObject root;
@@ -32,11 +43,15 @@ public class DoorInteractionUITests
         SetPrivateField(controller, "interactPrompt", interactPromptGO);
         SetPrivateField(controller, "interactText", interactText);
         SetPrivateField(controller, "interactRange", TestInteractRange);
+        InvokePrivateMethod(controller, "Awake");
     }
  
     [TearDown]
     public void TearDown()
     {
+        var input = typeof(DoorInteractionUI).GetField("controls", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(controller) as PlayerControls;
+        if (input != null && input.asset) { input.Disable(); UnityEngine.Object.DestroyImmediate(input.asset); }
+
         Object.DestroyImmediate(root);
         Object.DestroyImmediate(interactPromptGO);
     }
@@ -59,6 +74,11 @@ public class DoorInteractionUITests
  
     private static void InvokePrivateMethod(object target, string methodName)
     {
+        if (methodName == "Awake")
+        {
+            var previous = target.GetType().GetField("controls", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(target) as PlayerControls;
+            if (previous != null && previous.asset) { previous.Disable(); UnityEngine.Object.DestroyImmediate(previous.asset); }
+        }
         MethodInfo mi = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.IsNotNull(mi, $"No se encontró el método privado '{methodName}'.");
         mi.Invoke(target, null);
@@ -132,10 +152,13 @@ public class DoorInteractionUITests
     }
  
     [Test]
-    public void BuscarCamara_ConCamaraMainCameraSinNetworkObject_LaAsignaComoPlayerCamera()
+    public void BuscarCamara_ConWeaponCameraPropiaSinNetworkObject_LaAsignaComoPlayerCamera()
     {
         Camera cam = CreateCamera(root.transform, Vector3.zero);
         cam.tag = "MainCamera";
+        cam.name = "WeaponCamera";
+        cam.transform.SetParent(root.transform);
+        uiGO.transform.SetParent(cam.transform);
  
         InvokePrivateMethod(controller, "BuscarCamara");
  
@@ -287,6 +310,9 @@ public class DoorInteractionUITests
     {
         Camera cam = CreateCamera(root.transform, Vector3.zero);
         cam.tag = "MainCamera";
+        cam.name = "WeaponCamera";
+        cam.transform.SetParent(root.transform);
+        uiGO.transform.SetParent(cam.transform);
         cam.transform.forward = Vector3.forward;
  
         Door door = CreateDoor(cam.transform.position + Vector3.forward * 2f, isOpen: false);

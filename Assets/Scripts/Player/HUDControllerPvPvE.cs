@@ -13,7 +13,7 @@ public partial class HUDController {
  void HidePvPvE(GameObject go){if(!go)return;if(!pvpveHidden.ContainsKey(go))pvpveHidden.Add(go,go.activeSelf);go.SetActive(false);}
  void RefreshPvPvEPresentation(){
   if(!PvPvEPresentationActive){foreach(var entry in pvpveHidden)if(entry.Key)entry.Key.SetActive(entry.Value);pvpveHidden.Clear();return;}
-  if(!pvpveStyled){pvpveStyled=true;StylePvPvEFrame(playerLabelText);StylePvPvEFrame(weaponNameText);}
+  if(!pvpveStyled){pvpveStyled=true;StylePvPvEFrame(weaponNameText);}
   foreach(var resource in GetComponentsInChildren<RecursosTiendaUI>(true))if(resource.name=="Recursos_HUD")HidePvPvE(resource.gameObject);
   if(roundsText){var ancestor=roundsText.transform;while(ancestor&&ancestor!=transform&&ancestor.name!="info_ronda")ancestor=ancestor.parent;HidePvPvE(ancestor&&ancestor.name=="info_ronda"?ancestor.gameObject:roundsText.gameObject);}
   if(zombiesText)HidePvPvE(zombiesText.gameObject);HidePvPvE(vidas0);HidePvPvE(vidas1);

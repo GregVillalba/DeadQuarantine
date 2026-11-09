@@ -19,6 +19,9 @@ private GameObject switcherGO;
     [TearDown]
     public void TearDown()
     {
+        var input = typeof(WeaponSwitcher).GetField("controls", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(switcher) as PlayerControls;
+        if (input != null && input.asset) { input.Disable(); UnityEngine.Object.DestroyImmediate(input.asset); }
+
         Object.DestroyImmediate(switcherGO);
     }
  
@@ -40,6 +43,11 @@ private GameObject switcherGO;
  
     private static object InvokePrivateMethod(object target, string methodName, params object[] args)
     {
+        if (methodName == "Awake")
+        {
+            var previous = target.GetType().GetField("controls", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(target) as PlayerControls;
+            if (previous != null && previous.asset) { previous.Disable(); UnityEngine.Object.DestroyImmediate(previous.asset); }
+        }
         MethodInfo mi = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.IsNotNull(mi, $"No se encontró el método privado '{methodName}'.");
         return mi.Invoke(target, args);
@@ -48,7 +56,6 @@ private GameObject switcherGO;
     private void ConfigurarSlots(params (string weaponId, bool unlockedByDefault)[] datos)
     {
         var slots = new WeaponSwitcher.WeaponSlot[datos.Length];
-        var unlocked = new bool[datos.Length];
         for (int i = 0; i < datos.Length; i++)
         {
             slots[i] = new WeaponSwitcher.WeaponSlot
@@ -56,11 +63,10 @@ private GameObject switcherGO;
                 weaponId = datos[i].weaponId,
                 unlockedByDefault = datos[i].unlockedByDefault
             };
-            unlocked[i] = datos[i].unlockedByDefault;
         }
  
         SetPrivateField(switcher, "slots", slots);
-        SetPrivateField(switcher, "unlocked", unlocked);
+        InvokePrivateMethod(switcher, "BuildInitialInventory");
     }
  
     // ---------- Awake ----------
@@ -76,9 +82,8 @@ private GameObject switcherGO;
  
         InvokePrivateMethod(switcher, "Awake");
  
-        var unlocked = (bool[])GetPrivateField(switcher, "unlocked");
-        Assert.IsTrue(unlocked[0]);
-        Assert.IsFalse(unlocked[1]);
+        Assert.IsTrue(switcher.IsUnlocked("Pistola"));
+        Assert.IsFalse(switcher.IsUnlocked("Rifle"));
     }
  
     [Test]
@@ -195,39 +200,43 @@ private GameObject switcherGO;
     // ---------- GetNextUnlockedIndex (privado) ----------
  
     [Test]
-    public void GetNextUnlockedIndex_DevuelveElSiguienteDesbloqueadoEnOrdenCircular()
+    public void CycleWeapon_SolicitaElSiguienteDelInventarioEnOrdenCircular()
     {
         ConfigurarSlots(("Pistola", true), ("Rifle", false), ("Escopeta", true));
         SetPrivateField(switcher, "currentIndex", 0);
  
-        int siguiente = (int)InvokePrivateMethod(switcher, "GetNextUnlockedIndex");
+        InvokePrivateMethod(switcher, "CycleWeapon", 1);
+        int siguiente = (int)GetPrivateField(switcher, "pendingIndex");
  
         Assert.AreEqual(2, siguiente); // salta el índice 1 (no desbloqueado)
     }
  
     [Test]
-    public void GetNextUnlockedIndex_SinOtraArmaDesbloqueada_DevuelveElIndiceActual()
+    public void CycleWeapon_SinOtraArma_NoSolicitaCambio()
     {
         ConfigurarSlots(("Pistola", true), ("Rifle", false));
         SetPrivateField(switcher, "currentIndex", 0);
  
-        int siguiente = (int)InvokePrivateMethod(switcher, "GetNextUnlockedIndex");
+        InvokePrivateMethod(switcher, "CycleWeapon", 1);
+        int siguiente = (int)GetPrivateField(switcher, "pendingIndex");
  
-        Assert.AreEqual(0, siguiente);
+        Assert.AreEqual(-1, siguiente);
+        Assert.AreEqual(0, switcher.CurrentWeaponIndex);
     }
  
     // ---------- OnSwitchWeapon (privado; no usa el CallbackContext recibido) ----------
  
     [Test]
-    public void OnSwitchWeapon_LlamaRequestEquipConElSiguienteDesbloqueado()
+    public void OnNextWeapon_SinAnimatorEquipaElSiguienteDelInventario()
     {
         ConfigurarSlots(("Pistola", true), ("Rifle", true));
         SetPrivateField(switcher, "currentIndex", 0);
  
         // El método no usa el contenido del context, así que un valor
         // por defecto es seguro para invocarlo por reflexión.
-        InvokePrivateMethod(switcher, "OnSwitchWeapon", default(InputAction.CallbackContext));
+        InvokePrivateMethod(switcher, "OnNextWeapon", default(InputAction.CallbackContext));
  
-        Assert.AreEqual(1, GetPrivateField(switcher, "currentIndex"));
+        Assert.AreEqual(1, GetPrivateField(switcher, "pendingIndex"));
+        Assert.AreEqual(1, switcher.CurrentWeaponIndex); // Fixture sin Animator: no hay un clip que esperar.
     }
 }

@@ -6,6 +6,17 @@ using UnityEngine;
 [TestFixture]
 public class MultiplayerPlayerSpawnAssignerTests
 {
+    private UnityEditor.SceneManagement.SceneSetup[] previousScenes;
+    [OneTimeSetUp] public void BeginIsolatedScene()
+    {
+        previousScenes = UnityEditor.SceneManagement.EditorSceneManager.GetSceneManagerSetup();
+        UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.EmptyScene, UnityEditor.SceneManagement.NewSceneMode.Single);
+    }
+    [OneTimeTearDown] public void RestorePreviousScenes()
+    {
+        UnityEditor.SceneManagement.EditorSceneManager.RestoreSceneManagerSetup(previousScenes);
+    }
+
     private GameObject assignerHost;
     private MultiplayerPlayerSpawnAssigner assigner;
  
@@ -34,6 +45,13 @@ public class MultiplayerPlayerSpawnAssignerTests
             .GetField("playerSpawn2", BindingFlags.NonPublic | BindingFlags.Instance)
             .SetValue(spawner, spawn2);
  
+        var config = spawnerHost.AddComponent<ConfiguracionEscenarioJugable>();
+        typeof(ConfiguracionEscenarioJugable).GetField("spawnJugador",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(config,spawn1);
+        typeof(ConfiguracionEscenarioJugable).GetField("spawnsJugadoresAdicionales",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(config,new[]{spawn2});
+        typeof(MultiplayerPlayerSpawner).GetField("configuracionPropia",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(spawner,config);
+        var active = new GameObject("Active map");active.transform.SetParent(spawnerHost.transform);
+        var maps = active.AddComponent<GestorEscenariosPartida>();
+        typeof(GestorEscenariosPartida).GetField("escenarioActivo",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(maps,config);
         return spawner;
     }
  

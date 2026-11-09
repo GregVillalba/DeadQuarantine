@@ -28,13 +28,13 @@ public class PvPvEInterfaceAssetTests
     }
 
     [Test]
-    public void FiveSuppliedPerkIconsAreSeparateFromOrdinaryModeIcons()
+    public void FiveSuppliedPerkIconsAreSharedByAllModes()
     {
         Assert.AreEqual(5, Settings.Loadouts.perks.entries.Length);
         foreach (var perk in Settings.Loadouts.perks.entries)
         {
             Assert.IsNotNull(perk.pvpveIcon, perk.id);
-            Assert.AreNotEqual(perk.icon, perk.pvpveIcon, perk.id);
+            Assert.AreEqual(perk.icon, perk.pvpveIcon, perk.id);
             StringAssert.StartsWith("Assets/PvPvE/Art/RedesignPerks/", AssetDatabase.GetAssetPath(perk.pvpveIcon));
         }
     }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -273,6 +273,16 @@ public class NPCShopUI : MonoBehaviour
             LocalShopOpen = false;
     }
 
+    private void OnDestroy()
+    {
+        if (controls != null)
+        {
+            controls.Player.Disable();
+            controls.Dispose();
+            controls = null;
+        }
+    }
+
     private void Update()
     {
         // En multiplayer, la copia del jugador remoto no maneja UI.
@@ -393,6 +403,23 @@ public class NPCShopUI : MonoBehaviour
             interactPrompt.SetActive(false);
     }
 
+    private void PriorizarPanelCompra()
+    {
+        if (panelCompra == null) return;
+
+        panelCompra.transform.SetAsLastSibling();
+        Canvas parentCanvas = panelCompra.transform.parent != null
+            ? panelCompra.transform.parent.GetComponentInParent<Canvas>(true)
+            : null;
+        Canvas purchaseCanvas = panelCompra.GetComponent<Canvas>();
+        if (purchaseCanvas == null) purchaseCanvas = panelCompra.AddComponent<Canvas>();
+        if (parentCanvas != null) purchaseCanvas.sortingLayerID = parentCanvas.sortingLayerID;
+        purchaseCanvas.overrideSorting = true;
+        purchaseCanvas.sortingOrder = short.MaxValue;
+        if (panelCompra.GetComponent<GraphicRaycaster>() == null)
+            panelCompra.AddComponent<GraphicRaycaster>();
+    }
+
     private void AbrirTienda(NPCWeaponVendor vendor)
     {
         if (estaAbierta)
@@ -413,6 +440,7 @@ public class NPCShopUI : MonoBehaviour
 
         if (shopPanel != null)
             shopPanel.SetActive(true);
+
 
         if (audioSource != null && openSound != null)
             audioSource.PlayOneShot(openSound);
@@ -505,7 +533,7 @@ public class NPCShopUI : MonoBehaviour
 
         foreach (WeaponOffer oferta in currentVendor.Offers)
         {
-            if (oferta.categoria != seccionActual)
+            if (oferta.weaponId == "Handgun" || oferta.categoria != seccionActual)
                 continue;
 
             // Ofertas de otra dificultad / modo: no aparecen.
@@ -544,6 +572,8 @@ public class NPCShopUI : MonoBehaviour
                 precioRecursos = fila.GetComponentInChildren<PrecioRecursosUI>(true)
             });
         }
+        var scroll=rowsContainer.GetComponentInParent<ScrollRect>(true);
+        if(scroll){Canvas.ForceUpdateCanvases();LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)rowsContainer);scroll.verticalNormalizedPosition=1f;}
     }
 
     private void DestruirFilas()
@@ -641,6 +671,7 @@ public class NPCShopUI : MonoBehaviour
 
         if (panelCompra != null && panelCompra.activeSelf != haySeleccion)
             panelCompra.SetActive(haySeleccion);
+        if (haySeleccion) PriorizarPanelCompra();
 
         if (iconoDetalle != null)
         {

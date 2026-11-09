@@ -64,6 +64,7 @@ public class LinkedinProfileTests
  
         // Awake se ejecuta acá, ya con tmp.text seteado.
         linkOpener = textGO.AddComponent<LinkOpener>();
+        InvokePrivateMethod(linkOpener, "Awake");
     }
  
     // ---------- Awake ----------
@@ -165,7 +166,8 @@ public class LinkedinProfileTests
         tmp.ForceMeshUpdate();
         InvokePrivateMethod(linkOpener, "OnLinkEnter", 0);
  
-        textGO.SetActive(false); // dispara OnDisable
+        textGO.SetActive(false);
+        InvokePrivateMethod(linkOpener, "OnDisable"); // EditMode no ejecuta el ciclo de MonoBehaviour.
  
         Assert.AreEqual("Ir a <link=\"id1\">enlace</link> ya", tmp.text);
     }

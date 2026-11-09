@@ -11,10 +11,16 @@ public class RecursosEscenarioTests
     private static readonly string[] EscenasPartida =
     {
         "Assets/Scenes/MainSceneSinglePlayer.unity",
-        "Assets/Scenes/MainSceneMultiPlayer.unity"
+        "Assets/Scenes/MP_Laboratorio.unity",
+        "Assets/Scenes/MP_Ciudad.unity",
+        "Assets/Scenes/MP_Cabana.unity"
     };
 
     private readonly List<Object> creados = new List<Object>();
+    private SceneSetup[] previousScenes;
+    [OneTimeSetUp] public void SavePreviousScenes() => previousScenes = EditorSceneManager.GetSceneManagerSetup();
+    [OneTimeTearDown] public void RestorePreviousScenes() => EditorSceneManager.RestoreSceneManagerSetup(previousScenes);
+
 
     [TearDown]
     public void TearDown()
