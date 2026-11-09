@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.IO;
 using System.Linq;
@@ -9,7 +9,7 @@ using UnityEngine;
 public static partial class CompleteWeaponsIntegrationBuilder
 {
  public static void AnalyzeAnimationsPhase9(){
-  var root=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Player.prefab");var rig=root.GetComponentInChildren<WeaponSwitcher>(true);var so=new SerializedObject(rig);var log=new StringBuilder();
+  var root=AssetDatabase.LoadAssetAtPath<GameObject>(WeaponAssetLocations.Resolve("Assets/Prefabs/Player.prefab"));var rig=root.GetComponentInChildren<WeaponSwitcher>(true);var so=new SerializedObject(rig);var log=new StringBuilder();
   foreach(var s in Specs7()){
    var slot=ReadSlotTemplate(so,s.Id);var controller=(AnimatorController)slot.FPOverride.runtimeAnimatorController;
    log.AppendLine("WEAPON "+s.Id);
@@ -25,7 +25,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
     }
    }
   }
-  string output=Environment.GetEnvironmentVariable("DQ_PVPVE_PHASE9_OUTPUT");Directory.CreateDirectory(output);File.WriteAllText(Path.Combine(output,"AnimationDiagnostics.txt"),log.ToString());
+  string output=Environment.GetEnvironmentVariable("DQ_PVPVE_PHASE9_OUTPUT");Directory.CreateDirectory(WeaponAssetLocations.Resolve(output));File.WriteAllText(WeaponAssetLocations.Resolve(Path.Combine(output,"AnimationDiagnostics.txt")),log.ToString());
  }
  static void Dump9(Motion m,Transform rig,StringBuilder log){
   if(m is BlendTree tree){foreach(var child in tree.children){log.AppendLine("BLEND "+tree.blendParameter+" "+child.threshold);Dump9(child.motion,rig,log);}return;}

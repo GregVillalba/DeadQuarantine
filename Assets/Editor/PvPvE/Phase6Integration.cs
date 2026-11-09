@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.IO;
 using System.Linq;
@@ -9,7 +9,7 @@ using UnityEngine;
 
 public static partial class CompleteWeaponsIntegrationBuilder
 {
- const string Phase6Dir="Assets/Generated/NewWeapons/Phase6";
+ const string Phase6Dir="weapon-assets:/NewWeapons/Phase6";
  static Spec[] Specs6()=>new[]{
   Spec6("Handgun01","Pistola 01","Handgun_01",Family.Handgun,32,.27f,2.75f,70,12,72,false,"S_WEP_Fire_001"),
   Spec6("Handgun02","Pistola 02","Handgun_02",Family.Handgun,40,.35f,2.75f,80,8,48,false,"S_WEP_Fire_003"),
@@ -25,12 +25,12 @@ public static partial class CompleteWeaponsIntegrationBuilder
  [MenuItem("Game/Dead Quarantine/PvPvE/Fase 6 - Integrar armas faltantes")]
  public static void IntegrateMissingPhase6()
  {
-  var existing=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Player.prefab").GetComponent<NetworkWeaponPresentation>();
+  var existing=AssetDatabase.LoadAssetAtPath<GameObject>(WeaponAssetLocations.Resolve("Assets/Prefabs/Player.prefab")).GetComponent<NetworkWeaponPresentation>();
   if(existing.Weapons.Any(w=>Specs6().Any(s=>s.Id==w.Id)))throw new InvalidOperationException("Fase 6 ya integrada; no se regeneran armas existentes.");
-  EnsureFolders();Directory.CreateDirectory(Phase6Dir);AssetDatabase.Refresh();
+  EnsureFolders();Directory.CreateDirectory(WeaponAssetLocations.Resolve(Phase6Dir));AssetDatabase.Refresh();
   var specs=Specs6();foreach(var s in specs)Resolve6(s);
   const string path="Assets/Prefabs/Player.prefab";
-  var root=PrefabUtility.LoadPrefabContents(path);
+  var root=PrefabUtility.LoadPrefabContents(WeaponAssetLocations.Resolve(path));
   try {
    var sw=root.GetComponentInChildren<WeaponSwitcher>(true);var so=new SerializedObject(sw);var presentation=root.GetComponent<NetworkWeaponPresentation>();
    // Append only. Existing slots and their models/controllers are never rebuilt.
@@ -54,20 +54,20 @@ public static partial class CompleteWeaponsIntegrationBuilder
      foreach(var pair in new[]{("reloadOpenSound","Open"),("reloadInsertSound","Insert"),("reloadCloseSound","Close"),("reloadBoltOpenSound","Bolt_Open"),("reloadBoltCloseSound","Bolt_Close")})
       SetObject(settings,pair.Item1,OptionalAudio6("S_WEP_Sniper_01_Reload_"+pair.Item2));
      weapon.Root.AddComponent<MultipartWeaponPartsSync>();
-     var model=PrefabUtility.LoadPrefabContents(AssetDatabase.GetAssetPath(weapon.TPPrefab));
-     try{model.AddComponent<MultipartWeaponPartsSync>();PrefabUtility.SaveAsPrefabAsset(model,AssetDatabase.GetAssetPath(weapon.TPPrefab));}finally{PrefabUtility.UnloadPrefabContents(model);}
+     var model=PrefabUtility.LoadPrefabContents(WeaponAssetLocations.Resolve(AssetDatabase.GetAssetPath(weapon.TPPrefab)));
+     try{model.AddComponent<MultipartWeaponPartsSync>();PrefabUtility.SaveAsPrefabAsset(model,WeaponAssetLocations.Resolve(AssetDatabase.GetAssetPath(weapon.TPPrefab)));}finally{PrefabUtility.UnloadPrefabContents(model);}
     }
     settings.ApplyModifiedPropertiesWithoutUndo();generated.Add(weapon);
    }
    AppendSlots(so,generated);so.ApplyModifiedPropertiesWithoutUndo();RebuildPresentationDefinitions(presentation,generated);
-   PrefabUtility.SaveAsPrefabAsset(root,path);
+   PrefabUtility.SaveAsPrefabAsset(root,WeaponAssetLocations.Resolve(path));
   }finally{PrefabUtility.UnloadPrefabContents(root);}
-  RefineMissingPhase6();AssetDatabase.SaveAssets();Directory.CreateDirectory(Phase6Output);File.WriteAllLines(Path.Combine(Phase6Output,"integrated.txt"),specs.Select(s=>s.Id+"="+s.Model));
+  RefineMissingPhase6();AssetDatabase.SaveAssets();Directory.CreateDirectory(WeaponAssetLocations.Resolve(Phase6Output));File.WriteAllLines(WeaponAssetLocations.Resolve(Path.Combine(Phase6Output,"integrated.txt")),specs.Select(s=>s.Id+"="+s.Model));
  }
  static AudioClip OptionalAudio6(string name)=>OptionalClipAsset6<AudioClip>(name);
  static T OptionalClipAsset6<T>(string name) where T:UnityEngine.Object{
   foreach(var guid in AssetDatabase.FindAssets(name+" t:"+typeof(T).Name)){
-   string path=AssetDatabase.GUIDToAssetPath(guid);if(Path.GetFileNameWithoutExtension(path)==name)return AssetDatabase.LoadAssetAtPath<T>(path);
+   string path=AssetDatabase.GUIDToAssetPath(guid);if(Path.GetFileNameWithoutExtension(path)==name)return AssetDatabase.LoadAssetAtPath<T>(WeaponAssetLocations.Resolve(path));
   }return null;
  }
  static void Resolve6(Spec s){
@@ -93,11 +93,11 @@ public static partial class CompleteWeaponsIntegrationBuilder
  }
  static AnimationClip Events6(Spec s,AnimationClip source,string token,(string,float)[] events){
   var clip=UnityEngine.Object.Instantiate(source);clip.name=s.Id+"_"+token;AnimationUtility.SetAnimationEvents(clip,events.Select(e=>new AnimationEvent{functionName=e.Item1,time=clip.length*e.Item2,messageOptions=SendMessageOptions.DontRequireReceiver}).ToArray());
-  AssetDatabase.CreateAsset(clip,Phase6Dir+"/"+clip.name+".anim");return clip;
+  AssetDatabase.CreateAsset(clip,WeaponAssetLocations.Resolve(Phase6Dir+"/"+clip.name+".anim"));return clip;
  }
  static AnimatorOverrideController Controller6(Spec s,AnimatorController source,bool tp){
-  string path=Phase6Dir+"/"+s.Id+(tp?"_TP":"_FP")+".controller";if(!AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(source),path))throw new Exception(path);
-  var ctl=AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
+  string path=Phase6Dir+"/"+s.Id+(tp?"_TP":"_FP")+".controller";if(!AssetDatabase.CopyAsset(WeaponAssetLocations.Resolve(AssetDatabase.GetAssetPath(source)),WeaponAssetLocations.Resolve(path)))throw new Exception(path);
+  var ctl=AssetDatabase.LoadAssetAtPath<AnimatorController>(WeaponAssetLocations.Resolve(path));
   if(!tp){for(int i=ctl.layers.Length-1;i>=0;i--)if(new[]{"HandGunADD","NoAmmoADD"}.Contains(ctl.layers[i].name))ctl.RemoveLayer(i);}
   var c=tp?s.TP:s.FP;
   foreach(var layer in ctl.layers){foreach(var state in States6(layer.stateMachine)){
@@ -113,7 +113,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
    }
   }}
   EditorUtility.SetDirty(ctl);
-  var aoc=new AnimatorOverrideController(ctl){name=s.Id+(tp?"_TP":"_FP")};AssetDatabase.CreateAsset(aoc,Phase6Dir+"/"+aoc.name+".overrideController");return aoc;
+  var aoc=new AnimatorOverrideController(ctl){name=s.Id+(tp?"_TP":"_FP")};AssetDatabase.CreateAsset(aoc,WeaponAssetLocations.Resolve(Phase6Dir+"/"+aoc.name+".overrideController"));return aoc;
  }
  static void ReplaceMotion6(Motion source,Func<AnimationClip,AnimationClip> map,Action<Motion> set){
   if(source is AnimationClip clip){var replacement=map(clip);if(replacement)set(replacement);}
@@ -130,7 +130,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
   if(n.Contains("inspect"))return c.Inspect;if(n.Contains("sprint_impulse"))return c.SprintImpulse;if(n.Contains("sprint"))return c.Sprint;if(n.Contains("jog"))return c.Jog;if(n.Contains("run"))return c.Run;return null;
  }
  static AnimatorController BoltParts6(Spec s,bool tp){
-  var ctl=AnimatorController.CreateAnimatorControllerAtPath(Phase6Dir+"/"+s.Id+(tp?"_TPParts":"_FPParts")+".controller");var sm=ctl.layers[0].stateMachine;
+  var ctl=AnimatorController.CreateAnimatorControllerAtPath(WeaponAssetLocations.Resolve(Phase6Dir+"/"+s.Id+(tp?"_TPParts":"_FPParts")+".controller"));var sm=ctl.layers[0].stateMachine;
   var idle=sm.AddState("Idle");idle.motion=FindEmbeddedClip(AssetDatabase.GetAssetPath(s.ModelAsset),"_Ref_Pose");sm.defaultState=idle;
   foreach(string token in new[]{"Open","Insert","Close","Bolt"}){var state=sm.AddState("Reload_"+token);state.motion=FindEmbeddedClip(AssetDatabase.GetAssetPath(s.ModelAsset),(tp?"A_TP_WEP_":"A_FP_WEP_")+"Sniper_01_Reload_"+token);if(!state.motion)throw new Exception("Missing bolt parts "+token);}
   return ctl;

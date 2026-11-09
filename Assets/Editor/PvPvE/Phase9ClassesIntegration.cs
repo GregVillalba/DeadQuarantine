@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.IO;
 using System.Linq;
@@ -17,21 +17,21 @@ public static class Phase9ClassesIntegration
  public static void InstallAndAnalyze(){Install();CompleteWeaponsIntegrationBuilder.AnalyzeAnimationsPhase9();}
  public const string CatalogPath="Assets/PvPvE/Data/LoadoutCatalog.asset";
  public static void Install(){
-  Directory.CreateDirectory("Assets/PvPvE/Data");AssetDatabase.Refresh();
-  var player=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Player.prefab");var presentation=player.GetComponent<NetworkWeaponPresentation>();
-  var catalog=AssetDatabase.LoadAssetAtPath<PvPvELoadoutCatalog>(CatalogPath);
-  if(!catalog){catalog=ScriptableObject.CreateInstance<PvPvELoadoutCatalog>();AssetDatabase.CreateAsset(catalog,CatalogPath);}
-  catalog.attachments=AssetDatabase.LoadAssetAtPath<WeaponAttachmentCatalog>("Assets/Generated/NewWeapons/Phase8/AttachmentCatalog.asset");
+  Directory.CreateDirectory(WeaponAssetLocations.Resolve("Assets/PvPvE/Data"));AssetDatabase.Refresh();
+  var player=AssetDatabase.LoadAssetAtPath<GameObject>(WeaponAssetLocations.Resolve("Assets/Prefabs/Player.prefab"));var presentation=player.GetComponent<NetworkWeaponPresentation>();
+  var catalog=AssetDatabase.LoadAssetAtPath<PvPvELoadoutCatalog>(WeaponAssetLocations.Resolve(CatalogPath));
+  if(!catalog){catalog=ScriptableObject.CreateInstance<PvPvELoadoutCatalog>();AssetDatabase.CreateAsset(catalog,WeaponAssetLocations.Resolve(CatalogPath));}
+  catalog.attachments=AssetDatabase.LoadAssetAtPath<WeaponAttachmentCatalog>(WeaponAssetLocations.Resolve("weapon-assets:/NewWeapons/Phase8/AttachmentCatalog.asset"));
   catalog.weapons=presentation.Weapons.Select(d=>{
    var so=new SerializedObject(d.Source);var root=d.Source.gameObject;
    var meshes=root.GetComponentsInChildren<SkinnedMeshRenderer>(true);string mesh=meshes.FirstOrDefault()?.sharedMesh.name??"";
    var icons=AssetDatabase.FindAssets("Tienda_"+mesh+" t:Sprite",new[]{"Assets/Art/Sprites/Tienda"});
    var attachments=root.GetComponent<WeaponAttachments>();
    return new PvPvELoadoutCatalog.Gun{id=d.Id,name=d.Source.WeaponName,secondary=d.AnimatorWeaponId==1||(d.AnimatorWeaponId==0&&d.Id=="Handgun"),model=d.Model,
-    icon=icons.Length>0?AssetDatabase.LoadAssetAtPath<Sprite>(AssetDatabase.GUIDToAssetPath(icons[0])):attachments?attachments.BodySprite:null,
+    icon=icons.Length>0?AssetDatabase.LoadAssetAtPath<Sprite>(WeaponAssetLocations.Resolve(AssetDatabase.GUIDToAssetPath(icons[0]))):attachments?attachments.BodySprite:null,
     damage=so.FindProperty("damage").intValue,magazine=so.FindProperty("maxAmmo").intValue,range=d.Source.PresentationRange,fireInterval=d.Source.PresentationFireInterval};
   }).ToArray();
-  var vendor=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mercader.prefab").GetComponentInChildren<NPCWeaponVendor>(true);
+  var vendor=AssetDatabase.LoadAssetAtPath<GameObject>(WeaponAssetLocations.Resolve("Assets/Prefabs/Mercader.prefab")).GetComponentInChildren<NPCWeaponVendor>(true);
   var grenadeIds=new SerializedObject(player.GetComponentInChildren<GrenadeThrow>(true)).FindProperty("tipos");
   var ids=new HashSet<string>();for(int i=0;i<grenadeIds.arraySize;i++)ids.Add(grenadeIds.GetArrayElementAtIndex(i).FindPropertyRelative("id").stringValue);
   Func<WeaponOffer,PvPvELoadoutCatalog.Utility> utility=o=>new(){id=o.weaponId,name=o.weaponName,icon=o.imagenTarjeta?o.imagenTarjeta:o.weaponIcon?o.weaponIcon:o.iconoHud,
@@ -41,7 +41,7 @@ public static class Phase9ClassesIntegration
   if(catalog.weapons.Length!=16||catalog.grenades.Length==0||catalog.healings.Length==0)throw new InvalidOperationException("Existing loadout catalog references are incomplete");
   foreach(int i in Enumerable.Range(0,5))if(!catalog.Validate(catalog.Default(i),out string error))throw new InvalidOperationException(error);
   EditorUtility.SetDirty(catalog);AssetDatabase.SaveAssets();
-  string scenePath=PvPvEMenuPhase2Tools.ScenePath,before=File.ReadAllText(scenePath);
+  string scenePath=PvPvEMenuPhase2Tools.ScenePath,before=File.ReadAllText(WeaponAssetLocations.Resolve(scenePath));
   var scene=EditorSceneManager.OpenScene(scenePath);var menu=scene.GetRootGameObjects().SelectMany(g=>g.GetComponentsInChildren<PvPvEModeMenu>(true)).Single();
   var container=(RectTransform)menu.transform.Find("PvPvELobby");var panel=(RectTransform)container.Find("LobbyPanel");
   var allowed=new HashSet<string>();Action<UnityEngine.Object> allow=obj=>allowed.Add(GlobalObjectId.GetGlobalObjectIdSlow(obj).targetObjectId.ToString());allow(menu.gameObject);allow(panel);allow(container);
@@ -55,9 +55,9 @@ public static class Phase9ClassesIntegration
   UnityEventTools.AddPersistentListener(button.onClick,editor.Open);
   EditorSceneManager.MarkSceneDirty(scene);if(!EditorSceneManager.SaveScene(scene))throw new InvalidOperationException("Could not save class editor entry");
   var records=Regex.Matches(before,@"^--- !u!\d+ &(\d+).*?(?=^--- !u!|\z)",RegexOptions.Multiline|RegexOptions.Singleline).Cast<Match>().ToDictionary(m=>m.Groups[1].Value,m=>m.Value);
-  string saved=Regex.Replace(File.ReadAllText(scenePath),@"^--- !u!\d+ &(\d+).*?(?=^--- !u!|\z)",m=>records.TryGetValue(m.Groups[1].Value,out var value)&&!allowed.Contains(m.Groups[1].Value)?value:m.Value,RegexOptions.Multiline|RegexOptions.Singleline);
-  File.WriteAllText(scenePath,saved);AssetDatabase.ImportAsset(scenePath,ImportAssetOptions.ForceUpdate);
-  string output=Environment.GetEnvironmentVariable("DQ_PVPVE_PHASE9_OUTPUT");Directory.CreateDirectory(output);File.WriteAllLines(Path.Combine(output,"AllowedSceneRecords.txt"),allowed);
+  string saved=Regex.Replace(File.ReadAllText(WeaponAssetLocations.Resolve(scenePath)),@"^--- !u!\d+ &(\d+).*?(?=^--- !u!|\z)",m=>records.TryGetValue(m.Groups[1].Value,out var value)&&!allowed.Contains(m.Groups[1].Value)?value:m.Value,RegexOptions.Multiline|RegexOptions.Singleline);
+  File.WriteAllText(WeaponAssetLocations.Resolve(scenePath),saved);AssetDatabase.ImportAsset(WeaponAssetLocations.Resolve(scenePath),ImportAssetOptions.ForceUpdate);
+  string output=Environment.GetEnvironmentVariable("DQ_PVPVE_PHASE9_OUTPUT");Directory.CreateDirectory(WeaponAssetLocations.Resolve(output));File.WriteAllLines(WeaponAssetLocations.Resolve(Path.Combine(output,"AllowedSceneRecords.txt")),allowed);
   AssetDatabase.SaveAssets();
  }
 }

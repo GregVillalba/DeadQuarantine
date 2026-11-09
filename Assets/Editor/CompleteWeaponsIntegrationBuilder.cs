@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,7 +12,7 @@ using UnityEngine.UI;
 /// Integrador idempotente de las armas C.A. 5-10 para Dead Quarantine.
 ///
 /// No modifica Handgun / Rifle / Escopeta existentes. Genera assets nuevos bajo
-/// Assets/Generated/NewWeapons y agrega/actualiza únicamente los IDs:
+/// weapon-assets:/NewWeapons y agrega/actualiza únicamente los IDs:
 /// AutoPistol, SemiRifle, BurstRifle, P90, Vector y MAC10.
 ///
 /// El integrador toma Player.prefab y Mercader.prefab como fuente de verdad para
@@ -20,7 +20,7 @@ using UnityEngine.UI;
 /// </summary>
 public static partial class CompleteWeaponsIntegrationBuilder
 {
-    private const string Root = "Assets/Generated/NewWeapons";
+    private const string Root = "weapon-assets:/NewWeapons";
     private const string ControllersDir = Root + "/Controllers";
     private const string HudDir = Root + "/HUD";
     private const string PresentationDir = Root + "/ThirdPerson";
@@ -153,16 +153,16 @@ public static partial class CompleteWeaponsIntegrationBuilder
         string merchantBackup = BackupDir + "/Mercader_ANTES_ARMAS.prefab";
 
         bool restored = false;
-        if (!string.IsNullOrEmpty(playerPath) && AssetDatabase.LoadAssetAtPath<GameObject>(playerBackup) != null)
+        if (!string.IsNullOrEmpty(playerPath) && AssetDatabase.LoadAssetAtPath<GameObject>(WeaponAssetLocations.Resolve(playerBackup)) != null)
         {
-            File.Copy(AssetPathToAbsolute(playerBackup), AssetPathToAbsolute(playerPath), true);
-            AssetDatabase.ImportAsset(playerPath, ImportAssetOptions.ForceUpdate);
+            File.Copy(WeaponAssetLocations.Resolve(AssetPathToAbsolute(playerBackup)),WeaponAssetLocations.Resolve( AssetPathToAbsolute(playerPath)), true);
+            AssetDatabase.ImportAsset(WeaponAssetLocations.Resolve(playerPath), ImportAssetOptions.ForceUpdate);
             restored = true;
         }
-        if (!string.IsNullOrEmpty(merchantPath) && AssetDatabase.LoadAssetAtPath<GameObject>(merchantBackup) != null)
+        if (!string.IsNullOrEmpty(merchantPath) && AssetDatabase.LoadAssetAtPath<GameObject>(WeaponAssetLocations.Resolve(merchantBackup)) != null)
         {
-            File.Copy(AssetPathToAbsolute(merchantBackup), AssetPathToAbsolute(merchantPath), true);
-            AssetDatabase.ImportAsset(merchantPath, ImportAssetOptions.ForceUpdate);
+            File.Copy(WeaponAssetLocations.Resolve(AssetPathToAbsolute(merchantBackup)),WeaponAssetLocations.Resolve( AssetPathToAbsolute(merchantPath)), true);
+            AssetDatabase.ImportAsset(WeaponAssetLocations.Resolve(merchantPath), ImportAssetOptions.ForceUpdate);
             restored = true;
         }
 
@@ -187,8 +187,8 @@ public static partial class CompleteWeaponsIntegrationBuilder
         string merchantBackup = BackupDir + "/Mercader_ANTES_ARMAS.prefab";
 
         if (string.IsNullOrEmpty(playerPath) || string.IsNullOrEmpty(merchantPath) ||
-            AssetDatabase.LoadAssetAtPath<GameObject>(playerBackup) == null ||
-            AssetDatabase.LoadAssetAtPath<GameObject>(merchantBackup) == null)
+            AssetDatabase.LoadAssetAtPath<GameObject>(WeaponAssetLocations.Resolve(playerBackup)) == null ||
+            AssetDatabase.LoadAssetAtPath<GameObject>(WeaponAssetLocations.Resolve(merchantBackup)) == null)
         {
             EditorUtility.DisplayDialog(
                 "Reparar armas",
@@ -198,16 +198,16 @@ public static partial class CompleteWeaponsIntegrationBuilder
         }
 
         // Volver exactamente al estado previo a la primera integración.
-        File.Copy(AssetPathToAbsolute(playerBackup), AssetPathToAbsolute(playerPath), true);
-        File.Copy(AssetPathToAbsolute(merchantBackup), AssetPathToAbsolute(merchantPath), true);
-        AssetDatabase.ImportAsset(playerPath, ImportAssetOptions.ForceUpdate);
-        AssetDatabase.ImportAsset(merchantPath, ImportAssetOptions.ForceUpdate);
+        File.Copy(WeaponAssetLocations.Resolve(AssetPathToAbsolute(playerBackup)),WeaponAssetLocations.Resolve( AssetPathToAbsolute(playerPath)), true);
+        File.Copy(WeaponAssetLocations.Resolve(AssetPathToAbsolute(merchantBackup)),WeaponAssetLocations.Resolve( AssetPathToAbsolute(merchantPath)), true);
+        AssetDatabase.ImportAsset(WeaponAssetLocations.Resolve(playerPath), ImportAssetOptions.ForceUpdate);
+        AssetDatabase.ImportAsset(WeaponAssetLocations.Resolve(merchantPath), ImportAssetOptions.ForceUpdate);
 
         // Borrar solamente assets generados por este integrador. Se conserva Backup.
         foreach (string dir in new[] { ControllersDir, HudDir, PresentationDir, GeneratedShopDir })
         {
-            if (AssetDatabase.IsValidFolder(dir))
-                AssetDatabase.DeleteAsset(dir);
+            if (AssetDatabase.IsValidFolder(WeaponAssetLocations.Resolve(dir)))
+                AssetDatabase.DeleteAsset(WeaponAssetLocations.Resolve(dir));
         }
         AssetDatabase.Refresh();
 
@@ -515,7 +515,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
 
     private static void IntegratePlayer(string playerPath, Spec[] specs)
     {
-        GameObject root = PrefabUtility.LoadPrefabContents(playerPath);
+        GameObject root = PrefabUtility.LoadPrefabContents(WeaponAssetLocations.Resolve(playerPath));
         try
         {
             WeaponSwitcher switcher = root.GetComponentInChildren<WeaponSwitcher>(true);
@@ -565,7 +565,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
             RebuildPresentationDefinitions(presentation, generated);
             EditorUtility.SetDirty(presentation);
 
-            PrefabUtility.SaveAsPrefabAsset(root, playerPath);
+            PrefabUtility.SaveAsPrefabAsset(root,WeaponAssetLocations.Resolve( playerPath));
             report.Add($"Player actualizado: {playerPath}");
             foreach (GeneratedWeapon g in generated)
                 report.Add($"  + {g.Spec.Id}: FP + TP + HUD + casing + overrides");
@@ -741,7 +741,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
                 overrides[i] = new KeyValuePair<AnimationClip, AnimationClip>(original, replacement);
         }
         aoc.ApplyOverrides(overrides);
-        AssetDatabase.CreateAsset(aoc, path);
+        AssetDatabase.CreateAsset(aoc,WeaponAssetLocations.Resolve( path));
         return aoc;
     }
 
@@ -780,7 +780,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
                 overrides[i] = new KeyValuePair<AnimationClip, AnimationClip>(original, replacement);
         }
         aoc.ApplyOverrides(overrides);
-        AssetDatabase.CreateAsset(aoc, path);
+        AssetDatabase.CreateAsset(aoc,WeaponAssetLocations.Resolve( path));
         return aoc;
     }
 
@@ -820,7 +820,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
         if (fire == null && s.Model == "SK_AR_02")
             fire = BuildProceduralAR02BoltClip(s, thirdPerson);
 
-        AnimatorController controller = AnimatorController.CreateAnimatorControllerAtPath(path);
+        AnimatorController controller = AnimatorController.CreateAnimatorControllerAtPath(WeaponAssetLocations.Resolve(path));
         AnimatorStateMachine sm = controller.layers[0].stateMachine;
         sm.name = "WeaponParts";
         AnimatorState idle = sm.AddState("Idle");
@@ -868,7 +868,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
             if (bolt == null)
             {
                 warnings.Add("BurstRifle/AR_02: no encontré transform 'Bolt'; el clip de partes de disparo quedará vacío.");
-                AssetDatabase.CreateAsset(clip, path);
+                AssetDatabase.CreateAsset(clip,WeaponAssetLocations.Resolve( path));
                 return clip;
             }
 
@@ -879,7 +879,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
             AddPositionCurve(clip, relative, "m_LocalPosition.x", p.x, p.x + dir.x);
             AddPositionCurve(clip, relative, "m_LocalPosition.y", p.y, p.y + dir.y);
             AddPositionCurve(clip, relative, "m_LocalPosition.z", p.z, p.z + dir.z);
-            AssetDatabase.CreateAsset(clip, path);
+            AssetDatabase.CreateAsset(clip,WeaponAssetLocations.Resolve( path));
             return clip;
         }
         finally
@@ -1073,7 +1073,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
             // que OnEnable no corre durante la construccion.
             anim.enabled = true;
 
-            GameObject saved = PrefabUtility.SaveAsPrefabAsset(go, path);
+            GameObject saved = PrefabUtility.SaveAsPrefabAsset(go,WeaponAssetLocations.Resolve( path));
             if (saved == null)
                 throw new Exception($"No pude guardar el prefab TP de {s.Id}.");
 
@@ -1178,7 +1178,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
 
         string path = HudDir + "/" + s.Id + "_Icon.prefab";
         DeleteIfExists(path);
-        GameObject contents = PrefabUtility.LoadPrefabContents(sourcePath);
+        GameObject contents = PrefabUtility.LoadPrefabContents(WeaponAssetLocations.Resolve(sourcePath));
         try
         {
             contents.name = s.Id + "_Icon";
@@ -1186,7 +1186,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
             SetImageSprite(contents.transform, "Weapon", s.HudSpriteAsset);
             SetImageSprite(contents.transform, "Scope_Default", s.ScopeSpriteAsset);
             SetImageSprite(contents.transform, "Magazine", s.MagazineSpriteAsset);
-            GameObject saved = PrefabUtility.SaveAsPrefabAsset(contents, path);
+            GameObject saved = PrefabUtility.SaveAsPrefabAsset(contents,WeaponAssetLocations.Resolve( path));
             if (saved == null) throw new Exception("No pude crear icono HUD " + s.Id);
             return saved;
         }
@@ -1215,7 +1215,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
 
     private static void IntegrateMerchant(string merchantPath, Spec[] specs)
     {
-        GameObject root = PrefabUtility.LoadPrefabContents(merchantPath);
+        GameObject root = PrefabUtility.LoadPrefabContents(WeaponAssetLocations.Resolve(merchantPath));
         try
         {
             NPCWeaponVendor vendor = root.GetComponentInChildren<NPCWeaponVendor>(true);
@@ -1265,7 +1265,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
             }
             so.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(vendor);
-            PrefabUtility.SaveAsPrefabAsset(root, merchantPath);
+            PrefabUtility.SaveAsPrefabAsset(root,WeaponAssetLocations.Resolve( merchantPath));
             report.Add($"Mercader actualizado: {merchantPath} (+6 ofertas de armas)");
             report.Add("Nota: precios de recursos son valores iniciales porque los C.A. no especifican precios.");
         }
@@ -1292,13 +1292,13 @@ public static partial class CompleteWeaponsIntegrationBuilder
     private static string ResolveShopDirectory()
     {
         const string preferred = "Assets/Art/Sprites/Tienda";
-        if (AssetDatabase.IsValidFolder(preferred))
+        if (AssetDatabase.IsValidFolder(WeaponAssetLocations.Resolve(preferred)))
             return preferred;
 
         // Si la carpeta tiene otra mayúscula/minúscula o está un nivel distinto,
         // buscamos una ruta que termine en Art/Sprites/Tienda antes de usar Generated.
         string assetsAbsolute = Application.dataPath.Replace('\\', '/');
-        if (Directory.Exists(assetsAbsolute))
+        if (Directory.Exists(WeaponAssetLocations.Resolve(assetsAbsolute)))
         {
             foreach (string dir in Directory.GetDirectories(assetsAbsolute, "Tienda", SearchOption.AllDirectories))
             {
@@ -1325,8 +1325,8 @@ public static partial class CompleteWeaponsIntegrationBuilder
             {
                 Texture2D texture = RenderWeaponPreview(previewRoot, 1024, 512);
                 if (texture == null) throw new Exception("PreviewRenderUtility devolvió null.");
-                Directory.CreateDirectory(Path.GetDirectoryName(absolute));
-                File.WriteAllBytes(absolute, texture.EncodeToPNG());
+                Directory.CreateDirectory(WeaponAssetLocations.Resolve(Path.GetDirectoryName(WeaponAssetLocations.Resolve(absolute))));
+                File.WriteAllBytes(WeaponAssetLocations.Resolve(absolute), texture.EncodeToPNG());
                 UnityEngine.Object.DestroyImmediate(texture);
             }
             finally
@@ -1335,8 +1335,8 @@ public static partial class CompleteWeaponsIntegrationBuilder
                     UnityEngine.Object.DestroyImmediate(previewRoot);
             }
 
-            AssetDatabase.ImportAsset(pngAsset, ImportAssetOptions.ForceUpdate);
-            TextureImporter importer = AssetImporter.GetAtPath(pngAsset) as TextureImporter;
+            AssetDatabase.ImportAsset(WeaponAssetLocations.Resolve(pngAsset), ImportAssetOptions.ForceUpdate);
+            TextureImporter importer = AssetImporter.GetAtPath(WeaponAssetLocations.Resolve(pngAsset)) as TextureImporter;
             if (importer != null)
             {
                 importer.textureType = TextureImporterType.Sprite;
@@ -1346,7 +1346,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
                 importer.textureCompression = TextureImporterCompression.CompressedHQ;
                 importer.SaveAndReimport();
             }
-            Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(pngAsset);
+            Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(WeaponAssetLocations.Resolve(pngAsset));
             if (sprite != null)
             {
                 report.Add("  Tarjeta tienda generada: " + pngAsset);
@@ -1579,7 +1579,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
         foreach (string guid in guids)
         {
             string path = AssetDatabase.GUIDToAssetPath(guid);
-            T obj = AssetDatabase.LoadAssetAtPath<T>(path);
+            T obj = AssetDatabase.LoadAssetAtPath<T>(WeaponAssetLocations.Resolve(path));
             if (obj == null) continue;
             string basename = Path.GetFileNameWithoutExtension(path);
             if (obj.name == exactName || basename == exactName) return obj;
@@ -1602,7 +1602,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
         foreach (string guid in guids)
         {
             string path = AssetDatabase.GUIDToAssetPath(guid);
-            foreach (UnityEngine.Object o in AssetDatabase.LoadAllAssetsAtPath(path))
+            foreach (UnityEngine.Object o in AssetDatabase.LoadAllAssetsAtPath(WeaponAssetLocations.Resolve(path)))
             {
                 AnimationClip c = o as AnimationClip;
                 if (c == null || c.name.StartsWith("__preview__")) continue;
@@ -1618,7 +1618,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
     private static AnimationClip FindEmbeddedClip(string modelPath, string exactName)
     {
         AnimationClip suffixMatch = null;
-        foreach (UnityEngine.Object o in AssetDatabase.LoadAllAssetsAtPath(modelPath))
+        foreach (UnityEngine.Object o in AssetDatabase.LoadAllAssetsAtPath(WeaponAssetLocations.Resolve(modelPath)))
         {
             AnimationClip c = o as AnimationClip;
             if (c == null || c.name.StartsWith("__preview__")) continue;
@@ -1633,7 +1633,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
 
     private static void EnsureEmbeddedModelClips(string modelPath)
     {
-        ModelImporter importer = AssetImporter.GetAtPath(modelPath) as ModelImporter;
+        ModelImporter importer = AssetImporter.GetAtPath(WeaponAssetLocations.Resolve(modelPath)) as ModelImporter;
         if (importer == null) return;
 
         // Algunos FBX del pack (especialmente Handgun_04 / AR_02 / AR_03) vienen con
@@ -1677,7 +1677,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
         foreach (string guid in guids)
         {
             string path = AssetDatabase.GUIDToAssetPath(guid);
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(WeaponAssetLocations.Resolve(path));
             if (prefab == null || prefab.GetComponentInChildren<T>(true) == null) continue;
             if (Path.GetFileNameWithoutExtension(path) == preferredName) return path;
             if (fallback == null) fallback = path;
@@ -1687,9 +1687,9 @@ public static partial class CompleteWeaponsIntegrationBuilder
 
     private static void BackupOnce(string source, string destination)
     {
-        if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(destination) != null) return;
-        EnsureAssetFolder(Path.GetDirectoryName(destination).Replace('\\', '/'));
-        if (!AssetDatabase.CopyAsset(source, destination))
+        if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(WeaponAssetLocations.Resolve(destination)) != null) return;
+        EnsureAssetFolder(Path.GetDirectoryName(WeaponAssetLocations.Resolve(destination)).Replace('\\', '/'));
+        if (!AssetDatabase.CopyAsset(WeaponAssetLocations.Resolve(source),WeaponAssetLocations.Resolve( destination)))
             warnings.Add("No se pudo crear backup de " + source);
         else
             report.Add("Backup: " + destination);
@@ -1704,25 +1704,26 @@ public static partial class CompleteWeaponsIntegrationBuilder
     private static void EnsureAssetFolder(string path)
     {
         path = path.Replace('\\', '/');
-        if (AssetDatabase.IsValidFolder(path)) return;
+        if (AssetDatabase.IsValidFolder(WeaponAssetLocations.Resolve(path))) return;
         string[] parts = path.Split('/');
         string current = parts[0];
         for (int i = 1; i < parts.Length; i++)
         {
             string next = current + "/" + parts[i];
-            if (!AssetDatabase.IsValidFolder(next)) AssetDatabase.CreateFolder(current, parts[i]);
+            if (!AssetDatabase.IsValidFolder(WeaponAssetLocations.Resolve(next))) AssetDatabase.CreateFolder(WeaponAssetLocations.Resolve(current), parts[i]);
             current = next;
         }
     }
 
     private static void DeleteIfExists(string path)
     {
-        if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path) != null)
-            AssetDatabase.DeleteAsset(path);
+        if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(WeaponAssetLocations.Resolve(path)) != null)
+            AssetDatabase.DeleteAsset(WeaponAssetLocations.Resolve(path));
     }
 
     private static string AssetPathToAbsolute(string assetPath)
     {
+        assetPath = WeaponAssetLocations.Resolve(assetPath);
         string project = Directory.GetParent(Application.dataPath).FullName;
         return Path.Combine(project, assetPath).Replace('\\', '/');
     }
@@ -1731,7 +1732,7 @@ public static partial class CompleteWeaponsIntegrationBuilder
     {
         Spec s = CreateSpecs().FirstOrDefault(x => x.Id == id);
         if (s == null) return null;
-        return AssetDatabase.LoadAssetAtPath<Sprite>(ResolveShopDirectory() + "/Tienda_" + s.Model + ".png");
+        return AssetDatabase.LoadAssetAtPath<Sprite>(WeaponAssetLocations.Resolve(ResolveShopDirectory() + "/Tienda_" + s.Model + ".png"));
     }
 
     private static void WriteReport()
@@ -1739,8 +1740,8 @@ public static partial class CompleteWeaponsIntegrationBuilder
         try
         {
             EnsureAssetFolder(Root);
-            File.WriteAllLines(AssetPathToAbsolute(ReportPath), report);
-            AssetDatabase.ImportAsset(ReportPath, ImportAssetOptions.ForceUpdate);
+            File.WriteAllLines(WeaponAssetLocations.Resolve(AssetPathToAbsolute(ReportPath)), report);
+            AssetDatabase.ImportAsset(WeaponAssetLocations.Resolve(ReportPath), ImportAssetOptions.ForceUpdate);
         }
         catch (Exception e)
         {

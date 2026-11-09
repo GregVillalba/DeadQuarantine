@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.IO;
 using System.Linq;
@@ -13,8 +13,8 @@ public static partial class CompleteWeaponsIntegrationBuilder
  static readonly string[] MissingModels6={"SK_Handgun_01","SK_Handgun_02","SK_SMG_02","SK_SMG_05","SK_Sniper_01","SK_Sniper_02","SK_Sniper_03"};
  public static void InspectMissingPhase6()
  {
-  Directory.CreateDirectory(Phase6Output);var b=new StringBuilder();
-  var root=PrefabUtility.LoadPrefabContents("Assets/Prefabs/Player.prefab");
+  Directory.CreateDirectory(WeaponAssetLocations.Resolve(Phase6Output));var b=new StringBuilder();
+  var root=PrefabUtility.LoadPrefabContents(WeaponAssetLocations.Resolve("Assets/Prefabs/Player.prefab"));
   try{
    var sw=root.GetComponentInChildren<WeaponSwitcher>(true);var so=new SerializedObject(sw);
    foreach(string key in new[]{"baseController","tpBaseController"}){
@@ -32,11 +32,11 @@ public static partial class CompleteWeaponsIntegrationBuilder
    var models=MissingModels6.Select(RequireAsset<GameObject>).ToArray();
    foreach(var model in models){string path=AssetDatabase.GetAssetPath(model);b.AppendLine("MODEL "+path);
     b.AppendLine("SOCKETS "+string.Join(",",model.GetComponentsInChildren<Transform>(true).Where(t=>t.name.StartsWith("SOCKET")).Select(t=>t.name+"="+t.localPosition+" rot="+t.localEulerAngles)));
-    foreach(var clip in AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>().Where(c=>!c.name.StartsWith("__preview")))b.AppendLine(" PART "+clip.name+" len="+clip.length+" paths="+string.Join(",",AnimationUtility.GetCurveBindings(clip).Select(c=>c.path).Distinct().Take(5)));
+    foreach(var clip in AssetDatabase.LoadAllAssetsAtPath(WeaponAssetLocations.Resolve(path)).OfType<AnimationClip>().Where(c=>!c.name.StartsWith("__preview")))b.AppendLine(" PART "+clip.name+" len="+clip.length+" paths="+string.Join(",",AnimationUtility.GetCurveBindings(clip).Select(c=>c.path).Distinct().Take(5)));
    }
    foreach(string path in AssetDatabase.GetAllAssetPaths().Where(p=>p.StartsWith("Assets/Art/") && (p.Contains("SM_Sniper_")||p.Contains("SM_Handgun_01")||p.Contains("SM_Handgun_02")||p.Contains("T_HUD_Sniper_")||p.Contains("T_HUD_Handgun_01")||p.Contains("T_HUD_Handgun_02"))))b.AppendLine("ASSET "+path);
   }finally{PrefabUtility.UnloadPrefabContents(root);}
-  File.WriteAllText(Path.Combine(Phase6Output,"IntegrationInputs.txt"),b.ToString());
+  File.WriteAllText(WeaponAssetLocations.Resolve(Path.Combine(Phase6Output,"IntegrationInputs.txt")),b.ToString());
  }
  static IEnumerable<AnimatorState> States6(AnimatorStateMachine sm)=>sm.states.Select(s=>s.state).Concat(sm.stateMachines.SelectMany(s=>States6(s.stateMachine)));
 }

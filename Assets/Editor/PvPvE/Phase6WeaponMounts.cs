@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.IO;
 using System.Linq;
@@ -10,7 +10,7 @@ using UnityEngine;
 public static partial class CompleteWeaponsIntegrationBuilder
 {
  public static void RefineMissingPhase6(){
-  var root=PrefabUtility.LoadPrefabContents("Assets/Prefabs/Player.prefab");var lines=new List<string>();
+  var root=PrefabUtility.LoadPrefabContents(WeaponAssetLocations.Resolve("Assets/Prefabs/Player.prefab"));var lines=new List<string>();
   try{
    var sw=root.GetComponentInChildren<WeaponSwitcher>(true);var so=new SerializedObject(sw);var rig=sw.GetComponent<Animator>();
    var hand=rig.GetComponentsInChildren<Transform>(true).First(t=>t.name.Equals("hand_r",StringComparison.OrdinalIgnoreCase));
@@ -58,9 +58,9 @@ public static partial class CompleteWeaponsIntegrationBuilder
     }
     AnimationMode.StartAnimationMode();
    }
-   AnimationMode.StopAnimationMode();PrefabUtility.SaveAsPrefabAsset(root,"Assets/Prefabs/Player.prefab");AssetDatabase.SaveAssets();
+   AnimationMode.StopAnimationMode();PrefabUtility.SaveAsPrefabAsset(root,WeaponAssetLocations.Resolve("Assets/Prefabs/Player.prefab"));AssetDatabase.SaveAssets();
   }finally{if(AnimationMode.InAnimationMode())AnimationMode.StopAnimationMode();PrefabUtility.UnloadPrefabContents(root);}
-  Directory.CreateDirectory(Phase6Output);File.WriteAllLines(Path.Combine(Phase6Output,"mounts.txt"),lines);
+  Directory.CreateDirectory(WeaponAssetLocations.Resolve(Phase6Output));File.WriteAllLines(WeaponAssetLocations.Resolve(Path.Combine(Phase6Output,"mounts.txt")),lines);
  }
  static void RootGrip6(NetworkWeaponPresentation.Definition reference,GameObject target,out Vector3 position,out Vector3 rotation){
   var staging=new GameObject("Phase6 origin fitting");staging.SetActive(false);

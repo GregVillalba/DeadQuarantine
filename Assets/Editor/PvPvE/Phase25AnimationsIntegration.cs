@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.IO;
 using System.Linq;
@@ -10,15 +10,15 @@ using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 public static partial class CompleteWeaponsIntegrationBuilder {
- const string Folder25="Assets/Generated/NewWeapons/Phase25";
+ const string Folder25="weapon-assets:/NewWeapons/Phase25";
  const string Source25="C:/Users/andre/Documents/GitHub/Low Poly Shooter Pack v4.3.1 (1)/Assets/Infima Games/Low Poly Shooter Pack";
  public static void InstallPhase25(){
-  Directory.CreateDirectory(Folder25);AssetDatabase.Refresh();var output=Environment.GetEnvironmentVariable("DQ_PVPVE_PHASE25_OUTPUT");Directory.CreateDirectory(output);
-  const string path="Assets/Prefabs/Player.prefab";string before=File.ReadAllText(path);var asset=AssetDatabase.LoadAssetAtPath<GameObject>(path);var allowed=new HashSet<string>();
+  Directory.CreateDirectory(WeaponAssetLocations.Resolve(Folder25));AssetDatabase.Refresh();var output=Environment.GetEnvironmentVariable("DQ_PVPVE_PHASE25_OUTPUT");Directory.CreateDirectory(WeaponAssetLocations.Resolve(output));
+  const string path="Assets/Prefabs/Player.prefab";string before=File.ReadAllText(WeaponAssetLocations.Resolve(path));var asset=AssetDatabase.LoadAssetAtPath<GameObject>(WeaponAssetLocations.Resolve(path));var allowed=new HashSet<string>();
   void Allow(UnityEngine.Object obj){if(AssetDatabase.TryGetGUIDAndLocalFileIdentifier(obj,out string _,out long id))allowed.Add(id.ToString());}
   var assetSw=new SerializedObject(asset.GetComponentInChildren<WeaponSwitcher>(true));Allow(asset.GetComponentInChildren<WeaponSwitcher>(true));Allow(asset.GetComponent<NetworkWeaponPresentation>());Allow(asset.GetComponent<NetworkWeaponPresentation>().BodyAnimator);
   foreach(var def in asset.GetComponent<NetworkWeaponPresentation>().Weapons){var slot=ReadSlotTemplate(assetSw,def.Id);Allow(slot.Root);Allow(slot.Root.GetComponent<PackWeaponPresentation>());Allow(slot.Root.GetComponent<WeaponAttachments>());if(slot.Root.name.StartsWith("DQ_Weapon_",StringComparison.Ordinal)){Allow(slot.Weapon);if(def.Id is "AutoPistol" or "BurstRifle" or "SMG05" or "Sniper02")Allow(WeaponAttachments.Find(slot.Root.transform,"DQ_OpticalSight"));}}
-  var root=PrefabUtility.LoadPrefabContents(path);var log=new StringBuilder();
+  var root=PrefabUtility.LoadPrefabContents(WeaponAssetLocations.Resolve(path));var log=new StringBuilder();
   try{
    var sw=root.GetComponentInChildren<WeaponSwitcher>(true);var so=new SerializedObject(sw);var rig=sw.GetComponent<Animator>();var presentation=root.GetComponent<NetworkWeaponPresentation>();
    var catalog=root.GetComponent<NetworkWeaponAttachments>().catalog;
@@ -26,7 +26,7 @@ public static partial class CompleteWeaponsIntegrationBuilder {
     bool legacy=!definition.Source.name.StartsWith("DQ_Weapon_",StringComparison.Ordinal);var slot=ReadSlotTemplate(so,definition.Id);
     var profile=slot.Root.GetComponent<PackWeaponPresentation>();if(!profile)profile=slot.Root.AddComponent<PackWeaponPresentation>();profile.preserveLegacyAnimation=legacy;
     if(legacy){
-     var source=AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(definition.Id=="Handgun"?"Assets/Animations/ThirdPersonAnimator.controller":definition.Id=="Rifle"?"Assets/Animations/OverrideThirdPerson/OC_TP_Rifle.overrideController":"Assets/Animations/OverrideThirdPerson/OC_TP_Shotgun.overrideController");
+     var source=AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(WeaponAssetLocations.Resolve(definition.Id=="Handgun"?"Assets/Animations/ThirdPersonAnimator.controller":definition.Id=="Rifle"?"Assets/Animations/OverrideThirdPerson/OC_TP_Rifle.overrideController":"Assets/Animations/OverrideThirdPerson/OC_TP_Shotgun.overrideController"));
      var tp=CopyController25(source,Folder25+"/"+definition.Id+"_TP_Legacy.controller");
      if(!tp.layers.Any(l=>l.name=="PackFire")){var sm=new AnimatorStateMachine{name="PackFire"};AssetDatabase.AddObjectToAsset(sm,tp);var rest=sm.AddState("Rest");rest.writeDefaultValues=false;sm.defaultState=rest;tp.AddLayer(new AnimatorControllerLayer{name="PackFire",stateMachine=sm,defaultWeight=0,blendingMode=AnimatorLayerBlendingMode.Additive});EditorUtility.SetDirty(tp);}
      var wrapper=new AnimatorOverrideController(tp){name="Phase25_"+definition.Id+"_TP_Legacy"};if(source is AnimatorOverrideController original){var overrides=new List<KeyValuePair<AnimationClip,AnimationClip>>();original.GetOverrides(overrides);wrapper.ApplyOverrides(overrides);}
@@ -62,8 +62,8 @@ public static partial class CompleteWeaponsIntegrationBuilder {
      var slots=so.FindProperty("slots");for(int i=0;i<slots.arraySize;i++){var row=slots.GetArrayElementAtIndex(i);if(row.FindPropertyRelative("weaponId").stringValue==definition.Id){row.FindPropertyRelative("overrideController").objectReferenceValue=fpWrapper;row.FindPropertyRelative("tpOverrideController").objectReferenceValue=tpWrapper;}}
      // Reference weapon uses the pack's AR/SMG recoil data, not the attenuated legacy Handgun preset.
      string model=definition.Model.name;var spec=Specs7().Single(s=>s.Id==definition.Id);string sourcePrefab=Path.Combine(Source25,"Prefabs/Weapons/P_LPSP_WEP_"+spec.Model.Substring(3)+".prefab");
-     string recoil=File.ReadAllText(sourcePrefab);var data=Regex.Match(recoil,@"weaponRecoilData: .*guid: (\w+)").Groups[1].Value;
-     string arGuid=Regex.Match(File.ReadAllText(Source25+"/Data/Recoil/SO_WEP_RD_AR.asset.meta"),@"guid: (\w+)").Groups[1].Value;
+     string recoil=File.ReadAllText(WeaponAssetLocations.Resolve(sourcePrefab));var data=Regex.Match(recoil,@"weaponRecoilData: .*guid: (\w+)").Groups[1].Value;
+     string arGuid=Regex.Match(File.ReadAllText(WeaponAssetLocations.Resolve(Source25+"/Data/Recoil/SO_WEP_RD_AR.asset.meta")),@"guid: (\w+)").Groups[1].Value;
      var ws=new SerializedObject(slot.Weapon);ws.FindProperty("recoilPreset").enumValueIndex=data==arGuid?(int)RecoilPreset.AR:(int)RecoilPreset.SMG;ws.ApplyModifiedPropertiesWithoutUndo();
      if(definition.Id is "AutoPistol" or "BurstRifle" or "SMG05" or "Sniper02"){
       var scope=WeaponAttachments.Find(slot.Root.transform,"DQ_DefaultScope");var physical=WeaponAttachments.Find(slot.Root.transform,"root");var bounds=WeaponAttachments.BoundsIn(scope.gameObject,physical);var marker=WeaponAttachments.Find(slot.Root.transform,"DQ_OpticalSight");Vector3 sight=new(bounds.center.x,bounds.min.y,bounds.max.z);if(definition.Id is "SMG05" or "Sniper02")sight=FrontIronSight25(scope.gameObject,physical,bounds);marker.localPosition=sight;
@@ -82,7 +82,7 @@ public static partial class CompleteWeaponsIntegrationBuilder {
      if(id=="Escopeta")compatible&=!entry.requiresBracing&&entry.id!="Muzzle_Silencer_03";
      if(compatible&&!permitted.Contains(id))permitted.Add(id);
     }entry.weapons=permitted.ToArray();}
-   EditorUtility.SetDirty(catalog);EditorUtility.SetDirty(presentation);so.ApplyModifiedPropertiesWithoutUndo();PrefabUtility.SaveAsPrefabAsset(root,path);
+   EditorUtility.SetDirty(catalog);EditorUtility.SetDirty(presentation);so.ApplyModifiedPropertiesWithoutUndo();PrefabUtility.SaveAsPrefabAsset(root,WeaponAssetLocations.Resolve(path));
    var previous=Regex.Matches(before,@"^--- !u!\d+ &(\d+).*?(?=^--- !u!|\z)",RegexOptions.Multiline|RegexOptions.Singleline).Cast<Match>().ToDictionary(m=>m.Groups[1].Value,m=>m.Value);
    // Nested prefab additions need the component references written by Unity. Restoring
    // complete GameObject/PrefabInstance records would leave new components orphaned.
@@ -92,22 +92,22 @@ public static partial class CompleteWeaponsIntegrationBuilder {
    var preserve=new HashSet<string>{"3180206767226728580","2410896950522157583","6744171994494050035"};
    foreach(var record in previous)if(record.Value.StartsWith("--- !u!4 ",StringComparison.Ordinal)&&!markers.Contains(record.Key))preserve.Add(record.Key);
    foreach(var record in previous)if(record.Value.StartsWith("--- !u!114 ",StringComparison.Ordinal)&&!allowed.Contains(record.Key))preserve.Add(record.Key);
-   string saved=Regex.Replace(File.ReadAllText(path),@"^--- !u!\d+ &(\d+).*?(?=^--- !u!|\z)",m=>{
+   string saved=Regex.Replace(File.ReadAllText(WeaponAssetLocations.Resolve(path)),@"^--- !u!\d+ &(\d+).*?(?=^--- !u!|\z)",m=>{
     if(!previous.TryGetValue(m.Groups[1].Value,out var record))return m.Value;
     if(preserve.Contains(m.Groups[1].Value))return record;
     if(record.StartsWith("--- !u!1001 ",StringComparison.Ordinal)){var originalMods=Regex.Match(record,@"^    m_Modifications:.*?(?=^    m_RemovedComponents:)",RegexOptions.Multiline|RegexOptions.Singleline);if(originalMods.Success)return Regex.Replace(m.Value,@"^    m_Modifications:.*?(?=^    m_RemovedComponents:)",_=>originalMods.Value,RegexOptions.Multiline|RegexOptions.Singleline);}
     return m.Value;
-   },RegexOptions.Multiline|RegexOptions.Singleline);File.WriteAllText(path,saved);AssetDatabase.ImportAsset(path,ImportAssetOptions.ForceUpdate);AssetDatabase.SaveAssets();
-   File.WriteAllText(Path.Combine(output,"Install.txt"),log.ToString());File.WriteAllLines(Path.Combine(output,"AllowedRecords.txt"),allowed);
-   var settings=AssetDatabase.LoadAssetAtPath<DeadQuarantine.PvPvE.Networking.PvPvENetworkSettings>("Assets/PvPvE/Settings/PvPvENetworkSettings.asset");settings.ProtocolVersion=5025;EditorUtility.SetDirty(settings);AssetDatabase.SaveAssets();
+   },RegexOptions.Multiline|RegexOptions.Singleline);File.WriteAllText(WeaponAssetLocations.Resolve(path),saved);AssetDatabase.ImportAsset(WeaponAssetLocations.Resolve(path),ImportAssetOptions.ForceUpdate);AssetDatabase.SaveAssets();
+   File.WriteAllText(WeaponAssetLocations.Resolve(Path.Combine(output,"Install.txt")),log.ToString());File.WriteAllLines(WeaponAssetLocations.Resolve(Path.Combine(output,"AllowedRecords.txt")),allowed);
+   var settings=AssetDatabase.LoadAssetAtPath<DeadQuarantine.PvPvE.Networking.PvPvENetworkSettings>(WeaponAssetLocations.Resolve("Assets/PvPvE/Settings/PvPvENetworkSettings.asset"));settings.ProtocolVersion=5025;EditorUtility.SetDirty(settings);AssetDatabase.SaveAssets();
   }finally{PrefabUtility.UnloadPrefabContents(root);}
  }
- static AnimatorController CopyController25(RuntimeAnimatorController source,string path){var original=source is AnimatorOverrideController o?o.runtimeAnimatorController:source;if(!AssetDatabase.LoadAssetAtPath<AnimatorController>(path)&&!AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(original),path))throw new InvalidOperationException(path);return AssetDatabase.LoadAssetAtPath<AnimatorController>(path);}
- static T Save25<T>(T value,string path)where T:UnityEngine.Object{var old=AssetDatabase.LoadAssetAtPath<T>(path);if(old){EditorUtility.CopySerialized(value,old);UnityEngine.Object.DestroyImmediate(value);EditorUtility.SetDirty(old);return old;}AssetDatabase.CreateAsset(value,path);return value;}
+ static AnimatorController CopyController25(RuntimeAnimatorController source,string path){var original=source is AnimatorOverrideController o?o.runtimeAnimatorController:source;if(!AssetDatabase.LoadAssetAtPath<AnimatorController>(WeaponAssetLocations.Resolve(path))&&!AssetDatabase.CopyAsset(WeaponAssetLocations.Resolve(AssetDatabase.GetAssetPath(original)),WeaponAssetLocations.Resolve(path)))throw new InvalidOperationException(path);return AssetDatabase.LoadAssetAtPath<AnimatorController>(WeaponAssetLocations.Resolve(path));}
+ static T Save25<T>(T value,string path)where T:UnityEngine.Object{var old=AssetDatabase.LoadAssetAtPath<T>(WeaponAssetLocations.Resolve(path));if(old){EditorUtility.CopySerialized(value,old);UnityEngine.Object.DestroyImmediate(value);EditorUtility.SetDirty(old);return old;}AssetDatabase.CreateAsset(value,WeaponAssetLocations.Resolve(path));return value;}
  static AnimationClip ImportAdditive25(AnimationClip original,StringBuilder log){
-  string name=Path.GetFileName(AssetDatabase.GetAssetPath(original));string source=Directory.EnumerateFiles(Source25+"/Art/Animations/Character",name,SearchOption.AllDirectories).Single();string folder=Folder25+"/Source431";Directory.CreateDirectory(folder);string dest=folder+"/"+name;if(!File.Exists(dest)){File.Copy(source,dest);AssetDatabase.ImportAsset(dest,ImportAssetOptions.ForceUpdate);}
-  var importer=(ModelImporter)AssetImporter.GetAtPath(dest);bool needsImport=importer.animationType!=ModelImporterAnimationType.Human||importer.avatarSetup!=ModelImporterAvatarSetup.CreateFromThisModel||importer.clipAnimations.Length==0||importer.clipAnimations.Any(c=>!c.hasAdditiveReferencePose||c.events.Length>0);if(needsImport){importer.animationType=ModelImporterAnimationType.Human;importer.avatarSetup=ModelImporterAvatarSetup.CreateFromThisModel;importer.importAnimation=true;var clips=importer.defaultClipAnimations;foreach(var clip in clips){clip.name=Path.GetFileNameWithoutExtension(source);clip.hasAdditiveReferencePose=true;clip.additiveReferencePoseFrame=clip.firstFrame;clip.events=Array.Empty<AnimationEvent>();}importer.clipAnimations=clips;importer.SaveAndReimport();}
-  using var sha=SHA256.Create();if(!sha.ComputeHash(File.ReadAllBytes(source)).SequenceEqual(sha.ComputeHash(File.ReadAllBytes(dest))))throw new InvalidOperationException("Reference bytes changed: "+name);log.AppendLine("4.3.1 binary verified; Humanoid/CreateFromThisModel/additive frame0: "+dest);return AssetDatabase.LoadAllAssetsAtPath(dest).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview"));
+  string name=Path.GetFileName(AssetDatabase.GetAssetPath(original));string source=Directory.EnumerateFiles(WeaponAssetLocations.Resolve(Source25+"/Art/Animations/Character"),name,SearchOption.AllDirectories).Single();string folder=Folder25+"/Source431";Directory.CreateDirectory(WeaponAssetLocations.Resolve(folder));string dest=folder+"/"+name;if(!File.Exists(WeaponAssetLocations.Resolve(dest))){File.Copy(WeaponAssetLocations.Resolve(source),WeaponAssetLocations.Resolve(dest));AssetDatabase.ImportAsset(WeaponAssetLocations.Resolve(dest),ImportAssetOptions.ForceUpdate);}
+  var importer=(ModelImporter)AssetImporter.GetAtPath(WeaponAssetLocations.Resolve(dest));bool needsImport=importer.animationType!=ModelImporterAnimationType.Human||importer.avatarSetup!=ModelImporterAvatarSetup.CreateFromThisModel||importer.clipAnimations.Length==0||importer.clipAnimations.Any(c=>!c.hasAdditiveReferencePose||c.events.Length>0);if(needsImport){importer.animationType=ModelImporterAnimationType.Human;importer.avatarSetup=ModelImporterAvatarSetup.CreateFromThisModel;importer.importAnimation=true;var clips=importer.defaultClipAnimations;foreach(var clip in clips){clip.name=Path.GetFileNameWithoutExtension(source);clip.hasAdditiveReferencePose=true;clip.additiveReferencePoseFrame=clip.firstFrame;clip.events=Array.Empty<AnimationEvent>();}importer.clipAnimations=clips;importer.SaveAndReimport();}
+  using var sha=SHA256.Create();if(!sha.ComputeHash(File.ReadAllBytes(WeaponAssetLocations.Resolve(source))).SequenceEqual(sha.ComputeHash(File.ReadAllBytes(WeaponAssetLocations.Resolve(dest)))))throw new InvalidOperationException("Reference bytes changed: "+name);log.AppendLine("4.3.1 binary verified; Humanoid/CreateFromThisModel/additive frame0: "+dest);return AssetDatabase.LoadAllAssetsAtPath(WeaponAssetLocations.Resolve(dest)).OfType<AnimationClip>().First(c=>!c.name.StartsWith("__preview"));
  }
  static Vector3 FrontIronSight25(GameObject scope,Transform physical,Bounds bounds){
   var vertices=new List<Vector3>();foreach(var r in scope.GetComponentsInChildren<Renderer>(true)){var mf=r.GetComponent<MeshFilter>();var sk=r as SkinnedMeshRenderer;var mesh=mf?mf.sharedMesh:sk?sk.sharedMesh:null;if(mesh)vertices.AddRange(mesh.vertices.Select(v=>physical.InverseTransformPoint(r.transform.TransformPoint(v))));}

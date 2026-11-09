@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.IO;
 using System.Linq;
@@ -11,20 +11,20 @@ using UnityEngine;
 
 public static partial class CompleteWeaponsIntegrationBuilder
 {
- const string Phase7Dir="Assets/Generated/NewWeapons/Phase7";
+ const string Phase7Dir="weapon-assets:/NewWeapons/Phase7";
  static string Output7=>Environment.GetEnvironmentVariable("DQ_PVPVE_PHASE7_OUTPUT")??"Temp/Phase7";
  static Spec[] Specs7()=>CreateSpecs().Concat(Specs6()).ToArray();
  [MenuItem("Game/Dead Quarantine/PvPvE/Fase 7 - Corregir animaciones")]
  public static void RepairAnimationsPhase7(){
-  Directory.CreateDirectory(Phase7Dir);Directory.CreateDirectory(Output7);AssetDatabase.Refresh();
+  Directory.CreateDirectory(WeaponAssetLocations.Resolve(Phase7Dir));Directory.CreateDirectory(WeaponAssetLocations.Resolve(Output7));AssetDatabase.Refresh();
   NormalizeRifleImports7();
-  const string path="Assets/Prefabs/Player.prefab";string before=File.ReadAllText(path);
-  var root=PrefabUtility.LoadPrefabContents(path);var text=new StringBuilder();
+  const string path="Assets/Prefabs/Player.prefab";string before=File.ReadAllText(WeaponAssetLocations.Resolve(path));
+  var root=PrefabUtility.LoadPrefabContents(WeaponAssetLocations.Resolve(path));var text=new StringBuilder();
   try{
    var sw=root.GetComponentInChildren<WeaponSwitcher>(true);var so=new SerializedObject(sw);var rig=sw.GetComponent<Animator>();var presentation=root.GetComponent<NetworkWeaponPresentation>();
    var specs=Specs7();var modified=new HashSet<string>{"967506594462204975","7122332671699174642"};
    // Preserve every previous prefab record except these explicit non-protected weapon subtrees.
-   var asset=AssetDatabase.LoadAssetAtPath<GameObject>(path);
+   var asset=AssetDatabase.LoadAssetAtPath<GameObject>(WeaponAssetLocations.Resolve(path));
    var assetSw=new SerializedObject(asset.GetComponentInChildren<WeaponSwitcher>(true));
    foreach(var spec in specs){var original=ReadSlotTemplate(assetSw,spec.Id);foreach(var obj in original.Root.GetComponentsInChildren<Component>(true).Cast<UnityEngine.Object>().Concat(original.Root.GetComponentsInChildren<Transform>(true).Select(t=>(UnityEngine.Object)t.gameObject))){
     if(AssetDatabase.TryGetGUIDAndLocalFileIdentifier(obj,out string _,out long id))modified.Add(id.ToString());
@@ -55,35 +55,35 @@ public static partial class CompleteWeaponsIntegrationBuilder
     var parts=slot.Root.GetComponent<Animator>();
     parts.runtimeAnimatorController=Parts7(spec,parts.runtimeAnimatorController,false);
     if(spec.Family==Family.Handgun && !slot.Root.GetComponent<WeaponEmptySlideSync>())slot.Root.AddComponent<WeaponEmptySlideSync>();
-    string modelPath=AssetDatabase.GetAssetPath(definition.Model);var model=PrefabUtility.LoadPrefabContents(modelPath);
+    string modelPath=AssetDatabase.GetAssetPath(definition.Model);var model=PrefabUtility.LoadPrefabContents(WeaponAssetLocations.Resolve(modelPath));
     try{
      RestoreMount7(model,spec.ModelAsset);
      var animator=model.GetComponent<Animator>();animator.runtimeAnimatorController=Parts7(spec,animator.runtimeAnimatorController,true);
      if(spec.Family==Family.Handgun&&!model.GetComponent<WeaponEmptySlideSync>())model.AddComponent<WeaponEmptySlideSync>();
-     PrefabUtility.SaveAsPrefabAsset(model,modelPath);
+     PrefabUtility.SaveAsPrefabAsset(model,WeaponAssetLocations.Resolve(modelPath));
     }finally{PrefabUtility.UnloadPrefabContents(model);}
     RootGrip6(FindDefinition(presentation.Weapons,reference.Id),definition.Model,out definition.GripPosition,out definition.GripRotation);
     SwitchPoses7(root,spec,(AnimatorController)tp.runtimeAnimatorController);
     text.AppendLine(spec.Id+" FP="+fp.name+" TP="+tp.name+" reloadSeconds="+reloadTime);
    }
-   File.WriteAllLines(Path.Combine(Output7,"AllowedPrefabRecords.txt"),modified);
-   EditorUtility.SetDirty(presentation);PrefabUtility.SaveAsPrefabAsset(root,path);
+   File.WriteAllLines(WeaponAssetLocations.Resolve(Path.Combine(Output7,"AllowedPrefabRecords.txt")),modified);
+   EditorUtility.SetDirty(presentation);PrefabUtility.SaveAsPrefabAsset(root,WeaponAssetLocations.Resolve(path));
    // Unity's serializer adds unrelated defaults and reformats old records. Keep them byte-for-byte.
    var old=Regex.Matches(before,@"^--- !u!\d+ &(\d+).*?(?=^--- !u!|\z)",RegexOptions.Multiline|RegexOptions.Singleline).Cast<Match>().ToDictionary(m=>m.Groups[1].Value,m=>m.Value);
-   string saved=File.ReadAllText(path);File.WriteAllText(Path.Combine(Output7,"PlayerSerializedRaw.prefab"),saved);saved=Regex.Replace(saved,@"^--- !u!\d+ &(\d+).*?(?=^--- !u!|\z)",m=>old.TryGetValue(m.Groups[1].Value,out string record)&&!modified.Contains(m.Groups[1].Value)?record:m.Value,RegexOptions.Multiline|RegexOptions.Singleline);
-   File.WriteAllText(path,saved);AssetDatabase.ImportAsset(path,ImportAssetOptions.ForceUpdate);AssetDatabase.SaveAssets();
+   string saved=File.ReadAllText(WeaponAssetLocations.Resolve(path));File.WriteAllText(WeaponAssetLocations.Resolve(Path.Combine(Output7,"PlayerSerializedRaw.prefab")),saved);saved=Regex.Replace(saved,@"^--- !u!\d+ &(\d+).*?(?=^--- !u!|\z)",m=>old.TryGetValue(m.Groups[1].Value,out string record)&&!modified.Contains(m.Groups[1].Value)?record:m.Value,RegexOptions.Multiline|RegexOptions.Singleline);
+   File.WriteAllText(WeaponAssetLocations.Resolve(path),saved);AssetDatabase.ImportAsset(WeaponAssetLocations.Resolve(path),ImportAssetOptions.ForceUpdate);AssetDatabase.SaveAssets();
   }finally{if(AnimationMode.InAnimationMode())AnimationMode.StopAnimationMode();PrefabUtility.UnloadPrefabContents(root);}
-  var verify=PrefabUtility.LoadPrefabContents(path);
+  var verify=PrefabUtility.LoadPrefabContents(WeaponAssetLocations.Resolve(path));
   try{
    var check=verify.GetComponentInChildren<WeaponSwitcher>(true);if(!check)throw new InvalidOperationException("Saved prefab lost its weapon rig");
    var serialized=new SerializedObject(check);
    foreach(var spec in Specs7()){var slot=ReadSlotTemplate(serialized,spec.Id);if(!slot.Weapon||!slot.FPOverride||!FindDeep(slot.Root.transform,"DQ_OpticalSight"))throw new InvalidOperationException(spec.Id+" lost a saved reference");}
   }finally{PrefabUtility.UnloadPrefabContents(verify);}
-  File.WriteAllText(Path.Combine(Output7,"AnimationIntegration.txt"),text.ToString());
+  File.WriteAllText(WeaponAssetLocations.Resolve(Path.Combine(Output7,"AnimationIntegration.txt")),text.ToString());
  }
  public static void InspectBindingsPhase7(){
-  Directory.CreateDirectory(Output7);var text=new StringBuilder();
-  var prefab=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Player.prefab");var so=new SerializedObject(prefab.GetComponentInChildren<WeaponSwitcher>(true));
+  Directory.CreateDirectory(WeaponAssetLocations.Resolve(Output7));var text=new StringBuilder();
+  var prefab=AssetDatabase.LoadAssetAtPath<GameObject>(WeaponAssetLocations.Resolve("Assets/Prefabs/Player.prefab"));var so=new SerializedObject(prefab.GetComponentInChildren<WeaponSwitcher>(true));
   foreach(var spec in Specs7()){
    var slot=ReadSlotTemplate(so,spec.Id);var animator=slot.Root.GetComponent<Animator>();
    text.AppendLine(spec.Id+" mount="+slot.Root.transform.localPosition+" rotation="+slot.Root.transform.localEulerAngles);
@@ -93,17 +93,17 @@ public static partial class CompleteWeaponsIntegrationBuilder
    }
    text.AppendLine("FP poses "+string.Join(",",slot.FPOverride.animationClips.Where(c=>c.name.Contains("Pose")||c.name.Contains("Idle")).Select(c=>c.name)));
   }
-  File.WriteAllText(Path.Combine(Output7,"Bindings.txt"),text.ToString());
+  File.WriteAllText(WeaponAssetLocations.Resolve(Path.Combine(Output7,"Bindings.txt")),text.ToString());
  }
  static void NormalizeRifleImports7(){
-  var prefab=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Player.prefab");var settings=new SerializedObject(prefab.GetComponentInChildren<WeaponSwitcher>(true));
+  var prefab=AssetDatabase.LoadAssetAtPath<GameObject>(WeaponAssetLocations.Resolve("Assets/Prefabs/Player.prefab"));var settings=new SerializedObject(prefab.GetComponentInChildren<WeaponSwitcher>(true));
   var protectedControllers=new List<string>{AssetDatabase.GetAssetPath(settings.FindProperty("baseController").objectReferenceValue),AssetDatabase.GetAssetPath(settings.FindProperty("tpBaseController").objectReferenceValue)};
   foreach(string id in new[]{"Handgun","Rifle","Escopeta"}){var slot=ReadSlotTemplate(settings,id);if(slot.FPOverride)protectedControllers.Add(AssetDatabase.GetAssetPath(slot.FPOverride));if(slot.TPOverride)protectedControllers.Add(AssetDatabase.GetAssetPath(slot.TPOverride));}
   var protectedDependencies=new HashSet<string>(AssetDatabase.GetDependencies(protectedControllers.ToArray(),true));
-  foreach(string path in Directory.EnumerateFiles("Assets/Art/Animations/Character/ARs","A_FP_PCH_AR_0*.fbx")){
+  foreach(string path in Directory.EnumerateFiles(WeaponAssetLocations.Resolve("Assets/Art/Animations/Character/ARs"),"A_FP_PCH_AR_0*.fbx")){
    string file=Path.GetFileName(path);if(!file.StartsWith("A_FP_PCH_AR_02_")&&!file.StartsWith("A_FP_PCH_AR_03_"))continue;
    if(protectedDependencies.Contains(path.Replace('\\','/')))throw new InvalidOperationException("Protected controller depends on "+path);
-   var importer=(ModelImporter)AssetImporter.GetAtPath(path);if(Mathf.Abs(importer.globalScale-.01f)<.000001f)continue;
+   var importer=(ModelImporter)AssetImporter.GetAtPath(WeaponAssetLocations.Resolve(path));if(Mathf.Abs(importer.globalScale-.01f)<.000001f)continue;
    importer.globalScale=.01f;importer.SaveAndReimport();
   }
  }
@@ -131,11 +131,11 @@ public static partial class CompleteWeaponsIntegrationBuilder
   var clip=UnityEngine.Object.Instantiate(original);clip.name=s.Id+"_"+role;
   AnimationUtility.SetAnimationEvents(clip,events.Select(e=>new AnimationEvent{functionName=e.Item1=="OnEjectCasing"?"OnIntegratedEjectCasing":e.Item1,intParameter=Array.FindIndex(Specs7(),item=>item.Id==s.Id)+3,time=clip.length*e.Item2,messageOptions=SendMessageOptions.DontRequireReceiver}).ToArray());return Save7(clip,Phase7Dir+"/"+clip.name+".anim");
  }
- static T Save7<T>(T value,string path) where T:UnityEngine.Object{var old=AssetDatabase.LoadAssetAtPath<T>(path);if(old){EditorUtility.CopySerialized(value,old);UnityEngine.Object.DestroyImmediate(value);EditorUtility.SetDirty(old);return old;}AssetDatabase.CreateAsset(value,path);return value;}
+ static T Save7<T>(T value,string path) where T:UnityEngine.Object{var old=AssetDatabase.LoadAssetAtPath<T>(WeaponAssetLocations.Resolve(path));if(old){EditorUtility.CopySerialized(value,old);UnityEngine.Object.DestroyImmediate(value);EditorUtility.SetDirty(old);return old;}AssetDatabase.CreateAsset(value,WeaponAssetLocations.Resolve(path));return value;}
  static AnimatorOverrideController Controller7(Spec s,AnimatorController source,bool tp){
   string path=Phase7Dir+"/"+s.Id+(tp?"_TP":"_FP")+".controller";
-  if(!AssetDatabase.LoadAssetAtPath<AnimatorController>(path)&&!AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(source),path))throw new InvalidOperationException(path);
-  var ctl=AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
+  if(!AssetDatabase.LoadAssetAtPath<AnimatorController>(WeaponAssetLocations.Resolve(path))&&!AssetDatabase.CopyAsset(WeaponAssetLocations.Resolve(AssetDatabase.GetAssetPath(source)),WeaponAssetLocations.Resolve(path)))throw new InvalidOperationException(path);
+  var ctl=AssetDatabase.LoadAssetAtPath<AnimatorController>(WeaponAssetLocations.Resolve(path));
   if(!tp)for(int i=ctl.layers.Length-1;i>=0;i--)if(new[]{"HandGunADD","NoAmmoADD","WigglesRunning","WigglesCrouching","Transition"}.Contains(ctl.layers[i].name))ctl.RemoveLayer(i);
   float interval=s.Burst?s.BurstShotInterval:s.FireInterval;var c=tp?s.TP:s.FP;
   foreach(var layer in ctl.layers){
@@ -211,8 +211,8 @@ public static partial class CompleteWeaponsIntegrationBuilder
  }
  static AnimatorController Parts7(Spec s,RuntimeAnimatorController original,bool tp){
   string path=Phase7Dir+"/"+s.Id+(tp?"_TPParts":"_FPParts")+".controller";
-  if(!AssetDatabase.LoadAssetAtPath<AnimatorController>(path)&&!AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(original),path))throw new InvalidOperationException(path);
-  var ctl=AssetDatabase.LoadAssetAtPath<AnimatorController>(path);var sm=ctl.layers[0].stateMachine;
+  if(!AssetDatabase.LoadAssetAtPath<AnimatorController>(WeaponAssetLocations.Resolve(path))&&!AssetDatabase.CopyAsset(WeaponAssetLocations.Resolve(AssetDatabase.GetAssetPath(original)),WeaponAssetLocations.Resolve(path)))throw new InvalidOperationException(path);
+  var ctl=AssetDatabase.LoadAssetAtPath<AnimatorController>(WeaponAssetLocations.Resolve(path));var sm=ctl.layers[0].stateMachine;
   var idle=sm.states.First(st=>st.state.name=="Idle").state;idle.motion=FindEmbeddedClip(AssetDatabase.GetAssetPath(s.ModelAsset),"_Ref_Pose");
   if(s.Id=="Sniper01"){StripMountCurves7(s,ctl,tp);EditorUtility.SetDirty(ctl);return ctl;}
   var slide=FindEmbeddedClip(AssetDatabase.GetAssetPath(s.ModelAsset),"A_WEP_"+s.Model.Substring(3)+"_Slide_Back_Pose");
