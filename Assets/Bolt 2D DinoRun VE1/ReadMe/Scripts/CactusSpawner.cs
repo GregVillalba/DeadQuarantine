@@ -5,37 +5,53 @@ public class CactusSpawner : MonoBehaviour
     [Header("Prefabs de Cactus")]
     [SerializeField] private GameObject[] cactusPrefabs;
 
-    [Header("Tiempos de Generación (Segundos)")]
-    [SerializeField] private float minSpawnTime = 1.8f;
-    [SerializeField] private float maxSpawnTime = 3.5f;
+    [Header("Velocidad (la controla el spawner)")]
+    [SerializeField] private float cactusSpeed = 6f;
+
+    [Header("Separación entre cactus (unidades de mundo)")]
+    [Tooltip("Distancia mínima entre un cactus y el siguiente. Tiene que ser mayor que lo que recorrés en un salto.")]
+    [SerializeField] private float minGap = 12f;
+    [SerializeField] private float maxGap = 19f;
 
     [Header("Punto de Aparición")]
     [SerializeField] private float spawnX = 12f;
     [SerializeField] private float groundY = -1.8f; // Ajustá este valor a la altura de tu suelo
 
-    private float timer;
-    private float nextSpawnTime;
+    [Header("Gracia inicial")]
+    [SerializeField] private float initialGraceTime = 1.0f;
+
+    private float distanceTraveled;
+    private float nextGap;
+    private float graceTimer;
     private DinoPlayer dino;
 
     void Start()
     {
         dino = Object.FindFirstObjectByType<DinoPlayer>();
-        SetNextSpawnTime();
-
-        // Dar 2 segundos de gracia al inicio antes de tirar el primer obstáculo
-        timer = -1.0f;
+        SetNextGap();
+        // Arranca "lleno" para que el primer cactus salga tras la gracia inicial
+        distanceTraveled = nextGap;
+        graceTimer = initialGraceTime;
     }
 
     void Update()
     {
         if (dino == null || !dino.isGameStarted || dino.isGameOver) return;
 
-        timer += Time.deltaTime;
-        if (timer >= nextSpawnTime)
+        if (graceTimer > 0f)
+        {
+            graceTimer -= Time.deltaTime;
+            return;
+        }
+
+        // Cuánto "avanzó el mundo" desde el último cactus
+        distanceTraveled += cactusSpeed * Time.deltaTime;
+
+        if (distanceTraveled >= nextGap)
         {
             SpawnCactus();
-            timer = 0f;
-            SetNextSpawnTime();
+            distanceTraveled = 0f;
+            SetNextGap();
         }
     }
 
@@ -48,16 +64,18 @@ public class CactusSpawner : MonoBehaviour
 
         GameObject cactus = Instantiate(cactusPrefabs[randomIndex], spawnPos, Quaternion.identity);
 
-        // Asegurar que tenga el script de movimiento
         CactusMove moveScript = cactus.GetComponent<CactusMove>();
         if (moveScript == null)
         {
             moveScript = cactus.AddComponent<CactusMove>();
         }
+
+        // Misma velocidad para todos: evita que uno alcance a otro
+        moveScript.SetSpeed(cactusSpeed);
     }
 
-    void SetNextSpawnTime()
+    void SetNextGap()
     {
-        nextSpawnTime = Random.Range(minSpawnTime, maxSpawnTime);
+        nextGap = Random.Range(minGap, maxGap);
     }
 }

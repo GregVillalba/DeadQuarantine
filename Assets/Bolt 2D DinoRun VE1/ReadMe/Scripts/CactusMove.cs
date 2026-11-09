@@ -1,12 +1,39 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class CactusMove : MonoBehaviour
 {
+    // Registro de cactus activos: el dino lo usa para calcular el choque
+    public static readonly List<CactusMove> Activos = new List<CactusMove>();
+
     [SerializeField] private float speed = 6f;
     [SerializeField] private float destroyX = -12f;
 
+    public Collider2D ColliderCactus { get; private set; }
+
     private DinoPlayer dino;
     private bool scored = false;
+
+    // El spawner define la velocidad para que todos los cactus sean consistentes
+    public void SetSpeed(float newSpeed)
+    {
+        speed = newSpeed;
+    }
+
+    void Awake()
+    {
+        ColliderCactus = GetComponentInChildren<Collider2D>();
+    }
+
+    void OnEnable()
+    {
+        Activos.Add(this);
+    }
+
+    void OnDisable()
+    {
+        Activos.Remove(this);
+    }
 
     void Start()
     {
