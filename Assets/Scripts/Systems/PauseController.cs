@@ -105,7 +105,7 @@ public class PauseController : NetworkBehaviour
     public NetworkVariable<bool> EnMinijuegoNet = new NetworkVariable<bool>(
         false,
         NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Owner);
+        NetworkVariableWritePermission.Server);
 
     private void Awake()
     {
@@ -186,7 +186,7 @@ public class PauseController : NetworkBehaviour
 
         if (minijuegoActivo && IsOwner && IsSpawned)
         {
-            EnMinijuegoNet.Value = false;
+            SolicitarEstadoMinijuego(false);
         }
     }
 
@@ -200,8 +200,7 @@ public class PauseController : NetworkBehaviour
 
         minijuegoActivo = true;
 
-        if (IsSpawned)
-            EnMinijuegoNet.Value = true;
+        SolicitarEstadoMinijuego(true);
 
         // Ocultar el HUD completo en la pantalla
         if (hud != null)
@@ -229,8 +228,7 @@ public class PauseController : NetworkBehaviour
 
         minijuegoActivo = false;
 
-        if (IsSpawned)
-            EnMinijuegoNet.Value = false;
+        SolicitarEstadoMinijuego(false);
 
         // Volver a mostrar el HUD al salir
         if (hud != null)
@@ -241,6 +239,23 @@ public class PauseController : NetworkBehaviour
 
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
+    }
+
+    private void SolicitarEstadoMinijuego(bool activo)
+    {
+        if (!IsSpawned)
+            return;
+
+        if (IsServer)
+            EnMinijuegoNet.Value = activo;
+        else
+            CambiarEstadoMinijuegoServerRpc(activo);
+    }
+
+    [ServerRpc]
+    private void CambiarEstadoMinijuegoServerRpc(bool activo)
+    {
+        EnMinijuegoNet.Value = activo;
     }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
