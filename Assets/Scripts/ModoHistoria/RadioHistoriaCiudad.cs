@@ -43,9 +43,6 @@ public class RadioHistoriaCiudad : NetworkBehaviour
             "[Radio] Recogida confirmada. Activando detector para cliente " +
             clientId
         );
-
-        // Se usa el gestor, no la radio que acaba de despawnearse.
-        gestor.ActivarDetectorSenal(clientId);
     }
 
     public void DespawnearRadio()

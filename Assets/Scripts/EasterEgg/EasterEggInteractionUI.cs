@@ -141,30 +141,49 @@ public class EasterEggInteractionUI : MonoBehaviour
     // =========================================================
 
     private void BuscarEasterEgg()
-{
-    Ray ray = new Ray(
-        playerCamera.transform.position,
-        playerCamera.transform.forward
-    );
-
-    if (Physics.Raycast(
-        ray,
-        out RaycastHit hit,
-        interactRange,
-        Physics.DefaultRaycastLayers,
-        QueryTriggerInteraction.Collide))
     {
-        EasterEgg egg = hit.collider.GetComponentInParent<EasterEgg>();
+        Ray ray = new Ray(
+            playerCamera.transform.position,
+            playerCamera.transform.forward
+        );
 
-        if (egg != null && egg.PuedeMostrarCartel())
+        RaycastHit[] hits = Physics.RaycastAll(
+            ray,
+            interactRange,
+            Physics.DefaultRaycastLayers,
+            QueryTriggerInteraction.Collide
+        );
+
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+        foreach (RaycastHit hit in hits)
         {
-            Mostrar();
-            return;
-        }
-    }
+            EasterEgg egg = hit.collider.GetComponentInParent<EasterEgg>();
+            if (egg != null)
+            {
+                if (egg.PuedeMostrarCartel())
+                {
+                    Mostrar();
+                    return;
+                }
 
-    Ocultar();
-}
+                continue;
+            }
+
+            // Triggers de volumen, sonido o navegación no deben tapar el
+            // objeto. Los colliders sólidos sí bloquean la interacción.
+            if (hit.collider.isTrigger)
+                continue;
+
+            // Ignora colliders pertenecientes al propio jugador.
+            if (hit.collider.transform.IsChildOf(transform.root))
+                continue;
+
+            break;
+        }
+
+        Ocultar();
+    }
 
     // =========================================================
     // MOSTRAR

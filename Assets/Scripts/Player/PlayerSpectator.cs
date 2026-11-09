@@ -617,18 +617,28 @@ public class PlayerSpectator : NetworkBehaviour
             }
         }
 
-        targetPlayer =
-            closestPlayer;
+        bool cambioObjetivo = targetPlayer != closestPlayer;
+        targetPlayer = closestPlayer;
 
-        if (targetPlayer != null)
+        if (targetPlayer != null && cambioObjetivo)
         {
+            orbitYaw = targetPlayer.eulerAngles.y;
+            orbitPitch = 15f;
+            if (spectatorCamera != null)
+            {
+                Vector3 pivote = targetPlayer.position + Vector3.up * orbitHeight;
+                Vector3 posicion = pivote +
+                    Quaternion.Euler(orbitPitch, orbitYaw, 0f) * Vector3.back * orbitDistance;
+                spectatorCamera.SetPositionAndRotation(
+                    posicion, Quaternion.LookRotation(pivote - posicion));
+            }
             Debug.Log(
                 "[PlayerSpectator] " +
                 "Espectando a: " +
                 targetPlayer.name
             );
         }
-        else
+        else if (cambioObjetivo)
         {
             Debug.LogWarning(
                 "[PlayerSpectator] " +
@@ -749,16 +759,19 @@ public class PlayerSpectator : NetworkBehaviour
 
         float finalDistance = orbitDistance;
 
-        if (Physics.SphereCast(
-                pivot,
-                collisionRadius,
-                desiredDirection,
-                out RaycastHit hit,
-                orbitDistance,
-                collisionMask,
-                QueryTriggerInteraction.Ignore))
+        RaycastHit[] impactos = Physics.SphereCastAll(
+            pivot, collisionRadius, desiredDirection, orbitDistance,
+            collisionMask, QueryTriggerInteraction.Ignore);
+        foreach (RaycastHit hit in impactos)
         {
-            finalDistance = Mathf.Clamp(hit.distance, minCollisionDistance, orbitDistance);
+            if (hit.collider.transform.IsChildOf(targetPlayer) ||
+                hit.collider.transform.IsChildOf(transform) ||
+                hit.collider.GetComponentInParent<PlayerHealth>() != null ||
+                hit.collider.GetComponentInParent<ZombieHealth>() != null)
+                continue;
+
+            finalDistance = Mathf.Min(finalDistance,
+                Mathf.Clamp(hit.distance, minCollisionDistance, orbitDistance));
         }
 
         Vector3 finalPosition = pivot + desiredDirection * finalDistance;

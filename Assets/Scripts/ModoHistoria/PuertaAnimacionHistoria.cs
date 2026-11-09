@@ -7,8 +7,7 @@ public class PuertaAnimacionHistoria : MonoBehaviour
 {
     [SerializeField] private Animator animator;
 
-    [Tooltip("Colliders que tapan el hueco de la puerta mientras está cerrada (ej. el BoxCollider de " +
-             "\"Tunnel Window wall001\"). Se desactivan al terminar de abrirse para poder cruzarla.")]
+    [Tooltip("Colliders que tapan el hueco de la puerta mientras está cerrada. Se desactivan al terminar de abrirse; MuroInvisible bloquea el corredor de salida.")]
     [SerializeField] private Collider[] collidersBloqueoPaso;
 
     private bool animacionIniciada;
@@ -20,6 +19,26 @@ public class PuertaAnimacionHistoria : MonoBehaviour
         Animator.StringToHash("Base Layer.abrirPuerta");
 
     public bool AnimacionFinalizada => animacionFinalizada;
+
+    public Vector3 DireccionHaciaSalida
+    {
+        get
+        {
+            if (collidersBloqueoPaso != null &&
+                collidersBloqueoPaso.Length > 0 &&
+                collidersBloqueoPaso[0] is BoxCollider caja)
+            {
+                Vector3 normal = caja.size.x <= caja.size.z
+                    ? caja.transform.right
+                    : caja.transform.forward;
+                if (Vector3.Dot(normal, transform.forward) < 0f)
+                    normal = -normal;
+                return normal.normalized;
+            }
+
+            return transform.forward;
+        }
+    }
 
     private void Awake()
     {

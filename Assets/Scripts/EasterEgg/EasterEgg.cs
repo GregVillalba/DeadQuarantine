@@ -21,6 +21,8 @@ public class EasterEgg : NetworkBehaviour
 
     private PlayerControls controls;
     private Camera localPlayerCamera;
+    private bool encontradoPorGestorHistoria;
+    private int saludFallback;
 
     private NetworkVariable<int> currentHealthNetwork =
         new NetworkVariable<int>(
@@ -42,6 +44,7 @@ public class EasterEgg : NetworkBehaviour
 
     private void Awake()
     {
+        saludFallback = maxHealth;
         controls = new PlayerControls();
 
         ConfiguracionesJuego.CargarRebinds(controls.asset);
@@ -196,31 +199,34 @@ private void Update()
         if (eggCollider == null || !eggCollider.enabled)
             return false;
 
-        Vector3 origen = localPlayerCamera.transform.position;
+        Ray ray = new Ray(
+            localPlayerCamera.transform.position,
+            localPlayerCamera.transform.forward
+        );
 
-        Vector3 direccion = eggCollider.bounds.center - origen;
-
-        float distancia = direccion.magnitude;
-
-        if (distancia > interactionDistance)
-            return false;
-
-        direccion.Normalize();
-
-        Ray ray = new Ray(origen, direccion);
-
-        if (!Physics.Raycast(
+        RaycastHit[] hits = Physics.RaycastAll(
             ray,
-            out RaycastHit hit,
-            interactionDistance))
+            interactionDistance,
+            Physics.DefaultRaycastLayers,
+            QueryTriggerInteraction.Collide
+        );
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+        foreach (RaycastHit hit in hits)
         {
+            if (hit.collider.transform.IsChildOf(transform.root) ||
+                hit.collider.isTrigger)
+                continue;
+
+            EasterEgg egg = hit.collider.GetComponentInParent<EasterEgg>();
+            if (egg != null)
+                return egg == this;
+
+            // Un objeto sólido entre la cámara y el huevo bloquea la interacción.
             return false;
         }
 
-        EasterEgg egg =
-            hit.collider.GetComponentInParent<EasterEgg>();
-
-        return egg == this;
+        return false;
     }
 
     private void ActivarPorInteraccion()
@@ -235,7 +241,10 @@ private void Update()
         if (NetworkManager.Singleton != null &&
             NetworkManager.Singleton.IsListening)
         {
-            ActivarRpc();
+            if (IsSpawned)
+                ActivarRpc();
+            else if (GestorHistoriaPartida.Instance != null)
+                GestorHistoriaPartida.Instance.SolicitarActivacionEasterEgg(easterEggId, 0, true);
             return;
         }
 
@@ -287,7 +296,10 @@ private void Update()
         if (NetworkManager.Singleton != null &&
             NetworkManager.Singleton.IsListening)
         {
-            TakeDamageRpc(amount);
+            if (IsSpawned)
+                TakeDamageRpc(amount);
+            else if (GestorHistoriaPartida.Instance != null)
+                GestorHistoriaPartida.Instance.SolicitarActivacionEasterEgg(easterEggId, amount, false);
             return;
         }
 
@@ -435,7 +447,7 @@ private void Update()
     // REGISTRO PERSISTENTE DEL EASTER EGG
     // =========================================================
 
-    private void RegistrarEasterEggEnLogros()
+    public void RegistrarEasterEggEnLogros()
     {
         if (!ValidarId())
             return;
@@ -516,9 +528,42 @@ private void Update()
 
     private bool EstaEncontrado()
     {
-        return foundNetwork.Value;
+        return encontradoPorGestorHistoria || foundNetwork.Value;
     }
 
+    public string EasterEggId => easterEggId;
+    public int PuntosRecompensa => rewardPoints;
+    public float InteractionDistance => interactionDistance;
+
+    public bool ProcesarSolicitudDesdeGestorHistoria(
+        int amount,
+        bool porInteraccion)
+    {
+        if (NetworkManager.Singleton == null ||
+            !NetworkManager.Singleton.IsServer ||
+            IsSpawned ||
+            EstaEncontrado())
+            return false;
+
+        if (!porInteraccion)
+        {
+            saludFallback -= Mathf.Max(1, amount);
+            if (saludFallback > 0)
+                return false;
+        }
+
+        encontradoPorGestorHistoria = true;
+        saludFallback = 0;
+        AplicarEstadoActual();
+        return true;
+    }
+
+    public void MarcarEncontradoPorGestorHistoria()
+    {
+        encontradoPorGestorHistoria = true;
+        saludFallback = 0;
+        AplicarEstadoActual();
+    }
     private void OnHealthChanged(
         int previousValue,
         int newValue)
@@ -536,7 +581,7 @@ private void Update()
 
     private void AplicarEstadoActual()
     {
-        if (foundNetwork.Value)
+        if (EstaEncontrado())
         {
             OcultarPrompt();
 

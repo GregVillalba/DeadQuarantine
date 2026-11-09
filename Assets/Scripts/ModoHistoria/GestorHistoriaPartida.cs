@@ -2,6 +2,7 @@
 using UnityEngine;
 using Unity.Netcode;
 using TMPro;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
@@ -17,16 +18,33 @@ public class GestorHistoriaPartida : NetworkBehaviour
     private const int HistoriaCiudadCompletada = 7;
     private const int EnZonaSegura = 8;
     private const int MisionFinalCabana = 9;
+    private const int MansionResistir = 1;
+    private const int MansionEsperandoAlfa = 2;
+    private const int MansionHelipuerto = 3;
+    private const int MansionCompletada = 4;
     private const int IrAlCaminoSalida = 10;
+    private const int MinJugadoresMultiplayer = 2;
 
     private bool animacionAperturaEjecutada;
     private bool misionCiudadInicializada;
+    // Indica si el jugador local ya confirmó el avance.
+    private bool localConfirmoAvanceZonaSegura;
 
     private readonly HashSet<ulong> jugadoresEnZonaSegura =
+        new HashSet<ulong>();
+    private readonly HashSet<ulong> jugadoresConfirmaronAvanceZonaSegura =
+        new HashSet<ulong>();
+    private readonly HashSet<ulong> jugadoresEnTriggerLaboratorio =
+        new HashSet<ulong>();
+    private readonly HashSet<ulong> jugadoresEnTriggerSalidaCiudad =
+        new HashSet<ulong>();
+    private readonly HashSet<ulong> clientesConCortinaTransicionVisible =
         new HashSet<ulong>();
 
     private bool transicionSafeZone1Iniciada;
     private bool transicionSafeZone2Iniciada;
+    private bool transicionSafeZone1MultiplayerIniciada;
+    private bool transicionZonaSeguraMultiplayerIniciada;
 
     [Header("Tarjeta de acceso")]
     [SerializeField] private GameObject tarjetaPrefab;
@@ -46,6 +64,10 @@ public class GestorHistoriaPartida : NetworkBehaviour
     [Header("Salida de Ciudad")]
     [SerializeField] private Transform puntoSalidaCiudad;
     [SerializeField] private float distanciaActivacionSalidaCiudad = 6f;
+
+    [Header("Trigger de salida del Laboratorio")]
+    [SerializeField] private Transform puntoTriggerLaboratorio;
+    [SerializeField] private float distanciaActivacionTriggerLaboratorio = 7f;
 
     [Header("HUD local")]
     [SerializeField] private TMP_Text textoTituloObjetivo;
@@ -85,6 +107,30 @@ public class GestorHistoriaPartida : NetworkBehaviour
             NetworkVariableWritePermission.Server
         );
 
+    public NetworkVariable<int> ConfirmacionesZonaSeguraNetwork =
+        new NetworkVariable<int>(
+            0,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+
+    public NetworkVariable<int> JugadoresZonaSeguraNetwork =
+        new NetworkVariable<int>(
+            2,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+
+    public NetworkVariable<int> EtapaMansionNetwork =
+        new NetworkVariable<int>(0,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server);
+
+    public NetworkVariable<int> TemporizadorMansionNetwork =
+        new NetworkVariable<int>(0,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server);
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -103,9 +149,93 @@ public class GestorHistoriaPartida : NetworkBehaviour
         base.OnNetworkSpawn();
 
         EstadoMisionNetwork.OnValueChanged += AlCambiarEstadoMision;
+        EtapaMansionNetwork.OnValueChanged += AlCambiarEtapaMansion;
+        TemporizadorMansionNetwork.OnValueChanged += AlCambiarTemporizadorMansion;
         PuertaAbiertaNetwork.OnValueChanged += AlCambiarEstadoPuerta;
 
+        ConfirmacionesZonaSeguraNetwork.OnValueChanged +=
+    AlCambiarConfirmacionesZonaSegura;
+
+JugadoresZonaSeguraNetwork.OnValueChanged +=
+    AlCambiarConfirmacionesZonaSegura;
+
+        if (IsServer && NetworkManager.Singleton != null)
+        {
+            NetworkManager.Singleton.OnClientConnectedCallback += AlConectarJugadorZonaSegura;
+            NetworkManager.Singleton.OnClientDisconnectCallback += AlDesconectarJugadorZonaSegura;
+        }
+
         ActualizarTextoObjetivo();
+
+        // El mapa multiplayer se carga como escena aditiva después de esta escena.
+        GestorEscenariosPartida gestorEscenarios = GestorEscenariosPartida.Instance;
+        if (gestorEscenarios != null && gestorEscenarios.UsaEscenasAditivasMultiplayer)
+        {
+            gestorEscenarios.EventoMapaMultiplayerListo += AlCargarMapaMultiplayer;
+            if (gestorEscenarios.MapaMultiplayerListo)
+                AlCargarMapaMultiplayer();
+            return;
+        }
+
+        InicializarMisionEscenarioActual();
+    }
+
+    private void AlCargarMapaMultiplayer()
+    {
+        VincularReferenciasEscenarioMultiplayer();
+
+        localConfirmoAvanceZonaSegura = false;
+        string mapaActual = SceneManager.GetActiveScene().name;
+        jugadoresEnTriggerLaboratorio.Clear();
+        jugadoresEnTriggerSalidaCiudad.Clear();
+
+        if (mapaActual == "MP_Laboratorio")
+            transicionSafeZone1MultiplayerIniciada = false;
+
+        if (mapaActual == "MP_ZonaSegura1" || mapaActual == "MP_ZonaSegura2")
+        {
+            if (IsServer)
+            {
+                EstadoMisionNetwork.Value = EnZonaSegura;
+                ReiniciarConfirmacionesZonaSegura();
+            }
+            if (!IsServer)
+                AplicarEstadoPuerta(PuertaAbiertaNetwork.Value);
+            return;
+        }
+
+        if (IsServer)
+        {
+            InicializarMisionEscenarioActual();
+            if (mapaActual == "MP_Ciudad")
+            {
+                if (RoundManager.Instance != null)
+                {
+                    RoundManager.Instance.ActualizarSpawnPointsDelEscenario();
+                    RoundManager.Instance.EliminarZombiesHistoria();
+                    RoundManager.Instance.ReanudarSpawnsHistoria();
+                }
+                IniciarMisionCiudad();
+            }
+            else if (mapaActual == "MP_Cabana")
+            {
+                if (RoundManager.Instance != null)
+                {
+                    RoundManager.Instance.ActualizarSpawnPointsDelEscenario();
+                    RoundManager.Instance.EliminarZombiesHistoria();
+                }
+                IniciarMisionCabana();
+                GestorMansionHistoria mansion = FindAnyObjectByType<GestorMansionHistoria>();
+                if (mansion != null)
+                    mansion.IniciarMision();
+            }
+        }
+        else
+            AplicarEstadoPuerta(PuertaAbiertaNetwork.Value);
+    }
+
+    private void InicializarMisionEscenarioActual()
+    {
 
         if (!IsServer)
         {
@@ -146,13 +276,252 @@ public class GestorHistoriaPartida : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        GestorEscenariosPartida gestorEscenarios = GestorEscenariosPartida.Instance;
+        if (gestorEscenarios != null)
+            gestorEscenarios.EventoMapaMultiplayerListo -= AlCargarMapaMultiplayer;
+
+        if (IsServer && NetworkManager.Singleton != null)
+        {
+            NetworkManager.Singleton.OnClientConnectedCallback -= AlConectarJugadorZonaSegura;
+            NetworkManager.Singleton.OnClientDisconnectCallback -= AlDesconectarJugadorZonaSegura;
+        }
+
         EstadoMisionNetwork.OnValueChanged -= AlCambiarEstadoMision;
+        EtapaMansionNetwork.OnValueChanged -= AlCambiarEtapaMansion;
+        TemporizadorMansionNetwork.OnValueChanged -= AlCambiarTemporizadorMansion;
         PuertaAbiertaNetwork.OnValueChanged -= AlCambiarEstadoPuerta;
 
         if (Instance == this)
             Instance = null;
 
+        ConfirmacionesZonaSeguraNetwork.OnValueChanged -=
+             AlCambiarConfirmacionesZonaSegura;
+
+        JugadoresZonaSeguraNetwork.OnValueChanged -=
+            AlCambiarConfirmacionesZonaSegura;
         base.OnNetworkDespawn();
+    }
+
+  public void SolicitarAvanceDesdeZonaSegura()
+{
+    if (!IsSpawned || !EsZonaSeguraMultiplayerActiva())
+        return;
+
+    // Evita enviar varias confirmaciones desde el mismo jugador.
+    if (localConfirmoAvanceZonaSegura)
+        return;
+
+    localConfirmoAvanceZonaSegura = true;
+
+    // Actualización inmediata del HUD local.
+    ActualizarTextoObjetivo();
+
+    // El servidor registra la confirmación.
+    ConfirmarAvanceZonaSeguraRpc();
+}
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void ConfirmarAvanceZonaSeguraRpc(RpcParams rpcParams = default)
+    {
+        if (!IsServer || NetworkManager.Singleton == null ||
+            !EsZonaSeguraMultiplayerActiva())
+            return;
+
+        ulong clientId = rpcParams.Receive.SenderClientId;
+        if (!NetworkManager.Singleton.ConnectedClients.ContainsKey(clientId))
+            return;
+
+        ActualizarCantidadJugadoresZonaSegura();
+        if (!jugadoresConfirmaronAvanceZonaSegura.Add(clientId))
+            return;
+
+        ConfirmacionesZonaSeguraNetwork.Value =
+            jugadoresConfirmaronAvanceZonaSegura.Count;
+
+        if (ConfirmacionesZonaSeguraNetwork.Value >=
+            Mathf.Max(MinJugadoresMultiplayer, JugadoresZonaSeguraNetwork.Value))
+            AvanzarAlSiguienteEscenarioDesdeZonaSegura();
+    }
+
+    private void ReiniciarConfirmacionesZonaSegura()
+    {
+        jugadoresConfirmaronAvanceZonaSegura.Clear();
+        transicionZonaSeguraMultiplayerIniciada = false;
+        ActualizarCantidadJugadoresZonaSegura();
+        ConfirmacionesZonaSeguraNetwork.Value = 0;
+    }
+
+    private void ActualizarCantidadJugadoresZonaSegura()
+    {
+        if (!IsServer || NetworkManager.Singleton == null ||
+            !EsZonaSeguraMultiplayerActiva())
+            return;
+
+        JugadoresZonaSeguraNetwork.Value =
+            NetworkManager.Singleton.ConnectedClientsList.Count;
+    }
+
+    private void AlConectarJugadorZonaSegura(ulong clientId)
+    {
+        ActualizarCantidadJugadoresZonaSegura();
+    }
+
+    private void AlDesconectarJugadorZonaSegura(ulong clientId)
+    {
+        jugadoresEnTriggerLaboratorio.Remove(clientId);
+        jugadoresEnTriggerSalidaCiudad.Remove(clientId);
+
+        if (!EsZonaSeguraMultiplayerActiva())
+            return;
+
+        jugadoresConfirmaronAvanceZonaSegura.Remove(clientId);
+        ActualizarCantidadJugadoresZonaSegura();
+        ConfirmacionesZonaSeguraNetwork.Value =
+            jugadoresConfirmaronAvanceZonaSegura.Count;
+
+        if (ConfirmacionesZonaSeguraNetwork.Value >=
+            Mathf.Max(MinJugadoresMultiplayer, JugadoresZonaSeguraNetwork.Value))
+            AvanzarAlSiguienteEscenarioDesdeZonaSegura();
+    }
+
+    private bool EsZonaSeguraMultiplayerActiva()
+    {
+        string escena = SceneManager.GetActiveScene().name;
+        return escena == "MP_ZonaSegura1" || escena == "MP_ZonaSegura2";
+    }
+
+    private void AvanzarAlSiguienteEscenarioDesdeZonaSegura()
+    {
+        if (!IsServer || transicionZonaSeguraMultiplayerIniciada ||
+            !EsZonaSeguraMultiplayerActiva())
+            return;
+
+        GestorEscenariosPartida escenarios = GestorEscenariosPartida.Instance;
+        if (escenarios == null)
+        {
+            Debug.LogError("[Historia] No se encontró el gestor para avanzar desde la zona segura.");
+            return;
+        }
+
+        transicionZonaSeguraMultiplayerIniciada = true;
+        ConfiguracionPartidaSeleccionada.Escenario siguiente =
+            SceneManager.GetActiveScene().name == "MP_ZonaSegura1"
+                ? ConfiguracionPartidaSeleccionada.Escenario.Ciudad
+                : ConfiguracionPartidaSeleccionada.Escenario.Cabana;
+
+        if (RoundManager.Instance != null)
+            RoundManager.Instance.EliminarZombiesHistoria();
+
+        StartCoroutine(ActivarEscenarioConCortina(siguiente));
+    }
+
+    private void VincularReferenciasEscenarioMultiplayer()
+    {
+        GestorEscenariosPartida escenarios = GestorEscenariosPartida.Instance;
+        if (escenarios == null || !escenarios.UsaEscenasAditivasMultiplayer)
+            return;
+
+        Scene escena = SceneManager.GetActiveScene();
+        if (!escena.IsValid() || !escena.isLoaded)
+            return;
+
+        foreach (GameObject raiz in escena.GetRootGameObjects())
+        {
+            foreach (Transform candidato in raiz.GetComponentsInChildren<Transform>(true))
+            {
+                if (puntoSpawnTarjeta == null && candidato.name == "spawnCard")
+                    puntoSpawnTarjeta = candidato;
+                if (puntoSpawnRadio == null && candidato.name == "Punto_Radio_Comisaria")
+                    puntoSpawnRadio = candidato;
+                if (puntoSalidaCiudad == null && candidato.name == "TriggerContinuarHistoria")
+                    puntoSalidaCiudad = candidato;
+                if (puntoTriggerLaboratorio == null &&
+                    candidato.name == "TriggerSafeZoneLaboratorio")
+                    puntoTriggerLaboratorio = candidato;
+            }
+
+            if (animacionPuerta == null)
+                animacionPuerta = raiz.GetComponentInChildren<PuertaAnimacionHistoria>(true);
+            if (puntoLectorPuerta == null)
+            {
+                LectorTarjetaHistoria lector = raiz.GetComponentInChildren<LectorTarjetaHistoria>(true);
+                if (lector != null)
+                    puntoLectorPuerta = lector.transform;
+            }
+        }
+
+        if (SceneManager.GetActiveScene().name == "MP_Laboratorio" &&
+            puntoTriggerLaboratorio == null)
+        {
+            CrearTriggerLaboratorioMultiplayer();
+        }
+
+        Debug.Log("[Historia MP] Referencias del escenario vinculadas. " +
+            $"Tarjeta={puntoSpawnTarjeta != null}, lector={puntoLectorPuerta != null}, " +
+            $"puerta={animacionPuerta != null}, radio={puntoSpawnRadio != null}, " +
+            $"salida={puntoSalidaCiudad != null}, " +
+            $"triggerLaboratorio={puntoTriggerLaboratorio != null}.", this);
+    }
+
+    private void CrearTriggerLaboratorioMultiplayer()
+    {
+        if (animacionPuerta == null)
+        {
+            Debug.LogError(
+                "[Historia MP] No se encontró PuertaAnimacionHistoria para " +
+                "crear el trigger de SafeZone1.",
+                this
+            );
+            return;
+        }
+
+        Transform puerta = animacionPuerta.transform;
+        Vector3 direccionSalida = animacionPuerta.DireccionHaciaSalida;
+        GameObject objetoTrigger = new GameObject(
+            "TriggerSafeZoneLaboratorio"
+        );
+        objetoTrigger.transform.SetPositionAndRotation(
+            puerta.position + direccionSalida * 1.5f,
+            Quaternion.LookRotation(direccionSalida, Vector3.up)
+        );
+
+        BoxCollider caja = objetoTrigger.AddComponent<BoxCollider>();
+        caja.isTrigger = true;
+        caja.size = new Vector3(5f, 3f, 4f);
+
+        ActivadorSalidaCiudadHistoria activador =
+            objetoTrigger.AddComponent<ActivadorSalidaCiudadHistoria>();
+        activador.ConfigurarComoTriggerLaboratorio();
+
+        puntoTriggerLaboratorio = objetoTrigger.transform;
+    }
+
+    private void Update()
+    {
+        if (!IsServer || transicionSafeZone1MultiplayerIniciada ||
+            !EsHistoriaLaboratorio() ||
+            SceneManager.GetActiveScene().name != "MP_Laboratorio" ||
+            EstadoMisionNetwork.Value != MisionCompletada ||
+            animacionPuerta == null || !animacionPuerta.AnimacionFinalizada ||
+            puntoTriggerLaboratorio == null || NetworkManager.Singleton == null)
+            return;
+
+        // Los jugadores pueden estar frente a la puerta antes de que termine
+        // la misión. La comprobación directa evita depender de OnTriggerEnter.
+        foreach (NetworkClient cliente in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            if (!JugadorDentroDelTrigger(
+                    cliente.ClientId,
+                    puntoTriggerLaboratorio,
+                    distanciaActivacionTriggerLaboratorio))
+                return;
+        }
+
+        if (NetworkManager.Singleton.ConnectedClientsList.Count < MinJugadoresMultiplayer)
+            return;
+
+        transicionSafeZone1MultiplayerIniciada = true;
+        StartCoroutine(TransicionarSafeZone1ConCortina());
     }
 
     private bool EsHistoriaLaboratorio()
@@ -211,6 +580,83 @@ public class GestorHistoriaPartida : NetworkBehaviour
         networkObject.Spawn(true);
     }
 
+    public void SolicitarActivacionEasterEgg(
+        string easterEggId,
+        int amount,
+        bool porInteraccion)
+    {
+        if (!IsSpawned || string.IsNullOrWhiteSpace(easterEggId))
+            return;
+
+        SolicitarActivacionEasterEggRpc(easterEggId, amount, porInteraccion);
+    }
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void SolicitarActivacionEasterEggRpc(
+        string easterEggId,
+        int amount,
+        bool porInteraccion,
+        RpcParams rpcParams = default)
+    {
+        if (!IsServer || NetworkManager.Singleton == null)
+            return;
+
+        ulong clientId = rpcParams.Receive.SenderClientId;
+        if (!NetworkManager.Singleton.ConnectedClients.TryGetValue(
+                clientId, out NetworkClient cliente) || cliente.PlayerObject == null)
+            return;
+
+        EasterEgg[] easterEggs =
+            FindObjectsByType<EasterEgg>(FindObjectsSortMode.None);
+
+        foreach (EasterEgg easterEgg in easterEggs)
+        {
+            if (easterEgg == null || easterEgg.EasterEggId != easterEggId ||
+                easterEgg.IsSpawned)
+                continue;
+
+            float distancia = Vector3.Distance(
+                cliente.PlayerObject.transform.position,
+                easterEgg.transform.position);
+            float distanciaMaxima = porInteraccion
+                ? easterEgg.InteractionDistance + 1.5f
+                : 100f;
+            if (distancia > distanciaMaxima)
+                return;
+
+            if (!easterEgg.ProcesarSolicitudDesdeGestorHistoria(amount, porInteraccion))
+                return;
+
+            PlayerScore score =
+                cliente.PlayerObject.GetComponentInChildren<PlayerScore>();
+            if (score != null)
+                score.SumarPuntos(easterEgg.PuntosRecompensa);
+
+            ActualizarEasterEggFallbackClientRpc(easterEggId, clientId);
+            return;
+        }
+    }
+
+    [ClientRpc]
+    private void ActualizarEasterEggFallbackClientRpc(
+        string easterEggId,
+        ulong clientId)
+    {
+        EasterEgg[] easterEggs =
+            FindObjectsByType<EasterEgg>(FindObjectsSortMode.None);
+
+        foreach (EasterEgg easterEgg in easterEggs)
+        {
+            if (easterEgg == null || easterEgg.EasterEggId != easterEggId ||
+                easterEgg.IsSpawned)
+                continue;
+
+            easterEgg.MarcarEncontradoPorGestorHistoria();
+            if (NetworkManager.Singleton != null &&
+                NetworkManager.Singleton.LocalClientId == clientId)
+                easterEgg.RegistrarEasterEggEnLogros();
+        }
+    }
     public void RegistrarHUDLocal(
         TMP_Text titulo,
         TMP_Text descripcion
@@ -306,15 +752,58 @@ public class GestorHistoriaPartida : NetworkBehaviour
             case EnZonaSegura:
                 textoTituloObjetivo.color = Color.green;
                 textoTituloObjetivo.text = "ZONA SEGURA";
-                textoDescripcionObjetivo.text =
-                    "Compra lo que necesites. Presiona ENTER para avanzar.";
+
+                if (EsZonaSeguraMultiplayerActiva() &&
+                    NetworkManager.Singleton != null &&
+                    NetworkManager.Singleton.ConnectedClientsIds.Count <
+                        MinJugadoresMultiplayer)
+                {
+                    textoDescripcionObjetivo.text =
+                        "Se necesitan al menos 2 jugadores conectados " +
+                        "para continuar. (" +
+                        NetworkManager.Singleton.ConnectedClientsIds.Count +
+                        "/2)";
+                }
+                else if (EsZonaSeguraMultiplayerActiva() &&
+                         localConfirmoAvanceZonaSegura)
+                {
+                    textoDescripcionObjetivo.text =
+                        "Esperá que todos estén listos. (" +
+                        ConfirmacionesZonaSeguraNetwork.Value +
+                        "/" +
+                        JugadoresZonaSeguraNetwork.Value +
+                        ")";
+                }
+                else
+                {
+                    textoDescripcionObjetivo.text =
+                        EsZonaSeguraMultiplayerActiva()
+                            ? "Compra lo que necesites. Presiona ENTER para continuar."
+                            : "Compra lo que necesites. Presiona ENTER para avanzar.";
+                }
+
                 break;
 
             case MisionFinalCabana:
-                textoTituloObjetivo.color = Color.white;
-                textoTituloObjetivo.text = "OBJETIVO FINAL";
-                textoDescripcionObjetivo.text =
-                    "Elimina al Zombie Jefe y espera la llegada del helicóptero.";
+                textoTituloObjetivo.color = EtapaMansionNetwork.Value >= MansionCompletada ? Color.green : Color.white;
+                textoTituloObjetivo.text = EtapaMansionNetwork.Value >= MansionCompletada ? "MISIÓN COMPLETADA" : "OBJETIVO FINAL";
+                switch (EtapaMansionNetwork.Value)
+                {
+                    case MansionEsperandoAlfa:
+                        textoDescripcionObjetivo.text = "Elimina al Zombie Alfa para poder escapar.";
+                        break;
+                    case MansionHelipuerto:
+                        textoDescripcionObjetivo.text = "Corre hacia el helipuerto y alcanza el punto de extracción.";
+                        break;
+                    case MansionCompletada:
+                        textoDescripcionObjetivo.text = "Lograste escapar de la mansión.";
+                        break;
+                    default:
+                        textoDescripcionObjetivo.text = TemporizadorMansionNetwork.Value > 0
+                            ? "Resiste hasta que aparezca el Zombie Alfa."
+                            : "Prepárate para enfrentarlo.";
+                        break;
+                }
                 break;
 
             default:
@@ -505,6 +994,241 @@ public class GestorHistoriaPartida : NetworkBehaviour
         return true;
     }
 
+    public void NotificarPresenciaEnTriggerHistoria(
+        bool esTriggerLaboratorio,
+        bool dentro)
+    {
+        if (!IsSpawned)
+            return;
+
+        ActualizarPresenciaTriggerHistoriaRpc(esTriggerLaboratorio, dentro);
+    }
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void ActualizarPresenciaTriggerHistoriaRpc(
+        bool esTriggerLaboratorio,
+        bool dentro,
+        RpcParams rpcParams = default)
+    {
+        if (!IsServer || NetworkManager.Singleton == null ||
+            !NetworkManager.Singleton.IsListening)
+        {
+            return;
+        }
+
+        ulong clientId = rpcParams.Receive.SenderClientId;
+        if (!NetworkManager.Singleton.ConnectedClients.ContainsKey(clientId))
+            return;
+
+        HashSet<ulong> jugadoresDentro;
+        Transform puntoTrigger;
+        float distancia;
+
+        if (esTriggerLaboratorio)
+        {
+            if (!EsHistoriaLaboratorio() ||
+                SceneManager.GetActiveScene().name != "MP_Laboratorio" ||
+                EstadoMisionNetwork.Value != MisionCompletada ||
+                animacionPuerta == null || !animacionPuerta.AnimacionFinalizada)
+            {
+                return;
+            }
+
+            jugadoresDentro = jugadoresEnTriggerLaboratorio;
+            puntoTrigger = puntoTriggerLaboratorio;
+            distancia = distanciaActivacionTriggerLaboratorio;
+        }
+        else
+        {
+            if (!EsHistoriaCiudad() ||
+                SceneManager.GetActiveScene().name != "MP_Ciudad" ||
+                EstadoMisionNetwork.Value != IrAlCaminoSalida)
+            {
+                return;
+            }
+
+            jugadoresDentro = jugadoresEnTriggerSalidaCiudad;
+            puntoTrigger = puntoSalidaCiudad;
+            distancia = distanciaActivacionSalidaCiudad;
+        }
+
+        if (dentro)
+        {
+            if (puntoTrigger == null ||
+                !JugadorDentroDelTrigger(clientId, puntoTrigger, distancia))
+            {
+                return;
+            }
+
+            jugadoresDentro.Add(clientId);
+            if (!TodosLosJugadoresConectadosEstanDentro(jugadoresDentro))
+                return;
+
+            if (esTriggerLaboratorio)
+            {
+                if (transicionSafeZone1MultiplayerIniciada)
+                    return;
+
+                transicionSafeZone1MultiplayerIniciada = true;
+                StartCoroutine(TransicionarSafeZone1ConCortina());
+            }
+            else
+            {
+                EstadoMisionNetwork.Value = HistoriaCiudadCompletada;
+            }
+        }
+        else
+        {
+            jugadoresDentro.Remove(clientId);
+        }
+    }
+
+    private bool TodosLosJugadoresConectadosEstanDentro(
+        HashSet<ulong> jugadoresDentro)
+    {
+        if (NetworkManager.Singleton == null)
+            return false;
+
+        int cantidadConectada =
+            NetworkManager.Singleton.ConnectedClientsList.Count;
+
+        if (cantidadConectada < MinJugadoresMultiplayer ||
+            cantidadConectada > NetworkBootstrap.MaxPlayersPerRoom)
+        {
+            return false;
+        }
+
+        foreach (NetworkClient cliente in
+                 NetworkManager.Singleton.ConnectedClientsList)
+        {
+            if (!jugadoresDentro.Contains(cliente.ClientId))
+                return false;
+        }
+
+        return true;
+    }
+
+    private bool JugadorDentroDelTrigger(
+        ulong clientId,
+        Transform puntoTrigger,
+        float distanciaFallback)
+    {
+        if (NetworkManager.Singleton == null ||
+            !NetworkManager.Singleton.ConnectedClients.TryGetValue(
+                clientId,
+                out NetworkClient cliente) ||
+            cliente.PlayerObject == null)
+        {
+            return false;
+        }
+
+        Collider colliderTrigger = puntoTrigger.GetComponent<Collider>();
+        if (colliderTrigger == null)
+        {
+            return JugadorCercaDelPunto(
+                clientId,
+                puntoTrigger.position,
+                distanciaFallback
+            );
+        }
+
+        Bounds limites = colliderTrigger.bounds;
+        limites.Expand(new Vector3(1f, 2f, 1f));
+        return limites.Contains(cliente.PlayerObject.transform.position);
+    }
+
+    private IEnumerator TransicionarSafeZone1ConCortina()
+    {
+        yield return MostrarCortinaYEsperarClientes();
+
+        if (!IsServer || GestorEscenariosPartida.Instance == null)
+        {
+            Debug.LogError(
+                "[Historia] No se pudo iniciar la transición a SafeZone1."
+            );
+            yield break;
+        }
+
+        EstadoMisionNetwork.Value = EnZonaSegura;
+        GestorEscenariosPartida.Instance.ActivarSafeZone1();
+    }
+
+    private IEnumerator ActivarEscenarioConCortina(
+        ConfiguracionPartidaSeleccionada.Escenario escenario)
+    {
+        yield return MostrarCortinaYEsperarClientes();
+
+        if (IsServer && GestorEscenariosPartida.Instance != null)
+            GestorEscenariosPartida.Instance.ActivarEscenario(escenario);
+    }
+
+    private IEnumerator EjecutarConCortina(System.Action accion)
+    {
+        yield return MostrarCortinaYEsperarClientes();
+        accion?.Invoke();
+    }
+
+    private IEnumerator MostrarCortinaYEsperarClientes()
+    {
+        clientesConCortinaTransicionVisible.Clear();
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+        {
+            // El anfitrión muestra la cortina localmente junto con el RPC.
+            clientesConCortinaTransicionVisible.Add(
+                NetworkManager.ServerClientId
+            );
+        }
+
+        MostrarCortinaTransicionClientRpc();
+
+        float tiempoEspera = 0f;
+        const float tiempoMaximoEspera = 3f;
+
+        while (!TodosLosClientesConfirmaronCortina() &&
+               tiempoEspera < tiempoMaximoEspera)
+        {
+            tiempoEspera += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        // Da un frame de render con la cortina antes de pedir el cambio de escena.
+        yield return new WaitForSecondsRealtime(0.1f);
+    }
+
+    private bool TodosLosClientesConfirmaronCortina()
+    {
+        if (NetworkManager.Singleton == null)
+            return true;
+
+        foreach (NetworkClient cliente in
+                 NetworkManager.Singleton.ConnectedClientsList)
+        {
+            if (!clientesConCortinaTransicionVisible.Contains(cliente.ClientId))
+                return false;
+        }
+
+        return true;
+    }
+
+    [ClientRpc]
+    private void MostrarCortinaTransicionClientRpc()
+    {
+        GameStartCurtain.MostrarCortinaTransicion();
+        ConfirmarCortinaTransicionListaRpc();
+    }
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void ConfirmarCortinaTransicionListaRpc(
+        RpcParams rpcParams = default)
+    {
+        if (!IsServer)
+            return;
+
+        clientesConCortinaTransicionVisible.Add(
+            rpcParams.Receive.SenderClientId
+        );
+    }
+
     private void AlCambiarEstadoPuerta(
         bool estadoAnterior,
         bool estadoNuevo
@@ -639,6 +1363,16 @@ public class GestorHistoriaPartida : NetworkBehaviour
                 ConfiguracionPartidaSeleccionada.Escenario.Ciudad;
     }
 
+    private bool EsEscenaHistoriaActiva()
+    {
+        if (SceneManager.GetActiveScene().name == "MainSceneSinglePlayer")
+            return true;
+
+        GestorEscenariosPartida escenarios = GestorEscenariosPartida.Instance;
+        return escenarios != null && escenarios.UsaEscenasAditivasMultiplayer &&
+            SceneManager.GetActiveScene().name.StartsWith("MP_");
+    }
+
     private bool CrearRadio()
     {
         if (!IsServer)
@@ -702,118 +1436,102 @@ public class GestorHistoriaPartida : NetworkBehaviour
 
         return true;
     }
+public void RegistrarRadio(
+    ulong clientId,
+    RadioHistoriaCiudad radio)
+{
+    if (!IsServer || radio == null)
+        return;
 
-    public void RegistrarRadio(
-        ulong clientId,
-        RadioHistoriaCiudad radio
-    )
+    if (!EsHistoriaCiudad() ||
+        EstadoMisionNetwork.Value != BuscarRadio)
+        return;
+
+    if (!JugadorCercaDelPunto(
+        clientId,
+        radio.transform.position,
+        distanciaRecogidaRadio))
     {
-        if (!IsServer || radio == null)
-            return;
-
-        if (!EsHistoriaCiudad() ||
-            EstadoMisionNetwork.Value != BuscarRadio)
-            return;
-
-        if (!JugadorCercaDelPunto(
-            clientId,
-            radio.transform.position,
-            distanciaRecogidaRadio))
-        {
-            Debug.LogWarning(
-                "[Historia] El jugador está demasiado lejos de la radio."
-            );
-            return;
-        }
-
-        ClienteConRadioNetwork.Value = clientId;
-        radio.DespawnearRadio();
-
-        EstadoMisionNetwork.Value = BuscarSenal;
-
-        Debug.Log(
-            "[Historia] Radio recogida. Comienza la búsqueda de señal."
+        Debug.LogWarning(
+            "[Historia] El jugador está demasiado lejos de la radio."
         );
+        return;
     }
 
+    ClienteConRadioNetwork.Value = clientId;
+
+    radio.DespawnearRadio();
+
+    EstadoMisionNetwork.Value = BuscarSenal;
+
+    Debug.Log(
+        "[Historia] Radio recogida. Activando detector de señal para el jugador " +
+        clientId + "."
+    );
+
+    // Activa la búsqueda únicamente en el jugador que recogió la radio.
+    ActivarDetectorSenal(clientId);
+}
     public void IntentarRegistrarSenalEncontrada()
     {
         RegistrarSenalEncontradaRpc();
     }
 
-    [Rpc(
-        SendTo.Server,
-        InvokePermission = RpcInvokePermission.Everyone
-    )]
-    private void RegistrarSenalEncontradaRpc(
-        RpcParams rpcParams = default
-    )
+  [Rpc(
+    SendTo.Server,
+    InvokePermission = RpcInvokePermission.Everyone
+)]
+private void RegistrarSenalEncontradaRpc(
+    RpcParams rpcParams = default)
+{
+    if (!IsServer || !EsHistoriaCiudad())
+        return;
+
+    if (EstadoMisionNetwork.Value != BuscarSenal)
+        return;
+
+    ulong clientId = rpcParams.Receive.SenderClientId;
+
+    // Solamente puede completar esta misión quien recogió la radio.
+    if (ClienteConRadioNetwork.Value != clientId)
     {
-        Debug.Log(
-            $"[PRUEBA HISTORIA] RPC recibida. " +
-            $"IsServer={IsServer}, IsSpawned={IsSpawned}, " +
-            $"Estado={EstadoMisionNetwork.Value}, " +
-            $"Instancia={GetEntityId()}",
-            this
+        Debug.LogWarning(
+            "[Radio] El jugador que notificó la señal no tiene la radio."
         );
-
-        if (!IsServer)
-        {
-            Debug.LogWarning("[PRUEBA HISTORIA] Se detuvo: no es servidor.", this);
-            return;
-        }
-
-        if (!EsHistoriaCiudad())
-        {
-            Debug.LogWarning("[PRUEBA HISTORIA] Se detuvo: EsHistoriaCiudad() es false.", this);
-            return;
-        }
-
-        if (EstadoMisionNetwork.Value != BuscarSenal)
-        {
-            Debug.LogWarning(
-                $"[PRUEBA HISTORIA] Se detuvo: el estado es {EstadoMisionNetwork.Value}, " +
-                $"pero se esperaba {BuscarSenal}.",
-                this
-            );
-            return;
-        }
-
-        ulong clientId = rpcParams.Receive.SenderClientId;
-
-        Debug.Log(
-            $"[PRUEBA HISTORIA] Cliente que encontró la señal: {clientId}.",
-            this
-        );
-
-        bool detectorValido = JugadorCercaDeUnJugadorConDetector(clientId);
-
-        Debug.Log(
-            $"[PRUEBA HISTORIA] Detector válido: {detectorValido}.",
-            this
-        );
-
-        if (!detectorValido)
-        {
-            Debug.LogWarning(
-                "[PRUEBA HISTORIA] Se detuvo: el detector no se encontró " +
-                "o su propiedad SenalEncontrada es false.",
-                this
-            );
-            return;
-        }
-
-        EstadoMisionNetwork.Value = ContactarSobrevivientes;
-
-        Debug.Log(
-            $"[PRUEBA HISTORIA] Estado cambiado correctamente a " +
-            $"{EstadoMisionNetwork.Value}. Instancia={GetEntityId()}",
-            this
-        );
+        return;
     }
 
-    private bool JugadorCercaDeUnJugadorConDetector(ulong clientId)
+    // El servidor comprueba la altura real del jugador.
+    if (!JugadorCercaDeUnJugadorConDetector(
+        clientId,
+        out float altura))
     {
+        Debug.LogWarning(
+            "[Radio] El servidor todavía no ve al jugador a la altura " +
+            "requerida. Se reactivará la búsqueda para reintentar."
+        );
+        ReactivarDetectorSenal(clientId);
+        return;
+    }
+
+    Debug.Log(
+        $"[Radio] Señal validada por el servidor. " +
+        $"Jugador={clientId}, altura={altura:F2} m."
+    );
+
+    EstadoMisionNetwork.Value = ContactarSobrevivientes;
+
+    Debug.Log(
+        "[Historia] Señal encontrada. Nuevo objetivo: contactar sobrevivientes."
+    );
+    }
+
+    private bool JugadorCercaDeUnJugadorConDetector(
+        ulong clientId,
+        out float altura)
+    {
+        altura = 0f;
+
         if (NetworkManager.Singleton == null)
             return false;
 
@@ -827,10 +1545,71 @@ public class GestorHistoriaPartida : NetworkBehaviour
 
         DetectorAlturaRadioHistoria detector =
             cliente.PlayerObject.GetComponentInChildren<
-                DetectorAlturaRadioHistoria
-            >();
+                DetectorAlturaRadioHistoria>(true);
 
-        return detector != null && detector.SenalEncontrada;
+        if (detector == null)
+        {
+            Debug.LogError(
+                "[Radio] El jugador no tiene DetectorAlturaRadioHistoria."
+            );
+
+            return false;
+        }
+
+        if (!detector.TryGetAlturaActual(out altura))
+            return false;
+
+        return altura >= detector.AlturaMinima;
+    }
+
+    private void ReactivarDetectorSenal(ulong clientId)
+    {
+        if (!IsServer || NetworkManager.Singleton == null ||
+            EstadoMisionNetwork.Value != BuscarSenal ||
+            ClienteConRadioNetwork.Value != clientId ||
+            !NetworkManager.Singleton.ConnectedClients.TryGetValue(
+                clientId,
+                out NetworkClient cliente) ||
+            cliente.PlayerObject == null)
+        {
+            return;
+        }
+
+        DetectorAlturaRadioHistoria detector =
+            cliente.PlayerObject.GetComponentInChildren<
+                DetectorAlturaRadioHistoria>(true);
+
+        if (detector == null)
+            return;
+
+        ReactivarDetectorSenalRpc(
+            RpcTarget.Single(clientId, RpcTargetUse.Temp)
+        );
+    }
+
+    [Rpc(SendTo.SpecifiedInParams)]
+    private void ReactivarDetectorSenalRpc(
+        RpcParams rpcParams = default)
+    {
+        if (NetworkManager.Singleton == null ||
+            EstadoMisionNetwork.Value != BuscarSenal ||
+            ClienteConRadioNetwork.Value !=
+                NetworkManager.Singleton.LocalClientId)
+        {
+            return;
+        }
+
+        NetworkObject jugador =
+            NetworkManager.Singleton.LocalClient.PlayerObject;
+
+        if (jugador == null)
+            return;
+
+        DetectorAlturaRadioHistoria detector =
+            jugador.GetComponentInChildren<DetectorAlturaRadioHistoria>(true);
+
+        if (detector != null)
+            detector.ReintentarBusquedaDeSenal();
     }
 
     public void IniciarMisionCiudad()
@@ -1007,9 +1786,24 @@ public class GestorHistoriaPartida : NetworkBehaviour
         if (transicionSafeZone1Iniciada)
             return;
 
-        if (SceneManager.GetActiveScene().name !=
-            "MainSceneSinglePlayer")
+        if (!EsEscenaHistoriaActiva())
             return;
+
+        if (GestorEscenariosPartida.Instance != null &&
+            GestorEscenariosPartida.Instance.UsaEscenasAditivasMultiplayer &&
+            !IsServer)
+            return;
+
+        if (GestorEscenariosPartida.Instance != null &&
+            GestorEscenariosPartida.Instance.UsaEscenasAditivasMultiplayer)
+        {
+            Debug.Log(
+                "[Historia] Puerta del laboratorio abierta. " +
+                "Esperando que todos entren al trigger frente a la puerta.",
+                this
+            );
+            return;
+        }
 
         if (NetworkManager.Singleton == null ||
             NetworkManager.Singleton.LocalClient.PlayerObject == null)
@@ -1056,14 +1850,19 @@ public class GestorHistoriaPartida : NetworkBehaviour
             return;
         }
 
-        if (SceneManager.GetActiveScene().name != "MainSceneSinglePlayer")
+        if (!EsEscenaHistoriaActiva())
         {
             Debug.LogWarning(
-                "[Historia] La transición se canceló: no estamos en MainSceneSinglePlayer.",
+                "[Historia] La transición se canceló porque no estamos en una escena activa de historia.",
                 this
             );
             return;
         }
+
+        if (GestorEscenariosPartida.Instance != null &&
+            GestorEscenariosPartida.Instance.UsaEscenasAditivasMultiplayer &&
+            !IsServer)
+            return;
 
         if (NetworkManager.Singleton == null ||
             NetworkManager.Singleton.LocalClient.PlayerObject == null)
@@ -1163,6 +1962,13 @@ public class GestorHistoriaPartida : NetworkBehaviour
 
             intro.MostrarAvisoContinuarAMansion();
         };
+
+        if (GestorEscenariosPartida.Instance != null &&
+            GestorEscenariosPartida.Instance.UsaEscenasAditivasMultiplayer)
+        {
+            StartCoroutine(EjecutarConCortina(trasladarJugador));
+            return;
+        }
 
         if (FadeTransicionHistoria.Instance != null)
         {
@@ -1328,4 +2134,41 @@ public class GestorHistoriaPartida : NetworkBehaviour
                 break;
         }
     }
+    public void PublicarEstadoMansion(int etapa, int segundos)
+    {
+        if (!IsServer || !IsSpawned)
+            return;
+
+        EtapaMansionNetwork.Value = etapa;
+        TemporizadorMansionNetwork.Value = Mathf.Max(0, segundos);
+        ActualizarTextoObjetivo();
+    }
+
+    public void SincronizarHUDMansionLocal()
+    {
+        if (GestorMansionHistoria.Instance == null)
+            return;
+
+        GestorMansionHistoria.Instance.AplicarEstadoMisionSincronizado(
+            EtapaMansionNetwork.Value,
+            TemporizadorMansionNetwork.Value);
+    }
+
+    private void AlCambiarEtapaMansion(int anterior, int nuevo)
+    {
+        ActualizarTextoObjetivo();
+        SincronizarHUDMansionLocal();
+    }
+
+    private void AlCambiarTemporizadorMansion(int anterior, int nuevo)
+    {
+        ActualizarTextoObjetivo();
+        SincronizarHUDMansionLocal();
+    }
+    private void AlCambiarConfirmacionesZonaSegura(
+    int valorAnterior,
+    int valorNuevo)
+{
+    ActualizarTextoObjetivo();
+}
 }

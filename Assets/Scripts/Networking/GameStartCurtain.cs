@@ -3,6 +3,122 @@ using Unity.Netcode;
 
 public class GameStartCurtain : MonoBehaviour
 {
+    private static GameObject cortinaPersistenteLobby;
+    private static Sprite spriteCargaAsignado;
+
+    [SerializeField] private Sprite imagenCargaLobby;
+
+    public static void MostrarCortinaDesdeLobby()
+    {
+        MostrarCortinaPersistente();
+    }
+
+    public static void MostrarCortinaTransicion()
+    {
+        MostrarCortinaPersistente();
+    }
+
+    private static void MostrarCortinaPersistente()
+    {
+        if (cortinaPersistenteLobby != null)
+        {
+            UnityEngine.UI.Image fondoExistente =
+                cortinaPersistenteLobby.GetComponentInChildren<UnityEngine.UI.Image>(true);
+            if (fondoExistente != null)
+                AsignarImagenCarga(fondoExistente);
+            cortinaPersistenteLobby.SetActive(true);
+            return;
+        }
+
+        GameObject raiz = new GameObject("CortinaCargaMultiplayer");
+        cortinaPersistenteLobby = raiz;
+        Object.DontDestroyOnLoad(raiz);
+
+        Canvas canvas = raiz.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.overrideSorting = true;
+        canvas.sortingOrder = short.MaxValue;
+
+        UnityEngine.UI.CanvasScaler scaler =
+            raiz.AddComponent<UnityEngine.UI.CanvasScaler>();
+        scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1100f);
+        scaler.matchWidthOrHeight = 0.5f;
+        raiz.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+
+        GameObject fondo = new GameObject("Fondo");
+        fondo.transform.SetParent(raiz.transform, false);
+        RectTransform rect = fondo.AddComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        UnityEngine.UI.Image imagen = fondo.AddComponent<UnityEngine.UI.Image>();
+        AsignarImagenCarga(imagen);
+        imagen.raycastTarget = true;
+
+        AudioListener.pause = true;
+    }
+
+    private static void AsignarImagenCarga(UnityEngine.UI.Image imagen)
+    {
+        if (spriteCargaAsignado == null)
+            spriteCargaAsignado = Resources.Load<Sprite>("ImagenCargaSoldado");
+
+        imagen.sprite = spriteCargaAsignado;
+        if (imagen.sprite == null)
+        {
+            UnityEngine.UI.Image imagenOriginal = BuscarImagenCargaOriginal();
+            if (imagenOriginal != null)
+                imagen.sprite = imagenOriginal.sprite;
+        }
+        if (imagen.sprite != null)
+        {
+            imagen.type = UnityEngine.UI.Image.Type.Simple;
+            imagen.preserveAspect = false;
+            imagen.color = Color.white;
+        }
+        else
+        {
+            Debug.LogError("[GameStartCurtain] Falta asignar Imagen Carga Lobby en el Inspector.");
+            imagen.color = Color.black;
+        }
+
+    }
+
+    private static UnityEngine.UI.Image BuscarImagenCargaOriginal()
+    {
+        UnityEngine.UI.Image[] imagenes =
+            Object.FindObjectsByType<UnityEngine.UI.Image>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None
+            );
+
+        foreach (UnityEngine.UI.Image imagen in imagenes)
+        {
+            if (imagen != null && imagen.gameObject.name == "LoadingScreen" &&
+                imagen.sprite != null)
+            {
+                return imagen;
+            }
+        }
+
+        return null;
+    }
+
+    public static void CancelarCortinaDesdeLobby()
+    {
+        if (cortinaPersistenteLobby != null)
+        {
+            cortinaPersistenteLobby.SetActive(false);
+            Object.Destroy(cortinaPersistenteLobby);
+            cortinaPersistenteLobby = null;
+        }
+
+        AudioListener.pause = false;
+    }
+
     [Header("Cortina de carga")]
     [SerializeField] private GameObject curtainCanvas;
 
@@ -13,11 +129,12 @@ public class GameStartCurtain : MonoBehaviour
 
     private float proximoLog;
 
-    private float inicioEspera;
     private bool mapaAditivoListoDetectado;
 
     private void Awake()
     {
+        if (imagenCargaLobby != null)
+            spriteCargaAsignado = imagenCargaLobby;
         Debug.Log("[GameStartCurtain] Awake");
 
         OcultarRestosDelLobby();
@@ -27,7 +144,6 @@ public class GameStartCurtain : MonoBehaviour
 
         BloquearJugadorLocalInmediatamente();
 
-        inicioEspera = Time.unscaledTime;
     }
 
     private void OcultarRestosDelLobby()
@@ -98,21 +214,6 @@ public class GameStartCurtain : MonoBehaviour
         }
     }
 
-   /* private void Update()
-    {
-        if (curtainHidden)
-            return;
-
-        if (!TodosListos())
-           // return;
-           if (Time.unscaledTime - inicioEspera < 20f)
-            return;
-
-            Debug.LogWarning("[GameStartCurtain] Tiempo agotado: se abre la cortina aunque no todos esten ubicados.");
-
-        OcultarCortina();
-    }*/
-
     private void Update()
     {
         if (curtainHidden)
@@ -123,6 +224,7 @@ public class GameStartCurtain : MonoBehaviour
         {
             Debug.LogError("[GameStartCurtain] La red no está activa: vuelvo al menú.");
             curtainHidden = true;
+            CancelarCortinaDesdeLobby();
 
             if (NetworkBootstrap.Instance != null)
                 _ = NetworkBootstrap.Instance.GoToMenuDueToDisconnect();
@@ -138,18 +240,11 @@ public class GameStartCurtain : MonoBehaviour
             if (!mapaAditivoListoDetectado)
             {
                 mapaAditivoListoDetectado = true;
-                inicioEspera = Time.unscaledTime;
             }
         }
 
         if (!TodosListos())
-        {
-            if (Time.unscaledTime - inicioEspera < 20f)
-                return;
-
-            Debug.LogWarning("[GameStartCurtain] Tiempo agotado: se abre la cortina aunque no todos estén ubicados.");
-            LogEstadoJugadores();
-        }
+            return;
 
         OcultarCortina();
     }
@@ -276,6 +371,15 @@ public class GameStartCurtain : MonoBehaviour
 
         if (curtainCanvas != null)
             curtainCanvas.SetActive(false);
+
+        if (cortinaPersistenteLobby != null)
+        {
+            cortinaPersistenteLobby.SetActive(false);
+            Object.Destroy(cortinaPersistenteLobby);
+            cortinaPersistenteLobby = null;
+        }
+
+        AudioListener.pause = false;
 
         RevelarHUDParaJugadorLocal();
         DesbloquearJugadorLocal();

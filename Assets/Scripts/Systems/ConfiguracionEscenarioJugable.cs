@@ -19,7 +19,32 @@ public class ConfiguracionEscenarioJugable : MonoBehaviour
     [Tooltip("Las 3 distribuciones de recursos del escenario. Al empezar la partida se usa una al azar.")]
     [SerializeField] private OpcionRecursosEscenario[] opcionesRecursos;
 
+    [Header("Postprocesado multiplayer")]
+    [SerializeField] private UnityEngine.Rendering.VolumeProfile perfilPostProcesoLaboratorio;
 
+
+    private void Start()
+    {
+        if (gameObject.scene.name != "MP_Laboratorio" ||
+            perfilPostProcesoLaboratorio == null)
+            return;
+
+        GameObject volumenObjeto = new GameObject("Post_Process_Laboratorio");
+        volumenObjeto.transform.SetParent(transform, false);
+        volumenObjeto.transform.localPosition = new Vector3(-30f, 0f, -8.7f);
+
+        UnityEngine.Rendering.Volume volumen =
+            volumenObjeto.AddComponent<UnityEngine.Rendering.Volume>();
+        volumen.isGlobal = false;
+        volumen.priority = 0f;
+        volumen.blendDistance = 2f;
+        volumen.weight = 1f;
+        volumen.sharedProfile = perfilPostProcesoLaboratorio;
+
+        BoxCollider zona = volumenObjeto.AddComponent<BoxCollider>();
+        zona.isTrigger = true;
+        zona.size = new Vector3(100f, 50f, 100f);
+    }
     public ConfiguracionPartidaSeleccionada.Escenario TipoEscenario
     {
         get { return tipoEscenario; }

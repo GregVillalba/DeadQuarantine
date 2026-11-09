@@ -91,6 +91,7 @@ public class MultiplayerLobbyController : MonoBehaviour
     private bool creandoSala;
     private bool countdownIniciado = false;
     private bool iniciandoPartida = false;
+    private bool cortinaCargaSolicitada;
     private int countdownGeneration;
     private readonly SemaphoreSlim countdownWriteLock = new SemaphoreSlim(1, 1);
     private bool miReady = false;
@@ -936,6 +937,8 @@ public void OnClick_IrAConfigurarPartida()
         if (!EsCountdownActual(generation))
             return;
 
+        cortinaCargaSolicitada = false;
+
         if (network == null || network.CurrentSession == null || !network.CurrentSession.IsHost)
         {
             CancelarCountdown();
@@ -1009,21 +1012,47 @@ public void OnClick_IrAConfigurarPartida()
             countdownIniciado = false;
             iniciandoPartida = true;
             tiempoCountdown = -1f;
+            if (!cortinaCargaSolicitada)
+            {
+                GameStartCurtain.MostrarCortinaDesdeLobby();
+                cortinaCargaSolicitada = true;
+            }
+            if (countdownPanel != null)
+                countdownPanel.SetActive(false);
+
             bool partidaIniciada = await network.StartMultiplayerGame();
             if (!partidaIniciada)
             {
-                iniciandoPartida = network.CurrentSession != null &&
-                    network.CurrentSession.Network.State != Unity.Services.Multiplayer.NetworkState.Stopped;
-                if (!iniciandoPartida)
-                    ActualizarEstadoSala();
+                await VolverAlLobbyPorFalloInicio();
             }
         }
         catch (Exception e)
         {
             Debug.LogError("[Lobby] Falló la cuenta atrás: " + e.Message);
-            if (EsCountdownActual(generation))
-                CancelarCountdown();
+            await VolverAlLobbyPorFalloInicio();
         }
+    }
+
+    private async Task VolverAlLobbyPorFalloInicio()
+    {
+        GameStartCurtain.CancelarCortinaDesdeLobby();
+        cortinaCargaSolicitada = false;
+        iniciandoPartida = false;
+
+        if (network != null)
+            network.NotifyIntentionalLeave();
+
+        await SalirDeSala();
+
+        if (Unity.Netcode.NetworkManager.Singleton != null &&
+            Unity.Netcode.NetworkManager.Singleton.IsListening)
+            Unity.Netcode.NetworkManager.Singleton.Shutdown();
+
+        MostrarPanel(modoMultiplayerPanel);
+        MostrarMensaje(
+            "NO SE PUDO INICIAR LA PARTIDA",
+            "Los jugadores no terminaron de conectarse. Volvé a crear la sala e intentá de nuevo."
+        );
     }
 
     private bool EsCountdownActual(int generation)
@@ -1290,6 +1319,19 @@ public void OnClick_IrAConfigurarPartida()
             return;
         }
 
+        if (endUtcTicks <= 0)
+        {
+            tiempoCountdown = -1f;
+            if (countdownPanel != null)
+                countdownPanel.SetActive(false);
+            if (cortinaCargaSolicitada)
+            {
+                GameStartCurtain.CancelarCortinaDesdeLobby();
+                cortinaCargaSolicitada = false;
+            }
+            return;
+        }
+
         DateTime endTime =
             new DateTime(
                 endUtcTicks,
@@ -1302,9 +1344,13 @@ public void OnClick_IrAConfigurarPartida()
 
         if (remainingSeconds <= 0d)
         {
-            // La escena va a cambiar enseguida;
-            // evita que el cliente quede mostrando 0.
             tiempoCountdown = -1f;
+
+            if (!cortinaCargaSolicitada)
+            {
+                GameStartCurtain.MostrarCortinaDesdeLobby();
+                cortinaCargaSolicitada = true;
+            }
 
             if (countdownPanel != null)
             {
@@ -1426,6 +1472,12 @@ public void OnClick_IrAConfigurarPartida()
         countdownIniciado = false;
         countdownGeneration++;
         tiempoCountdown = -1f;
+
+        if (cortinaCargaSolicitada)
+        {
+            GameStartCurtain.CancelarCortinaDesdeLobby();
+            cortinaCargaSolicitada = false;
+        }
 
         if (network != null &&
             network.CurrentSession != null)

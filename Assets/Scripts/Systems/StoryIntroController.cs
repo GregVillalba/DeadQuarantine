@@ -40,9 +40,11 @@ public class StoryIntroController : NetworkBehaviour
     [SerializeField] private GameObject weaponCameraObject;
     [Header("Transición desde zona segura")]
     [SerializeField] private GameObject popupContinuarSafeZone;
+    [SerializeField] private TMP_Text textoAvisoSafeZone;
 
     private bool esperandoContinuarSafeZone;
     private bool continuarHaciaCabana;
+    private bool confirmoContinuarSafeZone;
     private WeaponSwitcher weaponSwitcher;
 
     private bool historiaActiva;
@@ -58,12 +60,21 @@ public class StoryIntroController : NetworkBehaviour
 
         if (playerLook == null)
             playerLook = GetComponentInChildren<PlayerLook>(true);
+
+        if (textoAvisoSafeZone == null && popupContinuarSafeZone != null)
+            textoAvisoSafeZone = popupContinuarSafeZone.GetComponent<TMP_Text>();
     }
 
    
 private void Update()
 {
-    if (!IsOwner || Keyboard.current == null)
+    if (!IsOwner)
+        return;
+
+    if (esperandoContinuarSafeZone)
+        ActualizarTextoAvisoSafeZone();
+
+    if (Keyboard.current == null)
         return;
 
     if (!Keyboard.current.enterKey.wasPressedThisFrame &&
@@ -82,19 +93,19 @@ private void Update()
     // incluso si el bloqueo de acciones está activo.
     if (esperandoContinuarSafeZone)
     {
-        if (continuarHaciaCabana)
-            IniciarTransicionACabana();
-        else
-            IniciarTransicionACiudad();
+        ConfirmarContinuacionSafeZone();
 
+        return;
+    }
+
+    if (historiaActiva)
+    {
+        ContinuarHistoria();
         return;
     }
 
     if (PlayerInputGate.ActionsBlocked)
         return;
-
-    if (historiaActiva)
-        ContinuarHistoria();
 }
 
 
@@ -128,6 +139,8 @@ public void MostrarAvisoContinuarSafeZone()
     // Preparar la continuación hacia Ciudad.
     continuarHaciaCabana = false;
     esperandoContinuarSafeZone = true;
+    confirmoContinuarSafeZone = false;
+    ActualizarTextoAvisoSafeZone();
 
     if (popupContinuarSafeZone != null)
     {
@@ -176,6 +189,8 @@ public void MostrarAvisoContinuarAMansion()
     // Mantener el aviso para continuar hacia la Mansión.
     continuarHaciaCabana = true;
     esperandoContinuarSafeZone = true;
+    confirmoContinuarSafeZone = false;
+    ActualizarTextoAvisoSafeZone();
 
     if (popupContinuarSafeZone != null)
     {
@@ -201,9 +216,120 @@ public void MostrarAvisoContinuarAMansion()
             return;
 
         esperandoContinuarSafeZone = false;
+        confirmoContinuarSafeZone = false;
 
         if (popupContinuarSafeZone != null)
             popupContinuarSafeZone.SetActive(false);
+    }
+
+    private void ConfirmarContinuacionSafeZone()
+    {
+        if (confirmoContinuarSafeZone)
+            return;
+
+        if (NetworkManager.Singleton != null &&
+            NetworkManager.Singleton.IsListening)
+        {
+            GestorHistoriaPartida gestor = GestorHistoriaPartida.Instance;
+            if (gestor == null || !gestor.IsSpawned)
+            {
+                Debug.LogWarning("[StoryIntro] No se puede confirmar: falta el gestor de historia de red.");
+                return;
+            }
+
+            confirmoContinuarSafeZone = true;
+            gestor.SolicitarAvanceDesdeZonaSegura();
+            ActualizarTextoAvisoSafeZone();
+            return;
+        }
+
+        if (continuarHaciaCabana)
+            IniciarTransicionACabana();
+        else
+            IniciarTransicionACiudad();
+    }
+
+    private void ActualizarTextoAvisoSafeZone()
+    {
+        if (textoAvisoSafeZone == null)
+            return;
+
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+        {
+            textoAvisoSafeZone.text = "Presiona ENTER para continuar.";
+            return;
+        }
+
+        GestorHistoriaPartida gestor = GestorHistoriaPartida.Instance;
+        int confirmados = gestor != null && gestor.IsSpawned
+            ? gestor.ConfirmacionesZonaSeguraNetwork.Value
+            : 0;
+        int total = Mathf.Max(
+            2,
+            gestor != null && gestor.IsSpawned
+                ? gestor.JugadoresZonaSeguraNetwork.Value
+                : NetworkManager.Singleton.ConnectedClientsIds.Count
+        );
+
+        int conectados = NetworkManager.Singleton.ConnectedClientsIds.Count;
+        if (conectados < 2)
+        {
+            textoAvisoSafeZone.text =
+                $"Se necesitan al menos 2 jugadores conectados para continuar ({conectados}/2).";
+            return;
+        }
+
+        textoAvisoSafeZone.text = confirmoContinuarSafeZone
+            ? $"Tu confirmación está registrada ({confirmados}/{total}). Espera a que los demás jugadores presionen ENTER."
+            : $"Presiona ENTER para continuar y espera a que todos los demás jugadores también lo presionen ({confirmados}/{total}).";
+    }
+
+    public void MostrarIntroduccionMultiplayer(
+        ConfiguracionPartidaSeleccionada.Escenario escenario)
+    {
+        if (!IsOwner)
+            return;
+
+        esperandoContinuarSafeZone = false;
+        confirmoContinuarSafeZone = false;
+        continuarHaciaCabana = false;
+
+        if (popupContinuarSafeZone != null)
+            popupContinuarSafeZone.SetActive(false);
+
+        historiaActiva = true;
+        if (hud != null)
+            hud.SetActive(false);
+        BloquearJugador();
+
+        DatosHistoria datos = ObtenerDatosHistoria(
+            ConfiguracionPartidaSeleccionada.ModoJuego.Historia,
+            escenario
+        );
+
+        if (textoSubtitulo != null)
+        {
+            textoSubtitulo.text = datos.subtitulo;
+            textoSubtitulo.gameObject.SetActive(!string.IsNullOrEmpty(datos.subtitulo));
+        }
+        if (textoTitulo != null)
+            textoTitulo.text = datos.titulo;
+        if (textoDescripcion != null)
+            textoDescripcion.text = datos.descripcionConObjetivo;
+
+        if (popupHistoria != null)
+        {
+            Transform padre = popupHistoria.transform.parent;
+            while (padre != null)
+            {
+                padre.gameObject.SetActive(true);
+                padre = padre.parent;
+            }
+            popupHistoria.SetActive(true);
+        }
+
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
     }
 
     private void IniciarTransicionACiudad()

@@ -28,6 +28,8 @@ public class GestorEscenariosPartida : MonoBehaviour
     [Header("Puntos de aparición")]
     [SerializeField] private Transform spawnSafeZone1;
     [SerializeField] private Transform spawnSafeZone2;
+    private Transform[] spawnsSafeZone1 = new Transform[4];
+    private Transform[] spawnsSafeZone2 = new Transform[4];
 
     private ConfiguracionEscenarioJugable escenarioActivo;
     private Scene escenaAditivaActiva;
@@ -124,12 +126,27 @@ public class GestorEscenariosPartida : MonoBehaviour
         BindearMapaAditivo(nueva);
         SceneManager.SetActiveScene(nueva);
         MapaMultiplayerListo = true;
+        EventoMapaMultiplayerListo?.Invoke();
+        if (sceneName == "MP_Ciudad" && NetworkManager.Singleton != null &&
+            !NetworkManager.Singleton.IsServer && escenarioActivo != null &&
+            NetworkManager.Singleton.LocalClient != null &&
+            NetworkManager.Singleton.LocalClient.PlayerObject != null)
+        {
+            MultiplayerPlayerSpawnAssigner local =
+                NetworkManager.Singleton.LocalClient.PlayerObject
+                    .GetComponent<MultiplayerPlayerSpawnAssigner>();
+            if (local != null)
+                local.ColocarJugadorLocalEnEscenario(
+                    escenarioActivo.ObtenerSpawnJugador(
+                        Mathf.Max(0, local.AssignedSpawnIndex.Value)));
+        }
+        AvisarAlJugadorLocalSobreZonaSegura(sceneName);
+        StartCoroutine(OcultarCortinaCuandoMapaEsteListo());
 
         if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
             return;
 
         AplicarMapaALosJugadores(sceneName);
-        EventoMapaMultiplayerListo?.Invoke();
         if (!string.IsNullOrEmpty(anterior) && anterior != sceneName)
         {
             Scene escenaVieja = SceneManager.GetSceneByName(anterior);
@@ -152,9 +169,15 @@ public class GestorEscenariosPartida : MonoBehaviour
             if (raiz.name == "ZonaSegura1") safeZone1 = raiz;
             if (raiz.name == "ZonaSegura2") safeZone2 = raiz;
             if (raiz.name == "ZonaSegura1")
-                spawnSafeZone1 = BuscarHijo(raiz.transform, "spawnZonaSegura1");
+            {
+                spawnsSafeZone1 = BuscarSpawnsZonaSegura(raiz.transform, "spawnZonaSegura1");
+                spawnSafeZone1 = spawnsSafeZone1[0];
+            }
             if (raiz.name == "ZonaSegura2")
-                spawnSafeZone2 = BuscarHijo(raiz.transform, "spawnZonaSegura2");
+            {
+                spawnsSafeZone2 = BuscarSpawnsZonaSegura(raiz.transform, "spawnZonaSegura2");
+                spawnSafeZone2 = spawnsSafeZone2[0];
+            }
 
             ConfiguracionEscenarioJugable config =
                 raiz.GetComponentInChildren<ConfiguracionEscenarioJugable>(true);
@@ -165,11 +188,35 @@ public class GestorEscenariosPartida : MonoBehaviour
             ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado = escenarioActivo.TipoEscenario;
     }
 
+    private IEnumerator OcultarCortinaCuandoMapaEsteListo()
+    {
+        // Deja que el servidor aplique la posición de aparición antes de revelar
+        // el mapa recién cargado en cada cliente.
+        yield return null;
+        yield return new WaitForSecondsRealtime(0.25f);
+        GameStartCurtain.CancelarCortinaDesdeLobby();
+    }
+
     private static Transform BuscarHijo(Transform raiz, string nombre)
     {
         foreach (Transform hijo in raiz.GetComponentsInChildren<Transform>(true))
             if (hijo.name == nombre) return hijo;
         return null;
+    }
+
+    private static Transform[] BuscarSpawnsZonaSegura(Transform raiz, string nombreBase)
+    {
+        Transform[] puntos = new Transform[4];
+        puntos[0] = BuscarHijo(raiz, nombreBase);
+
+        for (int i = 1; i < puntos.Length; i++)
+            puntos[i] = BuscarHijo(raiz, nombreBase + "_" + (i + 1));
+
+        for (int i = 1; i < puntos.Length; i++)
+            if (puntos[i] == null)
+                puntos[i] = puntos[0];
+
+        return puntos;
     }
 
     private static void AvisarAlJugadorLocalSobreZonaSegura(string sceneName)
@@ -182,6 +229,10 @@ public class GestorEscenariosPartida : MonoBehaviour
         if (intro == null) return;
         if (sceneName == "MP_ZonaSegura1") intro.MostrarAvisoContinuarSafeZone();
         else if (sceneName == "MP_ZonaSegura2") intro.MostrarAvisoContinuarAMansion();
+        else if (sceneName == "MP_Ciudad")
+            intro.MostrarIntroduccionMultiplayer(ConfiguracionPartidaSeleccionada.Escenario.Ciudad);
+        else if (sceneName == "MP_Cabana")
+            intro.MostrarIntroduccionMultiplayer(ConfiguracionPartidaSeleccionada.Escenario.Cabana);
     }
     private void AplicarMapaALosJugadores(string sceneName)
     {
@@ -197,16 +248,29 @@ public class GestorEscenariosPartida : MonoBehaviour
                 cliente.PlayerObject.GetComponent<MultiplayerPlayerSpawnAssigner>();
             if (assigner == null) continue;
 
-            if (zona1 && spawnSafeZone1 != null)
-                assigner.AplicarSpawnCheckpoint(spawnSafeZone1.position, spawnSafeZone1.rotation);
-            else if (zona2 && spawnSafeZone2 != null)
-                assigner.AplicarSpawnCheckpoint(spawnSafeZone2.position, spawnSafeZone2.rotation);
+            if (zona1 || zona2)
+            {
+                Transform spawn = ObtenerSpawnZonaSegura(zona1, assigner.AssignedSpawnIndex.Value);
+                if (spawn != null)
+                    assigner.AplicarSpawnCheckpoint(spawn.position, spawn.rotation);
+            }
             else if (escenarioActivo != null)
             {
                 Transform spawn = escenarioActivo.ObtenerSpawnJugador(assigner.AssignedSpawnIndex.Value);
                 if (spawn != null) assigner.AplicarSpawnDeEscenario(spawn.position, spawn.rotation);
             }
         }
+    }
+
+    private Transform ObtenerSpawnZonaSegura(bool zona1, int indice)
+    {
+        Transform[] puntos = zona1 ? spawnsSafeZone1 : spawnsSafeZone2;
+        if (puntos == null || puntos.Length == 0)
+            return zona1 ? spawnSafeZone1 : spawnSafeZone2;
+
+        int indiceSeguro = Mathf.Clamp(indice, 0, puntos.Length - 1);
+        Transform spawn = puntos[indiceSeguro];
+        return spawn != null ? spawn : (zona1 ? spawnSafeZone1 : spawnSafeZone2);
     }
 
     private static string NombreEscenaMP(ConfiguracionPartidaSeleccionada.Escenario escenario)
@@ -258,6 +322,7 @@ public class GestorEscenariosPartida : MonoBehaviour
             AplicarMapaALosJugadores(sceneName);
             MapaMultiplayerListo = true;
             EventoMapaMultiplayerListo?.Invoke();
+            AvisarAlJugadorLocalSobreZonaSegura(sceneName);
             return;
         }
 
