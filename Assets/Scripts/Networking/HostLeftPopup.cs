@@ -68,7 +68,12 @@ private void OnDestroy()
 
 private void OnClientDisconnect(ulong clientId)
 {
-    Debug.Log("[HostLeftPopup] OnClientDisconnect. clientId: " + clientId);
+    if (nm == null || clientId != nm.LocalClientId)
+        return;
+
+    Debug.LogWarning("[HostLeftPopup] Se desconectó el cliente local. " +
+        "Motivo: '" + nm.DisconnectReason + "'. " +
+        "Estado de red: " + (nm.IsListening ? "activo" : "detenido"));
     MostrarSiCorresponde();
 }
 

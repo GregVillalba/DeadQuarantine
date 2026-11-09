@@ -72,6 +72,8 @@ public class GestorMansionHistoria : MonoBehaviour
     private void Start()
     {
         BuscarHUDJugador();
+        if (GestorHistoriaPartida.Instance != null)
+            GestorHistoriaPartida.Instance.SincronizarHUDMansionLocal();
     }
 
     private void OnDestroy()
@@ -111,6 +113,7 @@ public class GestorMansionHistoria : MonoBehaviour
 
         estadoActual = EstadoMision.Resistir;
         MostrarTemporizador(true);
+        PublicarEstadoSincronizado(Mathf.CeilToInt(RoundManager.Instance.TiempoResistenciaMansion));
   
         BuscarHUDJugador();
 
@@ -159,6 +162,7 @@ public class GestorMansionHistoria : MonoBehaviour
                estadoActual == EstadoMision.Resistir)
         {
             ActualizarTemporizador(segundosRestantes);
+            PublicarEstadoSincronizado(segundosRestantes);
 
             yield return new WaitForSeconds(1f);
 
@@ -172,8 +176,9 @@ public class GestorMansionHistoria : MonoBehaviour
             ActualizarObjetivo("OBJETIVO");
 
             ActualizarDescripcion(
-                "Preparáte para enfrentarlo."
+                "Prepárate para enfrentarlo."
             );
+            PublicarEstadoSincronizado(0);
         }
 
         cuentaRegresivaRoutine = null;
@@ -188,6 +193,7 @@ public class GestorMansionHistoria : MonoBehaviour
         }
 
         estadoActual = EstadoMision.EsperandoBoss;
+        PublicarEstadoSincronizado(0);
 
         DetenerCuentaRegresiva();
 
@@ -213,6 +219,7 @@ public void AlBossDerrotado()
     }
 
     estadoActual = EstadoMision.IrAlHelipuerto;
+    PublicarEstadoSincronizado(0);
 
     jugadorLlegoAlHelipuerto = false;
     helicopteroTerminoDescenso = false;
@@ -317,6 +324,7 @@ public void CompletarMision()
     }
 
     estadoActual = EstadoMision.Completada;
+    PublicarEstadoSincronizado(0);
 
     DetenerCuentaRegresiva();
 
@@ -461,6 +469,55 @@ public void CompletarMision()
         textoTemporizador.gameObject.SetActive(true);
     }
 
+    private void PublicarEstadoSincronizado(int segundos)
+    {
+        if (GestorHistoriaPartida.Instance != null && EsServidor)
+            GestorHistoriaPartida.Instance.PublicarEstadoMansion((int)estadoActual, segundos);
+    }
+
+    public void AplicarEstadoMisionSincronizado(int etapa, int segundos)
+    {
+        if (EsServidor || etapa < (int)EstadoMision.Inactiva || etapa > (int)EstadoMision.Completada)
+            return;
+
+        EstadoMision estadoAnterior = estadoActual;
+        estadoActual = (EstadoMision)etapa;
+        BuscarHUDJugador();
+
+        switch (estadoActual)
+        {
+            case EstadoMision.Resistir:
+                MostrarTemporizador(true);
+                ActualizarObjetivo("OBJETIVO");
+                ActualizarDescripcion(segundos > 0
+                    ? "Resiste hasta que aparezca el Zombie Alfa."
+                    : "Prepárate para enfrentarlo.");
+                ActualizarTemporizador(segundos);
+                break;
+            case EstadoMision.EsperandoBoss:
+                MostrarTemporizador(false);
+                ActualizarObjetivo("OBJETIVO");
+                ActualizarDescripcion("Elimina al Zombie Alfa para poder escapar.");
+                break;
+            case EstadoMision.IrAlHelipuerto:
+                MostrarTemporizador(false);
+                ActualizarObjetivo("OBJETIVO");
+                ActualizarDescripcion("Corre hacia el helipuerto y alcanza el punto de extracción.");
+                if (estadoAnterior != EstadoMision.IrAlHelipuerto)
+                {
+                    if (puertaTrasera != null)
+                        puertaTrasera.AbrirPuerta();
+                    if (animatorHelicoptero != null)
+                        animatorHelicoptero.SetTrigger(triggerDescenso);
+                }
+                break;
+            case EstadoMision.Completada:
+                MostrarTemporizador(false);
+                ActualizarObjetivo("MISIÓN COMPLETADA");
+                ActualizarDescripcion("Lograste escapar de la mansión.");
+                break;
+        }
+    }
     private bool BuscarHUDJugador()
     {
         GameObject[] jugadores;

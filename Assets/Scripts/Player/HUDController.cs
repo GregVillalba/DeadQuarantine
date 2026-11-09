@@ -121,6 +121,9 @@ public class HUDController : MonoBehaviour
     [Header("Rondas")]
     [SerializeField] private TextMeshProUGUI roundsText;
     [SerializeField] private TextMeshProUGUI zombiesText;
+    [SerializeField] private Image fondoRondas;
+    [SerializeField] private Image fondoObjetivos;
+    [SerializeField] private Image fondoPanelObjetivo;
 
     [Header("Crosshair")]
     [SerializeField] private GameObject crosshairRoot;
@@ -1014,12 +1017,54 @@ public class HUDController : MonoBehaviour
     // RONDAS
     // =========================================================
 
+    private Transform ObtenerContenedorContadores()
+    {
+        if (roundsText == null || zombiesText == null)
+            return null;
+
+        Transform candidato = roundsText.transform;
+        while (candidato != null &&
+               !zombiesText.transform.IsChildOf(candidato))
+        {
+            candidato = candidato.parent;
+        }
+
+        return candidato;
+    }
+
     private void UpdateRounds()
     {
         if (roundManager == null)
             return;
 
-       /* if (roundsText != null)
+       bool ocultarContadoresHistoria =
+            roundManager.EsModoHistoria ||
+            (ConfiguracionPartidaSeleccionada.Instancia != null &&
+             ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado ==
+             ConfiguracionPartidaSeleccionada.ModoJuego.Historia);
+        if (fondoRondas != null)
+            fondoRondas.enabled = !ocultarContadoresHistoria;
+        if (fondoObjetivos != null)
+            fondoObjetivos.enabled = !ocultarContadoresHistoria;
+        if (fondoPanelObjetivo != null)
+            fondoPanelObjetivo.enabled = !ocultarContadoresHistoria;
+        Transform contenedorContadores = ObtenerContenedorContadores();
+        if (contenedorContadores != null)
+        {
+            contenedorContadores.gameObject.SetActive(!ocultarContadoresHistoria);
+        }
+        else
+        {
+            if (roundsText != null)
+                roundsText.gameObject.SetActive(!ocultarContadoresHistoria);
+            if (zombiesText != null)
+                zombiesText.gameObject.SetActive(!ocultarContadoresHistoria);
+        }
+
+        if (ocultarContadoresHistoria)
+            return;
+
+        /* if (roundsText != null)
         {
             roundsText.text =
                 "RONDAS   " +

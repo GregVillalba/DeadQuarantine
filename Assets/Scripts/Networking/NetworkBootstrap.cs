@@ -319,6 +319,14 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
         }
         finally
         {
+            if (!started && NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.OnServerStarted -= RegistrarSincronizacion;
+                if (NetworkManager.Singleton.SceneManager != null)
+                    NetworkManager.Singleton.SceneManager.OnSynchronizeComplete -= OnClienteSincronizado;
+                clientesSincronizados.Clear();
+            }
+
             // Si Relay ya inició, conservar el bloqueo durante toda la partida.
             if (!started && (currentSession == null || currentSession.Network.State == NetworkState.Stopped))
                 multiplayerGameStartInProgress = false;

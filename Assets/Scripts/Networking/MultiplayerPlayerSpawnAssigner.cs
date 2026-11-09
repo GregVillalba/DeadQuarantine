@@ -368,6 +368,16 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
         AplicarSpawnEscenarioClientRpc(posicion, rotacion);
     }
 
+    public void ColocarJugadorLocalEnEscenario(Transform spawn)
+    {
+        if (!IsSpawned || !IsOwner || spawn == null)
+            return;
+
+        IsAtSpawn.Value = false;
+        AplicarTeletransporteLocal(spawn.position, spawn.rotation);
+        IsAtSpawn.Value = true;
+    }
+
     [ClientRpc]
     private void AplicarSpawnEscenarioClientRpc(Vector3 posicion, Quaternion rotacion)
     {

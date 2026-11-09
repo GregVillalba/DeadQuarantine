@@ -1343,32 +1343,25 @@ public class ZombieAI : NetworkBehaviour
 
         Vector3 finalPosition = transform.position;
 
-        if (
-            NavMesh.SamplePosition(
-                finalPosition,
-                out NavMeshHit navHit,
-                2f,
-                agent.areaMask
-            )
-        )
-        {
+        bool puntoNavMeshValido = NavMesh.SamplePosition(
+            finalPosition, out NavMeshHit navHit, 5f, agent.areaMask);
+        if (puntoNavMeshValido)
             finalPosition = navHit.position;
-        }
 
         // Activamos updatePosition solo para resincronizar internamente el agente.
         // Warp actualiza tanto su posición interna como el Transform en el mismo frame.
         agent.updatePosition = true;
 
-        if (agent.isOnNavMesh)
+        if (puntoNavMeshValido && agent.Warp(finalPosition) && agent.isOnNavMesh)
         {
-            agent.Warp(finalPosition);
             agent.isStopped = true;
             agent.velocity = Vector3.zero;
         }
         else
         {
             transform.position = finalPosition;
-            agent.nextPosition = finalPosition;
+            Debug.LogWarning(
+                "[ZombieAI] El zombie terminó de aparecer fuera del NavMesh.", this);
         }
 
         if (spawnAgentSettingsCaptured)
