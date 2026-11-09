@@ -33,7 +33,13 @@ public class CheckpointManager : MonoBehaviour
     private bool cargaPendienteDesdeMenu;
 
     public bool CargaPendiente =>
-        cargaPendienteDesdeMenu || cargandoPartida;
+        !EsMultiplayerActivo() && (cargaPendienteDesdeMenu || cargandoPartida);
+
+    private static bool EsMultiplayerActivo()
+    {
+        return NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening &&
+               SceneManager.GetActiveScene().name != "MainSceneSinglePlayer";
+    }
 
     private void Awake()
     {
@@ -62,6 +68,9 @@ public class CheckpointManager : MonoBehaviour
 
     public void RegistrarZonaSegura(EscenarioCheckpoint escenario)
     {
+        if (EsMultiplayerActivo())
+            return;
+
         Debug.Log(
             "[CheckpointManager] Se llamó a RegistrarZonaSegura: " +
             escenario
@@ -117,7 +126,7 @@ public class CheckpointManager : MonoBehaviour
 
     public void GuardarCheckpoint()
     {
-        if (!EsModoHistoria())
+        if (EsMultiplayerActivo() || !EsModoHistoria())
             return;
 
         if (escenarioActual == EscenarioCheckpoint.Ninguno)
@@ -275,6 +284,9 @@ public class CheckpointManager : MonoBehaviour
 
     public void CargarCheckpoint()
     {
+        if (EsMultiplayerActivo())
+            return;
+
         Debug.Log(
             "[Checkpoint] CargarCheckpoint() ejecutado."
         );
@@ -624,6 +636,9 @@ public void FinalizarCarga()
 
 public void PrepararCargaDesdeMenu(string nombreEscena)
 {
+    if (EsMultiplayerActivo())
+        return;
+
     if (string.IsNullOrEmpty(nombreEscena))
     {
         Debug.LogError(

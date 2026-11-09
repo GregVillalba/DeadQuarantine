@@ -49,6 +49,10 @@ public class StoryIntroController : NetworkBehaviour
 
     private bool historiaActiva;
     public bool HistoriaActiva => historiaActiva;
+    private readonly NetworkVariable<bool> introduccionInicialConfirmada =
+        new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Owner);
+    public bool IntroduccionInicialConfirmada => introduccionInicialConfirmada.Value;
 
     private void Awake()
     {
@@ -298,12 +302,18 @@ public void MostrarAvisoContinuarAMansion()
             popupContinuarSafeZone.SetActive(false);
 
         historiaActiva = true;
+        if (IsSpawned)
+            introduccionInicialConfirmada.Value = false;
         if (hud != null)
             hud.SetActive(false);
         BloquearJugador();
 
+        ConfiguracionPartidaSeleccionada.ModoJuego modo =
+            ConfiguracionPartidaSeleccionada.Instancia != null
+                ? ConfiguracionPartidaSeleccionada.Instancia.modoSeleccionado
+                : ConfiguracionPartidaSeleccionada.ModoJuego.Historia;
         DatosHistoria datos = ObtenerDatosHistoria(
-            ConfiguracionPartidaSeleccionada.ModoJuego.Historia,
+            modo,
             escenario
         );
 
@@ -665,6 +675,9 @@ private void ReanudarTiempoSiSinglePlayer()
 
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
+
+        if (IsSpawned && SceneManager.GetActiveScene().name.StartsWith("MP_"))
+            introduccionInicialConfirmada.Value = true;
 
         Debug.Log("[StoryIntro] ContinuarHistoria() FIN.");
     }

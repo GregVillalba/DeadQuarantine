@@ -13,6 +13,7 @@ public class GestorEscenariosPartida : MonoBehaviour
     [SerializeField] private bool usarEscenasAditivasMultiplayer;
     public bool UsaEscenasAditivasMultiplayer => usarEscenasAditivasMultiplayer;
     public bool MapaMultiplayerListo { get; private set; }
+    public bool PresentacionLocalPreparada { get; private set; }
     public event System.Action EventoMapaMultiplayerListo;
 
 
@@ -93,20 +94,10 @@ public class GestorEscenariosPartida : MonoBehaviour
         if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
             yield break;
 
-        var checkpoint = CheckpointManager.Instance != null
-            ? CheckpointManager.Instance.EscenarioActual
-            : CheckpointManager.EscenarioCheckpoint.Ninguno;
-        if (checkpoint == CheckpointManager.EscenarioCheckpoint.SafeZone1)
-            SolicitarMapaServidor("MP_ZonaSegura1");
-        else if (checkpoint == CheckpointManager.EscenarioCheckpoint.SafeZone2)
-            SolicitarMapaServidor("MP_ZonaSegura2");
-        else
-        {
-            var escenario = ConfiguracionPartidaSeleccionada.Instancia != null
-                ? ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado
-                : ConfiguracionPartidaSeleccionada.Escenario.Laboratorio;
-            SolicitarMapaServidor(NombreEscenaMP(escenario));
-        }
+        var escenario = ConfiguracionPartidaSeleccionada.Instancia != null
+            ? ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado
+            : ConfiguracionPartidaSeleccionada.Escenario.Laboratorio;
+        SolicitarMapaServidor(NombreEscenaMP(escenario));
     }
 
     private void OnLoadAditivoCompletado(string sceneName, LoadSceneMode mode,
@@ -119,6 +110,7 @@ public class GestorEscenariosPartida : MonoBehaviour
         if (!nueva.IsValid() || !nueva.isLoaded)
             return;
 
+        PresentacionLocalPreparada = false;
         string anterior = escenaAditivaActiva.IsValid()
             ? escenaAditivaActiva.name
             : escenaAditivaAnterior;
@@ -140,8 +132,7 @@ public class GestorEscenariosPartida : MonoBehaviour
                     escenarioActivo.ObtenerSpawnJugador(
                         Mathf.Max(0, local.AssignedSpawnIndex.Value)));
         }
-        AvisarAlJugadorLocalSobreZonaSegura(sceneName);
-        StartCoroutine(OcultarCortinaCuandoMapaEsteListo());
+        StartCoroutine(PrepararPresentacionMapaLocal(sceneName));
 
         if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
             return;
@@ -188,13 +179,28 @@ public class GestorEscenariosPartida : MonoBehaviour
             ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado = escenarioActivo.TipoEscenario;
     }
 
-    private IEnumerator OcultarCortinaCuandoMapaEsteListo()
+    private IEnumerator PrepararPresentacionMapaLocal(string sceneName)
     {
-        // Deja que el servidor aplique la posición de aparición antes de revelar
-        // el mapa recién cargado en cada cliente.
         yield return null;
-        yield return new WaitForSecondsRealtime(0.25f);
-        GameStartCurtain.CancelarCortinaDesdeLobby();
+
+        // El jugador local puede terminar de aparecer después de cargar el mapa.
+        StoryIntroController intro = null;
+        while (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            NetworkObject jugador = NetworkManager.Singleton.LocalClient != null
+                ? NetworkManager.Singleton.LocalClient.PlayerObject : null;
+            intro = jugador != null
+                ? jugador.GetComponentInChildren<StoryIntroController>(true) : null;
+            if (intro != null && intro.IsSpawned && intro.IsOwner)
+                break;
+            yield return null;
+        }
+
+        if (intro == null || !intro.IsSpawned || !intro.IsOwner)
+            yield break;
+
+        AvisarAlJugadorLocalSobreZonaSegura(sceneName);
+        PresentacionLocalPreparada = true;
     }
 
     private static Transform BuscarHijo(Transform raiz, string nombre)
@@ -229,6 +235,8 @@ public class GestorEscenariosPartida : MonoBehaviour
         if (intro == null) return;
         if (sceneName == "MP_ZonaSegura1") intro.MostrarAvisoContinuarSafeZone();
         else if (sceneName == "MP_ZonaSegura2") intro.MostrarAvisoContinuarAMansion();
+        else if (sceneName == "MP_Laboratorio")
+            intro.MostrarIntroduccionMultiplayer(ConfiguracionPartidaSeleccionada.Escenario.Laboratorio);
         else if (sceneName == "MP_Ciudad")
             intro.MostrarIntroduccionMultiplayer(ConfiguracionPartidaSeleccionada.Escenario.Ciudad);
         else if (sceneName == "MP_Cabana")
@@ -315,6 +323,7 @@ public class GestorEscenariosPartida : MonoBehaviour
         Scene existente = SceneManager.GetSceneByName(sceneName);
         if (existente.IsValid() && existente.isLoaded)
         {
+            PresentacionLocalPreparada = false;
             escenaAditivaAnterior = escenaAditivaActiva.IsValid()
                 ? escenaAditivaActiva.name : string.Empty;
             BindearMapaAditivo(existente);
@@ -322,7 +331,7 @@ public class GestorEscenariosPartida : MonoBehaviour
             AplicarMapaALosJugadores(sceneName);
             MapaMultiplayerListo = true;
             EventoMapaMultiplayerListo?.Invoke();
-            AvisarAlJugadorLocalSobreZonaSegura(sceneName);
+            StartCoroutine(PrepararPresentacionMapaLocal(sceneName));
             return;
         }
 
