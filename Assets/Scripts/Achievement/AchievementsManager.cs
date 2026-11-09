@@ -34,6 +34,8 @@ public class AchievementsManager : MonoBehaviour
     private PlayerScore playerScore;
     private string rutaArchivo;
     private AchievementsData datos;
+    private readonly Queue<KeyValuePair<AchievementId, AchievementRank>> avisosPendientes =
+        new Queue<KeyValuePair<AchievementId, AchievementRank>>();
 
     [System.Serializable]
     private class LogroApiPayload
@@ -239,6 +241,13 @@ public class AchievementsManager : MonoBehaviour
     {
         if (playerScore == null)
             BuscarPlayerScore();
+
+        if (avisosPendientes.Count > 0 && GameplayPopupsController.Instance != null)
+        {
+            KeyValuePair<AchievementId, AchievementRank> aviso = avisosPendientes.Peek();
+            if (GameplayPopupsController.Instance.IntentarMostrarLogro(aviso.Key, aviso.Value))
+                avisosPendientes.Dequeue();
+        }
     }
 
     // ============================================================
@@ -869,13 +878,10 @@ public class AchievementsManager : MonoBehaviour
         if (BloqueoLogrosActivo())
             return;
 
-        if (GameplayPopupsController.Instance == null)
-        {
-            Debug.LogWarning("[ACHIEVEMENTS] No existe GameplayPopupsController.");
-            return;
-        }
-
-        GameplayPopupsController.Instance.MostrarLogro(id, rango);
+        // El HUD del jugador local puede aparecer después del evento de red.
+        // Conservar el aviso hasta que exista, sin enviarlo a otros jugadores.
+        avisosPendientes.Enqueue(
+            new KeyValuePair<AchievementId, AchievementRank>(id, rango));
     }
 
     public AchievementData ObtenerLogro(AchievementId id)

@@ -20,6 +20,7 @@ public class InteraccionJugadorHistoria : MonoBehaviour
 
     private NetworkObject jugadorNetworkObject;
     private bool hudRegistrado;
+    private GestorHistoriaPartida gestorHudRegistrado;
 
     private PlayerControls controls;
     private bool tieneObjetoEnfocado;
@@ -195,7 +196,7 @@ public class InteraccionJugadorHistoria : MonoBehaviour
 
         // Detectar la radio de Ciudad.
         if (radioCercana != null &&
-            gestor.EstadoMisionNetwork.Value == 4)
+            gestor.EstadoMisionActual == 4)
         {
             radioEnfocada = radioCercana;
             tieneObjetoEnfocado = true;
@@ -205,7 +206,7 @@ public class InteraccionJugadorHistoria : MonoBehaviour
         }
 
         if (tarjetaCercana != null &&
-            gestor.EstadoMisionNetwork.Value == 1)
+            gestor.EstadoMisionActual == 1)
         {
             tarjetaEnfocada = tarjetaCercana;
             tieneObjetoEnfocado = true;
@@ -215,8 +216,8 @@ public class InteraccionJugadorHistoria : MonoBehaviour
         }
 
         if (lectorCercano != null &&
-    (gestor.EstadoMisionNetwork.Value == 1 ||
-     gestor.EstadoMisionNetwork.Value == 2))
+    (gestor.EstadoMisionActual == 1 ||
+     gestor.EstadoMisionActual == 2))
 {
     lectorEnfocado = lectorCercano;
     tieneObjetoEnfocado = true;
@@ -227,7 +228,7 @@ public class InteraccionJugadorHistoria : MonoBehaviour
         NetworkManager.Singleton.LocalClientId;
 
     if (tieneTarjeta &&
-        gestor.EstadoMisionNetwork.Value == 2)
+        gestor.EstadoMisionActual == 2)
     {
         MostrarCartel(ObtenerTecla() + " para usar lector");
     }
@@ -317,6 +318,9 @@ public class InteraccionJugadorHistoria : MonoBehaviour
 
     private void RegistrarHUD()
     {
+        if (gestorHudRegistrado != GestorHistoriaPartida.Instance)
+            hudRegistrado = false;
+
         if (hudRegistrado)
             return;
 
@@ -361,6 +365,7 @@ public class InteraccionJugadorHistoria : MonoBehaviour
         gestor.RegistrarHUDLocal(titulo, descripcion);
 
         hudRegistrado = true;
+        gestorHudRegistrado = gestor;
     }
 
     private Transform BuscarHijo(Transform padre, string nombre)

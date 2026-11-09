@@ -11988,6 +11988,7 @@ MonoBehaviour:
   puntoSpawnBoss: {fileID: 2075863659962141752}
   animatorHelicoptero: {fileID: 6911082776547351831}
   triggerDescenso: Llegada
+  triggerHelipuerto: {fileID: 4476732131454085916}
   animatorPuertaTrasera: {fileID: 4139866634422844660}
   triggerAbrirPuerta: Abrir
   puertaTrasera: {fileID: 3624428628623322175}
@@ -15543,7 +15544,7 @@ Transform:
   m_GameObject: {fileID: 6560097887995146338}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.257, y: 0, z: 1.598}
+  m_LocalPosition: {x: -0.018, y: 0.11, z: 0.27}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -15568,7 +15569,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 3, y: 5, z: 3}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &7345841760700094879
 MonoBehaviour:
@@ -58248,7 +58249,8 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: -5716681864270162303, guid: 8394012a40e20d14e9158d2b74e12ee7, type: 3}
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 5520853982687273272, guid: 8394012a40e20d14e9158d2b74e12ee7, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: -927199367670048503, guid: 8394012a40e20d14e9158d2b74e12ee7, type: 3}
@@ -58260,6 +58262,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -927199367670048503, guid: 8394012a40e20d14e9158d2b74e12ee7, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4840987428488377740}
+    - targetCorrespondingSourceObject: {fileID: -927199367670048503, guid: 8394012a40e20d14e9158d2b74e12ee7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 173772992673829278}
     - targetCorrespondingSourceObject: {fileID: -6746762568364258318, guid: 8394012a40e20d14e9158d2b74e12ee7, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2924500404871632192}
@@ -58412,6 +58417,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98e97838d63b5224db432790297c1e46, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Scripts::EventoDescensoHelicoptero
+--- !u!64 &173772992673829278
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7460709487750419917}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 1
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 0}
 --- !u!1001 &1489760295864987733
 PrefabInstance:
   m_ObjectHideFlags: 0

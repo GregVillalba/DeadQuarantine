@@ -45,6 +45,8 @@ public class GestorHistoriaPartida : NetworkBehaviour
     private bool transicionSafeZone2Iniciada;
     private bool transicionSafeZone1MultiplayerIniciada;
     private bool transicionZonaSeguraMultiplayerIniciada;
+    private int estadoObjetivoRecibido = -1;
+    private float proximaSincronizacionObjetivo;
 
     [Header("Tarjeta de acceso")]
     [SerializeField] private GameObject tarjetaPrefab;
@@ -75,7 +77,11 @@ public class GestorHistoriaPartida : NetworkBehaviour
 
     public bool EsperandoSalidaCiudad =>
         IsSpawned &&
-        EstadoMisionNetwork.Value == IrAlCaminoSalida;
+        EstadoMisionActual == IrAlCaminoSalida;
+
+    public int EstadoMisionActual => estadoObjetivoRecibido >= 0
+        ? estadoObjetivoRecibido
+        : EstadoMisionNetwork.Value;
 
     public static GestorHistoriaPartida Instance { get; private set; }
 
@@ -452,9 +458,10 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
 
         if (SceneManager.GetActiveScene().name == "MP_Laboratorio" &&
             puntoTriggerLaboratorio == null)
-        {
-            CrearTriggerLaboratorioMultiplayer();
-        }
+            Debug.LogError("[Historia MP] Falta TriggerSafeZoneLaboratorio en Escenario_1.", this);
+        if (SceneManager.GetActiveScene().name == "MP_Ciudad" &&
+            puntoSalidaCiudad == null)
+            Debug.LogError("[Historia MP] Falta TriggerContinuarHistoria en Escenario_2.", this);
 
         Debug.Log("[Historia MP] Referencias del escenario vinculadas. " +
             $"Tarjeta={puntoSpawnTarjeta != null}, lector={puntoLectorPuerta != null}, " +
@@ -463,41 +470,25 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
             $"triggerLaboratorio={puntoTriggerLaboratorio != null}.", this);
     }
 
-    private void CrearTriggerLaboratorioMultiplayer()
-    {
-        if (animacionPuerta == null)
-        {
-            Debug.LogError(
-                "[Historia MP] No se encontró PuertaAnimacionHistoria para " +
-                "crear el trigger de SafeZone1.",
-                this
-            );
-            return;
-        }
-
-        Transform puerta = animacionPuerta.transform;
-        Vector3 direccionSalida = animacionPuerta.DireccionHaciaSalida;
-        GameObject objetoTrigger = new GameObject(
-            "TriggerSafeZoneLaboratorio"
-        );
-        objetoTrigger.transform.SetPositionAndRotation(
-            puerta.position + direccionSalida * 1.5f,
-            Quaternion.LookRotation(direccionSalida, Vector3.up)
-        );
-
-        BoxCollider caja = objetoTrigger.AddComponent<BoxCollider>();
-        caja.isTrigger = true;
-        caja.size = new Vector3(5f, 3f, 4f);
-
-        ActivadorSalidaCiudadHistoria activador =
-            objetoTrigger.AddComponent<ActivadorSalidaCiudadHistoria>();
-        activador.ConfigurarComoTriggerLaboratorio();
-
-        puntoTriggerLaboratorio = objetoTrigger.transform;
-    }
-
     private void Update()
     {
+        if (IsSpawned && Time.unscaledTime >= proximaSincronizacionObjetivo)
+        {
+            proximaSincronizacionObjetivo = Time.unscaledTime + 5f;
+            if (IsServer)
+                SincronizarObjetivoClientRpc(EstadoMisionNetwork.Value);
+            ActualizarTextoObjetivo();
+        }
+
+        if (IsServer && !transicionSafeZone2Iniciada &&
+            EsHistoriaCiudad() &&
+            SceneManager.GetActiveScene().name == "MP_Ciudad" &&
+            EstadoMisionNetwork.Value == IrAlCaminoSalida &&
+            puntoSalidaCiudad != null && NetworkManager.Singleton != null &&
+            NetworkManager.Singleton.ConnectedClientsList.Count >= MinJugadoresMultiplayer &&
+            TodosLosJugadoresEnTrigger(puntoSalidaCiudad, distanciaActivacionSalidaCiudad))
+            EstadoMisionNetwork.Value = HistoriaCiudadCompletada;
+
         if (!IsServer || transicionSafeZone1MultiplayerIniciada ||
             !EsHistoriaLaboratorio() ||
             SceneManager.GetActiveScene().name != "MP_Laboratorio" ||
@@ -671,12 +662,22 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
         ActualizarTextoObjetivo();
     }
 
+    [ClientRpc]
+    private void SincronizarObjetivoClientRpc(int estadoServidor)
+    {
+        estadoObjetivoRecibido = estadoServidor;
+        ActualizarTextoObjetivo();
+    }
+
     private void AlCambiarEstadoMision(
         int estadoAnterior,
         int estadoNuevo
     )
     {
+        estadoObjetivoRecibido = estadoNuevo;
         ActualizarTextoObjetivo();
+        if (IsServer && IsSpawned)
+            SincronizarObjetivoClientRpc(estadoNuevo);
 
         if (estadoNuevo == HistoriaCiudadCompletada &&
             EsHistoriaCiudad())
@@ -691,7 +692,7 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
             textoDescripcionObjetivo == null)
             return;
 
-        switch (EstadoMisionNetwork.Value)
+        switch (EstadoMisionActual)
         {
             case BuscarTarjeta:
                 textoTituloObjetivo.color = Color.white;
@@ -1104,6 +1105,18 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
             if (!jugadoresDentro.Contains(cliente.ClientId))
                 return false;
         }
+
+        return true;
+    }
+
+    private bool TodosLosJugadoresEnTrigger(Transform punto, float distancia)
+    {
+        if (NetworkManager.Singleton == null)
+            return false;
+
+        foreach (NetworkClient cliente in NetworkManager.Singleton.ConnectedClientsList)
+            if (!JugadorDentroDelTrigger(cliente.ClientId, punto, distancia))
+                return false;
 
         return true;
     }

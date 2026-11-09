@@ -73,19 +73,28 @@ public class AchievementHUD : MonoBehaviour
 
     public void Show(AchievementId id, AchievementRank rango)
     {
-        if (!isActiveAndEnabled || !gameObject.activeInHierarchy)
-        {
-            Debug.LogWarning(
-                "[ACHIEVEMENT HUD] El HUD no está activo en la jerarquía.");
-            return;
-        }
-
         colaLogros.Enqueue(new AchievementNotification(id, rango));
+        IniciarColaSiVisible();
+    }
+
+    private void OnEnable()
+    {
+        IniciarColaSiVisible();
+    }
+
+    private void OnDisable()
+    {
+        mostrarColasCoroutine = null;
+    }
+
+    private void IniciarColaSiVisible()
+    {
+        if (!isActiveAndEnabled || !gameObject.activeInHierarchy ||
+            colaLogros.Count == 0 || mostrarColasCoroutine != null)
+            return;
 
         MostrarVisualmente();
-
-        if (mostrarColasCoroutine == null)
-            mostrarColasCoroutine = StartCoroutine(MostrarColaDeLogros());
+        mostrarColasCoroutine = StartCoroutine(MostrarColaDeLogros());
     }
 
     private IEnumerator MostrarColaDeLogros()

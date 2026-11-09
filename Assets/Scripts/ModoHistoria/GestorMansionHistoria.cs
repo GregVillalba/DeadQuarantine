@@ -32,6 +32,7 @@ public class GestorMansionHistoria : MonoBehaviour
     [Header("Helicóptero")]
     [SerializeField] private Animator animatorHelicoptero;
     [SerializeField] private string triggerDescenso = "Llegada";
+    [SerializeField] private Collider triggerHelipuerto;
 
     [Header("Puerta trasera")]
     [SerializeField] private Animator animatorPuertaTrasera;
@@ -74,6 +75,62 @@ public class GestorMansionHistoria : MonoBehaviour
         BuscarHUDJugador();
         if (GestorHistoriaPartida.Instance != null)
             GestorHistoriaPartida.Instance.SincronizarHUDMansionLocal();
+    }
+
+    private void Update()
+    {
+        if (!EsServidor || estadoActual != EstadoMision.IrAlHelipuerto ||
+            NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+            return;
+
+        // Respaldo del AnimationEvent: si el clip terminó pero el evento se
+        // perdió, la extracción sigue pudiendo completarse.
+        if (!helicopteroTerminoDescenso && animatorHelicoptero != null &&
+            animatorHelicoptero.GetCurrentAnimatorStateInfo(0).IsName("descenso") &&
+            animatorHelicoptero.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1f &&
+            !animatorHelicoptero.IsInTransition(0))
+            helicopteroTerminoDescenso = true;
+
+        jugadorLlegoAlHelipuerto = TodosEnHelipuerto();
+        if (jugadorLlegoAlHelipuerto)
+            IntentarCompletarMision();
+    }
+
+    private bool TodosEnHelipuerto()
+    {
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+            return true;
+
+        if (triggerHelipuerto == null)
+        {
+            ActivadorHelipuertoHistoria activador =
+                FindAnyObjectByType<ActivadorHelipuertoHistoria>();
+            if (activador != null)
+                triggerHelipuerto = activador.GetComponent<Collider>();
+        }
+
+        if (triggerHelipuerto == null ||
+            NetworkManager.Singleton.ConnectedClientsList.Count < 2)
+            return false;
+
+        Bounds zona = triggerHelipuerto.bounds;
+        foreach (NetworkClient cliente in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            if (cliente.PlayerObject == null)
+                return false;
+
+            CharacterController cuerpo =
+                cliente.PlayerObject.GetComponent<CharacterController>();
+            if (cuerpo != null && cuerpo.enabled)
+            {
+                if (!zona.Contains(cuerpo.bounds.center))
+                    return false;
+            }
+            else if (!zona.Contains(cliente.PlayerObject.transform.position))
+                return false;
+        }
+
+        return true;
     }
 
     private void OnDestroy()
@@ -271,7 +328,7 @@ public void RegistrarLlegadaAlHelipuerto()
         return;
     }
 
-    jugadorLlegoAlHelipuerto = true;
+    jugadorLlegoAlHelipuerto = TodosEnHelipuerto();
 
     Debug.Log(
         "[Helipuerto] Llegada registrada. " +
@@ -304,6 +361,7 @@ private void IntentarCompletarMision()
     if (!EsServidor ||
         estadoActual != EstadoMision.IrAlHelipuerto ||
         !jugadorLlegoAlHelipuerto ||
+        !TodosEnHelipuerto() ||
         !helicopteroTerminoDescenso)
     {
         return;
@@ -318,6 +376,7 @@ public void CompletarMision()
     if (!EsServidor ||
         estadoActual != EstadoMision.IrAlHelipuerto ||
         !jugadorLlegoAlHelipuerto ||
+        !TodosEnHelipuerto() ||
         !helicopteroTerminoDescenso)
     {
         return;

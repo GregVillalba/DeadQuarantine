@@ -88,17 +88,18 @@ public class GameplayPopupsController : MonoBehaviour
         AchievementId id,
         AchievementRank rango)
     {
+        IntentarMostrarLogro(id, rango);
+    }
+
+    public bool IntentarMostrarLogro(AchievementId id, AchievementRank rango)
+    {
         BuscarAchievementHUD();
 
         if (achievementHUD == null)
-        {
-            Debug.LogWarning(
-                "[POPUPS] No se encontró el AchievementHUD del jugador local. " +
-                "Logro: " + id);
-            return;
-        }
+            return false;
 
         achievementHUD.Show(id, rango);
+        return true;
     }
 
     public void MostrarLogro(AchievementId id)

@@ -2651,7 +2651,7 @@ Transform:
   m_GameObject: {fileID: 113580418577482234}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.006534812, z: -0, w: 0.9999787}
-  m_LocalPosition: {x: -36.12, y: -9.49, z: -84.84}
+  m_LocalPosition: {x: -28.45, y: -9.49, z: -84.94}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2676,7 +2676,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 5, y: 5, z: 10}
+  m_Size: {x: 20, y: 5, z: 10}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &2551525832180551585
 MonoBehaviour:
@@ -2690,6 +2690,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b9de629e70d4ef74ba12d5ca0c070f7b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Scripts::ActivadorSalidaCiudadHistoria
+  tipoTrigger: 0
 --- !u!1 &117299626709284448
 GameObject:
   m_ObjectHideFlags: 0
@@ -33650,6 +33651,7 @@ MonoBehaviour:
   - {fileID: 4576925592896816713}
   - {fileID: 5724918770274466520}
   - {fileID: 3085029454058246014}
+  perfilPostProcesoLaboratorio: {fileID: 0}
 --- !u!114 &7536661602885891938
 MonoBehaviour:
   m_ObjectHideFlags: 0
