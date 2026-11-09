@@ -22,6 +22,8 @@ public class MultiplayerLobbyController : MonoBehaviour
     [SerializeField] private GameObject salaEsperaPanel;
 
     [SerializeField] private GameObject configuracionPartidaPanel;
+    [SerializeField] private GameObject accionesSalaPanel;
+    [SerializeField] private GameObject codigoSalaPanel;
 
     [Header("--- NETWORK ---")]
     [SerializeField] private NetworkBootstrap network;
@@ -88,7 +90,10 @@ public class MultiplayerLobbyController : MonoBehaviour
 
     private bool estoyEnSala = false;
 
-    private bool creandoSala;
+    private bool operacionSalaEnCurso;
+
+    public bool EnSala => estoyEnSala && network != null && network.CurrentSession != null;
+    public bool EsAnfitrion => EnSala && network.CurrentSession.IsHost;
     private bool countdownIniciado = false;
     private bool iniciandoPartida = false;
     private bool cortinaCargaSolicitada;
@@ -151,9 +156,8 @@ public class MultiplayerLobbyController : MonoBehaviour
         if (AbrirDirectoEnSalaEspera)
         {
             AbrirDirectoEnSalaEspera = false;
+            AbrirDirectoEnIngresarCodigo = false;
             estoyEnSala = true;
-
-            MostrarPanel(salaEsperaPanel);
 
             if (labelCodigoACopiar != null)
             {
@@ -166,6 +170,8 @@ public class MultiplayerLobbyController : MonoBehaviour
                     labelCodigoACopiar.text = network.CurrentJoinCode;
                 }
             }
+
+            MostrarPanel(salaEsperaPanel);
         }
         // SI VENIMOS DESDE PANTALLAS UI PIDIENDO INGRESAR CÓDIGO:
         else if (AbrirDirectoEnIngresarCodigo)
@@ -210,9 +216,14 @@ public class MultiplayerLobbyController : MonoBehaviour
 
     private void Update()
     {
+        if (operacionSalaEnCurso)
+            return;
+
+        ActualizarCodigoSala();
         if (!estoyEnSala)
         {
             presenciaActiva = false;
+            ActualizarVistaPreviaLocal();
             return;
         }
 
@@ -239,7 +250,8 @@ public class MultiplayerLobbyController : MonoBehaviour
 
     public async void OnClick_CrearSala()
     {
-        if (creandoSala) return;
+        if (operacionSalaEnCurso || estoyEnSala)
+            return;
 
         if (!VerificarInternet())
             return;
@@ -259,7 +271,7 @@ public class MultiplayerLobbyController : MonoBehaviour
             return;
         }
 
-        creandoSala = true;
+        operacionSalaEnCurso = true;
 
         try
         {
@@ -305,46 +317,30 @@ public class MultiplayerLobbyController : MonoBehaviour
         }
         catch (Exception e)
         {
+            if (estoyEnSala)
+            {
+                await SalirDeSala();
+                MostrarPanel(modoMultiplayerPanel);
+            }
+
             Debug.LogError("[Lobby] Error creando sala: " + e.Message);
             MostrarSinInternet();
             
-        }finally { creandoSala = false; }
+        }
+        finally
+        {
+            operacionSalaEnCurso = false;
+        }
     }
 
-   /* public void OnClick_IrAConfigurarPartida()
-{
-    if (!VerificarInternet())
-        return;
-
-    MostrarPanel(null); // oculta crear/unirse, código y sala
-
-    if (configuracionPartidaPanel != null)
-        configuracionPartidaPanel.SetActive(true);
-}*/
-
-public void OnClick_IrAConfigurarPartida()
-{
-    if (!VerificarInternet())
-        return;
-
-    // Flujo nuevo: el botón CREAR ya no abre las pantallas viejas de
-    // modalidad/dificultad/mapa. Crea la sala y entra al lobby.
-    if (!estoyEnSala)
+    public void OnClick_IrAConfigurarPartida()
     {
-        OnClick_CrearSala();
-        return;
-    }
+        if (!EsAnfitrion || operacionSalaEnCurso)
+            return;
 
-    // Si ya estamos dentro del lobby, abre el popup de configuración.
-    InicializarConfiguradorPartida();
-    if (configuradorPartida != null)
+        InicializarConfiguradorPartida();
         configuradorPartida.Abrir();
-}
-
-/*public void OnClick_AtrasDesdeConfiguracion()
-{
-    MostrarPanel(modoMultiplayerPanel);
-}*/
+    }
 
     // =========================================================
     // UNIRSE A SALA
@@ -352,7 +348,7 @@ public void OnClick_IrAConfigurarPartida()
 
     public void OnClick_IrAIngresarCodigo()
     {
-        if (!VerificarInternet())
+        if (operacionSalaEnCurso || estoyEnSala || !VerificarInternet())
             return;
 
         // Si estamos en la escena "PantallasUI", cargamos "NetworkLobby"
@@ -374,7 +370,7 @@ public void OnClick_IrAConfigurarPartida()
 
     public async void OnClick_ConfirmarUnirseConCodigo()
     {
-        if (!VerificarInternet())
+        if (operacionSalaEnCurso || estoyEnSala || !VerificarInternet())
             return;
             
         if (codigoInputField == null)
@@ -406,6 +402,7 @@ public void OnClick_IrAConfigurarPartida()
             return;
         }
 
+        operacionSalaEnCurso = true;
         try
         {
             bool conectado =
@@ -454,11 +451,8 @@ public void OnClick_IrAConfigurarPartida()
 
             ActualizarBotonReady(false);
 
-            if (labelCodigoACopiar != null)
-            {
-                labelCodigoACopiar.text =
-                    network.CurrentJoinCode;
-            }
+            if (codigoSalaPanel == null && labelCodigoACopiar != null)
+                labelCodigoACopiar.text = network.CurrentJoinCode;
 
             MostrarPanel(salaEsperaPanel);
             InicializarConfiguradorPartida();
@@ -471,12 +465,22 @@ public void OnClick_IrAConfigurarPartida()
         }
         catch (Exception e)
         {
+            if (estoyEnSala)
+            {
+                await SalirDeSala();
+                MostrarPanel(ingresarCodPanel);
+            }
+
             Debug.LogError(
                 "[Lobby] Error uniéndose: " +
                 e.Message
             );
 
             MostrarCodigoInvalido();
+        }
+        finally
+        {
+            operacionSalaEnCurso = false;
         }
     }
 
@@ -486,6 +490,9 @@ public void OnClick_IrAConfigurarPartida()
 
     public async void OnClick_Listo()
     {
+        if (accionesSalaPanel != null && (!EnSala || operacionSalaEnCurso))
+            return;
+
         if (network == null)
             network = NetworkBootstrap.Instance;
 
@@ -910,14 +917,10 @@ public void OnClick_IrAConfigurarPartida()
 
         if (btnPlayMultiplayer != null)
         {
-            bool puedeUsarReady = true;
+            bool puedeUsarReady = accionesSalaPanel == null || EnSala;
 
-            if (network != null &&
-                network.CurrentSession != null &&
-                network.CurrentSession.IsHost)
-            {
+            if (EsAnfitrion)
                 puedeUsarReady = LobbyGameSettingsRuntime.ConfiguracionValida();
-            }
 
             btnPlayMultiplayer.interactable = puedeUsarReady;
         }
@@ -1220,10 +1223,7 @@ public void OnClick_IrAConfigurarPartida()
         if (configuradorPartida == null)
             configuradorPartida = gameObject.AddComponent<LobbyGameSettingsRuntime>();
 
-        bool puedeEditar =
-            network != null &&
-            network.CurrentSession != null &&
-            network.CurrentSession.IsHost;
+        bool puedeEditar = EsAnfitrion;
 
         if (!configuradorPartida.Inicializado)
         {
@@ -1249,10 +1249,7 @@ public void OnClick_IrAConfigurarPartida()
         if (network == null)
             network = NetworkBootstrap.Instance;
 
-        bool puedeEditar =
-            network != null &&
-            network.CurrentSession != null &&
-            network.CurrentSession.IsHost;
+        bool puedeEditar = EsAnfitrion;
 
         if (configuradorPartida == null || !configuradorPartida.Inicializado)
         {
@@ -1390,6 +1387,9 @@ public void OnClick_IrAConfigurarPartida()
 
     public void OnClick_CopiarCodigo()
     {
+        if (codigoSalaPanel != null && !EsAnfitrion)
+            return;
+
         string textoACopiar =
             labelCodigoACopiar != null &&
             !string.IsNullOrEmpty(
@@ -1440,6 +1440,9 @@ public void OnClick_IrAConfigurarPartida()
 
     public void OnClick_AtrasDesdeIngresarCodigo()
     {
+        if (operacionSalaEnCurso)
+            return;
+
         if (codigoInputField != null)
         {
             codigoInputField.text = "";
@@ -1450,16 +1453,25 @@ public void OnClick_IrAConfigurarPartida()
 
     public async void OnClick_AtrasDesdeSalaEspera()
     {
-        await SalirDeSala();
+        if (operacionSalaEnCurso)
+            return;
 
+        if (accionesSalaPanel != null && !estoyEnSala)
+        {
+            OnClick_AtrasAlMenuPrincipal();
+            return;
+        }
+
+        await SalirDeSala();
         MostrarPanel(modoMultiplayerPanel);
     }
 
     public async void OnClick_AtrasAlMenuPrincipal()
     {
-        await SalirDeSala();
+        if (operacionSalaEnCurso)
+            return;
 
-        PantallasUIController.VolverAElegirModo = true;
+        await SalirDeSala();
 
         SceneManager.LoadScene(
             "PantallasUI"
@@ -1468,7 +1480,15 @@ public void OnClick_IrAConfigurarPartida()
 
     private async Task SalirDeSala()
     {
+        operacionSalaEnCurso = true;
         estoyEnSala = false;
+        if (configuradorPartida != null)
+            configuradorPartida.SetEditable(false);
+        ActualizarCodigoSala();
+        if (codigoSalaPanel != null && labelCodigoACopiar != null)
+            labelCodigoACopiar.text = string.Empty;
+        CodigoGeneradoParaMostrar = string.Empty;
+
         countdownIniciado = false;
         countdownGeneration++;
         tiempoCountdown = -1f;
@@ -1488,7 +1508,7 @@ public void OnClick_IrAConfigurarPartida()
                 if (network.CurrentSession.IsHost)
                     await network.CerrarSalaComoHost();
                 else
-                    await network.CurrentSession.LeaveAsync();
+                    await network.LeaveSession();
             }
             catch (Exception e)
             {
@@ -1505,6 +1525,8 @@ public void OnClick_IrAConfigurarPartida()
         {
             countdownPanel.SetActive(false);
         }
+
+        operacionSalaEnCurso = false;
     }
 
     // =========================================================
@@ -1650,54 +1672,64 @@ private static bool HayNetcodeActivo()
     // PANELES
     // =========================================================
 
-    /*private void MostrarPanel(GameObject panelActivo)
+    private void MostrarPanel(GameObject panelActivo)
     {
-
-        if (configuracionPartidaPanel != null)
-            configuracionPartidaPanel.SetActive(false);
+        bool ingresoCodigo = panelActivo != null && panelActivo == ingresarCodPanel;
+        bool usaLobbyCinematico = accionesSalaPanel != null;
+        bool entradaSala = panelActivo != null && panelActivo == modoMultiplayerPanel;
 
         if (modoMultiplayerPanel != null)
         {
-            modoMultiplayerPanel.SetActive(
-                modoMultiplayerPanel == panelActivo
-            );
-        }
-
-        if (ingresarCodPanel != null)
-        {
-            ingresarCodPanel.SetActive(
-                ingresarCodPanel == panelActivo
-            );
+            bool mostrarMenuAnterior = !usaLobbyCinematico &&
+                (entradaSala || ingresoCodigo || panelActivo == configuracionPartidaPanel);
+            modoMultiplayerPanel.SetActive(mostrarMenuAnterior);
         }
 
         if (salaEsperaPanel != null)
         {
-            salaEsperaPanel.SetActive(
-                salaEsperaPanel == panelActivo
-            );
+            bool mostrarSala = panelActivo == salaEsperaPanel ||
+                (usaLobbyCinematico && (entradaSala || ingresoCodigo));
+            salaEsperaPanel.SetActive(mostrarSala);
         }
-    }*/
 
-    private void MostrarPanel(GameObject panelActivo)
-{
-    // La pantalla principal (Crear/Unirse) queda visible también mientras
-    // se muestra la configuración o el ingreso de código.
-    bool pantallaPrincipal = panelActivo == modoMultiplayerPanel ||
-                             panelActivo == ingresarCodPanel ||
-                             panelActivo == configuracionPartidaPanel;
+        if (ingresarCodPanel != null)
+            ingresarCodPanel.SetActive(ingresoCodigo);
 
-    if (modoMultiplayerPanel != null)
-        modoMultiplayerPanel.SetActive(pantallaPrincipal);
+        if (configuracionPartidaPanel != null)
+            configuracionPartidaPanel.SetActive(panelActivo == configuracionPartidaPanel);
 
-    if (ingresarCodPanel != null)
-        ingresarCodPanel.SetActive(panelActivo == ingresarCodPanel);
+        if (usaLobbyCinematico)
+        {
+            accionesSalaPanel.SetActive(!estoyEnSala && !ingresoCodigo);
+            ActualizarCodigoSala();
+            if (!estoyEnSala)
+            {
+                miReady = false;
+                ActualizarBotonReady(false);
+                ActualizarVistaPreviaLocal();
+            }
+        }
+    }
 
-    if (configuracionPartidaPanel != null)
-        configuracionPartidaPanel.SetActive(panelActivo == configuracionPartidaPanel);
+    private void ActualizarCodigoSala()
+    {
+        if (codigoSalaPanel == null)
+            return;
 
-    if (salaEsperaPanel != null)
-        salaEsperaPanel.SetActive(panelActivo == salaEsperaPanel);
-}
+        bool mostrarCodigo = EsAnfitrion && labelCodigoACopiar != null &&
+            !string.IsNullOrWhiteSpace(labelCodigoACopiar.text);
+        if (codigoSalaPanel.activeSelf != mostrarCodigo)
+            codigoSalaPanel.SetActive(mostrarCodigo);
+
+        if (!mostrarCodigo && feedbackCopiarText != null && feedbackCopiarText.gameObject.activeSelf)
+            feedbackCopiarText.gameObject.SetActive(false);
+    }
+
+    private void ActualizarVistaPreviaLocal()
+    {
+        if (accionesSalaPanel != null && slots != null && slots.Length > 0 && slots[0] != null)
+            slots[0].SetPlayer(true, false, false, CharacterSelection.SelectedIndex);
+    }
 
     private void OnDestroy()
     {

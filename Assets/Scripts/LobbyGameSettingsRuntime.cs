@@ -83,6 +83,9 @@ public class LobbyGameSettingsRuntime : MonoBehaviour
     {
         editable = puedeEditar;
 
+        if (!editable)
+            Cerrar();
+
         if (!inicializado)
             return;
 
@@ -109,7 +112,7 @@ public class LobbyGameSettingsRuntime : MonoBehaviour
 
     public void Abrir()
     {
-        if (popup != null)
+        if (editable && popup != null)
         {
             popup.SetActive(true);
             popup.transform.SetAsLastSibling();

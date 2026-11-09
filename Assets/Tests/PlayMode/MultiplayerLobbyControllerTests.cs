@@ -523,12 +523,12 @@ public class MultiplayerLobbyControllerTests
     // ---------------------------------------------------------------
 
     [UnityTest]
-    public IEnumerator OnClickAtrasAlMenuPrincipal_MarcaVolverAElegirModoYCargaPantallasUI()
+    public IEnumerator OnClickAtrasAlMenuPrincipal_MuestraMenuPrincipalEnPantallasUI()
     {
         controller.OnClick_AtrasAlMenuPrincipal();
         yield return null;
 
-        Assert.IsTrue(PantallasUIController.VolverAElegirModo);
+        Assert.IsNotNull(GameObject.Find("menuPrincipalPanel"));
         Assert.AreEqual(
             "PantallasUI",
             UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);

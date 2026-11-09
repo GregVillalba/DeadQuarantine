@@ -172,8 +172,8 @@ public class LobbyCinematicPartyPresenter : MonoBehaviour
     private void LateUpdate()
     {
         UpdateParty();
-        UpdateSelection();
         UpdateConfigureButtonVisibility();
+        UpdateSelection();
     }
 
     // =========================================================
@@ -467,12 +467,7 @@ public class LobbyCinematicPartyPresenter : MonoBehaviour
 
         EnsureConfigureButtonRuntimeBinding();
 
-        // Usa exactamente la misma fuente de verdad que MultiplayerLobbyController.
-        NetworkBootstrap network = NetworkBootstrap.Instance;
-        bool isHost =
-            network != null &&
-            network.CurrentSession != null &&
-            network.CurrentSession.IsHost;
+        bool isHost = multiplayerLobbyController != null && multiplayerLobbyController.EsAnfitrion;
 
         if (configureMatchButton.gameObject.activeSelf != isHost)
             configureMatchButton.gameObject.SetActive(isHost);
@@ -539,9 +534,10 @@ public class LobbyCinematicPartyPresenter : MonoBehaviour
 
     private void UpdateSelection()
     {
+        bool inRoom = multiplayerLobbyController == null || multiplayerLobbyController.EnSala;
         if (modeDifficultyText != null)
         {
-            string value = LobbyGameSettingsRuntime.ObtenerResumenModoDificultad();
+            string value = inRoom ? LobbyGameSettingsRuntime.ObtenerResumenModoDificultad() : "SIN CONFIGURAR";
 
             if (value != lastModeDifficulty)
             {
@@ -552,7 +548,7 @@ public class LobbyCinematicPartyPresenter : MonoBehaviour
 
         if (mapText != null)
         {
-            string value = LobbyGameSettingsRuntime.ObtenerNombreMapaActual();
+            string value = inRoom ? LobbyGameSettingsRuntime.ObtenerNombreMapaActual() : "-";
 
             if (value != lastMap)
             {

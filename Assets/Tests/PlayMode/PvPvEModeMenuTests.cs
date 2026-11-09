@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 public class PvPvEModeMenuTests
 {
-    const string EntryPath="Canvas/elegirModoPanel/TODO/player2/Iniciar_juego (2)";
+    const string EntryPath="Canvas/menuPrincipalPanel/Botones/PartidaMultijugador";
     PvPvEModeMenu menu;
     Button entry;
     int originalCharacter;
@@ -32,8 +32,7 @@ public class PvPvEModeMenuTests
         menu=SceneComponents<PvPvEModeMenu>().Single();
         var canvas=SceneManager.GetActiveScene().GetRootGameObjects().First(g=>g.name=="Canvas" && g.transform.Find("menuPrincipalPanel"));
         entry=canvas.transform.Find(EntryPath.Substring("Canvas/".Length)).GetComponent<Button>();
-        canvas.transform.Find("menuPrincipalPanel/Botones/Iniciar_juego").GetComponent<Button>().onClick.Invoke();
-        Assert.That(entry.gameObject.activeInHierarchy,Is.True,"The existing initial game menu still exposes Multiplayer");
+        Assert.That(entry.gameObject.activeInHierarchy,Is.True,"The main menu exposes Multiplayer directly");
     }
     [UnityTearDown] public IEnumerator Cleanup()
     {
@@ -43,6 +42,23 @@ public class PvPvEModeMenuTests
         foreach(var network in Object.FindObjectsByType<NetworkManager>(FindObjectsInactive.Include,FindObjectsSortMode.None))Object.Destroy(network.gameObject);
         yield return null;
     }
+    [UnityTest] public IEnumerator SoloOptionOpensTheLobbyAndBackRestoresTheMainMenu()
+    {
+        var mainMenu = entry.transform.parent.parent;
+        var solo = mainMenu.Find("Botones/PartidaEnSolitario").GetComponent<Button>();
+        solo.onClick.Invoke();
+        yield return null;
+
+        Assert.That(mainMenu.gameObject.activeSelf, Is.False);
+        Assert.That(GameObject.Find("salaEsperaSinglePlayerPanel"), Is.Not.Null);
+
+        SceneComponents<SinglePlayerLobbyController>().Single().OnClick_Volver();
+        yield return null;
+        Assert.That(mainMenu.gameObject.activeInHierarchy, Is.True);
+        Assert.That(GameObject.Find("salaEsperaSinglePlayerPanel"), Is.Null);
+    }
+
+
     [UnityTest] public IEnumerator EntryPvPvEAndBothBackButtonsUseRealSceneBindings()
     {
         Assert.That(menu.ModeSelectionPanel.activeSelf,Is.False);
@@ -87,6 +103,14 @@ public class PvPvEModeMenuTests
         coop.onClick.Invoke();yield return null;yield return null;
         Assert.That(SceneManager.GetActiveScene().name,Is.EqualTo("NetworkLobby"));
         Assert.That(SceneComponents<MultiplayerLobbyController>().Length,Is.GreaterThan(0));
+        var room = GameObject.Find("salaEsperaPanel");
+        Assert.That(room, Is.Not.Null);
+        Assert.That(GameObject.Find("MODO_MULTIPLAYER_PANEL"), Is.Null);
+        Assert.That(room.transform.Find("AccionesSala/Btn_CrearSala").gameObject.activeInHierarchy, Is.True);
+        Assert.That(room.transform.Find("AccionesSala/Btn_UnirseSala").gameObject.activeInHierarchy, Is.True);
+        Assert.That(room.transform.Find("CodigoSala").gameObject.activeSelf, Is.False);
+        Assert.That(room.transform.Find("Btn_ConfigurarPartida").gameObject.activeSelf, Is.False);
+        Assert.That(room.transform.Find("PLAY_MULTIPLAYER").GetComponent<Button>().interactable, Is.False);
     }
 
     [UnityTest] public IEnumerator UtilityPickersDoNotShowWeaponModelOrStats()
