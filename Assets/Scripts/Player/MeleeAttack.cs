@@ -22,6 +22,8 @@ public class MeleeAttack : MonoBehaviour
 
     private PlayerControls controls;
     private bool isAttacking;
+    private bool hitDelivered,swooshPlayed;
+    private Weapon attackWeapon;
     private int meleeLayerIndex = -1;
     private PlayerHealth saludJugador;
 
@@ -59,6 +61,8 @@ public class MeleeAttack : MonoBehaviour
     {
         controls.Player.Melee.performed -= OnMeleeInput;
         controls.Player.Disable();
+        CancelInvoke(nameof(FinishAttack));
+        FinishAttack();
     }
 
     private void OnMeleeInput(InputAction.CallbackContext context)
@@ -73,6 +77,8 @@ public class MeleeAttack : MonoBehaviour
         if (weaponSwitcher != null && weaponSwitcher.IsSwitching)
             return;
 
+        if (Salud == null || !Salud.IsOwner || !Salud.IsAlive) return;
+
         // Abatido solo puede disparar y recargar: no puede usar el cuchillo.
         if (Salud != null && Salud.IsDowned)
             return;
@@ -80,6 +86,8 @@ public class MeleeAttack : MonoBehaviour
         if (isAttacking || weaponAnimator == null)
             return;
 
+        // Each equipped controller has its own layer indices, just like the existing grenade action.
+        meleeLayerIndex = weaponAnimator.GetLayerIndex("GranadeKnife");
         if (meleeLayerIndex < 0)
         {
             Debug.LogWarning("[MeleeAttack] No se encontró la capa 'GranadeKnife' en el Animator.");
@@ -92,7 +100,8 @@ public class MeleeAttack : MonoBehaviour
         if (currentWeapon != null && currentWeapon.IsReloading)
             currentWeapon.CancelReload();
 
-        isAttacking = true;
+        DeadQuarantine.PvPvE.Networking.PvPvETeamDeployment.Active?.OffensiveActionServerRpc();
+        isAttacking = true;hitDelivered=false;swooshPlayed=false;attackWeapon=currentWeapon;
 
         // Si estaba apuntando, forzar que deje de apuntar antes del golpe.
         if (currentWeapon != null && currentWeapon.IsAiming)
@@ -104,7 +113,10 @@ public class MeleeAttack : MonoBehaviour
         if (currentWeapon != null)
             currentWeapon.InputLocked = true;
 
-        weaponAnimator.CrossFade("Knife_Attack", 0.1f, meleeLayerIndex);
+        weaponAnimator.SetLayerWeight(meleeLayerIndex, 1f);
+        weaponAnimator.CrossFade("Knife_Attack", 0.1f, meleeLayerIndex, 0f);
+        int right=weaponAnimator.GetLayerIndex("GranadeKnifeRight");
+        if(right>=0&&weaponAnimator.HasState(right,Animator.StringToHash("Knife_Attack"))){weaponAnimator.SetLayerWeight(right,1);weaponAnimator.CrossFade("Knife_Attack",.1f,right,0f);}
 
         Invoke(nameof(FinishAttack), attackCooldown);
     }
@@ -116,12 +128,13 @@ public class MeleeAttack : MonoBehaviour
         if (knifeObject != null)
             knifeObject.SetActive(false); // se esconde de nuevo al terminar
 
-        if (weaponSwitcher != null && weaponSwitcher.CurrentWeapon != null)
-            weaponSwitcher.CurrentWeapon.InputLocked = false;
+        if (attackWeapon != null) attackWeapon.InputLocked = false;
+        attackWeapon=null;
     }
 
     public void OnMeleeSwoosh()
     {
+        if(!isAttacking||swooshPlayed)return;swooshPlayed=true;
         Debug.Log("[MeleeAttack] OnMeleeSwoosh llamado. AudioSource=" + (audioSource != null) +
             " | Cantidad de clips=" + (swingSounds != null ? swingSounds.Length : 0));
 
@@ -137,12 +150,18 @@ public class MeleeAttack : MonoBehaviour
     }
 
     // Llamado por el Animation Event, en el frame exacto donde el cuchillo conecta.
+    public float PvPvERange=>meleeRange; public int PvPvEDamage=>meleeDamage; public float PvPvECooldown=>attackCooldown;
     public void OnMeleeHit()
     {
+        var view=attackWeapon&&attackWeapon.AimCamera?attackWeapon.AimCamera:playerCamera;
+        if(!isAttacking||hitDelivered||!Salud||!Salud.IsOwner||!Salud.IsAlive||!view)return;
+        hitDelivered=true;
+        var combat=DeadQuarantine.PvPvE.Networking.PvPvECombat.Active;
+        if(combat){combat.MeleeServerRpc(Salud.NetworkObjectId,view.transform.position,view.transform.forward);return;}
         if (playerCamera == null)
             return;
 
-        Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
+        Ray ray = new Ray(view.transform.position, view.transform.forward);
 
         if (Physics.Raycast(ray, out RaycastHit hit, meleeRange, hittableMask))
         {

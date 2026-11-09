@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,7 +7,7 @@ using Unity.Netcode;
 using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(CharacterController))]
-public class PlayerMovement : NetworkBehaviour
+public partial class PlayerMovement : NetworkBehaviour
 {
     [Header("Movimiento")]
     [SerializeField] private Transform cameraTransform;
@@ -120,7 +120,8 @@ public class PlayerMovement : NetworkBehaviour
 
     public bool IsSprinting { get; private set; }
     public bool IsCrouching { get; private set; }
-    public bool MovementLocked { get; set; }
+    private bool movementLocked;
+    public bool MovementLocked { get => movementLocked || (IsOwner && DeadQuarantine.PvPvE.UI.PvPvEInitialClassView.BlocksLocalGameplay); set => movementLocked = value; }
     // Bloqueado (pausa, historia...) devuelve 0: así el sway y la animación del arma no reaccionan a las teclas.
     public Vector2 MoveInput =>
         (MovementLocked || PauseController.LocalPlayerPaused) ? Vector2.zero : moveInput; // <- NUEVO: para que WeaponSway lea hacia dónde te movés
@@ -413,6 +414,7 @@ public class PlayerMovement : NetworkBehaviour
         if (!IsOwner)
             return;
 
+        UpdatePerkSlide();
         HandleStamina();
 
         if (isParkouring)
@@ -435,6 +437,8 @@ public class PlayerMovement : NetworkBehaviour
         else if (IsSprinting)
             currentSpeed = sprintSpeed;
 
+        var equipped=weaponSwitcher?weaponSwitcher.CurrentWeapon:null;
+        if(equipped)currentSpeed*=equipped.AttachmentMovement;
         currentSpeed *= ActualizarObstaculos();
 
         // Si está bloqueado (pausa), el input horizontal se anula,
@@ -445,6 +449,13 @@ public class PlayerMovement : NetworkBehaviour
             transform.right * effectiveMoveInput.x +
             transform.forward * effectiveMoveInput.y;
         
+        if (IsSliding)
+        {
+            float remaining = (float)(playerHealth.SlideUntil.Value - NetworkManager.ServerTime.Time);
+            currentSpeed = Mathf.Lerp(crouchSpeed, playerHealth.PerksCatalog.slideSpeed, Mathf.Clamp01(remaining / playerHealth.PerksCatalog.slideDuration));
+            horizontalMovement = playerHealth.SlideDirection.Value;
+        }
+
         // ============ BLOQUEO SUAVE CONTRA ZOMBIES ============
         // La distancia del cast debe coincidir con la distancia REAL que se moverá
         // el CharacterController este frame (incluye currentSpeed).
@@ -1830,7 +1841,7 @@ public class PlayerMovement : NetworkBehaviour
         {
             // Con el movimiento bloqueado (pausa, tienda...) no se acepta agacharse ni pararse: se mantiene la postura.
             // Abatido: queda agachado y no puede pararse hasta que se levanta.
-            wantsToCrouch = EstaAbatido || (MovementLocked
+            wantsToCrouch = IsSliding || EstaAbatido || (MovementLocked
                 ? IsCrouching
                 : controls.Player.Crouch.IsPressed());
         }
@@ -1962,6 +1973,8 @@ public class PlayerMovement : NetworkBehaviour
         if (!IsOwner)
             return;
 
+        if (IsSliding) { IsSprinting = false; return; }
+
         bool isReloading =
             weaponSwitcher != null &&
             weaponSwitcher.CurrentWeapon != null &&
@@ -1987,7 +2000,7 @@ public class PlayerMovement : NetworkBehaviour
                 true;
 
             CurrentStamina -=
-                staminaDrainRate *
+                staminaDrainRate * (playerHealth ? playerHealth.PerkSprintDrain : 1f) *
                 Time.deltaTime;
 
             if (
@@ -2010,7 +2023,7 @@ public class PlayerMovement : NetworkBehaviour
                 false;
 
             CurrentStamina +=
-                staminaRegenRate *
+                staminaRegenRate * (playerHealth ? playerHealth.PerkStaminaRegen : 1f) *
                 Time.deltaTime;
 
             CurrentStamina =

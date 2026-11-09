@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.InputSystem;
 using UnityEngine.EventSystems;
 using System.Collections;
@@ -6,7 +7,7 @@ using System.Collections;
 // El raycast de ADS se resuelve despues de que CameraRecoil y el rig FPS
 // hayan actualizado la pose FINAL que se renderiza en pantalla.
 [DefaultExecutionOrder(1000)]
-public class Weapon : MonoBehaviour
+public partial class Weapon : MonoBehaviour
 {
     [Header("Referencias")]
     [SerializeField] private Transform firePoint;
@@ -163,10 +164,26 @@ public class Weapon : MonoBehaviour
     [Header("Animación de recarga (tercera persona)")]
     [SerializeField] private bool usesMultiPartReload = false;
     public bool UsesMultiPartReload => usesMultiPartReload;
-    public AudioClip PresentationShotSound => shootSound;
+    // Read-only context for remote presentation; inactive FP models may not have run Awake.
+    public float PresentationCharacterReloadSpeed => ClassReloadSpeedMultiplier;
+    private WeaponAttachments attachmentRuntime;
+    private WeaponAttachments RuntimeAttachments => attachmentRuntime ? attachmentRuntime : attachmentRuntime = GetComponent<WeaponAttachments>();
+    public float AttachmentDamageMultiplier => RuntimeAttachments != null ? RuntimeAttachments.DamageMultiplier : 1f;
+    public float AttachmentSpreadMultiplier => RuntimeAttachments != null ? RuntimeAttachments.SpreadMultiplier : 1f;
+    public float AttachmentRecoilMultiplier => RuntimeAttachments != null ? RuntimeAttachments.RecoilMultiplier : 1f;
+    public bool ShotIsSuppressed => RuntimeAttachments != null && RuntimeAttachments.Suppressed;
+    public AudioClip PresentationShotSound => RuntimeAttachments != null && RuntimeAttachments.ShotSound ? RuntimeAttachments.ShotSound : shootSound;
+    public float AttachmentAimFov => RuntimeAttachments != null ? RuntimeAttachments.AimFov(aimFOV) : aimFOV;
+    public void SetAttachmentSight(Transform sight) { if(RuntimeAttachments!=null&&RuntimeAttachments.HasRuntimeCatalog)SetPackAttachmentSight(sight); }
     public UnityEngine.Audio.AudioMixerGroup PresentationMixer => audioSource ? audioSource.outputAudioMixerGroup : null;
     public GameObject PresentationTrail => bulletTrailPrefab;
     public float PresentationRange => range;
+    public float EffectiveRange=>range*(RuntimeAttachments?RuntimeAttachments.RangeMultiplier:1);
+    public float AttachmentAdsDuration=>RuntimeAttachments?RuntimeAttachments.AdsDurationMultiplier:1;
+    public float AttachmentSway=>RuntimeAttachments?RuntimeAttachments.AdsSwayMultiplier:1;
+    public float AttachmentIncomingShake=>IsAiming&&RuntimeAttachments?RuntimeAttachments.IncomingShakeMultiplier:1;
+    public float AttachmentMovement=>(RuntimeAttachments?RuntimeAttachments.MobilityMultiplier:1)*(IsAiming&&RuntimeAttachments?RuntimeAttachments.AdsMovementMultiplier:1);
+    public Vector2 AttachmentRecoilAxes=>RuntimeAttachments?RuntimeAttachments.RecoilAxes:Vector2.one;
     public float PresentationFireInterval => usesBurstFire ? burstShotInterval : fireRate;
     public float PresentationReloadSpeed(bool empty) =>
         ClassReloadSpeedMultiplier * (empty ? reloadEmptyClipSpeedMultiplier : reloadClipSpeedMultiplier);
@@ -176,7 +193,12 @@ public class Weapon : MonoBehaviour
         ClassReloadSpeedMultiplier * (empty ? tpReloadEmptyClipSpeedMultiplier : tpReloadClipSpeedMultiplier);
     public float PresentationThirdPersonPartsReloadSpeed(bool empty) =>
         ClassReloadSpeedMultiplier * (empty ? tpPartsReloadEmptyClipSpeedMultiplier : tpPartsReloadClipSpeedMultiplier);
+    public uint PresentationShotSequence { get; private set; }
     public bool UsesBurstFire => usesBurstFire;
+    // Keep the empty-reload clip and its speed until the animation completes.
+    public bool PresentationEmpty => isReloading ? reloadStartedEmpty : currentAmmo == 0;
+    public Camera AimCamera => playerCamera;
+    public float HipFieldOfView=>defaultWorldFOV>0?defaultWorldFOV:playerCamera?playerCamera.fieldOfView:60;
     public Vector3 AimOrigin => playerCamera ? playerCamera.transform.position : transform.position;
     public AudioClip PresentationReloadSound(bool empty) => empty ? reloadEmptySound : reloadSound;
     public AudioClip PresentationEventSound(NetworkWeaponPresentation.WeaponEvent kind) => kind switch {
@@ -263,7 +285,7 @@ public class Weapon : MonoBehaviour
     /// Dispersión real del arma en grados: la del momento (quieto, moviéndose, disparando, saltando)
     /// más el abanico de los perdigones si es una escopeta. Lo usa el HUD para el tamaño de la mira.
     /// </summary>
-    public float CurrentSpreadAngle => currentSpread + (firesMultiplePellets ? pelletSpreadAngle : 0f);
+    public float CurrentSpreadAngle => (currentSpread + (firesMultiplePellets ? pelletSpreadAngle : 0f)) * AttachmentSpreadMultiplier;
 
     public string WeaponName => weaponName;
     public bool IsReloading => isReloading;
@@ -379,6 +401,7 @@ public class Weapon : MonoBehaviour
 
     private void Awake()
     {
+        packPresentation=GetComponent<PackWeaponPresentation>();
         controls = new PlayerControls();
         ConfiguracionesJuego.CargarRebinds(controls.asset);
 
@@ -414,22 +437,79 @@ public class Weapon : MonoBehaviour
         if (playerScore == null)
             playerScore = transform.root.GetComponentInChildren<PlayerScore>(true);
 
-        CaptureReloadAnimatorBaseSpeeds();
+        if(!UseAuthoredRecoil)CaptureReloadAnimatorBaseSpeeds();
     }
 
     // La WeaponCamera es una cámara overlay; su raíz TAMBIÉN contiene las manos.
-    // Por eso NO movemos su Transform ni las animaciones del jugador para corregir ADS.
-    // Ajustar solo la matriz de proyección conserva todas las poses FP y sus offsets manuales.
+    // La cámara queda fija. Los perfiles DQ_OpticalSight alinean su rig visual de manos y arma.
+    // Los demás perfiles conservan la corrección original por proyección y sus offsets manuales.
     private void LateUpdate()
     {
         // La correccion de proyeccion debe estar aplicada antes de calcular
-        // en que pixel se ve la mirilla. No movemos ni armas ni camaras.
+        // en que pixel se ve la mirilla. La cámara conserva su transform.
         UpdateAdsVisualProjection();
+        SyncIntegratedReloadParts();
         FlushPendingAdsShots();
+    }
+
+    private void SyncIntegratedReloadParts()
+    {
+        if (!UsesIntegratedVisual || !isReloading || usesMultiPartReload || weaponAnimator == null || Parts == null) return;
+        int layer = weaponAnimator.GetLayerIndex("Reload");
+        if (layer < 0) return;
+        var state = weaponAnimator.GetCurrentAnimatorStateInfo(layer);
+        string name = state.IsName("Reload Empty") ? "Reload Empty" : state.IsName("Reload") ? "Reload" : null;
+        if (name != null && Parts.HasState(0, Animator.StringToHash(name)))
+        {
+            Parts.Play(name, 0, Mathf.Clamp01(state.normalizedTime));
+            Parts.Update(0);
+        }
+    }
+
+    private Vector3 integratedAimRigOffset, integratedAimFullOffset;
+    private float integratedAimVelocity;
+    private bool integratedAimHeld;
+    private bool UsesIntegratedVisual => adsSightReference != null && adsSightReference.name == "DQ_OpticalSight";
+
+    private void RestoreIntegratedAimPose()
+    {
+        RestorePackAim();
+        if (weaponAnimator != null && integratedAimRigOffset != Vector3.zero)
+            weaponAnimator.transform.localPosition -= integratedAimRigOffset;
+        integratedAimRigOffset = Vector3.zero;
+    }
+
+    private void AlignIntegratedAimPose()
+    {
+        if(UsePackAim){ApplyPackAim();return;}
+        RestoreIntegratedAimPose();
+        if (adsSightReference == null || adsSightReference.name != "DQ_OpticalSight" ||
+            weaponAnimator == null || weaponCamera == null || !weaponCamera.enabled ||
+            aimingBlend <= 0.001f) return;
+        Transform rig = weaponAnimator.transform;
+        // Shift hands and gun together. The camera must remain outside this visual rig.
+        if (weaponCamera.transform == rig || weaponCamera.transform.IsChildOf(rig)) return;
+        if (IsAiming && !isReloading && !isChambering)
+        {
+            Vector3 sight = weaponCamera.transform.InverseTransformPoint(adsSightReference.position);
+            Vector3 delta = weaponCamera.transform.TransformVector(new Vector3(-sight.x, -sight.y, 0f));
+            integratedAimFullOffset = rig.parent != null ? rig.parent.InverseTransformVector(delta) : delta;
+        }
+        // Fade the last correction out; following the sight during a reload would fight the authored motion.
+        integratedAimRigOffset = integratedAimFullOffset * Mathf.Clamp01(aimingBlend);
+        rig.localPosition += integratedAimRigOffset;
     }
 
     private void UpdateAdsVisualProjection()
     {
+        AlignIntegratedAimPose();
+        if (UsesIntegratedVisual||UsePackAim)
+        {
+            // Physical alignment replaces the off-axis projection, including while leaving ADS.
+            if (weaponCamera != null) weaponCamera.ResetProjectionMatrix();
+            adsProjectionWasModified = false;
+            return;
+        }
         if (!adsCenterVisualSight || weaponCamera == null || weaponCamera == playerCamera)
         {
             RestoreAdsProjection();
@@ -447,7 +527,7 @@ public class Weapon : MonoBehaviour
         // es el punto de montaje de DQ_DefaultScope, no el centro optico.
         // Usar el centro de su renderer SOLO para Vector evita cambiar P90/MAC10
         // y evita mover FPS_Arms o alterar el disparo fisico.
-        if (weaponName == "Vector")
+        if (weaponName == "Vector" && (adsSightReference == null || adsSightReference.name != "DQ_OpticalSight"))
         {
             UpdateVectorScopeProjection();
             return;
@@ -675,9 +755,9 @@ public class Weapon : MonoBehaviour
             // siguiente. Si se aplica antes, hasta la primera bala sube.
             ShootAndPublish();
             if (cameraRecoil != null)
-                cameraRecoil.Fire(recoilPreset, true, recoilIntensityMultiplier);
+                cameraRecoil.Fire(recoilPreset, true, recoilIntensityMultiplier * AttachmentRecoilMultiplier, UseAuthoredRecoil, AttachmentRecoilAxes);
             if (weaponRecoil != null)
-                weaponRecoil.Fire(recoilPreset, true, recoilIntensityMultiplier);
+                weaponRecoil.Fire(recoilPreset, true, recoilIntensityMultiplier * AttachmentRecoilMultiplier, UseAuthoredRecoil, AttachmentRecoilAxes);
         }
     }
 
@@ -690,8 +770,15 @@ public class Weapon : MonoBehaviour
         presentation?.PublishShot(this, presentationTargets.ToArray());
     }
 
+    private void RenderIntegratedSight(ScriptableRenderContext context, Camera camera)
+    {
+        if (camera == weaponCamera) UpdateAdsVisualProjection();
+    }
+
     private void OnEnable()
     {
+        if (adsSightReference != null && adsSightReference.name == "DQ_OpticalSight")
+            RenderPipelineManager.beginCameraRendering += RenderIntegratedSight;
         controls.Player.Enable();
 
         if (!isAutomatic)
@@ -704,6 +791,9 @@ public class Weapon : MonoBehaviour
 
     private void OnDisable()
     {
+        RenderPipelineManager.beginCameraRendering -= RenderIntegratedSight;
+        RestoreIntegratedAimPose();
+        if (UsesIntegratedVisual) { integratedAimHeld = false; integratedAimFullOffset = Vector3.zero; integratedAimVelocity = 0; aimingBlend = 0; }
         // Si el jugador cambia de arma en el mismo frame que dispara,
         // no perder una bala cuyo cargador ya fue descontado.
         if (pendingAdsRounds > 0 && Application.isPlaying && Time.timeScale > 0f)
@@ -800,6 +890,7 @@ public class Weapon : MonoBehaviour
     // y llega a 'Min Damage Multiplier' en 'Damage Falloff End' (o más lejos).
     private float DistanceFalloffMultiplier(float distance)
     {
+        distance/=RuntimeAttachments?RuntimeAttachments.RangeMultiplier:1;
         if (distance <= damageFalloffStart)
             return 1f;
 
@@ -822,9 +913,9 @@ public class Weapon : MonoBehaviour
         get
         {
             if (firesMultiplePellets && pelletsPerShot > 0)
-                return damage / (float)pelletsPerShot;
+                return damage * AttachmentDamageMultiplier / (float)pelletsPerShot;
 
-            return damage;
+            return damage * AttachmentDamageMultiplier;
         }
     }
 
@@ -1060,11 +1151,13 @@ public class Weapon : MonoBehaviour
 
     public void ForceStopAiming()
     {
+        integratedAimHeld = false;
         IsAiming = false;
     }
 
     private void Update()
     {
+        RestoreIntegratedAimPose();
         if (IsAiming && playerMovement != null && playerMovement.IsSprinting)
             IsAiming = false;
 
@@ -1080,6 +1173,8 @@ public class Weapon : MonoBehaviour
         if(pendingReload && !isChambering && !isReloading && !InputLocked && !SwitchBlocked) {
             pendingReload=false;OnReload(default);
         }
+        if (UsesIntegratedVisual)
+            IsAiming = integratedAimHeld && !isReloading && !isChambering && !InputLocked && !SwitchBlocked && !PlayerInputGate.ActionsBlocked && (playerMovement == null || !playerMovement.IsSprinting);
         UpdateAimFOV();
         UpdateSpread();
         UpdateJumpSpread();
@@ -1112,6 +1207,7 @@ public class Weapon : MonoBehaviour
         if (PlayerInputGate.ActionsBlocked)
             return;
 
+        if (UsesIntegratedVisual) integratedAimHeld = true;
         if (SwitchBlocked)
             return;
 
@@ -1126,6 +1222,7 @@ public class Weapon : MonoBehaviour
 
     private void OnAimCanceled(InputAction.CallbackContext context)
     {
+        integratedAimHeld = false;
         IsAiming = false;
     }
 
@@ -1134,12 +1231,17 @@ public class Weapon : MonoBehaviour
         if (playerCamera == null)
             return;
 
-        float targetFOV = IsAiming ? aimFOV : defaultWorldFOV;
+        if (UsesIntegratedVisual||UsePackAim)
+        {
+            playerCamera.fieldOfView = Mathf.Lerp(defaultWorldFOV, AttachmentAimFov, aimingBlend);
+            return;
+        }
+        float targetFOV = IsAiming ? AttachmentAimFov : defaultWorldFOV;
 
         playerCamera.fieldOfView = Mathf.Lerp(
             playerCamera.fieldOfView,
             targetFOV,
-            aimTransitionSpeed * Time.deltaTime
+            aimTransitionSpeed / AttachmentAdsDuration * Time.deltaTime
         );
     }
 
@@ -1359,11 +1461,13 @@ public class Weapon : MonoBehaviour
 
         float target = IsAiming ? 1f : 0f;
 
-        aimingBlend = Mathf.MoveTowards(
-            aimingBlend,
-            target,
-            aimingBlendSpeed * Time.deltaTime
-        );
+        if (UsesIntegratedVisual||UsePackAim)
+        {
+            aimingBlend = Mathf.SmoothDamp(aimingBlend, target, ref integratedAimVelocity, AttachmentAdsDuration / Mathf.Max(1f, aimingBlendSpeed), Mathf.Infinity, Time.deltaTime);
+            if (Mathf.Abs(aimingBlend - target) < .0005f) { aimingBlend = target; integratedAimVelocity = 0; }
+        }
+        else
+            aimingBlend = Mathf.MoveTowards(aimingBlend, target, aimingBlendSpeed / AttachmentAdsDuration * Time.deltaTime);
 
         weaponAnimator.SetFloat("Aiming", aimingBlend);
     }
@@ -1479,6 +1583,7 @@ public class Weapon : MonoBehaviour
         if (currentAmmo <= 0)
             return;
 
+        PresentationShotSequence++;
         currentAmmo--;
 
         if (playerScore != null)
@@ -1500,12 +1605,12 @@ public class Weapon : MonoBehaviour
         if (!IsAiming || !adsFireAlongVisualSight)
         {
             if (cameraRecoil != null)
-                cameraRecoil.Fire(recoilPreset, false, recoilIntensityMultiplier);
+                cameraRecoil.Fire(recoilPreset, false, recoilIntensityMultiplier * AttachmentRecoilMultiplier, UseAuthoredRecoil, AttachmentRecoilAxes);
             if (weaponRecoil != null)
-                weaponRecoil.Fire(recoilPreset, false, recoilIntensityMultiplier);
+                weaponRecoil.Fire(recoilPreset, false, recoilIntensityMultiplier * AttachmentRecoilMultiplier, UseAuthoredRecoil, AttachmentRecoilAxes);
         }
 
-        PlaySound(shootSound);
+        PlaySound(PresentationShotSound);
 
         if (weaponAnimator != null)
         {
@@ -1514,7 +1619,7 @@ public class Weapon : MonoBehaviour
         }
 
         PlayPartsState("Fire");
-        muzzle?.PlayEffect();
+        if (!ShotIsSuppressed) muzzle?.PlayEffect();
 
         // En ADS, el raycast se resuelve despues de CameraRecoil.LateUpdate
         // (con el recoil de las balas ANTERIORES), pero antes de iniciar la
@@ -1673,7 +1778,7 @@ public class Weapon : MonoBehaviour
 
     // En ADS, una bala individual siempre viaja por la dirección de la mirilla.
     // La escopeta conserva su distribución de perdigones alrededor de ese centro.
-    float spreadForThisShot = IsAiming ? 0f : currentSpread;
+    float spreadForThisShot = IsAiming ? 0f : currentSpread * AttachmentSpreadMultiplier;
     if (firesMultiplePellets)
     {
         for (int i = 0; i < pelletsPerShot; i++)
@@ -1700,7 +1805,7 @@ public class Weapon : MonoBehaviour
 
         RaycastHit[] hits = Physics.RaycastAll(
             ray,
-            range,
+            EffectiveRange,
             ~0,
             QueryTriggerInteraction.Collide
         );
@@ -1910,13 +2015,13 @@ if (zombieHealth != null)
         else
         {
             Vector3 missPoint =
-                ray.origin + spreadDirection * range;
+                ray.origin + spreadDirection * EffectiveRange;
 
             SpawnBulletTrail(missPoint);
 
             Debug.DrawRay(
                 ray.origin,
-                spreadDirection * range,
+                spreadDirection * EffectiveRange,
                 Color.yellow,
                 1f
             );

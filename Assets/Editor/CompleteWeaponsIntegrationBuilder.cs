@@ -18,7 +18,7 @@ using UnityEngine.UI;
 /// El integrador toma Player.prefab y Mercader.prefab como fuente de verdad para
 /// referencias compartidas (cámaras, recoil, trail, muzzle FX, audio mixer, casing, etc.).
 /// </summary>
-public static class CompleteWeaponsIntegrationBuilder
+public static partial class CompleteWeaponsIntegrationBuilder
 {
     private const string Root = "Assets/Generated/NewWeapons";
     private const string ControllersDir = Root + "/Controllers";

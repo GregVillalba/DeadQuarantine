@@ -13,6 +13,7 @@ public static class PlayerInputGate
     /// Pausa o tienda abierta.
     /// </summary>
     public static bool MenuOpen =>
+        DeadQuarantine.PvPvE.UI.PvPvEInitialClassView.BlocksLocalGameplay ||
         PauseController.LocalPlayerPaused ||
         NPCShopUI.LocalShopOpen;
 
@@ -30,6 +31,7 @@ public static class PlayerInputGate
     /// Incluye unos frames de seguridad después de cerrar UI.
     /// </summary>
     public static bool MouseBlocked =>
+        DeadQuarantine.PvPvE.UI.PvPvEInitialClassView.BlocksLocalGameplay ||
         PauseController.MouseInputBlocked ||
         NPCShopUI.MouseInputBlocked;
 }

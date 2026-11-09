@@ -1,0 +1,105 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ac7ad54d8ef8f541bf4bd02490d7c6e, type: 3}
+  m_Name: PvPvENetworkSettings
+  m_EditorClassIdentifier: Scripts::DeadQuarantine.PvPvE.Networking.PvPvENetworkSettings
+  PlayersPerTeam: 5
+  ProtocolVersion: 6026
+  SessionPool: dq.pvpve.tdm
+  SearchSeconds: 4
+  ConnectionSeconds: 25
+  ShutdownSeconds: 10
+  RosterPrefab: {fileID: 4958710834160195841, guid: 6e2ab84a638581c4899731326293f9b6, type: 3}
+  Characters: {fileID: 11400000, guid: 0417370cbb46d8445aa531430b048b25, type: 2}
+  Loadouts: {fileID: 11400000, guid: 3e8708185d1203141a963af63a06b39a, type: 2}
+  PlayerPrefab: {fileID: 5539736354694109012, guid: eb12bffd847ddce4b9a553c40cca96fc, type: 3}
+  GamePrefabs: {fileID: 11400000, guid: fb638b39a3d68e44f8e65740d7f0a4fa, type: 2}
+  MatchScene: PvPvEMatch
+  MapLoadSeconds: 180
+  PlayerPrepareSeconds: 120
+  PreMatchSeconds: 5
+  RespawnSeconds: 10
+  CorpseSeconds: 3
+  DeploymentSeconds: 30
+  SpawnProtectionSeconds: 2
+  SafeSpawnDistance: 12
+  SpawnSpacing: 2
+  KillLimit: 50
+  KillScore: 100
+  HeadshotMultiplier: 2
+  LongshotDistance: 30
+  HeadshotScoreBonus: 0.5
+  PlayerLongshotScoreBonus: 0.25
+  ZombieLongshotScoreBonus: 0.2
+  PistolLongshotDistance: 20
+  ShotgunLongshotDistance: 15
+  SmgLongshotDistance: 25
+  RifleLongshotDistance: 30
+  SniperLongshotDistance: 50
+  ShotOriginTolerance: 0.8
+  ReloadTimingGrace: 0.1
+  AssistScore: 50
+  MinimumAssistDamage: 15
+  DamageAssistWindow: 10
+  FlashAssistWindow: 8
+  StunAssistWindow: 8
+  UtilityAssistWindow: 8
+  FriendlyFire: 0
+  MinimapRange: 40
+  EnemyShotRevealSeconds: 3
+  ResultsSeconds: 12
+  MatchDurationSeconds: 600
+  KillFeedSeconds: 6
+  KillFeedRows: 5
+  KillSound: {fileID: 8300000, guid: 8381cfa68b44d734b9c039db0dbad2a1, type: 3}
+  MaxZombiesAlive: 10
+  ZombieKillScore: 10
+  ZombieSpawnInterval: 2
+  WalkerChance: 80
+  RunnerChance: 15
+  DogChance: 5
+  ZombieSafeDistance: 15
+  WalkerPrefab: {fileID: 1055470696967520, guid: bb116383f6f80bf4d90cb48aeca8e8bf, type: 3}
+  DogPrefab: {fileID: 2448360648697484514, guid: c073e07eafb7143d9add67cc2544470d, type: 3}
+  MapVoteSeconds: 15
+  PostVoteSeconds: 10
+  Maps:
+  - Id: 1
+    Name: LABORATORIO
+    Preview: {fileID: 2800000, guid: abb552e7286387f4393d2cd45a8017fc, type: 3}
+    Minimap: {fileID: 2800000, guid: f5167f9ba70ac7248a89acbd4e47beec, type: 3}
+    LoadingViews:
+    - {fileID: 2800000, guid: f4d4c599af1a93f4b8f030deba726452, type: 3}
+    - {fileID: 2800000, guid: abb552e7286387f4393d2cd45a8017fc, type: 3}
+    - {fileID: 2800000, guid: ce0f5a27ab3ee844ea07787ac9f92137, type: 3}
+    MinimapMin: {x: -1254.2, y: -45.564987}
+    MinimapMax: {x: -1175.05, y: 33.585007}
+  - Id: 2
+    Name: CIUDAD
+    Preview: {fileID: 2800000, guid: e96cef21cdcfbad459ad82da9161dfcc, type: 3}
+    Minimap: {fileID: 2800000, guid: 8cd6b33ad85f9574e88ab8f53bdc2bc5, type: 3}
+    LoadingViews:
+    - {fileID: 2800000, guid: e6f72417f6bff424aaba18187ad75fc2, type: 3}
+    - {fileID: 2800000, guid: e96cef21cdcfbad459ad82da9161dfcc, type: 3}
+    - {fileID: 2800000, guid: 1d4fb554281d9bb49b2ee310c4713003, type: 3}
+    MinimapMin: {x: -574.40356, y: -640.38727}
+    MinimapMax: {x: -237.78357, y: -303.76727}
+  - Id: 3
+    Name: "MANSI\xD3N DEL BOSQUE"
+    Preview: {fileID: 2800000, guid: 8215f84e22445714d9ecbc368a9fd404, type: 3}
+    Minimap: {fileID: 2800000, guid: 31c1f8acb656d0c409545dd204a225d4, type: 3}
+    LoadingViews:
+    - {fileID: 2800000, guid: ead1fd9fc34d6bf46931906d5ebc37ac, type: 3}
+    - {fileID: 2800000, guid: 8215f84e22445714d9ecbc368a9fd404, type: 3}
+    - {fileID: 2800000, guid: 08597a48d9e07184c827e7512c8b6a10, type: 3}
+    MinimapMin: {x: -57.917526, y: -95.35805}
+    MinimapMax: {x: 90.83247, y: 53.391953}

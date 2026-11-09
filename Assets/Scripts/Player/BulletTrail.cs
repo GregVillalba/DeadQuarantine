@@ -10,6 +10,8 @@ public class BulletTrail : MonoBehaviour
 
     public void Init(Vector3 targetPoint)
     {
+        var combat=DeadQuarantine.PvPvE.Networking.PvPvECombat.Active;
+        if(combat)targetPoint=combat.LocalTrailTarget(transform.position,targetPoint);
         StartCoroutine(MoveToTarget(targetPoint));
     }
 

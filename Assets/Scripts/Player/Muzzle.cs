@@ -41,10 +41,11 @@ public class Muzzle : MonoBehaviour
         // The effect asset is authored facing local -Y (approximately +90 degrees around X).
         // Preserve that rotation on the original weapon socket; do not add another barrel LookRotation.
         particlesObject.transform.localRotation = flashParticlesPrefab.transform.localRotation;
-        particlesObject.layer = gameObject.layer;
+        foreach(var child in particlesObject.GetComponentsInChildren<Transform>(true))child.gameObject.layer=gameObject.layer;
 
         particles =
-            particlesObject.GetComponent<ParticleSystem>();
+            particlesObject.GetComponentInChildren<ParticleSystem>();
+        if(particles){var main=particles.main;main.playOnAwake=false;particles.Stop(true,ParticleSystemStopBehavior.StopEmittingAndClear);}
     }
 
         if (flashLightPrefab != null)
@@ -54,7 +55,7 @@ public class Muzzle : MonoBehaviour
 
             lightObject.transform.localPosition = flashLightOffset;
             lightObject.transform.localRotation = Quaternion.identity;
-            lightObject.layer = gameObject.layer;
+            foreach(var child in lightObject.GetComponentsInChildren<Transform>(true))child.gameObject.layer=gameObject.layer;
 
             flashLight =
                 lightObject.GetComponent<Light>();

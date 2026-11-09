@@ -133,6 +133,9 @@ public class PlayerDamageEffects : MonoBehaviour
     private IEnumerator DamageShakeRoutine()
     {
         float elapsed = 0f;
+        var equipped=GetComponentInParent<WeaponSwitcher>()?.CurrentWeapon;
+        if(!equipped)equipped=GetComponentInParent<PlayerHealth>()?.GetComponentInChildren<WeaponSwitcher>()?.CurrentWeapon;
+        float attachmentShake=equipped?equipped.AttachmentIncomingShake:1;
 
         while (elapsed < shakeDuration)
         {
@@ -150,7 +153,7 @@ public class PlayerDamageEffects : MonoBehaviour
 
             Vector3 randomPosition =
                 Random.insideUnitSphere *
-                strength;
+                strength*attachmentShake;
 
             randomPosition.z = 0f;
 
@@ -159,7 +162,7 @@ public class PlayerDamageEffects : MonoBehaviour
                     -shakeRotation,
                     shakeRotation
                 ) *
-                (1f - progress);
+                (1f - progress)*attachmentShake;
 
             cameraShakeTransform.localPosition =
                 originalPosition +

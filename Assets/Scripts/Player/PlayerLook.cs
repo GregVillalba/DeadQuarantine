@@ -98,7 +98,7 @@ public class PlayerLook : MonoBehaviour
 
         // Pausa (y los primeros frames tras reanudar): no leer el mouse. Aunque otro sistema
         // (revivir, espectador) reactive este componente con el menú abierto, la cámara no gira.
-        if (PauseController.MouseInputBlocked)
+        if (PlayerInputGate.MouseBlocked)
             return;
 
         Vector2 lookInput = controls.Player.Look.ReadValue<Vector2>();

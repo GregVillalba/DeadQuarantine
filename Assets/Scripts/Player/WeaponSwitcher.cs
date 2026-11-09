@@ -12,7 +12,7 @@ public enum WeaponSlotCategory
     Secondary = 1
 }
 
-public class WeaponSwitcher : MonoBehaviour
+public partial class WeaponSwitcher : MonoBehaviour
 {
     [System.Serializable]
     public class WeaponSlot
@@ -658,6 +658,8 @@ public class WeaponSwitcher : MonoBehaviour
         if (index < 0 || index >= slots.Length)
             return;
 
+        if (!PermitidaEnClase(index)) return;
+
         if (abatido && !forzar)
             return;
 
@@ -688,8 +690,13 @@ public class WeaponSwitcher : MonoBehaviour
             current.weaponComponent.enabled = false;
         }
 
+        BeginPerkSwitchSpeed();
         if (weaponAnimator != null)
+        {
+            if (IsNewIntegratedWeapon(currentIndex) && holsterLayerIndex >= 0) weaponAnimator.SetLayerWeight(holsterLayerIndex, 1f);
             weaponAnimator.SetBool("Holstered", true);
+            if (IsNewIntegratedWeapon(currentIndex)) weaponAnimator.Play("Holster.Holster", holsterLayerIndex, 0f);
+        }
 
         // Protección para clips importados de las nuevas armas que no traen Animation Events.
         // Las tres armas originales mantienen su flujo previo sin cambios.
@@ -703,7 +710,7 @@ public class WeaponSwitcher : MonoBehaviour
 
             while (true)
             {
-                if (requiresSafeCompletion && Time.unscaledTime - startWaiting >= 2.5f)
+                if (requiresSafeCompletion && Time.unscaledTime - startWaiting >= 2.5f / PerkSwitchMultiplier)
                 {
                     Debug.LogWarning("[WeaponSwitcher] Holster sin finalización en arma integrada: sigo al arma siguiente para evitar bloqueo.");
                     break;
@@ -711,7 +718,7 @@ public class WeaponSwitcher : MonoBehaviour
                 bool inTransition = weaponAnimator.IsInTransition(holsterLayerIndex);
                 AnimatorStateInfo info = weaponAnimator.GetCurrentAnimatorStateInfo(holsterLayerIndex);
 
-                if (!inTransition && info.IsName("Holster") && info.normalizedTime >= 1f)
+                if (!inTransition && info.shortNameHash == Animator.StringToHash("Holster") && info.normalizedTime >= 1f)
                     break;
 
                 yield return null;
@@ -734,6 +741,7 @@ public class WeaponSwitcher : MonoBehaviour
             next.weaponComponent.enabled = false;
 
         ApplyControllerAndVisuals(next);
+        RefreshPerkSwitchSpeed();
 
         // El Animator es el mismo para todas las armas: sin esto el arma nueva continuaba el estado
         // (por ejemplo una recarga) del arma anterior.
@@ -742,6 +750,11 @@ public class WeaponSwitcher : MonoBehaviour
         if (weaponAnimator != null)
             weaponAnimator.SetBool("Holstered", false);
 
+        if (weaponAnimator != null && IsNewIntegratedWeapon(currentIndex))
+        {
+            weaponAnimator.SetLayerWeight(holsterLayerIndex, 1f);
+            weaponAnimator.Play("Holster.Unholster", holsterLayerIndex, 0f);
+        }
         unholsterPhase = true;
 
         // Un cuadro después: cambiar el controller puede reconstruir el Animator y perder el reset anterior.
@@ -762,13 +775,13 @@ public class WeaponSwitcher : MonoBehaviour
                     !weaponAnimator.IsInTransition(holsterLayerIndex))
                 {
                     AnimatorStateInfo state = weaponAnimator.GetCurrentAnimatorStateInfo(holsterLayerIndex);
-                    if (state.IsName("Unholster") && state.normalizedTime >= 0.98f)
+                    if (IsNewIntegratedWeapon(currentIndex) ? state.shortNameHash == Animator.StringToHash("Ready") : state.IsName("Unholster") && state.normalizedTime >= 0.98f)
                     {
                         NotifyUnholsterFinished();
                         break;
                     }
                 }
-                if (Time.unscaledTime - startUnholster > 2.5f)
+                if (Time.unscaledTime - startUnholster > 2.5f / PerkSwitchMultiplier)
                 {
                     Debug.LogWarning("[WeaponSwitcher] Unholster sin Animation Event: desbloqueo seguro del arma integrada " +
                                      slots[currentIndex].weaponId);
@@ -786,7 +799,9 @@ public class WeaponSwitcher : MonoBehaviour
             return false;
         string id = slots[index].weaponId;
         return id == "AutoPistol" || id == "SemiRifle" || id == "BurstRifle" ||
-               id == "P90" || id == "Vector" || id == "MAC10";
+               id == "P90" || id == "Vector" || id == "MAC10" ||
+               id == "Handgun01" || id == "Handgun02" || id == "SMG02" || id == "SMG05" ||
+               id == "Sniper01" || id == "Sniper02" || id == "Sniper03";
     }
 
     private void ApplyControllerAndVisuals(WeaponSlot slot)
@@ -800,6 +815,9 @@ public class WeaponSwitcher : MonoBehaviour
                 slot.overrideController != null
                     ? slot.overrideController
                     : baseController;
+            holsterLayerIndex = weaponAnimator.GetLayerIndex("Holster");
+            var profile=slot.weaponComponent?slot.weaponComponent.GetComponent<PackWeaponPresentation>():null;
+            if(profile&&!profile.preserveLegacyAnimation){weaponAnimator.SetFloat("Aiming",0);weaponAnimator.SetBool("IsAiming",false);ResetBaseLayerToIdle();}
         }
 
         if (thirdPersonAnimator != null)
@@ -885,8 +903,12 @@ public class WeaponSwitcher : MonoBehaviour
 
     public void ResetBaseLayerToIdle()
     {
-        if (weaponAnimator == null || layerIdleHashes == null)
-            return;
+        if (weaponAnimator == null) return;
+        var presentation = CurrentWeapon ? CurrentWeapon.GetComponent<PackWeaponPresentation>() : null;
+        // Hashes belong to this controller, not to the pistol used at startup.
+        int[] rest = presentation && presentation.firstPersonRestStates.Length == weaponAnimator.layerCount
+            ? presentation.firstPersonRestStates : layerIdleHashes;
+        if (rest == null) return;
 
         weaponAnimator.ResetTrigger("Reload");
         weaponAnimator.SetBool("ShellLoading", false);
@@ -896,16 +918,16 @@ public class WeaponSwitcher : MonoBehaviour
         weaponAnimator.SetBool("BoltAction", false);
 
         int count = Mathf.Min(
-            layerIdleHashes.Length,
+            rest.Length,
             weaponAnimator.layerCount
         );
 
         for (int l = 0; l < count; l++)
         {
-            if (l == holsterLayerIndex || layerIdleHashes[l] == 0)
+            if (l == holsterLayerIndex || rest[l] == 0)
                 continue;
 
-            weaponAnimator.Play(layerIdleHashes[l], l, 0f);
+            if (weaponAnimator.HasState(l, rest[l])) weaponAnimator.Play(rest[l], l, 0f);
         }
     }
 
@@ -915,6 +937,7 @@ public class WeaponSwitcher : MonoBehaviour
             return;
 
         unholsterPhase = false;
+        EndPerkSwitchSpeed();
 
         WeaponSlot current = slots[currentIndex];
 
@@ -1188,7 +1211,7 @@ public class WeaponSwitcher : MonoBehaviour
     {
         int index = FindSlotIndex(weaponId);
 
-        if (index < 0)
+        if (index < 0 || !PermitidaEnClase(index))
             return;
 
         if (IsInInventory(index))

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
@@ -54,6 +54,18 @@ public class NetworkBootstrap : MonoBehaviour
     // AWAKE
     // ============================================================
 
+    private NetworkSceneManager loadingSceneEvents;
+    private void Update(){
+        var manager=NetworkManager.Singleton;if(manager==null||manager.SceneManager==loadingSceneEvents)return;
+        if(loadingSceneEvents!=null)loadingSceneEvents.OnSceneEvent-=OriginalLoadingEvent;
+        loadingSceneEvents=manager.SceneManager;if(loadingSceneEvents!=null)loadingSceneEvents.OnSceneEvent+=OriginalLoadingEvent;
+    }
+    private void OriginalLoadingEvent(SceneEvent evt){
+        if(evt.SceneName=="MainSceneMultiPlayer"&&evt.SceneEventType==SceneEventType.Load&&evt.ClientId==NetworkManager.Singleton.LocalClientId)
+            DeadQuarantine.PvPvE.PvPvELoadingScreen.BeginOriginal(evt.SceneName);
+        if(evt.SceneName=="MainSceneMultiPlayer"&&evt.SceneEventType==SceneEventType.LoadComplete&&evt.ClientId==NetworkManager.Singleton.LocalClientId)
+            DeadQuarantine.PvPvE.PvPvELoadingScreen.OriginalProgress(1);
+    }
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -75,6 +87,7 @@ public class NetworkBootstrap : MonoBehaviour
 
     private void OnDestroy()
     {
+        if(loadingSceneEvents!=null)loadingSceneEvents.OnSceneEvent-=OriginalLoadingEvent;
         if (Instance == this)
             Application.wantsToQuit -= OnWantsToQuit;
     }
@@ -95,7 +108,15 @@ public class NetworkBootstrap : MonoBehaviour
     // ============================================================
 
    // private async Task EnsureServicesInitialized()
-   public async Task<bool> EnsureServicesInitialized() 
+   private Task<bool> initialization;
+   public Task<bool> EnsureServicesInitialized()
+   {
+       if (initialization == null || (initialization.IsCompleted &&
+           (UnityServices.State != ServicesInitializationState.Initialized || !AuthenticationService.Instance.IsSignedIn)))
+           initialization = InitializeServicesCore();
+       return initialization;
+   }
+   private async Task<bool> InitializeServicesCore() 
     {
         try
         {
@@ -643,6 +664,7 @@ private void OnClienteSincronizado(ulong clientId)
 
     private void OnClientDisconnected(ulong clientId)
 {
+    if (DeadQuarantine.PvPvE.Networking.PvPvEMatchmaking.Owns(NetworkManager.Singleton)) return;
     if (NetworkManager.Singleton == null)
         return;
 
@@ -678,6 +700,7 @@ private void OnClienteSincronizado(ulong clientId)
 
 private void OnServidorDetenido(bool eraHost)
 {
+    if (DeadQuarantine.PvPvE.Networking.PvPvEMatchmaking.Owns(NetworkManager.Singleton)) return;
     if (NetworkManager.Singleton != null)
         NetworkManager.Singleton.OnServerStopped -= OnServidorDetenido;
 

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// "Motion" de la CÁMARA: recoil + salto / caída / aterrizaje. Equivale al
@@ -75,7 +75,10 @@ public class CameraRecoil : MonoBehaviour
     private int shotsFired;
     private float lastFireTime = -999f;
     private bool lastAiming;
+    private bool sourceProfile;
+    readonly MotionCurves sourceCamera=MotionData.RecoilCamera();
     private float lastIntensity = 1f;
+    private Vector2 recoilAxes=Vector2.one;
     private float presetMultiplier = 1f;
 
     private float shakeTime;
@@ -155,15 +158,15 @@ public class CameraRecoil : MonoBehaviour
     }
 
     /// <summary>Lo llama Weapon.cs en cada disparo.</summary>
-    public void Fire(RecoilPreset preset, bool aiming, float intensityMultiplier = 1f)
+    public void Fire(RecoilPreset preset, bool aiming, float intensityMultiplier = 1f, bool authoredProfile = false, Vector2? attachmentAxes = null)
     {
         if (Time.time - lastFireTime > comboResetDelay)
             shotsFired = 0;
 
         shotsFired++;
         lastFireTime = Time.time;
-        lastAiming = aiming;
-        lastIntensity = intensityMultiplier;
+        lastAiming = aiming;sourceProfile=authoredProfile;
+        lastIntensity = intensityMultiplier;recoilAxes=attachmentAxes??Vector2.one;
 
         switch (preset)
         {
@@ -172,8 +175,10 @@ public class CameraRecoil : MonoBehaviour
             default: presetMultiplier = smgCameraMultiplier; break;
         }
 
+        if(authoredProfile)presetMultiplier=1f;
+
         // El temblor extra también se escala con el tipo de arma.
-        shakeAmount = extraShakeDeg * intensityMultiplier * presetMultiplier;
+        shakeAmount = (authoredProfile?0:extraShakeDeg) * intensityMultiplier * presetMultiplier;
     }
 
     /// <summary>Compatibilidad con la firma anterior (se trata como SMG).</summary>
@@ -212,20 +217,21 @@ public class CameraRecoil : MonoBehaviour
             shotsFired = 0;
 
         // ---------------- RECOIL ----------------
-        float stateMultiplier = (lastAiming ? aimingMultiplier : 1f) * lastIntensity * presetMultiplier;
+        float stateMultiplier = (lastAiming ? (sourceProfile?1f:aimingMultiplier) : 1f) * lastIntensity * presetMultiplier;
 
-        Vector3 rotationNow = recoil.EvaluateRotation(shotsFired);
+        Vector3 rotationNow = (sourceProfile?sourceCamera:recoil).EvaluateRotation(shotsFired);
         Vector3 locationNow = recoil.EvaluateLocation(shotsFired);
 
         if (removeRestOffset)
         {
-            rotationNow -= recoil.EvaluateRotation(0f);
+            rotationNow -= (sourceProfile?sourceCamera:recoil).EvaluateRotation(0f);
             locationNow -= recoil.EvaluateLocation(0f);
         }
 
-        rotationSpring.Apply(recoil.rotationSpring);
+        rotationNow=Vector3.Scale(rotationNow,new Vector3(recoilAxes.x,recoilAxes.y,recoilAxes.y));
+        rotationSpring.Apply((sourceProfile?sourceCamera:recoil).rotationSpring);
         locationSpring.Apply(recoil.locationSpring);
-        rotationSpring.SetTarget(rotationNow * (recoil.rotationMultiplier * stateMultiplier));
+        rotationSpring.SetTarget(rotationNow * ((sourceProfile?sourceCamera:recoil).rotationMultiplier * stateMultiplier));
         locationSpring.SetTarget(locationNow * (recoil.locationMultiplier * stateMultiplier));
 
         Vector3 rotation = rotationSpring.Evaluate(dt);

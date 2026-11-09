@@ -13,6 +13,22 @@ public class WeaponAnimationEvents : MonoBehaviour
     [Header("Weapon Switcher")]
     [SerializeField] private WeaponSwitcher weaponSwitcher;
 
+    private Weapon integratedEjectWeapon;
+    private uint integratedEjectSequence;
+    public void OnIntegratedEjectCasing(AnimationEvent animationEvent)
+    {
+        if (weapon == null || weaponSwitcher == null ||
+            !weapon.gameObject.name.StartsWith("DQ_Weapon_", System.StringComparison.Ordinal) ||
+            animationEvent.intParameter != weaponSwitcher.CurrentWeaponIndex)
+            return;
+        uint sequence = weapon.PresentationShotSequence;
+        if (sequence == 0 || (integratedEjectWeapon == weapon && integratedEjectSequence == sequence))
+            return;
+        integratedEjectWeapon = weapon;
+        integratedEjectSequence = sequence;
+        OnEjectCasing();
+    }
+
     public void OnEjectCasing()
     {
         if (casingPrefab == null || casingEjectPoint == null)

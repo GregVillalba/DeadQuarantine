@@ -14,6 +14,7 @@ using UnityEngine.InputSystem;
 /// Se enciende y apaga con la tecla de 'Toggle Action' (F por defecto). El estado se sincroniza por red
 /// (lo escribe el dueño del jugador) para que tu compañero también vea el haz de luz.
 /// </summary>
+[DefaultExecutionOrder(1200)]
 public class Flashlight : NetworkBehaviour
 {
     [Header("Referencias")]
@@ -40,8 +41,35 @@ public class Flashlight : NetworkBehaviour
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Owner);
 
+    readonly NetworkVariable<bool> purchased=new(false,NetworkVariableReadPermission.Everyone,NetworkVariableWritePermission.Server);
+    PlayerHealth life;
+    public event System.Action AvailabilityChanged;bool observedPurchase,observedAvailability;
+    public bool Purchased=>IsSpawned&&purchased.Value;
+    bool ClassUtility {get{var mode=DeadQuarantine.PvPvE.Networking.PvPvECombat.Active;return mode&&mode.IsSpawned&&mode.NetworkManager==NetworkManager;}}
+    public void GrantPurchaseServer(){if(IsServer)purchased.Value=true;}
+    void LifeChanged(PlayerHealth.PlayerState before,PlayerHealth.PlayerState after){if(after is PlayerHealth.PlayerState.Dead or PlayerHealth.PlayerState.Spectating){if(IsServer)purchased.Value=false;if(IsOwner)isOn.Value=false;}}
+    NetworkWeaponPresentation presentation;Transform originalLightParent;Vector3 originalLightPosition;Quaternion originalLightRotation;
+    WeaponAttachments EquippedAttachment {
+        get {
+            if(!presentation)presentation=GetComponent<NetworkWeaponPresentation>();
+            if(!presentation)return null;
+            if(IsOwner)return presentation.Switcher&&presentation.Switcher.CurrentWeapon?presentation.Switcher.CurrentWeapon.GetComponent<WeaponAttachments>():null;
+            return presentation.VisibleWeapon?presentation.VisibleWeapon.GetComponent<WeaponAttachments>():null;
+        }
+    }
+    public bool UtilityEnabled=>IsSpawned&&isOn.Value;
+    public bool FlashlightAvailable=>EquippedAttachment&&EquippedAttachment.HasFlashlight&&(ClassUtility||Purchased);
+    public bool CompatibleWithEquippedWeapon=>EquippedAttachment&&EquippedAttachment.HasRuntimeCatalog&&EquippedAttachment.Catalog.Allows(EquippedAttachment.StableWeaponId,WeaponAttachmentKind.Utility,"Flashlight_01");
+    public bool LaserAvailable=>EquippedAttachment&&EquippedAttachment.HasLaser;
+    public bool BeamVisible=>flashlightLight&&flashlightLight.enabled&&flashlightLight.gameObject.activeInHierarchy;
+
     public override void OnNetworkSpawn()
     {
+        if(flashlightLight){originalLightParent=flashlightLight.transform.parent;originalLightPosition=flashlightLight.transform.localPosition;originalLightRotation=flashlightLight.transform.localRotation;
+            // Remote first-person cameras are inactive; move the same light out of that hidden hierarchy.
+            if(!IsOwner)flashlightLight.transform.SetParent(transform,true);
+        }
+        life=GetComponent<PlayerHealth>();if(life)life.State.OnValueChanged+=LifeChanged;
         isOn.OnValueChanged += OnIsOnChanged;
         Apply(isOn.Value);
 
@@ -54,7 +82,9 @@ public class Flashlight : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        if(life)life.State.OnValueChanged-=LifeChanged;
         isOn.OnValueChanged -= OnIsOnChanged;
+        if(flashlightLight){flashlightLight.enabled=false;if(originalLightParent){flashlightLight.transform.SetParent(originalLightParent,false);flashlightLight.transform.localPosition=originalLightPosition;flashlightLight.transform.localRotation=originalLightRotation;}}
 
         toggleAction.performed -= OnTogglePerformed;
         toggleAction.Disable();
@@ -65,12 +95,12 @@ public class Flashlight : NetworkBehaviour
         if (!IsOwner)
             return;
 
-        // En pausa no se prende ni se apaga.
-        if (Time.timeScale <= 0f)
+        // Reuse F for the utility fitted to the currently equipped gun.
+        if (Time.timeScale <= 0f || PlayerInputGate.ActionsBlocked || PauseController.LocalPlayerPaused)
             return;
 
-        if (!FlashlightSceneSettings.Allowed)
-            return;
+        if (!FlashlightAvailable && !LaserAvailable) return;
+        var health=GetComponent<PlayerHealth>();if(health&&!health.IsAlive)return;
 
         isOn.Value = !isOn.Value;
     }
@@ -86,11 +116,21 @@ public class Flashlight : NetworkBehaviour
     private void Apply(bool on)
     {
         if (flashlightLight != null)
-            flashlightLight.enabled = on && FlashlightSceneSettings.Allowed;
+            flashlightLight.enabled = on && FlashlightAvailable;
     }
 
     private void LateUpdate()
     {
+        var attachment=EquippedAttachment;
+        bool available=FlashlightAvailable||LaserAvailable;
+        bool owned=Purchased,beam=FlashlightAvailable;
+        if(owned!=observedPurchase||beam!=observedAvailability){observedPurchase=owned;observedAvailability=beam;AvailabilityChanged?.Invoke();}
+        if(IsSpawned&&IsOwner&&isOn.Value&&!available)isOn.Value=false;
+        Apply(IsSpawned&&isOn.Value);
+        if(!IsOwner && attachment && flashlightLight && flashlightLight.enabled){
+            flashlightLight.transform.SetPositionAndRotation(attachment.UtilityOrigin,Quaternion.LookRotation(attachment.UtilityDirection));
+            return;
+        }
         if (!sway || lightPivot == null || lightPivot.parent == null)
             return;
 

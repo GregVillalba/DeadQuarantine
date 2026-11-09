@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.UI;
 using Unity.Netcode;
@@ -50,6 +50,9 @@ public class ZombieHealth : NetworkBehaviour
     [SerializeField] private float alturaEfectoQuemadura = 1f;
 
     public bool IsDead { get; private set; }
+    public bool IsPvPvEZombie {get;private set;}
+    public int CurrentHealth=>currentHealthNetwork.Value;
+    public int MaximumHealth=>maxHealthNetwork.Value;
     public bool EsBossHistoria { get; private set; }
 
 public void MarcarComoBossHistoria()
@@ -373,6 +376,8 @@ public void MarcarComoBossHistoria()
 
     public override void OnNetworkSpawn()
     {
+        IsPvPvEZombie=DeadQuarantine.PvPvE.PvPvEZombieDirector.Active;
+
         currentHealthNetwork.OnValueChanged +=
             OnHealthChanged;
 
@@ -450,6 +455,7 @@ private void TakeDamageServerRpc(
     ServerRpcParams rpcParams = default
 )
     {
+        if(IsPvPvEZombie)return; // PvPvE shots are resolved by the existing server combat raycast.
         AplicarDano(
             amount,
             hitPoint,
@@ -493,6 +499,13 @@ private void TakeDamageServerRpc(
         );
     }
 
+    // Existing headshot calculation and localized reactions, reached only after server shot validation.
+    public void RecibirDisparoPvPvEServidor(int amount, Vector3 point, Vector3 normal, ulong attacker, bool head, int limb)
+    {
+        if(!IsServer||!IsPvPvEZombie)return;
+        AplicarDano(amount,point,normal,head,false,limb,attacker,true);
+    }
+
     private void AplicarDano(
         int amount,
         Vector3 hitPoint,
@@ -505,8 +518,9 @@ private void TakeDamageServerRpc(
         bool mostrarHitMarker = true
     )
     {
-        if (IsDead)
+        if (IsDead || amount<=0)
             return;
+        if(IsPvPvEZombie){var combat=DeadQuarantine.PvPvE.Networking.PvPvECombat.Active;if(!combat||!combat.IsPlaying||!combat.GetComponent<DeadQuarantine.PvPvE.Networking.PvPvETeamRoster>().Contains(shooterClientId))return;}
 
 //======================= NUEVO =========================
         // Headshot: ZombieHeadshot decide cuánto daño hace.
@@ -519,7 +533,7 @@ private void TakeDamageServerRpc(
             currentHealthNetwork.Value
         );*/
 
-        amount = zombieHeadshot.CalcularDano(
+        amount = !IsPvPvEZombie?Mathf.Max(1,Mathf.RoundToInt(amount*2f)):zombieHeadshot.CalcularDano(
                 amount,
                 currentHealthNetwork.Value,
                 maxHealthNetwork.Value
@@ -530,6 +544,9 @@ private void TakeDamageServerRpc(
 
 //=========================================================
 
+        if(!IsPvPvEZombie&&mostrarHitMarker&&NetworkManager.ConnectedClients.TryGetValue(shooterClientId,out var hitClient)&&hitClient.PlayerObject){
+            hitClient.PlayerObject.GetComponentInChildren<PlayerScore>()?.ConcederImpactoConfirmadoServidor(headshotAplicado);
+        }
         currentHealthNetwork.Value -=
             amount;
 
@@ -573,11 +590,10 @@ private void TakeDamageServerRpc(
             }
         }
 
-       if (registrarHeadshot)
+       if (!IsPvPvEZombie && registrarHeadshot)
     SumarHeadshotAlJugador(shooterClientId);
 
-if (headshotAplicado)
-    zombieHeadshot.OtorgarPuntosExtra(shooterClientId);
+// Headshot points are included once in the confirmed impact award above.
 
         if (efectosDeImpacto)
         {
@@ -1059,6 +1075,7 @@ private void Die(ulong shooterClientId)
 
     PlayDeathEffectsClientRpc();
 
+    if(IsPvPvEZombie){DeadQuarantine.PvPvE.PvPvEZombieDirector.Active?.ZombieDied(this,shooterClientId);Invoke(nameof(DespawnZombie),destroyDelay);return;}
     SumarPuntoAlJugador(shooterClientId);
 
     DropRecursosZombie dropRecursos =
@@ -1205,7 +1222,7 @@ private void Die(ulong shooterClientId)
 
         if (playerScore != null)
                 {
-                    playerScore.SumarPuntos(150);
+                    playerScore.ConcederBajaConfirmadaServidor();
                     playerScore.SumarZombieEliminado();
                 }
     }

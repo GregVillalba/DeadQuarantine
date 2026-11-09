@@ -11,7 +11,7 @@ using UnityEngine;
 using UnityEngine.AI;
 namespace DeadQuarantine.Development
 {
- public sealed class OriginalWeaponsSmokeDriver : MonoBehaviour
+ public sealed partial class OriginalWeaponsSmokeDriver : MonoBehaviour
  {
   [Serializable] sealed class Result {public bool ok;public string role,error;public string[] checks;}
   public GameObject ZombiePrefab;
@@ -50,12 +50,15 @@ namespace DeadQuarantine.Development
   IEnumerator Run() {
    FindFirstObjectByType<GestorEscenariosPartida>().ActivarEscenario(ConfiguracionPartidaSeleccionada.Escenario.Laboratorio);
    var transport=Network.GetComponent<UnityTransport>();transport.SetConnectionData("127.0.0.1",7787,"0.0.0.0");
+   if(Arg("-dq-original-score")=="1"&&ZombiePrefab&&!Network.NetworkConfig.Prefabs.Contains(ZombiePrefab))Network.AddNetworkPrefab(ZombiePrefab);
    if(role=="host")Network.StartHost();else{yield return new WaitForSeconds(1);Network.StartClient();}
    yield return Until(()=>Local&&Remote,"Both player objects did not spawn",35);yield return new WaitForSeconds(1);
    yield return Until(()=>Local.GetComponent<MultiplayerPlayerSpawnAssigner>().IsAtSpawn.Value,"Selected scenario spawn not acknowledged");
+   if(Arg("-dq-flashlight-check")=="1"){Prepare();yield return new WaitForSeconds(.6f);yield return ReviewMerchantFlashlight();Complete(true,"");yield break;}
    var expectedSpawn=FindFirstObjectByType<MultiplayerPlayerSpawner>().GetSpawnPoint(role=="host"?0:1);
    Check(expectedSpawn && Vector3.Distance(Local.transform.position,expectedSpawn.position)<.7f,"Player starts at the selected scenario spawn, not the manual fallback");
    Prepare();yield return new WaitForSeconds(.6f);
+
    Check(Local.GetComponentInChildren<OwnerNetworkAnimator>(true).IsSpawned,"Owner rig initializes network animation");
    var start=Local.transform.position;Local.GetComponent<CharacterController>().Move(Vector3.right*.25f);
    Check(Vector3.Distance(start,Local.transform.position)>.20f,"Local controller moves without colliding with its own visual rig");Place();

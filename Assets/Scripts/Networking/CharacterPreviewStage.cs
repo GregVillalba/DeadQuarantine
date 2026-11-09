@@ -47,7 +47,7 @@ public class CharacterPreviewStage : MonoBehaviour
     private int[] shownIndex;
     private float[] yaw;
     private int layer = -1;
-    private bool initialized;
+    private bool initialized,renderRequested;
     private bool warnedNoPose;
 
     public int SlotCount => slotAnchors != null ? slotAnchors.Length : 0;
@@ -55,8 +55,14 @@ public class CharacterPreviewStage : MonoBehaviour
     /// <summary>Prende o apaga la cámara del escenario (una ventana cerrada no tiene por qué seguir renderizando).</summary>
     public void SetRendering(bool on)
     {
-        if (previewCamera != null)
-            previewCamera.enabled = on;
+        EnsureInit();renderRequested=on;
+        if (previewCamera != null)previewCamera.enabled=false;
+    }
+
+    // Explicit offscreen rendering also works while the Scene view or another native window has focus.
+    private void RenderPreview(){
+        if(!renderRequested||!previewCamera||!texture||target&&(!target.IsActive()||target.canvas&&!target.canvas.isActiveAndEnabled))return;
+        UnityEngine.Rendering.RenderPipeline.SubmitRenderRequest(previewCamera,new UnityEngine.Rendering.RenderPipeline.StandardRequest{destination=texture});
     }
 
     private void Awake()
@@ -128,6 +134,10 @@ public class CharacterPreviewStage : MonoBehaviour
 
         if (previewCamera != null)
         {
+            renderRequested=previewCamera.enabled;previewCamera.enabled=false;
+            previewCamera.allowHDR=false;previewCamera.allowMSAA=false;previewCamera.useOcclusionCulling=false;
+            var data=previewCamera.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>()??previewCamera.gameObject.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+            data.renderPostProcessing=false;data.volumeLayerMask=0;
             previewCamera.targetTexture = texture;
             previewCamera.clearFlags = CameraClearFlags.SolidColor;
             previewCamera.backgroundColor = new Color(0f, 0f, 0f, 0f);
@@ -266,6 +276,7 @@ public class CharacterPreviewStage : MonoBehaviour
             if (animators[i] != null)
                 ApplyLayerWeights(animators[i]);
         }
+        RenderPreview();
     }
 
     private void ApplyLayerWeights(Animator anim)

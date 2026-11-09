@@ -431,6 +431,7 @@ public class NPCShopUI : MonoBehaviour
             playerHealth.OnHealthChanged += OnVidaCambiada;
             playerHealth.OnBlindajeChanged += OnEquipamientoCambiado;
             playerHealth.OnInventarioChanged += OnEquipamientoCambiado;
+            var light=playerHealth.GetComponent<Flashlight>();if(light)light.AvailabilityChanged+=OnEquipamientoCambiado;
         }
 
         movementWasLocked = playerMovement != null && playerMovement.MovementLocked;
@@ -473,6 +474,7 @@ public class NPCShopUI : MonoBehaviour
             playerHealth.OnHealthChanged -= OnVidaCambiada;
             playerHealth.OnBlindajeChanged -= OnEquipamientoCambiado;
             playerHealth.OnInventarioChanged -= OnEquipamientoCambiado;
+            var light=playerHealth.GetComponent<Flashlight>();if(light)light.AvailabilityChanged-=OnEquipamientoCambiado;
         }
 
         DestruirFilas();
@@ -720,6 +722,10 @@ public class NPCShopUI : MonoBehaviour
             textoCompra.text = textoNoDisponibleCompra;
             textoCompra.color = colorNoDisponible;
         }
+        else if(ofertaSeleccionada.esLinterna&&(!playerHealth||!playerHealth.GetComponent<Flashlight>()||!playerHealth.GetComponent<Flashlight>().CompatibleWithEquippedWeapon))
+        {
+            textoCompra.text="ARMA NO COMPATIBLE";textoCompra.color=colorNoDisponible;
+        }
         else if (InventarioLlenoPara(ofertaSeleccionada))
         {
             textoCompra.text = textoInventarioLleno;
@@ -749,7 +755,7 @@ public class NPCShopUI : MonoBehaviour
         {
             bool alcanza = Alcanza(PrecioActual(ofertaSeleccionada));
             string textoAlcanza = Reparable(ofertaSeleccionada) ? textoReparar : textoComprar;
-            textoCompra.text = alcanza ? textoAlcanza : textoFaltanRecursos;
+            textoCompra.text = alcanza ? (ofertaSeleccionada.esLinterna&&playerHealth&&playerHealth.GetComponent<Flashlight>().Purchased?"EQUIPAR":textoAlcanza) : textoFaltanRecursos;
             textoCompra.color = alcanza ? colorAlcanza : colorNoAlcanza;
         }
     }
@@ -786,6 +792,7 @@ public class NPCShopUI : MonoBehaviour
         bool puedeComprar =
             ofertaSeleccionada != null &&
             ofertaSeleccionada.disponible &&
+            (!ofertaSeleccionada.esLinterna||(playerHealth&&playerHealth.GetComponent<Flashlight>()&&playerHealth.GetComponent<Flashlight>().CompatibleWithEquippedWeapon)) &&
             weaponSwitcher != null &&
             (!ofertaSeleccionada.EsColocable ||
              TorretaReparable(ofertaSeleccionada) ||
@@ -856,6 +863,8 @@ public class NPCShopUI : MonoBehaviour
     // Chaleco / casco: "comprado" solo mientras tiene el escudo lleno; dañado o roto se puede reparar.
     private bool EstaComprada(WeaponOffer oferta)
     {
+        if(oferta.esLinterna)return playerHealth&&playerHealth.GetComponent<Flashlight>()&&playerHealth.GetComponent<Flashlight>().FlashlightAvailable;
+        if (oferta.EsPerk) return playerHealth && playerHealth.TienePerk(oferta.perk);
         if (oferta.EsBlindaje)
             return playerHealth != null &&
                    playerHealth.TieneBlindaje(oferta.piezaBlindaje) &&
@@ -945,6 +954,7 @@ public class NPCShopUI : MonoBehaviour
     // Lo que cuesta ahora en recursos: la reparación si la pieza o la torreta está dañada o rota, si no el precio de compra.
     private PrecioRecursos PrecioActual(WeaponOffer oferta)
     {
+        if(oferta.esLinterna&&playerHealth&&playerHealth.GetComponent<Flashlight>()&&playerHealth.GetComponent<Flashlight>().Purchased)return default;
         return Reparable(oferta) && currentVendor != null
             ? currentVendor.PrecioReparacion(oferta)
             : oferta.Precio;

@@ -62,7 +62,9 @@ public class GranadaIncendiaria : GrenadeProjectile
             foreach (ZombieAlcanzado alcanzado in ZombiesEnRadio(radioFuego))
                 alcanzado.zombie.Quemar(duracionQuemadura, danoPorTick, intervaloQuemadura, LanzadorClientId);
 
-            if (lanzador != null && EstaEnElFuego(lanzador.transform.position, centro))
+            var combat=DeadQuarantine.PvPvE.Networking.PvPvECombat.Active;
+            if(combat)combat.BurnAreaServer(LanzadorClientId,centro,radioFuego,alturaMaximaJugador,duracionQuemaduraJugador,danoPorTickJugador,intervaloQuemadura);
+            if (!combat && lanzador != null && EstaEnElFuego(lanzador.transform.position, centro))
                 lanzador.Quemar(duracionQuemaduraJugador, danoPorTickJugador, intervaloQuemadura);
 
             yield return new WaitForSeconds(intervaloRevision);

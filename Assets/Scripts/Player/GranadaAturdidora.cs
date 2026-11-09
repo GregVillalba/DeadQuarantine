@@ -28,6 +28,8 @@ public class GranadaAturdidora : GrenadeProjectile
                 ia.Aturdir(duracion);
         }
 
+        var combat=DeadQuarantine.PvPvE.Networking.PvPvECombat.Active;
+        if(combat){combat.ExplosionServer(LanzadorClientId,transform.position,explosionRadius,explosionDamage);combat.StunAreaServer(LanzadorClientId,transform.position,explosionRadius,duracionAturdimiento);}
         ReproducirEfectosExplosion();
         DespawnGranada();
     }

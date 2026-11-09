@@ -8,7 +8,7 @@ using UnityEngine;
 /// del mercader pagadas con esos recursos. Cada jugador tiene el suyo. Lo escribe solo el servidor;
 /// todos lo pueden leer.
 /// </summary>
-public class PlayerRecursos : NetworkBehaviour
+public partial class PlayerRecursos : NetworkBehaviour
 {
     public NetworkVariable<int> PilaDeLatasNetwork = new NetworkVariable<int>(
         0,

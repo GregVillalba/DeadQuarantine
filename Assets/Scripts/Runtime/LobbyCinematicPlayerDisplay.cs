@@ -20,6 +20,9 @@ public class LobbyCinematicPlayerDisplay : MonoBehaviour
     [SerializeField] private Transform anchor;
     [SerializeField] private string weaponId = "Handgun";
 
+    [Tooltip("Conservar sólo el cuerpo visual después de aplicar el Player original, evitando Awake de gameplay en PvPvE.")]
+    [SerializeField] private bool visualBodyOnly;
+
     [Header("Idle")]
     [SerializeField] private float animatorSpeed = 0.92f;
     [SerializeField] private float subtleTurnDegrees = 1.2f;
@@ -58,6 +61,7 @@ public class LobbyCinematicPlayerDisplay : MonoBehaviour
     private Coroutine buildRoutine;
     private int buildToken;
     private bool building;
+    private bool isolatedBodyBuild;
 
     private static MethodInfo applyMethod;
     private static bool applySearched;
@@ -271,7 +275,7 @@ public class LobbyCinematicPlayerDisplay : MonoBehaviour
         // El Player real se arma con su nodo APAGADO: asi no corren Awake / OnEnable / Start de sus scripts
         // (HUD, cartel de nombre, red...) hasta que el modelo esta limpio.
         visualRoot.gameObject.SetActive(false);
-        building = true;
+        building = true;isolatedBodyBuild=false;
 
         // Foto de la UI existente: lo que el Player cree por su cuenta se apaga despues.
         HashSet<Component> uiBefore = SnapshotUi();
@@ -376,6 +380,18 @@ public class LobbyCinematicPlayerDisplay : MonoBehaviour
         // 4) Apagar gameplay, HUD, camaras, audio y luces del prefab.
         DisableGameplay(current, bodyAnimator);
         HideInterface(current, bodyRoot);
+
+        if (visualBodyOnly && bodyRoot != null && bodyAnimator != null &&
+            (bodyAnimator.transform == bodyRoot || bodyAnimator.transform.IsChildOf(bodyRoot)))
+        {
+            // All skin/controller/grip data has been applied. The inactive source Player
+            // can now be discarded without running its gameplay/UI Awake methods.
+            var sourcePlayer = current;
+            bodyRoot.SetParent(visualRoot, true);
+            current = bodyRoot.gameObject;
+            current.name = "Lobby_Character_Visual";isolatedBodyBuild=true;
+            Destroy(sourcePlayer);
+        }
 
         // 5) El resto se termina el cuadro siguiente: los Destroy de Apply recien ahi se efectuan.
         buildRoutine = StartCoroutine(FinishBuild(buildToken, bodyRoot, bodyBefore, heldWeapon, uiBefore, characterIndex));
@@ -720,6 +736,9 @@ public class LobbyCinematicPlayerDisplay : MonoBehaviour
     /// <summary>Apaga cualquier Canvas o texto que el Player haya creado FUERA de su propia jerarquía.</summary>
     private void DeactivateNewUi(HashSet<Component> before)
     {
+        // Body-only previews discard the inactive gameplay root before any of its Awake methods run.
+        // UI created concurrently by NGO belongs to the match, never to this isolated model.
+        if(isolatedBodyBuild)return;
         foreach (Canvas canvas in FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
         {
             if (before.Contains(canvas) || canvas.transform.IsChildOf(current.transform))

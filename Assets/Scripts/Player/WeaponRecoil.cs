@@ -47,11 +47,14 @@ public class WeaponRecoil : MonoBehaviour
     private readonly SpringVector3 locationSpring = new SpringVector3();
     private readonly SpringVector3 rotationSpring = new SpringVector3();
 
+    readonly MotionCurves sourceAR=MotionData.RecoilAR(),sourceSMG=MotionData.RecoilSMG();
+    private bool sourceProfile;
     private MotionCurves activeCurves;
     private int shotsFired;
     private float lastFireTime = -999f;
     private bool lastAiming;
     private float lastIntensity = 1f;
+    private Vector2 recoilAxes=Vector2.one;
     private float presetMultiplier = 1f;
 
     private int lastComputedFrame = -1;
@@ -79,7 +82,7 @@ public class WeaponRecoil : MonoBehaviour
     }
 
     /// <summary>Lo llama Weapon.cs en cada disparo.</summary>
-    public void Fire(RecoilPreset preset, bool aiming, float intensityMultiplier = 1f)
+    public void Fire(RecoilPreset preset, bool aiming, float intensityMultiplier = 1f, bool authoredProfile = false, Vector2? attachmentAxes = null)
     {
         if (Time.time - lastFireTime > comboResetDelay)
             shotsFired = 0;
@@ -87,8 +90,9 @@ public class WeaponRecoil : MonoBehaviour
         shotsFired++;
         lastFireTime = Time.time;
         lastAiming = aiming;
-        lastIntensity = intensityMultiplier;
-        activeCurves = preset == RecoilPreset.AR ? recoilAR : recoilSMG;
+        lastIntensity = intensityMultiplier;recoilAxes=attachmentAxes??Vector2.one;
+        sourceProfile=authoredProfile;
+        activeCurves=authoredProfile?(preset==RecoilPreset.AR?sourceAR:sourceSMG):(preset==RecoilPreset.AR?recoilAR:recoilSMG);
 
         switch (preset)
         {
@@ -96,6 +100,7 @@ public class WeaponRecoil : MonoBehaviour
             case RecoilPreset.Handgun: presetMultiplier = handgunMultiplier; break;
             default: presetMultiplier = smgMultiplier; break;
         }
+        if(authoredProfile)presetMultiplier=1f;
     }
 
     private void ComputeIfNeeded()
@@ -113,7 +118,7 @@ public class WeaponRecoil : MonoBehaviour
 
         if (activeCurves != null)
         {
-            float stateMultiplier = (lastAiming ? aimingMultiplier : 1f) * lastIntensity * presetMultiplier;
+            float stateMultiplier = (lastAiming ? (sourceProfile ? .35f : aimingMultiplier) : 1f) * lastIntensity * presetMultiplier;
 
             Vector3 locationNow = activeCurves.EvaluateLocation(shotsFired);
             Vector3 rotationNow = activeCurves.EvaluateRotation(shotsFired);
@@ -125,6 +130,7 @@ public class WeaponRecoil : MonoBehaviour
             }
 
             location = locationNow * (activeCurves.locationMultiplier * stateMultiplier);
+            rotationNow=Vector3.Scale(rotationNow,new Vector3(recoilAxes.x,recoilAxes.y,recoilAxes.y));
             rotation = rotationNow * (activeCurves.rotationMultiplier * stateMultiplier);
 
             locationSpring.Apply(activeCurves.locationSpring);

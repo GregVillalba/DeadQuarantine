@@ -67,10 +67,10 @@ public partial class PlayerHealth
 
     public int CantidadSlotsCuras => cantidadSlotsCuras;
     /// <summary>Capacidad actual del slot de curas (Q).</summary>
-    public int CapacidadCuras => capacidadSlot + EspaciosExtraCuras.Value * incrementoPorEspacioExtra;
+    public int CapacidadCuras => CuracionPvPvEActiva ? CuracionPvPvE.Value.capacity : capacidadSlot + EspaciosExtraCuras.Value * incrementoPorEspacioExtra;
 
     /// <summary>Capacidad actual del slot de granadas (G).</summary>
-    public int CapacidadGranadas => capacidadSlot + EspaciosExtraGranadas.Value * incrementoPorEspacioExtra;
+    public int CapacidadGranadas => GranadaPvPvEActiva ? GranadaPvPvE.Value.cantidad : capacidadSlot + EspaciosExtraGranadas.Value * incrementoPorEspacioExtra;
 
     /// <summary>Cuántos Slot extra se compraron para ese slot.</summary>
     public int EspaciosExtraDe(SlotInventarioExtra slot)
@@ -81,6 +81,7 @@ public partial class PlayerHealth
     /// <summary>true si ya no se pueden comprar más Slot extra para ese slot.</summary>
     public bool EspaciosExtraAlMaximo(SlotInventarioExtra slot)
     {
+        if (CuracionPvPvEActiva && slot == SlotInventarioExtra.Curas || GranadaPvPvEActiva && slot == SlotInventarioExtra.Granadas) return true;
         return EspaciosExtraDe(slot) >= maxEspaciosExtra;
     }
 
@@ -101,6 +102,8 @@ public partial class PlayerHealth
 
     private void InicializarInventarioServidor()
     {
+        CuracionPvPvE.Value = default;
+        GranadaPvPvE.Value = default;EquipoDeClase.Value = default;RevisionArmasAplicada = 0;
         SlotsCuras.Clear();
 
         for (int i = 0; i < cantidadSlotsCuras; i++)
@@ -113,6 +116,8 @@ public partial class PlayerHealth
 
     private void SuscribirInventario()
     {
+        CuracionPvPvE.OnValueChanged += CuracionDeClaseChanged;
+        GranadaPvPvE.OnValueChanged += GranadaDeClaseChanged;
         SlotsCuras.OnListChanged += InventarioListaChanged;
         SlotGranada.OnValueChanged += SlotGranadaChanged;
         EspaciosExtraCuras.OnValueChanged += EspaciosExtraChanged;
@@ -132,6 +137,8 @@ public partial class PlayerHealth
 
     private void DesuscribirInventario()
     {
+        CuracionPvPvE.OnValueChanged -= CuracionDeClaseChanged;
+        GranadaPvPvE.OnValueChanged -= GranadaDeClaseChanged;
         SlotsCuras.OnListChanged -= InventarioListaChanged;
         SlotGranada.OnValueChanged -= SlotGranadaChanged;
         EspaciosExtraCuras.OnValueChanged -= EspaciosExtraChanged;
@@ -170,6 +177,7 @@ public partial class PlayerHealth
     {
         if (!IsOwner || NPCShopUI.LocalShopOpen || PauseController.LocalPlayerPaused)
             return;
+        if (DeadQuarantine.PvPvE.UI.PvPvEInitialClassView.BlocksLocalGameplay || CuracionPvPvEActiva && PlayerInputGate.ActionsBlocked) return;
 
         if (accionSlot1 != null && accionSlot1.WasPressedThisFrame())
             IntentarUsarSlot(0);
@@ -208,6 +216,7 @@ public partial class PlayerHealth
     /// <summary>true si hay lugar en el slot G para una granada de este tipo.</summary>
     public bool PuedeGuardarGranada(string itemId)
     {
+        if (GranadaPvPvEActiva) return false;
         SlotCura slot = SlotGranada.Value;
 
         if (slot.Vacio)
@@ -219,6 +228,8 @@ public partial class PlayerHealth
     // Primero el slot que ya tiene ese tipo de cura (si le queda lugar); si no, el primer slot vacío.
     private int BuscarSlotPara(string itemId)
     {
+        // Class supplies cannot be replenished through the legacy client-facing merchant RPC.
+        if (CuracionPvPvEActiva) return -1;
         if (SlotsCuras == null)
             return -1;
 
@@ -326,8 +337,10 @@ public partial class PlayerHealth
     [ServerRpc]
     public void SolicitarLanzamientoGranadaServerRpc(Vector3 posicion, Vector3 velocidad)
     {
+        if (!DeadQuarantine.PvPvE.Networking.PvPvETeamDeployment.AllowsOffense(this)) return;
         if (!IsAlive)
             return;
+        if(DeadQuarantine.PvPvE.Networking.PvPvECombat.Active&&(!float.IsFinite(posicion.x)||!float.IsFinite(posicion.y)||!float.IsFinite(posicion.z)||!float.IsFinite(velocidad.x)||!float.IsFinite(velocidad.y)||!float.IsFinite(velocidad.z)||Vector3.Distance(posicion,transform.position+Vector3.up*1.4f)>2||velocidad.magnitude>40))return;
 
         SlotCura slot = SlotGranada.Value;
 
@@ -345,6 +358,7 @@ public partial class PlayerHealth
         if (!lanzador.CrearProyectilServidor(slot.itemId.ToString(), posicion, velocidad, OwnerClientId))
             return;
 
+        DeadQuarantine.PvPvE.Networking.PvPvETeamDeployment.Active?.CancelProtectionServer(OwnerClientId);
         slot.cantidad--;
         SlotGranada.Value = slot.Vacio ? default : slot;
     }

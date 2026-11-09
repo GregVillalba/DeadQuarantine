@@ -50,7 +50,8 @@ public class PlayerCharacter : NetworkBehaviour
     /// 1 = normal, 1.2 = 20% más rápido, 0.9 = 10% más lento.
     /// Weapon lo usa para acelerar o ralentizar la animación completa de recarga.
     /// </summary>
-    public float ReloadSpeedMultiplier { get; private set; } = 1f;
+    private float classReloadSpeedMultiplier = 1f;
+    public float ReloadSpeedMultiplier => classReloadSpeedMultiplier * (playerHealth ? playerHealth.PerkReloadSpeed : 1f);
 
     /// <summary>
     /// Alias de compatibilidad con código anterior. El valor ahora representa velocidad, no tiempo.
@@ -162,7 +163,7 @@ public class PlayerCharacter : NetworkBehaviour
         if (playerMovement != null)
             playerMovement.ApplyClassModifiers(data.MoveMultiplier, data.StaminaMultiplier, data.StaminaRegenMultiplier);
 
-        ReloadSpeedMultiplier = Mathf.Max(0.01f, data.ReloadSpeedMultiplier);
+        classReloadSpeedMultiplier = Mathf.Max(0.01f, data.ReloadSpeedMultiplier);
 
         if (playerHealth != null)
             playerHealth.SetMaxHealth(data.maxHealth, true);

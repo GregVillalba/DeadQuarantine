@@ -126,8 +126,14 @@ public class PlayerNameplate : NetworkBehaviour
 
     private void LateUpdate()
     {
-        if (nameplateContainer == null || !nameplateContainer.activeInHierarchy)
-            return;
+        if(!nameplateContainer)return;
+        bool visible=!IsOwner;
+        var roster=DeadQuarantine.PvPvE.Networking.PvPvETeamRoster.Active;
+        if(roster&&roster.IsSpawned){
+            visible=visible&&roster.TryGetMember(NetworkManager.LocalClientId,out var local)&&roster.TryGetMember(OwnerClientId,out var other)&&local.Team==other.Team;
+        }
+        if(nameplateContainer.activeSelf!=visible)nameplateContainer.SetActive(visible);
+        if(!visible)return;
 
         if (localCamera == null)
         {

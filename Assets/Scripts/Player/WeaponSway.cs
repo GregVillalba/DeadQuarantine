@@ -62,7 +62,7 @@ public class WeaponSway : MonoBehaviour
 
         lastComputedFrame = Time.frameCount;
 
-        float aimMultiplier = (weapon != null && weapon.IsAiming) ? aimingSwayMultiplier : 1f;
+        float aimMultiplier = (weapon != null && weapon.IsAiming) ? aimingSwayMultiplier * weapon.AttachmentSway : 1f;
 
         Vector3 lookPos = CalculateLookSway(out Vector3 lookRot);
         Vector3 movePos = CalculateMoveSway(out Vector3 moveRot);

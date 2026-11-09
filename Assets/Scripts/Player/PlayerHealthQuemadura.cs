@@ -23,6 +23,7 @@ public partial class PlayerHealth
     private int danoQuemadura;
     private float intervaloQuemadura;
     private Coroutine rutinaQuemadura;
+    private ulong? causanteQuemadura;
 
     // Fuego instanciado en este cliente.
     private GameObject fuegoActivo;
@@ -31,11 +32,12 @@ public partial class PlayerHealth
     /// Solo servidor. Prende fuego al jugador o, si ya se está quemando, le renueva la duración.
     /// Hace danoPorTick cada intervalo; se apaga al pasar la duración o si queda abatido.
     /// </summary>
-    public void Quemar(float duracion, int danoPorTick, float intervalo)
+    public void Quemar(float duracion, int danoPorTick, float intervalo, ulong? causante = null)
     {
         if (!IsServer || !IsAlive)
             return;
 
+        causanteQuemadura=causante;
         finQuemadura = Mathf.Max(finQuemadura, Time.time + duracion);
         danoQuemadura = danoPorTick;
         intervaloQuemadura = Mathf.Max(0.1f, intervalo);
@@ -54,7 +56,9 @@ public partial class PlayerHealth
         {
             if (Time.time >= proximoTick)
             {
-                TakeDamage(danoQuemadura);
+                var combat=DeadQuarantine.PvPvE.Networking.PvPvECombat.Active;
+                if(combat&&causanteQuemadura.HasValue)combat.ApplyDamageServer(causanteQuemadura.Value,this,danoQuemadura,DeadQuarantine.PvPvE.Networking.PvPvEDamageKind.Fire,false,0,"Incendiaria");
+                else TakeDamage(danoQuemadura);
                 proximoTick += intervaloQuemadura;
             }
 

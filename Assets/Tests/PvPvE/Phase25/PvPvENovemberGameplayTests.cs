@@ -1,0 +1,19 @@
+using System.Linq;
+using NUnit.Framework;
+using UnityEditor;
+using UnityEngine;
+using DeadQuarantine.PvPvE;
+public sealed class PvPvENovemberGameplayTests {
+ PvPvELoadoutCatalog Catalog=>AssetDatabase.LoadAssetAtPath<PvPvELoadoutCatalog>("Assets/PvPvE/Data/LoadoutCatalog.asset");
+ [Test] public void MerchantHasEveryGunExactlyOnceWithCurrentCard(){var v=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mercader.prefab").GetComponent<NPCWeaponVendor>();foreach(var gun in Catalog.weapons){var offer=v.Offers.Single(x=>x.weaponId==gun.id);Assert.IsTrue(offer.disponible,gun.id);Assert.AreEqual(gun.icon,offer.imagenTarjeta,gun.id);}}
+ [Test] public void MerchantUsesCurrentPassiveIcons(){var v=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Mercader.prefab").GetComponent<NPCWeaponVendor>();foreach(var p in Catalog.perks.entries)Assert.AreEqual(p.IconForPvPvE,v.Offers.Single(x=>x.weaponId==p.id).imagenTarjeta,p.id);}
+ [Test] public void EmptyUtilitiesValidateAndRepairPreservesNone(){var c=Catalog.Default(0);c.healing=c.grenade="";Assert.IsTrue(Catalog.Validate(c,out var error),error);Assert.AreEqual(0,Catalog.HealingCapacity(c));Assert.AreEqual(0,Catalog.GrenadeCapacity(c));Assert.AreEqual(2,Catalog.Pick10Cost(c));var fixedClass=Catalog.Repair(c,0);Assert.IsTrue(string.IsNullOrEmpty(fixedClass.healing));Assert.IsTrue(string.IsNullOrEmpty(fixedClass.grenade));}
+ [Test] public void ExtraHealingCannotGenerateEquipmentFromNone(){var c=Catalog.Default(0);c.healing="";c.wildcard1=Catalog.wildcards.entries.Single(w=>w.kind==PvPvEWildcard.ExtraHealing).id;Assert.IsFalse(Catalog.Validate(c,out _));Assert.AreEqual(0,Catalog.HealingCapacity(c));Assert.IsTrue(string.IsNullOrEmpty(Catalog.Repair(c,0).wildcard1));}
+ [Test] public void HealingQuantitiesAndExtraAreCanonical(){var c=Catalog.Default(0);foreach(var h in Catalog.healings){c.healing=h.id;Assert.AreEqual(h.healing==25?2:1,Catalog.HealingCapacity(c));}c.wildcard1=Catalog.wildcards.entries.Single(w=>w.kind==PvPvEWildcard.ExtraHealing).id;Assert.AreEqual(2,Catalog.HealingCapacity(c));}
+ [TestCase("Muzzle_Silencer_01",.94f,1f)] [TestCase("Muzzle_Silencer_02",1.08f,1.1f)] [TestCase("Muzzle_Silencer_03",1.12f,1.18f)]
+ public void SilencerRangeAndADS(string id,float range,float ads){var e=Catalog.attachments.Find(id);Assert.AreEqual(range,e.range,.0001f);Assert.AreEqual(ads,e.adsDuration,.0001f);Assert.IsTrue(e.suppressed);Assert.AreEqual(1,e.damage);}
+ [TestCase("Bipod_01",.75f,.85f,1.05f)] [TestCase("Bipod_02",.6f,.75f,1.15f)] public void BipodBenefitsAreConditionalPenaltiesPermanent(string id,float sway,float recoil,float ads){var a=Catalog.attachments;var e=a.Find(id);CollectionAssert.AreEquivalent(new[]{"Sniper01","Sniper02","Sniper03"},e.weapons);var choice=new WeaponAttachmentChoice{support=id};Assert.AreEqual(1,a.Modifier(choice,x=>x.recoil,false,true));Assert.AreEqual(recoil,a.Modifier(choice,x=>x.recoil,true,true));Assert.AreEqual(ads,a.Modifier(choice,x=>x.adsDuration,false));Assert.AreEqual(sway,e.adsSway);}
+ [Test] public void GripDoesNotFitP90OrMac10(){var e=Catalog.attachments.Find("Grip_01");CollectionAssert.DoesNotContain(e.weapons,"P90");CollectionAssert.DoesNotContain(e.weapons,"MAC10");Assert.AreEqual(.8f,e.verticalRecoil);Assert.AreEqual(.9f,e.horizontalRecoil);}
+ [Test] public void SuppliedHitSoundHasNoLeadingSilence(){var clip=Resources.Load<AudioClip>("PvPvE/ConfirmedHit");Assert.IsNotNull(clip);clip.LoadAudioData();var samples=new float[clip.samples*clip.channels];Assert.IsTrue(clip.GetData(samples,0));Assert.Greater(samples.Take(clip.frequency/100).Max(x=>Mathf.Abs(x)),.001f);}
+ [TestCase("Scope_05",3)] [TestCase("Scope_06",4)] [TestCase("Scope_07",7)] public void ScopeZoomIsCorrectForAnyHipFov(string id,float expected){var e=Catalog.attachments.Find(id);foreach(float hip in new[]{60f,65.3f,80f})Assert.AreEqual(expected,Mathf.Tan(hip*.5f*Mathf.Deg2Rad)/Mathf.Tan(e.LensFieldOfView(hip)*.5f*Mathf.Deg2Rad),.001f);}
+}

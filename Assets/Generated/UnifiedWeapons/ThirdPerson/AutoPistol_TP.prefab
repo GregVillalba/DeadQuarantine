@@ -192,6 +192,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5bef28454a22b254b9f86ba9b3bb2fd4, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1166127371147317633}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5bef28454a22b254b9f86ba9b3bb2fd4, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2079486395618756336}
     - targetCorrespondingSourceObject: {fileID: 2948462058018879517, guid: 5bef28454a22b254b9f86ba9b3bb2fd4, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7429771143704417363}
@@ -244,7 +247,7 @@ Animator:
   m_GameObject: {fileID: 6975390300946652730}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 0f34dd6a6b07d154c85fa7f6464c54c7, type: 2}
+  m_Controller: {fileID: 9100000, guid: b19bc168799148e4b9a38076223b26bb, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -268,6 +271,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5c632ce954036345a96075284d8197e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Scripts::DQThirdPersonMagazineEventReceiver
+--- !u!114 &2079486395618756336
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6975390300946652730}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dee798748f929eb4ea65d1147e455b82, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::WeaponEmptySlideSync
 --- !u!4 &8519230748558872986 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1888866895172711153, guid: 5bef28454a22b254b9f86ba9b3bb2fd4, type: 3}

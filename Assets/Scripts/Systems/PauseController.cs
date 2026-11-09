@@ -1,3 +1,6 @@
+﻿using System.Linq;
+using UnityEngine.UI;
+using DeadQuarantine.PvPvE;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
@@ -67,6 +70,8 @@ public class PauseController : NetworkBehaviour
 
     private bool estaPausado;
     public bool EstaPausado => estaPausado;
+    public GameObject PauseHomePanel => popupMenuHome;
+    public bool IsPauseHomeVisible => estaPausado && popupMenuHome != null && popupMenuHome.activeInHierarchy;
 
     public static bool LocalPlayerPaused { get; private set; }
     private static int resumeFrame = -100;
@@ -147,6 +152,7 @@ public class PauseController : NetworkBehaviour
         }
 
         ActualizarBotonReiniciar();
+        RefreshPausePresentation();
 
         if (EsSinglePlayer())
             return;
@@ -237,8 +243,14 @@ public class PauseController : NetworkBehaviour
         Cursor.lockState = CursorLockMode.Locked;
     }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    [System.NonSerialized] public int DebugUpdates,DebugEscapePresses,DebugPauseCalls,DebugResumeCalls;
+#endif
     private void Update()
     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        DebugUpdates++;if(Keyboard.current!=null&&Keyboard.current.escapeKey.wasPressedThisFrame)DebugEscapePresses++;
+#endif
         if (!IsOwner)
             return;
 
@@ -284,6 +296,9 @@ public class PauseController : NetworkBehaviour
 
     public void PausarJuego()
     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        DebugPauseCalls++;
+#endif
         bool historiaActiva = storyIntro != null && storyIntro.HistoriaActiva;
         if (!IsOwner || estaPausado || historiaActiva) return;
 
@@ -319,6 +334,9 @@ public class PauseController : NetworkBehaviour
 
     public void ReanudarJuego()
     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        DebugResumeCalls++;
+#endif
         if (!IsOwner || !estaPausado) return;
 
         estaPausado = false;
@@ -379,6 +397,7 @@ public class PauseController : NetworkBehaviour
 
     private bool EsSinglePlayer()
     {
+        if (DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.Active) return false;
         return SceneManager.GetActiveScene().name == "MainSceneSinglePlayer";
     }
 
@@ -410,9 +429,41 @@ public class PauseController : NetworkBehaviour
         SceneManager.LoadScene("MainSceneSinglePlayer");
     }
 
+    // Shared home presentation for singleplayer, cooperative and PvPvE; original actions remain on this controller.
+    public void RefreshPausePresentation(Button classButton=null)
+    {
+        ActualizarBotonReiniciar();
+        if(!popupMenuHome)return;var home=popupMenuHome.transform;
+        // Older player variants do not always reference the visible Restart button in botonReiniciar.
+        // Apply the same singleplayer restriction to the actual home actions as well.
+        if(!EsSinglePlayer())foreach(var action in home.GetComponentsInChildren<Button>(true)){
+            var caption=action.GetComponentInChildren<TMP_Text>(true);
+            if(caption&&caption.text.Trim().StartsWith("Reiniciar",System.StringComparison.OrdinalIgnoreCase))action.gameObject.SetActive(false);
+        }
+        var buttons=home.GetComponentsInChildren<Button>(true).Where(b=>b.gameObject.activeSelf&&b.GetComponentInChildren<TMP_Text>(true)).ToList();
+        if(buttons.Count==0)return;var parent=buttons[0].transform.parent;buttons=buttons.Where(b=>b.transform.parent==parent&&b!=classButton).OrderByDescending(b=>b.transform.position.y).ToList();
+        if(classButton)buttons.Insert(Mathf.Min(1,buttons.Count),classButton);
+        foreach(var text in home.GetComponentsInChildren<TMP_Text>(true))if(!text.GetComponentInParent<Button>(true)&&text.name!="DQ_PauseTitle")text.gameObject.SetActive(false);
+        foreach(var graphic in home.GetComponentsInChildren<Image>(true)){
+            if(graphic.transform==home||graphic.GetComponentInParent<Button>(true)||graphic.name.StartsWith("DQ_"))continue;
+            graphic.enabled=false;
+        }
+        var layout=parent.GetComponent<LayoutGroup>();if(layout)layout.enabled=false;
+        for(int i=0;i<buttons.Count;i++){
+            var button=buttons[i];float top=.69f-i*.105f;PvPvEUIFactory.Place((RectTransform)button.transform,new(.31f,top-.079f),new(.69f,top));
+            foreach(var image in button.GetComponentsInChildren<Image>(true)){image.sprite=null;image.type=Image.Type.Simple;image.color=PvPvEUIFactory.Surface;}
+            PvPvEUIFactory.StyleButton(button);var label=button.GetComponentInChildren<TMP_Text>(true);label.gameObject.SetActive(true);PvPvEUIFactory.Place(label.rectTransform,new(.035f,0),new(.965f,1));label.rectTransform.localScale=Vector3.one;label.font=PvPvEUIFactory.BodyFont;label.fontSize=22;label.color=Color.white;label.enableAutoSizing=true;label.fontSizeMin=16;label.fontSizeMax=22;
+            if(label.text.Trim().StartsWith("Salir",System.StringComparison.OrdinalIgnoreCase)){button.onClick=new Button.ButtonClickedEvent();button.onClick.AddListener(Salir);}
+        }
+        if(!home.Find("DQ_PauseBackdrop")){var shade=new GameObject("DQ_PauseBackdrop",typeof(RectTransform),typeof(Image));shade.transform.SetParent(home,false);shade.transform.SetAsFirstSibling();PvPvEUIFactory.Place((RectTransform)shade.transform,Vector2.zero,Vector2.one);shade.GetComponent<Image>().color=new Color(.015f,.02f,.025f,.72f);shade.GetComponent<Image>().raycastTarget=false;}
+        var title=home.Find("DQ_PauseTitle")?.GetComponent<TextMeshProUGUI>();if(!title){title=new GameObject("DQ_PauseTitle",typeof(RectTransform)).AddComponent<TextMeshProUGUI>();title.transform.SetParent(home,false);}PvPvEUIFactory.Place(title.rectTransform,new(.31f,.76f),new(.69f,.88f));title.font=PvPvEUIFactory.HeadingFont;title.fontSize=54;title.alignment=TextAlignmentOptions.Center;title.text="PAUSA";title.color=PvPvEUIFactory.Accent;title.raycastTarget=false;
+        if(!home.Find("DQ_PauseRule")){var line=new GameObject("DQ_PauseRule",typeof(RectTransform),typeof(Image));line.transform.SetParent(home,false);PvPvEUIFactory.Place((RectTransform)line.transform,new(.31f,.735f),new(.69f,.739f));line.GetComponent<Image>().color=new Color(.25f,.9f,.45f);line.GetComponent<Image>().raycastTarget=false;}
+    }
+
     public void Salir()
     {
         if (!IsOwner) return;
+        if (DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.Active) { _ = DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.ExitToMenuAsync(); return; }
 
         Time.timeScale = 1f;
         AudioListener.pause = false;
@@ -430,7 +481,7 @@ public class PauseController : NetworkBehaviour
     {
         if (!IsOwner) return;
 
-        if (estaPausado || finDeRondaActivo)
+        if (estaPausado || finDeRondaActivo || DeadQuarantine.PvPvE.UI.PvPvEInitialClassView.BlocksLocalGameplay)
         {
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;

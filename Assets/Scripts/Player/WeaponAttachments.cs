@@ -29,7 +29,8 @@ public class WeaponAttachmentOption
 ///     weaponAttachments.SetScope(1);   // la segunda mira de la lista
 ///     weaponAttachments.SetGrip(-1);   // sacar el grip
 /// </summary>
-public class WeaponAttachments : MonoBehaviour
+[DefaultExecutionOrder(1100)]
+public partial class WeaponAttachments : MonoBehaviour
 {
     [Header("Icono del HUD")]
     [Tooltip("Sprite del cuerpo del arma (opcional). Si queda vacío, el icono conserva el que ya tiene su imagen 'Weapon'.")]
@@ -68,12 +69,12 @@ public class WeaponAttachments : MonoBehaviour
     // ---------- Lo que lee el icono ----------
 
     public Sprite BodySprite => bodySprite;
-    public Sprite ScopeDefaultSprite => scopeDefault != null ? scopeDefault.sprite : null;
-    public Sprite ScopeSprite => SpriteAt(scopes, scopeIndex);
+    public Sprite ScopeDefaultSprite => HasRuntimeCatalog && !string.IsNullOrEmpty(ApprovedChoice.scope) ? null : scopeDefault != null ? scopeDefault.sprite : null;
+    public Sprite ScopeSprite => HasRuntimeCatalog ? RuntimeHudIcon(WeaponAttachmentKind.Scope) : SpriteAt(scopes, scopeIndex);
     public Sprite MagazineSprite => SpriteAt(magazines, magazineIndex);
-    public Sprite LaserSprite => SpriteAt(lasers, laserIndex);
-    public Sprite GripSprite => SpriteAt(grips, gripIndex);
-    public Sprite MuzzleSprite => SpriteAt(muzzles, muzzleIndex);
+    public Sprite LaserSprite => HasRuntimeCatalog ? RuntimeHudIcon(WeaponAttachmentKind.Utility) : SpriteAt(lasers, laserIndex);
+    public Sprite GripSprite => HasRuntimeCatalog ? RuntimeHudIcon(WeaponAttachmentKind.Support) : SpriteAt(grips, gripIndex);
+    public Sprite MuzzleSprite => HasRuntimeCatalog ? RuntimeHudIcon(WeaponAttachmentKind.Muzzle) : SpriteAt(muzzles, muzzleIndex);
 
     public int ScopeIndex => scopeIndex;
     public int MagazineIndex => magazineIndex;

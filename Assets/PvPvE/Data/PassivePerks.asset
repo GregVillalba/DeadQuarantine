@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 226882ceb7570024ba9f2596178e7857, type: 3}
+  m_Name: PassivePerks
+  m_EditorClassIdentifier: Scripts::DeadQuarantine.PvPvE.PassivePerkCatalog
+  entries:
+  - id: perk.gloves
+    name: "Guantes t\xE1cticos"
+    description: "Recargas un 50% m\xE1s r\xE1pidas."
+    perk: 1
+    category: 0
+    icon: {fileID: 21300000, guid: ec787d24a56c73d40a1e505e31b8fb38, type: 3}
+    pvpveIcon: {fileID: 21300000, guid: 7aa8cb0cd825c0546ae02942db65e991, type: 3}
+    cans: 3
+    water: 1
+    fuel: 0
+  - id: perk.boots
+    name: "Botas t\xE1cticas"
+    description: Consume 30% menos stamina al correr.
+    perk: 2
+    category: 1
+    icon: {fileID: 21300000, guid: d157bc27e6a70d349b9302bd91b53449, type: 3}
+    pvpveIcon: {fileID: 21300000, guid: 1b402ad4adca44c44895e69d6b08a91a, type: 3}
+    cans: 2
+    water: 1
+    fuel: 0
+  - id: perk.kneepads
+    name: "Rodilleras t\xE1cticas"
+    description: 'Ctrl corriendo: slide con coste de stamina.'
+    perk: 3
+    category: 1
+    icon: {fileID: 21300000, guid: db6be5f3887badc40a3c076dbd4afca6, type: 3}
+    pvpveIcon: {fileID: 21300000, guid: 36eff9ab0d3f9eb4f929f9efb3004c7c, type: 3}
+    cans: 4
+    water: 0
+    fuel: 1
+  - id: perk.holster
+    name: Funda de arma
+    description: "Cambio de arma un 20% m\xE1s corto."
+    perk: 4
+    category: 0
+    icon: {fileID: 21300000, guid: c77ece95ce155964ead189524aabe9aa, type: 3}
+    pvpveIcon: {fileID: 21300000, guid: faf4a79c251fb664e9a1c7c2749f5f95, type: 3}
+    cans: 3
+    water: 0
+    fuel: 1
+  - id: perk.canteen
+    name: Cantimplora militar
+    description: "Regenera stamina un 15% m\xE1s r\xE1pido."
+    perk: 5
+    category: 2
+    icon: {fileID: 21300000, guid: e0b00185afac0674db14225f8e117b0d, type: 3}
+    pvpveIcon: {fileID: 21300000, guid: 22e0735515e47d043a43679985914802, type: 3}
+    cans: 2
+    water: 2
+    fuel: 0
+  reloadSpeed: 1.5
+  sprintDrain: 0.7
+  switchDuration: 0.8
+  staminaRegen: 1.15
+  slideDuration: 0.65
+  slideCost: 1
+  slideCooldown: 1.25
+  slideSpeed: 11
+  merchantDistance: 4

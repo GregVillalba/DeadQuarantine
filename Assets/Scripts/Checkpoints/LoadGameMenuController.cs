@@ -1,4 +1,4 @@
-
+﻿
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -505,6 +505,8 @@ private void ComprobarPartidaGuardada()
     private void CargarEscena()
     {
         NetworkManager networkManager = NetworkManager.Singleton;
+
+        DeadQuarantine.PvPvE.PvPvELoadingScreen.BeginOriginal(escenaJuego);
 
         if (networkManager != null &&
             networkManager.IsListening)

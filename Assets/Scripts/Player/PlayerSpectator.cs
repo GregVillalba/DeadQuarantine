@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using Unity.Netcode;
 
@@ -122,6 +122,7 @@ public class PlayerSpectator : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        if (DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(NetworkObject)) return;
         if (playerHealth == null)
             return;
 

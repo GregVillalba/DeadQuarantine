@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 
@@ -34,6 +34,7 @@ public class GrenadeThrow : MonoBehaviour
     private int grenadeLeftLayerIndex = -1;
     private int grenadeRightLayerIndex = -1;
     private bool isThrowing;
+    private bool grenadeReleased;
 
     // Las granadas (tipo y cantidad) viven en el slot G de PlayerHealth, que es el que se sincroniza por red.
     private PlayerHealth Salud
@@ -90,7 +91,7 @@ public class GrenadeThrow : MonoBehaviour
         controls = new PlayerControls();
         ConfiguracionesJuego.CargarRebinds(controls.asset);
 
-        if (grenadeHandModel != null)
+        if (grenadeHandModel != null && grenadeHandModel.scene.IsValid())
             grenadeHandModel.SetActive(false);
 
         if (weaponAnimator != null)
@@ -138,6 +139,9 @@ public class GrenadeThrow : MonoBehaviour
         if (!TieneGranadas)
             return;
 
+        // Controllers change with the equipped gun; cached indices from Awake are stale.
+        grenadeLeftLayerIndex = weaponAnimator.GetLayerIndex("GranadeKnife");
+        grenadeRightLayerIndex = weaponAnimator.GetLayerIndex("GranadeKnifeRight");
         if (grenadeLeftLayerIndex < 0 && grenadeRightLayerIndex < 0)
         {
             Debug.LogWarning("[GrenadeThrow] No se encontraron las capas GranadeKnife / GranadeKnifeRight.");
@@ -151,11 +155,12 @@ public class GrenadeThrow : MonoBehaviour
             currentWeapon.CancelReload();
 
         isThrowing = true;
+        grenadeReleased = false;
 
         if (currentWeapon != null && currentWeapon.IsAiming)
             currentWeapon.ForceStopAiming();
 
-        if (grenadeHandModel != null)
+        if (grenadeHandModel != null && grenadeHandModel.scene.IsValid())
             grenadeHandModel.SetActive(true);
 
         if (currentWeapon != null)
@@ -175,7 +180,10 @@ public class GrenadeThrow : MonoBehaviour
     // Animation Event en el frame exacto de soltar la granada.
     public void OnGrenadeRelease()
     {
-        if (grenadeHandModel != null)
+        // Both arm layers may report the same release frame. One input spends one grenade.
+        if (!isThrowing || grenadeReleased || Salud == null || !Salud.IsOwner) return;
+        grenadeReleased = true;
+        if (grenadeHandModel != null && grenadeHandModel.scene.IsValid())
             grenadeHandModel.SetActive(false);
 
         if (playerCamera == null || throwPoint == null || Salud == null)

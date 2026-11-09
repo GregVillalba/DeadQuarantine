@@ -1,0 +1,477 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f50c128d0a0b94c439240dc28aa576a0, type: 3}
+  m_Name: LoadoutCatalog
+  m_EditorClassIdentifier: Scripts::DeadQuarantine.PvPvE.PvPvELoadoutCatalog
+  weapons:
+  - family: 4
+    whiteBody: {fileID: 1476102626, guid: 5de2ff934a8b3ea4ebfe923a6f958686, type: 3}
+    whiteMagazine: {fileID: 452600365, guid: d96558cda50c04347b69780fd84c6fc9, type: 3}
+    whiteDefaultSight: {fileID: 1427750167, guid: 8dfba53139ea13f40b1977728ed0bea4, type: 3}
+    id: Handgun
+    name: Handgun
+    secondary: 1
+    icon: {fileID: 21300000, guid: 00d94a123b126984dac4f20634e44b0d, type: 3}
+    model: {fileID: 5120353103407896248, guid: 4b18bd6bb3f0a134b93b1c8e0ec692be, type: 3}
+    damage: 25
+    magazine: 12
+    range: 100
+    fireInterval: 0.1
+    pellets: 1
+    burstCount: 1
+    burstCooldown: 0.25
+    falloffStart: 100
+    falloffEnd: 25
+    minDamageMultiplier: 0.25
+    maxSpread: 14
+    reloadSeconds: 2.2333333
+    emptyReloadSeconds: 2.7333336
+    shellOpenSeconds: 1
+    shellSeconds: 0.5
+    reloadFillSeconds: 1.1584113
+    emptyReloadFillSeconds: 1.1750779
+    shellReload: 0
+  - family: 0
+    whiteBody: {fileID: -1385930016, guid: bcc477d9e47ffcf41acc147a6fc51cf9, type: 3}
+    whiteMagazine: {fileID: 21300000, guid: 51d720b69910c244aa44a082bddf0155, type: 3}
+    whiteDefaultSight: {fileID: 21300000, guid: bbbb29d2cf3c91741bc1a1b953ca5776, type: 3}
+    id: Rifle
+    name: Rifle
+    secondary: 0
+    icon: {fileID: 21300000, guid: e52152a6a49388b4c9fb41bb241410d9, type: 3}
+    model: {fileID: 7405731138814743837, guid: 34f91c4c676dfe4408f0f9b3e55f1292, type: 3}
+    damage: 50
+    magazine: 30
+    range: 120
+    fireInterval: 0.1
+    pellets: 1
+    burstCount: 1
+    burstCooldown: 0.25
+    falloffStart: 120
+    falloffEnd: 25
+    minDamageMultiplier: 0.25
+    maxSpread: 14
+    reloadSeconds: 2.6666667
+    emptyReloadSeconds: 3.4333334
+    shellOpenSeconds: 1.7
+    shellSeconds: 0.7666667
+    reloadFillSeconds: 1.5051125
+    emptyReloadFillSeconds: 1.4744377
+    shellReload: 0
+  - family: 3
+    whiteBody: {fileID: 21300000, guid: d046e191cca72234f808841e75fb8720, type: 3}
+    whiteMagazine: {fileID: 0}
+    whiteDefaultSight: {fileID: 21300000, guid: ebcb5612c77ab6f40b7f817a416b7040, type: 3}
+    id: Escopeta
+    name: Escopeta
+    secondary: 0
+    icon: {fileID: 21300000, guid: f542ce96f9a2a034c9ee4a3e0347df80, type: 3}
+    model: {fileID: 4470264781676850109, guid: bb7b27c0fae58f049a33f0ffcb6f16f8, type: 3}
+    damage: 200
+    magazine: 10
+    range: 25
+    fireInterval: 1.4200001
+    pellets: 8
+    burstCount: 1
+    burstCooldown: 0.25
+    falloffStart: 8
+    falloffEnd: 25
+    minDamageMultiplier: 0.5
+    maxSpread: 12
+    reloadSeconds: 1.3000001
+    emptyReloadSeconds: 2.7333336
+    shellOpenSeconds: 1.7
+    shellSeconds: 0.7666667
+    reloadFillSeconds: 0
+    emptyReloadFillSeconds: 0
+    shellReload: 1
+  - family: 4
+    whiteBody: {fileID: -1985472265, guid: 7680f8df7f690fc44aafa8dae8d1f588, type: 3}
+    whiteMagazine: {fileID: 1659058222, guid: 6cd5210e72aed154f942f41916426e10, type: 3}
+    whiteDefaultSight: {fileID: -1455297796, guid: 46d42d5a0a4e3a44385f881d6a88fc53, type: 3}
+    id: AutoPistol
+    name: "Pistola autom\xE1tica"
+    secondary: 1
+    icon: {fileID: 21300000, guid: 7139559e586d43649b56a2c5a73ac8ba, type: 3}
+    model: {fileID: 6975390300946652730, guid: a16eff84b0501234eae11b9a7769cd4f, type: 3}
+    damage: 18
+    magazine: 20
+    range: 55
+    fireInterval: 0.09
+    pellets: 1
+    burstCount: 1
+    burstCooldown: 0.09
+    falloffStart: 55
+    falloffEnd: 55
+    minDamageMultiplier: 1
+    maxSpread: 14
+    reloadSeconds: 2.2333333
+    emptyReloadSeconds: 2.7333336
+    shellOpenSeconds: 1.7
+    shellSeconds: 0.7666667
+    reloadFillSeconds: 1.1584113
+    emptyReloadFillSeconds: 1.1750779
+    shellReload: 0
+  - family: 0
+    whiteBody: {fileID: 21300000, guid: 29d42a588ada78c47aa1735164b9b86d, type: 3}
+    whiteMagazine: {fileID: 21300000, guid: 8379dc4e93f66b04d98edb8e6ded955b, type: 3}
+    whiteDefaultSight: {fileID: 21300000, guid: 1a74af3543706d8418df702491d2bc84, type: 3}
+    id: SemiRifle
+    name: "Rifle semiautom\xE1tico"
+    secondary: 0
+    icon: {fileID: 21300000, guid: 2360cb7f865f0ef49af605d2fcdc3c4c, type: 3}
+    model: {fileID: 1582989084260223761, guid: 2f7792092031ede449deb8ad3b7e8b24, type: 3}
+    damage: 70
+    magazine: 10
+    range: 180
+    fireInterval: 0.28
+    pellets: 1
+    burstCount: 1
+    burstCooldown: 0.28
+    falloffStart: 180
+    falloffEnd: 180
+    minDamageMultiplier: 1
+    maxSpread: 14
+    reloadSeconds: 2.5
+    emptyReloadSeconds: 2.5
+    shellOpenSeconds: 1.7
+    shellSeconds: 0.7666667
+    reloadFillSeconds: 1.7499999
+    emptyReloadFillSeconds: 1.7500001
+    shellReload: 0
+  - family: 0
+    whiteBody: {fileID: 21300000, guid: 3ac6bd3c94406ee4b93468601b767738, type: 3}
+    whiteMagazine: {fileID: 21300000, guid: 51de79cbf170f52488db474948f8db57, type: 3}
+    whiteDefaultSight: {fileID: 21300000, guid: 4e72d2772f2e6e24ab58dd1a5acc70dc, type: 3}
+    id: BurstRifle
+    name: "Rifle de r\xE1fagas"
+    secondary: 0
+    icon: {fileID: 21300000, guid: 0655de25e00f19c4fad97fd156d4ef8d, type: 3}
+    model: {fileID: 689314194385316076, guid: 2a72059405deeb34bae49388b4525af0, type: 3}
+    damage: 30
+    magazine: 30
+    range: 140
+    fireInterval: 0.07
+    pellets: 1
+    burstCount: 3
+    burstCooldown: 0.25
+    falloffStart: 140
+    falloffEnd: 140
+    minDamageMultiplier: 1
+    maxSpread: 14
+    reloadSeconds: 2.3
+    emptyReloadSeconds: 2.3
+    shellOpenSeconds: 1.7
+    shellSeconds: 0.7666667
+    reloadFillSeconds: 1.61
+    emptyReloadFillSeconds: 1.6099999
+    shellReload: 0
+  - family: 1
+    whiteBody: {fileID: 21300000, guid: cae8f7fee08d5804198ddee2305aa1ce, type: 3}
+    whiteMagazine: {fileID: 21300000, guid: 2ef4fe13b3142c54082553d9ab491750, type: 3}
+    whiteDefaultSight: {fileID: 21300000, guid: eea40f665135a5c4cbc1ccf207a679b0, type: 3}
+    id: P90
+    name: P90
+    secondary: 0
+    icon: {fileID: 21300000, guid: 6fa41a61429010b4c872624c5f7da992, type: 3}
+    model: {fileID: 5053289520053544669, guid: 71268f84f7be1a1479bec10526d7680c, type: 3}
+    damage: 20
+    magazine: 50
+    range: 85
+    fireInterval: 0.064
+    pellets: 1
+    burstCount: 1
+    burstCooldown: 0.064
+    falloffStart: 85
+    falloffEnd: 85
+    minDamageMultiplier: 1
+    maxSpread: 14
+    reloadSeconds: 2.6
+    emptyReloadSeconds: 2.6
+    shellOpenSeconds: 1.7
+    shellSeconds: 0.7666667
+    reloadFillSeconds: 1.5871164
+    emptyReloadFillSeconds: 1.1803681
+    shellReload: 0
+  - family: 1
+    whiteBody: {fileID: 21300000, guid: 3ee33b9e6ad82e546a501e13d9410ab0, type: 3}
+    whiteMagazine: {fileID: 21300000, guid: 129fab05e8e650b4d8c3f2cb51ec656c, type: 3}
+    whiteDefaultSight: {fileID: 21300000, guid: c26bf01c46a5629408398acf1d31ba1d, type: 3}
+    id: Vector
+    name: Vector
+    secondary: 0
+    icon: {fileID: 21300000, guid: 66b35cca2aeca6d418e20182c9c38864, type: 3}
+    model: {fileID: 3961783605731624435, guid: 481fd079dde6b9d42b5ff104173cc3bb, type: 3}
+    damage: 18
+    magazine: 25
+    range: 55
+    fireInterval: 0.055
+    pellets: 1
+    burstCount: 1
+    burstCooldown: 0.055
+    falloffStart: 55
+    falloffEnd: 55
+    minDamageMultiplier: 1
+    maxSpread: 14
+    reloadSeconds: 2.2
+    emptyReloadSeconds: 2.2
+    shellOpenSeconds: 1.7
+    shellSeconds: 0.7666667
+    reloadFillSeconds: 1.0797546
+    emptyReloadFillSeconds: 1.2484663
+    shellReload: 0
+  - family: 1
+    whiteBody: {fileID: 21300000, guid: c30ffab659c921b4db24b61094105fe6, type: 3}
+    whiteMagazine: {fileID: 21300000, guid: 068896edfce609e4c98c6ef4755801ba, type: 3}
+    whiteDefaultSight: {fileID: 21300000, guid: 096859cc0cc552c41b0501a5d9e2a073, type: 3}
+    id: MAC10
+    name: MAC-10
+    secondary: 0
+    icon: {fileID: 21300000, guid: 23d7abdd964095c41b5349d5f164288e, type: 3}
+    model: {fileID: 5121120845962998841, guid: d2498e55b81a435478327209cbcfba15, type: 3}
+    damage: 17
+    magazine: 30
+    range: 45
+    fireInterval: 0.06
+    pellets: 1
+    burstCount: 1
+    burstCooldown: 0.06
+    falloffStart: 45
+    falloffEnd: 45
+    minDamageMultiplier: 1
+    maxSpread: 14
+    reloadSeconds: 2
+    emptyReloadSeconds: 2
+    shellOpenSeconds: 1.7
+    shellSeconds: 0.7666667
+    reloadFillSeconds: 1.0981596
+    emptyReloadFillSeconds: 0.9018404
+    shellReload: 0
+  - family: 4
+    whiteBody: {fileID: 1982616869, guid: 822903c311a85bf449b522db5aad2f42, type: 3}
+    whiteMagazine: {fileID: 737787281, guid: be65ee7afd5b92e4c9c68981b8eb0361, type: 3}
+    whiteDefaultSight: {fileID: 492544156, guid: 73dc229bc356294458255da0522b8d93, type: 3}
+    id: Handgun01
+    name: Pistola 01
+    secondary: 1
+    icon: {fileID: 21300000, guid: 74f976e87d790ce49abd3c2ca03e0074, type: 3}
+    model: {fileID: 8182557562730743212, guid: f015c2a9d41330e40a139363c220d49b, type: 3}
+    damage: 32
+    magazine: 12
+    range: 70
+    fireInterval: 0.27
+    pellets: 1
+    burstCount: 1
+    burstCooldown: 0.27
+    falloffStart: 70
+    falloffEnd: 70
+    minDamageMultiplier: 1
+    maxSpread: 14
+    reloadSeconds: 2.2333333
+    emptyReloadSeconds: 2.7333336
+    shellOpenSeconds: 1.7
+    shellSeconds: 0.7666667
+    reloadFillSeconds: 1.1584113
+    emptyReloadFillSeconds: 1.1750779
+    shellReload: 0
+  - family: 4
+    whiteBody: {fileID: 41059355, guid: f1bdb84b1c5218547bed715317439f23, type: 3}
+    whiteMagazine: {fileID: -2029685124, guid: 9737573ce2f1c1148bf68760d0b849a4, type: 3}
+    whiteDefaultSight: {fileID: 1680977363, guid: b3dbe744fc4bb874cbc5532eb2e7c079, type: 3}
+    id: Handgun02
+    name: Pistola 02
+    secondary: 1
+    icon: {fileID: 21300000, guid: 6e1440920e7b0ed4098b1e05bd2ec1d2, type: 3}
+    model: {fileID: 5234134714412072070, guid: 1b1e62834e648dd45aa27a1ee9446ce5, type: 3}
+    damage: 40
+    magazine: 8
+    range: 80
+    fireInterval: 0.35
+    pellets: 1
+    burstCount: 1
+    burstCooldown: 0.35
+    falloffStart: 80
+    falloffEnd: 80
+    minDamageMultiplier: 1
+    maxSpread: 14
+    reloadSeconds: 2.2333333
+    emptyReloadSeconds: 2.7333336
+    shellOpenSeconds: 1.7
+    shellSeconds: 0.7666667
+    reloadFillSeconds: 1.1584113
+    emptyReloadFillSeconds: 1.1750779
+    shellReload: 0
+  - family: 1
+    whiteBody: {fileID: 21300000, guid: 5a14700245f962143931ba8b9a4bf95a, type: 3}
+    whiteMagazine: {fileID: 21300000, guid: 8bce1303c6b5f14469edd2dd5ab51a4d, type: 3}
+    whiteDefaultSight: {fileID: 21300000, guid: cdd2172f98be329478382cec14b483e8, type: 3}
+    id: SMG02
+    name: Subfusil 02
+    secondary: 0
+    icon: {fileID: 21300000, guid: 21f6f9d634fb03d45b1f05e3eb6a8b66, type: 3}
+    model: {fileID: 4085216174266534975, guid: e0d0c00531c2f6946995edbe764003be, type: 3}
+    damage: 21
+    magazine: 30
+    range: 80
+    fireInterval: 0.085
+    pellets: 1
+    burstCount: 1
+    burstCooldown: 0.085
+    falloffStart: 80
+    falloffEnd: 80
+    minDamageMultiplier: 1
+    maxSpread: 14
+    reloadSeconds: 4.15
+    emptyReloadSeconds: 4.15
+    shellOpenSeconds: 1.7
+    shellSeconds: 0.7666667
+    reloadFillSeconds: 2.0653038
+    emptyReloadFillSeconds: 1.3865652
+    shellReload: 0
+  - family: 1
+    whiteBody: {fileID: 21300000, guid: edee8eb0c15b6064f943ec1b17135006, type: 3}
+    whiteMagazine: {fileID: 21300000, guid: f47242017f7fb4147bfe824c60dd2dca, type: 3}
+    whiteDefaultSight: {fileID: 21300000, guid: a98f27854865d9347bc1a8635ca7d847, type: 3}
+    id: SMG05
+    name: Subfusil 05
+    secondary: 0
+    icon: {fileID: 21300000, guid: 1b61341f4cc0c5b43baf22b88060dc9e, type: 3}
+    model: {fileID: 8072963612421490930, guid: 763c51b00a2c12048b6e249031639e8d, type: 3}
+    damage: 24
+    magazine: 30
+    range: 95
+    fireInterval: 0.1
+    pellets: 1
+    burstCount: 1
+    burstCooldown: 0.1
+    falloffStart: 95
+    falloffEnd: 95
+    minDamageMultiplier: 1
+    maxSpread: 14
+    reloadSeconds: 4.6
+    emptyReloadSeconds: 4.6
+    shellOpenSeconds: 1.7
+    shellSeconds: 0.7666667
+    reloadFillSeconds: 2.6245396
+    emptyReloadFillSeconds: 2.4693248
+    shellReload: 0
+  - family: 2
+    whiteBody: {fileID: 21300000, guid: 14fbfa1e6f824a6438189267b87f44b8, type: 3}
+    whiteMagazine: {fileID: 21300000, guid: 910872ed2b4e6a94d93164a7f44a4d4a, type: 3}
+    whiteDefaultSight: {fileID: 21300000, guid: ead659ba89d61fb40bc77677a511e1cb, type: 3}
+    id: Sniper01
+    name: Rifle de cerrojo 01
+    secondary: 0
+    icon: {fileID: 21300000, guid: 24e2153d5df023e43a5794f8c15da557, type: 3}
+    model: {fileID: 3083794549181761789, guid: 2c610c2507394674eb18414ce828b6d8, type: 3}
+    damage: 95
+    magazine: 5
+    range: 250
+    fireInterval: 2.05
+    pellets: 1
+    burstCount: 1
+    burstCooldown: 1.9
+    falloffStart: 250
+    falloffEnd: 250
+    minDamageMultiplier: 1
+    maxSpread: 14
+    reloadSeconds: 1.3333334
+    emptyReloadSeconds: 1.3333334
+    shellOpenSeconds: 1.8000001
+    shellSeconds: 0.8333334
+    reloadFillSeconds: 0
+    emptyReloadFillSeconds: 0
+    shellReload: 1
+  - family: 2
+    whiteBody: {fileID: 21300000, guid: ccee2405335b2a849ad2b5d03c55d663, type: 3}
+    whiteMagazine: {fileID: 21300000, guid: f015c22cd7388e94dad52f641453eed1, type: 3}
+    whiteDefaultSight: {fileID: 21300000, guid: 36da3e41d92f5284ab3e5da8fafa13e5, type: 3}
+    id: Sniper02
+    name: "Rifle de precisi\xF3n 02"
+    secondary: 0
+    icon: {fileID: 21300000, guid: 3f9e01a142b2d394bb86462b8d4110ee, type: 3}
+    model: {fileID: 5288403601748070351, guid: baac1172e215f88428dd74618e2d47aa, type: 3}
+    damage: 65
+    magazine: 10
+    range: 220
+    fireInterval: 1.08
+    pellets: 1
+    burstCount: 1
+    burstCooldown: 0.48
+    falloffStart: 220
+    falloffEnd: 220
+    minDamageMultiplier: 1
+    maxSpread: 14
+    reloadSeconds: 5
+    emptyReloadSeconds: 5
+    shellOpenSeconds: 1.7
+    shellSeconds: 0.7666667
+    reloadFillSeconds: 3.0545638
+    emptyReloadFillSeconds: 2.444196
+    shellReload: 0
+  - family: 2
+    whiteBody: {fileID: 21300000, guid: 1cd7ab0ded13ed149b0d00e451ed37d2, type: 3}
+    whiteMagazine: {fileID: 21300000, guid: a7f382607f1fd934389a27b2ead39b33, type: 3}
+    whiteDefaultSight: {fileID: 21300000, guid: 90dd513d519abac4aa2fb3089d451857, type: 3}
+    id: Sniper03
+    name: "Rifle de precisi\xF3n 03"
+    secondary: 0
+    icon: {fileID: 21300000, guid: 81f864ce69a89c340874f373a226e140, type: 3}
+    model: {fileID: 5437389955291081635, guid: e5edc6e09ea1bc2428ce26cfb26ee62c, type: 3}
+    damage: 60
+    magazine: 10
+    range: 200
+    fireInterval: 1.08
+    pellets: 1
+    burstCount: 1
+    burstCooldown: 0.42
+    falloffStart: 200
+    falloffEnd: 200
+    minDamageMultiplier: 1
+    maxSpread: 14
+    reloadSeconds: 4.4
+    emptyReloadSeconds: 4.4
+    shellOpenSeconds: 1.7
+    shellSeconds: 0.7666667
+    reloadFillSeconds: 2.8748465
+    emptyReloadFillSeconds: 2.2539876
+    shellReload: 0
+  grenades:
+  - id: Granadas
+    name: Granadas
+    icon: {fileID: 21300000, guid: 3c84896e27573b346976e1e5ef2e6786, type: 3}
+    healing: 0
+    carryCount: 1
+  - id: Granada Incendiaria
+    name: Granada Incendiaria
+    icon: {fileID: 21300000, guid: dbd606b50b0b7c44e86e530380c8c08c, type: 3}
+    healing: 0
+    carryCount: 1
+  - id: Granada Aturdidora
+    name: Granada Aturdidora
+    icon: {fileID: 21300000, guid: 91716cc282564b84ab6d3f1ab72467b5, type: 3}
+    healing: 0
+    carryCount: 1
+  healings:
+  - id: "Frasco de vida peque\xF1o"
+    name: "Frasco de vida peque\xF1o"
+    icon: {fileID: 21300000, guid: 9a1ea11fd03ec4f4092f48c83098eff5, type: 3}
+    healing: 25
+    carryCount: 2
+  - id: Frasco de vida grande
+    name: Frasco de vida grande
+    icon: {fileID: 21300000, guid: 4ae9fe43e4db9b74cbde7af67e1e338f, type: 3}
+    healing: 50
+    carryCount: 1
+  attachments: {fileID: 11400000, guid: 2de6ea5c94dbd8f448fa5806799bce46, type: 2}
+  perks: {fileID: 11400000, guid: 080f6b3bc4c0dd940a8db117372bdac4, type: 2}
+  wildcards: {fileID: 11400000, guid: c5976a4cf0f64f84686f282a813fe7f4, type: 2}

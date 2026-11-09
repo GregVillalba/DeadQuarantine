@@ -20,6 +20,11 @@ public class GeneradorImagenTienda : EditorWindow
     private string carpeta = "Assets/Art/Sprites/Tienda";
 
     private Texture2D vistaPrevia;
+    private bool catalogAxes;
+    public static Texture2D RenderCatalogModel(GameObject model,bool weapon){
+        var tool=CreateInstance<GeneradorImagenTienda>();tool.hideFlags=HideFlags.HideAndDontSave;tool.modelo=model;tool.ancho=1024;tool.alto=512;tool.margen=1.18f;tool.intensidadLuz=1.8f;tool.catalogAxes=weapon;
+        try{return tool.Renderizar();}finally{DestroyImmediate(tool);}
+    }
 
     [MenuItem("Tools/Tienda/Generar imagen de arma")]
     private static void Abrir()
@@ -150,7 +155,13 @@ public class GeneradorImagenTienda : EditorWindow
         RenderTexture rt = RenderTexture.GetTemporary(ancho, alto, 24, RenderTextureFormat.ARGB32);
         rt.antiAliasing = 4;
         cam.targetTexture = rt;
-        cam.Render();
+        if(catalogAxes){
+            var physical=WeaponAttachments.Find(instancia.transform,"root")??instancia.transform;
+            if(physical){var direction=(physical.right+physical.up*.12f+physical.forward*.15f).normalized;cam.transform.SetPositionAndRotation(bounds.center+direction*distancia,Quaternion.LookRotation(-direction,physical.forward));
+                var inverse=Quaternion.Inverse(cam.transform.rotation);float height=0,width=0;for(int i=0;i<8;i++){var corner=inverse*new Vector3((i&1)==0?-bounds.extents.x:bounds.extents.x,(i&2)==0?-bounds.extents.y:bounds.extents.y,(i&4)==0?-bounds.extents.z:bounds.extents.z);height=Mathf.Max(height,Mathf.Abs(corner.y));width=Mathf.Max(width,Mathf.Abs(corner.x));}cam.orthographicSize=Mathf.Max(height,width/aspecto)*margen;
+            }
+        }
+        if(UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline)UnityEngine.Rendering.RenderPipeline.SubmitRenderRequest(cam,new UnityEngine.Rendering.RenderPipeline.StandardRequest{destination=rt});else cam.Render();
 
         RenderTexture anterior = RenderTexture.active;
         RenderTexture.active = rt;

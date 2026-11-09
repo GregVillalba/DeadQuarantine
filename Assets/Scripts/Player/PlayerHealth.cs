@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -186,6 +186,7 @@ public partial class PlayerHealth : NetworkBehaviour
             HelmetShieldMax.Value = 0;
 
             InicializarInventarioServidor();
+            InicializarPerksServidor();
 
             Lives.Value = startingLives;
             State.Value = PlayerState.Alive;
@@ -205,6 +206,7 @@ public partial class PlayerHealth : NetworkBehaviour
         HelmetShieldMax.OnValueChanged += BlindajeChanged;
 
         SuscribirInventario();
+        SuscribirPerks();
         SuscribirQuemadura();
 
         OnHealthChanged?.Invoke(CurrentHealth.Value, CurrentHealth.Value);
@@ -224,6 +226,7 @@ public partial class PlayerHealth : NetworkBehaviour
         HelmetShieldMax.OnValueChanged -= BlindajeChanged;
 
         DesuscribirInventario();
+        DesuscribirPerks();
         DesuscribirQuemadura();
     }
 
@@ -369,6 +372,7 @@ public partial class PlayerHealth : NetworkBehaviour
 
     public void TakeDamage(int amount, bool ignorarEscudo = false)
     {
+        if (DeadQuarantine.PvPvE.Networking.PvPvETeamDeployment.BlocksDamage(this)) return;
         if (!IsServer)
             return;
 
@@ -393,7 +397,7 @@ public partial class PlayerHealth : NetworkBehaviour
 
         if (CurrentHealth.Value <= 0)
         {
-            if (Lives.Value > 0)
+            if (Lives.Value > 0 && !DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(NetworkObject))
             {
                 EnterDownedState();
             }
@@ -599,6 +603,8 @@ public partial class PlayerHealth : NetworkBehaviour
             State.Value = PlayerState.Spectating;
             Debug.Log("[PlayerHealth] " + gameObject.name + " → SPECTATING");
         }
+
+        DeadQuarantine.PvPvE.Networking.PvPvECombat.Active?.RecordDeathServer(this);
 
         PlayerRecursos playerRecursos = transform.root.GetComponentInChildren<PlayerRecursos>();
         if (playerRecursos != null)

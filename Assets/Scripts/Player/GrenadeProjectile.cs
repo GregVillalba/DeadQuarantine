@@ -117,6 +117,7 @@ public class GrenadeProjectile : NetworkBehaviour
 
         foreach (ZombieAlcanzado alcanzado in ZombiesEnRadio(radio))
             Danar(alcanzado, radio, dano, efectosDeImpacto);
+        DeadQuarantine.PvPvE.Networking.PvPvECombat.Active?.ExplosionServer(LanzadorClientId,transform.position,radio,dano);
     }
 
     protected void Danar(ZombieAlcanzado alcanzado, float radio, int dano, bool efectosDeImpacto)

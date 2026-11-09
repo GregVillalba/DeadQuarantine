@@ -1,4 +1,4 @@
-
+﻿
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Unity.Netcode;
@@ -41,6 +41,7 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
 
     private void Update()
     {
+        if (DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(NetworkObject)) return;
         if (!IsSpawned)
             return;
 
@@ -66,6 +67,7 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        if (DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(NetworkObject)) return;
         Debug.Log(
             "[SpawnAssigner] OnNetworkSpawn | IsOwner=" + IsOwner +
             " | IsServer=" + IsServer +
@@ -89,6 +91,7 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
 
     private void OnSpawnIndexChanged(int previousValue, int newValue)
     {
+        if (DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(NetworkObject)) return;
         Debug.Log(
             "[SpawnAssigner] Indice cambio " + previousValue + " -> " + newValue +
             " | IsOwner=" + IsOwner

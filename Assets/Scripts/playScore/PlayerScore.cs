@@ -184,6 +184,20 @@ public void SumarReaparicion()
         OnPurchaseResult?.Invoke(weaponId, exito);
     }
 
+    public void ConcederImpactoConfirmadoServidor(bool head){
+        if(!IsServer||DeadQuarantine.PvPvE.Networking.PvPvECombat.Active)return;
+        int points=head?100:50;SumarPuntos(points);
+        MostrarPuntosConfirmadosClientRpc(points,head?"IMPACTO · HEADSHOT":"IMPACTO",head,ParametrosParaDueno());
+    }
+    public void ConcederBajaConfirmadaServidor(){
+        if(!IsServer||DeadQuarantine.PvPvE.Networking.PvPvECombat.Active)return;
+        SumarPuntos(500);MostrarPuntosConfirmadosClientRpc(500,"ELIMINACIÓN",false,ParametrosParaDueno());
+    }
+    [ClientRpc] void MostrarPuntosConfirmadosClientRpc(int points,string reason,bool head,ClientRpcParams target=default){
+        if(!IsOwner)return;
+        var feedback=GetComponent<DeadQuarantine.PvPvE.UI.PvPvEKillFeedback>();if(!feedback)feedback=gameObject.AddComponent<DeadQuarantine.PvPvE.UI.PvPvEKillFeedback>();
+        feedback.ShowLegacy(points,reason,head);
+    }
     public void SumarPuntos(int cantidad)
     {
         if (!IsServer)
@@ -211,7 +225,7 @@ public void SumarReaparicion()
     public void RegistrarImpactoServerRpc()
     {
         DisparosAcertadosNetwork.Value++;
-        SumarPuntos(50);
+        // Confirmed server damage grants the hit points, never a client accuracy RPC.
     }
 
 

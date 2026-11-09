@@ -214,10 +214,12 @@ public class SinglePlayerLobbyController : MonoBehaviour
             label.text = "CARGANDO...";
 
         Time.timeScale = 1f;
+        DeadQuarantine.PvPvE.PvPvELoadingScreen.BeginOriginal(escenaJuegoSingleplayer);
         AsyncOperation operacion = SceneManager.LoadSceneAsync(escenaJuegoSingleplayer);
 
         if (operacion == null)
         {
+            DeadQuarantine.PvPvE.PvPvELoadingScreen.CancelOriginal();
             Debug.LogError("[SinglePlayerLobby] No se pudo cargar la escena '" + escenaJuegoSingleplayer + "'. Revisa el nombre y que este en Build Settings.");
 
             if (label != null)
@@ -230,8 +232,7 @@ public class SinglePlayerLobbyController : MonoBehaviour
             yield break;
         }
 
-        while (!operacion.isDone)
-            yield return null;
+        while (!operacion.isDone){DeadQuarantine.PvPvE.PvPvELoadingScreen.OriginalProgress(operacion.progress);yield return null;}
     }
 
     private void SetBotonesInteractables(bool value)

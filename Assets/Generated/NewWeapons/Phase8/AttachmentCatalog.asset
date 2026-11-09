@@ -1,0 +1,1608 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f8f75f2ee6206a42b2b064b3c3f8250, type: 3}
+  m_Name: AttachmentCatalog
+  m_EditorClassIdentifier: Scripts::WeaponAttachmentCatalog
+  entries:
+  - id: Scope_01
+    displayName: "R\xE9flex compacta"
+    socket: SOCKET_Scope
+    kind: 0
+    model: {fileID: 100000, guid: 3b775d329715a5942ae37758a655f070, type: 3}
+    icon: {fileID: 21300000, guid: 22534488a36e31a44a1c2cb7842879ee, type: 3}
+    weaponIcons:
+    - weapon: AutoPistol
+      icon: {fileID: -148064583, guid: 9968e267fdb276d44a458b920eebeb51, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SemiRifle
+      icon: {fileID: 21300000, guid: a58e199ee8211ed458a744e78da1ecb7, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: BurstRifle
+      icon: {fileID: 21300000, guid: d62219c05ee54cc4a8867ac7aaed57f5, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: P90
+      icon: {fileID: 21300000, guid: d063cfc3d75f5f445803e2e03b42a29c, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Vector
+      icon: {fileID: 21300000, guid: 5e629a3c956d9354cabfa50fc6891b68, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: MAC10
+      icon: {fileID: 21300000, guid: 576ae44fd4e0d4046892ae0db3e28d29, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Handgun01
+      icon: {fileID: -1895077679, guid: bf4ee7b22dd4f2e49b68faef86822070, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Handgun02
+      icon: {fileID: -144926472, guid: e3e18e9f89a83e44c9c9c40da497ffbe, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG02
+      icon: {fileID: 21300000, guid: 5f134b68af33d9c4595fa060ff1619a4, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG05
+      icon: {fileID: 21300000, guid: 51165ac218fa03f479b77f30914fbf1a, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper01
+      icon: {fileID: 21300000, guid: 3106039811f0b5843b81370600d1d412, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper02
+      icon: {fileID: 21300000, guid: 30dc8e8e5bd7b8740997af2a62c3f78f, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper03
+      icon: {fileID: 21300000, guid: 70e2fda703188b146b71efb19b5fceec, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Handgun
+      icon: {fileID: 1532551595, guid: 307cceed3ea20f541b76fde0f8715b05, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Rifle
+      icon: {fileID: 21300000, guid: 33fe56516310cdc49977e2b9ff065a3e, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Escopeta
+      icon: {fileID: 21300000, guid: e6734201b7605f749a81172725f6361f, type: 3}
+      offset: {x: 0, y: 0}
+    weapons:
+    - AutoPistol
+    - SemiRifle
+    - BurstRifle
+    - P90
+    - Vector
+    - MAC10
+    - Handgun01
+    - Handgun02
+    - SMG02
+    - SMG05
+    - Sniper01
+    - Sniper02
+    - Sniper03
+    - Handgun
+    - Rifle
+    - Escopeta
+    magnifiedLens: 0
+    lensFieldOfView: 4.25
+    zoom: 0
+    damage: 1
+    spread: 1
+    recoil: 1
+    aimFov: 50
+    range: 1
+    adsDuration: 1
+    mobility: 1
+    adsMovement: 1
+    adsSway: 0.95
+    incomingShake: 1
+    verticalRecoil: 1
+    horizontalRecoil: 1
+    opticalHeight: 0.65
+    suppressed: 0
+    requiresBracing: 0
+    laser: 0
+    flashlight: 0
+    shotSound: {fileID: 0}
+    mounts: []
+    supportHandPose: 0
+    firstPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    thirdPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    requiredLevel: 0
+  - id: Scope_02
+    displayName: Punto rojo
+    socket: SOCKET_Scope
+    kind: 0
+    model: {fileID: 100000, guid: 6df038b9e2eec764d943b5cc40db642b, type: 3}
+    icon: {fileID: 21300000, guid: 031c99b1937ec434988f2450ee691a2e, type: 3}
+    weaponIcons:
+    - weapon: AutoPistol
+      icon: {fileID: 1734577590, guid: d71a4e8466f98844ab01c0d01e1dacc6, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SemiRifle
+      icon: {fileID: 21300000, guid: dcc4a1c9106b7d54190f570674d4710e, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: BurstRifle
+      icon: {fileID: 21300000, guid: 0cf644dc23824a046ad1fbe4e82d059c, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: P90
+      icon: {fileID: 21300000, guid: 16fc3054c2d9fd642bbfa62eea319a67, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Vector
+      icon: {fileID: 21300000, guid: 3d948473d7a7fec418c1f359414d7229, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: MAC10
+      icon: {fileID: 21300000, guid: 475953c558ca38e43bb654b7db661dfd, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Handgun01
+      icon: {fileID: -429777555, guid: 20ebf3231575d244bb224b34dd7036d3, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Handgun02
+      icon: {fileID: -956102556, guid: 188ad7704bbd39b4a9c4509758e6c24c, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG02
+      icon: {fileID: 21300000, guid: b03340bddfc585145aba62e41e1d12ff, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG05
+      icon: {fileID: 21300000, guid: bea1221f290e0564a8bfab4b525272d2, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper01
+      icon: {fileID: 21300000, guid: 986ca6b5748891d4183d3e6d0889c134, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper02
+      icon: {fileID: 21300000, guid: a3959b9ae4d349349bc7c3f6ae0281d5, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper03
+      icon: {fileID: 21300000, guid: 947603134dcdac8419e480504e19c8aa, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Handgun
+      icon: {fileID: -2008543594, guid: 8adaf25c801c1344ebd0b3322a85f143, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Rifle
+      icon: {fileID: 21300000, guid: 0e7f7770865ee0344a6742ba4edf8466, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Escopeta
+      icon: {fileID: 21300000, guid: df5cd344b5c130744ac4929fcd385eae, type: 3}
+      offset: {x: 0, y: 0}
+    weapons:
+    - AutoPistol
+    - SemiRifle
+    - BurstRifle
+    - P90
+    - Vector
+    - MAC10
+    - Handgun01
+    - Handgun02
+    - SMG02
+    - SMG05
+    - Sniper01
+    - Sniper02
+    - Sniper03
+    - Handgun
+    - Rifle
+    - Escopeta
+    magnifiedLens: 0
+    lensFieldOfView: 4.25
+    zoom: 0
+    damage: 1
+    spread: 1
+    recoil: 1
+    aimFov: 50
+    range: 1
+    adsDuration: 1.02
+    mobility: 1
+    adsMovement: 1
+    adsSway: 0.92
+    incomingShake: 1
+    verticalRecoil: 1
+    horizontalRecoil: 1
+    opticalHeight: 0.65
+    suppressed: 0
+    requiresBracing: 0
+    laser: 0
+    flashlight: 0
+    shotSound: {fileID: 0}
+    mounts: []
+    supportHandPose: 0
+    firstPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    thirdPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    requiredLevel: 0
+  - id: Scope_03
+    displayName: "Hologr\xE1fica I"
+    socket: SOCKET_Scope
+    kind: 0
+    model: {fileID: 100000, guid: f5b61efc82806d847b76f67c9c255f82, type: 3}
+    icon: {fileID: 21300000, guid: 5e743cf987bab7841abb29b5154cea1f, type: 3}
+    weaponIcons:
+    - weapon: SemiRifle
+      icon: {fileID: 21300000, guid: c94eaeab6486bcc47abd2d498bdab880, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: BurstRifle
+      icon: {fileID: 21300000, guid: ff6c22fe31f5333468c6778421c49c13, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: P90
+      icon: {fileID: 21300000, guid: b0e07207294182e4bb551ecb9c71d330, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Vector
+      icon: {fileID: 21300000, guid: a3c994948498cea4986c580247b377af, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: MAC10
+      icon: {fileID: 21300000, guid: e87e37332587280409dc1b0cfa18ba61, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG02
+      icon: {fileID: 21300000, guid: 1bedcf0727213b54888acb5764a54b94, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG05
+      icon: {fileID: 21300000, guid: 345c04cb8253a0e47bacf4eca1f67eba, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper01
+      icon: {fileID: 21300000, guid: 44efd343dae35b44d99dffa5edaed6ae, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper02
+      icon: {fileID: 21300000, guid: 0152553e1f9543145a84190ce48eb4f9, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper03
+      icon: {fileID: 21300000, guid: 9d836c9d459dba741baf314da19e323e, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Rifle
+      icon: {fileID: 21300000, guid: 95d5e13eee8ef0a46bc48f6b4ab7b765, type: 3}
+      offset: {x: 0, y: 0}
+    weapons:
+    - SemiRifle
+    - BurstRifle
+    - P90
+    - Vector
+    - MAC10
+    - SMG02
+    - SMG05
+    - Sniper01
+    - Sniper02
+    - Sniper03
+    - Rifle
+    magnifiedLens: 0
+    lensFieldOfView: 4.25
+    zoom: 0
+    damage: 1
+    spread: 1
+    recoil: 1
+    aimFov: 50
+    range: 1
+    adsDuration: 1.04
+    mobility: 1
+    adsMovement: 1
+    adsSway: 1
+    incomingShake: 0.9
+    verticalRecoil: 1
+    horizontalRecoil: 1
+    opticalHeight: 0.65
+    suppressed: 0
+    requiresBracing: 0
+    laser: 0
+    flashlight: 0
+    shotSound: {fileID: 0}
+    mounts: []
+    supportHandPose: 0
+    firstPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    thirdPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    requiredLevel: 0
+  - id: Scope_04
+    displayName: "Hologr\xE1fica II"
+    socket: SOCKET_Scope
+    kind: 0
+    model: {fileID: 100000, guid: 04399e6e430c8e845b138c711cb1d00d, type: 3}
+    icon: {fileID: 21300000, guid: 48a6c7682bb6ced4a940917142a1c54b, type: 3}
+    weaponIcons:
+    - weapon: SemiRifle
+      icon: {fileID: 21300000, guid: 3b2f0bd9ae09bbb45a567bd9567df573, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: BurstRifle
+      icon: {fileID: 21300000, guid: 772b7acad4ba7914a84bb1876954c56b, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: P90
+      icon: {fileID: 21300000, guid: 8216741c5153247408070a65ffb171ca, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Vector
+      icon: {fileID: 21300000, guid: 9a9e5ff5785ecf44b8b77544720f60af, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: MAC10
+      icon: {fileID: 21300000, guid: 67faaf4dc242ef64fbf75d0062aa1453, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG02
+      icon: {fileID: 21300000, guid: a50c1e25d24880e43a49c9ffc64d6902, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG05
+      icon: {fileID: 21300000, guid: 9fa6c6b74a6f39b4b89f660d4a56740b, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper01
+      icon: {fileID: 21300000, guid: 1a03ca15c9e3c9343a44a224888c7da7, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper02
+      icon: {fileID: 21300000, guid: 569697a53a212cb4abc3a3fe3375ac79, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper03
+      icon: {fileID: 21300000, guid: 1c79c724093127947b10ea0fd595f675, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Rifle
+      icon: {fileID: 21300000, guid: 3dcb9a493e0eeea4d96285a3de572bb6, type: 3}
+      offset: {x: 0, y: 0}
+    weapons:
+    - SemiRifle
+    - BurstRifle
+    - Sniper01
+    - Sniper02
+    - Sniper03
+    - Rifle
+    - P90
+    - Vector
+    - MAC10
+    - SMG02
+    - SMG05
+    magnifiedLens: 0
+    lensFieldOfView: 4.25
+    zoom: 0
+    damage: 1
+    spread: 1
+    recoil: 1
+    aimFov: 50
+    range: 1
+    adsDuration: 1.06
+    mobility: 1
+    adsMovement: 1
+    adsSway: 1
+    incomingShake: 0.85
+    verticalRecoil: 1
+    horizontalRecoil: 1
+    opticalHeight: 0.65
+    suppressed: 0
+    requiresBracing: 0
+    laser: 0
+    flashlight: 0
+    shotSound: {fileID: 0}
+    mounts: []
+    supportHandPose: 0
+    firstPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    thirdPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    requiredLevel: 0
+  - id: Scope_05
+    displayName: "Telesc\xF3pica I"
+    socket: SOCKET_Scope
+    kind: 0
+    model: {fileID: 100000, guid: fc2eb113b4247a34cb781d00e063c175, type: 3}
+    icon: {fileID: 21300000, guid: 03ad4767f067f134e83afc0bffc0a5e3, type: 3}
+    weaponIcons:
+    - weapon: SemiRifle
+      icon: {fileID: 21300000, guid: 5eb88cb19a6ce4640833b59ac96b218f, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: BurstRifle
+      icon: {fileID: 21300000, guid: 7993fab5178a1de4ba372c193a91f7c2, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: P90
+      icon: {fileID: 21300000, guid: 0fb79b36060e37f4a80b20f7bf2fd635, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Vector
+      icon: {fileID: 21300000, guid: b87e85ec8c3699349b2b66e72baccca4, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: MAC10
+      icon: {fileID: 21300000, guid: 12d8a4f5bbe7a5242ae9edf926fb5a6e, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG02
+      icon: {fileID: 21300000, guid: 5d8c3e5bc2ee34441a06e99540d792e3, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG05
+      icon: {fileID: 21300000, guid: 0739fc7a17a837d45abf15080307fffd, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper01
+      icon: {fileID: 21300000, guid: c27f87a7eec388d44bdc85f332ee6f7a, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper02
+      icon: {fileID: 21300000, guid: 8db97af88ce811a4caed82647bef5153, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper03
+      icon: {fileID: 21300000, guid: b848015aaa3a39e4f929a04618946983, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Rifle
+      icon: {fileID: 21300000, guid: e30f4ec24e659bf4a84c1d2a08354116, type: 3}
+      offset: {x: 0, y: 0}
+    weapons:
+    - SemiRifle
+    - BurstRifle
+    - Sniper01
+    - Sniper02
+    - Sniper03
+    - Rifle
+    magnifiedLens: 1
+    lensFieldOfView: 21.786789
+    zoom: 3
+    damage: 1
+    spread: 1
+    recoil: 1
+    aimFov: 32
+    range: 1
+    adsDuration: 1.1
+    mobility: 1
+    adsMovement: 0.95
+    adsSway: 0.9
+    incomingShake: 1
+    verticalRecoil: 1
+    horizontalRecoil: 1
+    opticalHeight: 0.65
+    suppressed: 0
+    requiresBracing: 0
+    laser: 0
+    flashlight: 0
+    shotSound: {fileID: 0}
+    mounts: []
+    supportHandPose: 0
+    firstPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    thirdPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    requiredLevel: 0
+  - id: Scope_06
+    displayName: "Telesc\xF3pica II"
+    socket: SOCKET_Scope
+    kind: 0
+    model: {fileID: 100000, guid: cf9d905b090312d4189331eca97bbdaf, type: 3}
+    icon: {fileID: 21300000, guid: f1edb7da785316c4dafd5825e14369d1, type: 3}
+    weaponIcons:
+    - weapon: SemiRifle
+      icon: {fileID: 21300000, guid: fa30f0e8074fdbd45884969d3ab3c27e, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: BurstRifle
+      icon: {fileID: 21300000, guid: da71b44016542f84eb0228d73c1da3f9, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: P90
+      icon: {fileID: 21300000, guid: 1b7b17492a3b9ff43b5a8d1b697f46ef, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Vector
+      icon: {fileID: 21300000, guid: 9065926e843fe33478df8063a1c3cda1, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: MAC10
+      icon: {fileID: 21300000, guid: aedc2b7bf6a5e5f4db621b20620be5ff, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG02
+      icon: {fileID: 21300000, guid: 42bc7ac4affdcf74bbfbf6198f96e156, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG05
+      icon: {fileID: 21300000, guid: d5302ac65e40e4d4580223c6bdced34e, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper01
+      icon: {fileID: 21300000, guid: 8d3035a0f153ebe46802df51ce81e9dc, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper02
+      icon: {fileID: 21300000, guid: ab75161f839dcfc469cc4547ca535b00, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper03
+      icon: {fileID: 21300000, guid: 2f0a8ab84cd16f74c935f44c3753a579, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Rifle
+      icon: {fileID: 21300000, guid: ecf71283eac18c54a857fcc68835bae0, type: 3}
+      offset: {x: 0, y: 0}
+    weapons:
+    - SemiRifle
+    - BurstRifle
+    - Sniper01
+    - Sniper02
+    - Sniper03
+    - Rifle
+    magnifiedLens: 1
+    lensFieldOfView: 16.426422
+    zoom: 4
+    damage: 1
+    spread: 1
+    recoil: 1
+    aimFov: 32
+    range: 1
+    adsDuration: 1.15
+    mobility: 1
+    adsMovement: 0.92
+    adsSway: 0.85
+    incomingShake: 1
+    verticalRecoil: 1
+    horizontalRecoil: 1
+    opticalHeight: 0.65
+    suppressed: 0
+    requiresBracing: 0
+    laser: 0
+    flashlight: 0
+    shotSound: {fileID: 0}
+    mounts: []
+    supportHandPose: 0
+    firstPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    thirdPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    requiredLevel: 0
+  - id: Scope_07
+    displayName: Largo alcance
+    socket: SOCKET_Scope
+    kind: 0
+    model: {fileID: 100000, guid: f1db66e3a408dfa4486f697bbfccc274, type: 3}
+    icon: {fileID: 21300000, guid: fc428852498ff1f43a3860cdb347a173, type: 3}
+    weaponIcons:
+    - weapon: SemiRifle
+      icon: {fileID: 21300000, guid: b90dc5f9884757c4cbed492e733335a1, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: BurstRifle
+      icon: {fileID: 21300000, guid: 39fe0b2de806c8c40bdc74c31c1ed04f, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: P90
+      icon: {fileID: 21300000, guid: 4bff2d13b79c79e49915d803ecb43b5c, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Vector
+      icon: {fileID: 21300000, guid: 860ebec575c37814f83e6023f1e2a369, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: MAC10
+      icon: {fileID: 21300000, guid: f5437ea35a359db4cb1084027c9a52ff, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG02
+      icon: {fileID: 21300000, guid: 6711da63d476cfd40ace592ee0feaae3, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG05
+      icon: {fileID: 21300000, guid: 12dbf385e892c4a4da7af34cae04427d, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper01
+      icon: {fileID: 21300000, guid: 92734703963a0c9488d72b79cce7ce46, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper02
+      icon: {fileID: 21300000, guid: 8038a3eb4a688e04496951d237fed686, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper03
+      icon: {fileID: 21300000, guid: c0051a3a23e96f148a684d6131bec1db, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Rifle
+      icon: {fileID: 21300000, guid: 88292d50d3260eb4ab360c1185a2f231, type: 3}
+      offset: {x: 0, y: 0}
+    weapons:
+    - SemiRifle
+    - BurstRifle
+    - Sniper01
+    - Sniper02
+    - Sniper03
+    - Rifle
+    magnifiedLens: 1
+    lensFieldOfView: 9.430008
+    zoom: 7
+    damage: 1
+    spread: 1
+    recoil: 1
+    aimFov: 24
+    range: 1
+    adsDuration: 1.22
+    mobility: 1
+    adsMovement: 0.9
+    adsSway: 0.8
+    incomingShake: 1
+    verticalRecoil: 1
+    horizontalRecoil: 1
+    opticalHeight: 0.65
+    suppressed: 0
+    requiresBracing: 0
+    laser: 0
+    flashlight: 0
+    shotSound: {fileID: 0}
+    mounts: []
+    supportHandPose: 0
+    firstPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    thirdPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    requiredLevel: 0
+  - id: Scope_08
+    displayName: "\xD3ptica lateral"
+    socket: SOCKET_Scope
+    kind: 0
+    model: {fileID: 100000, guid: 40f2c0248da6bba49aba5e266e3228c4, type: 3}
+    icon: {fileID: 21300000, guid: d72b464f6f67a484a9893c12fd5905bd, type: 3}
+    weaponIcons:
+    - weapon: SemiRifle
+      icon: {fileID: 21300000, guid: 2e64f1b205bf10c49a0f640b56ebc2aa, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: BurstRifle
+      icon: {fileID: 21300000, guid: fd08d4e8114901f438d900725a84b155, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: P90
+      icon: {fileID: 21300000, guid: c11f8a0443f69d746bf561e12e3c7fba, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Vector
+      icon: {fileID: 21300000, guid: b48b24cce386ce9469c1da0e5dcb0fd9, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: MAC10
+      icon: {fileID: 21300000, guid: d1d56da070231844abfa1a76371eb966, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG02
+      icon: {fileID: 21300000, guid: 88c90729ea38b014784c9aeadcce78c8, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG05
+      icon: {fileID: 21300000, guid: e44c186df296a68478850f4c034eea0a, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper01
+      icon: {fileID: 21300000, guid: 24d3cde6e5071864291b3b8022041434, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper02
+      icon: {fileID: 21300000, guid: 73d4157cffb03e544a18dc0e6062ee41, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper03
+      icon: {fileID: 21300000, guid: 5b441e57938f5e74f8f4f8d6beeed28f, type: 3}
+      offset: {x: 0, y: 0}
+    weapons: []
+    magnifiedLens: 1
+    lensFieldOfView: 4.25
+    zoom: 0
+    damage: 1
+    spread: 1
+    recoil: 1
+    aimFov: 24
+    range: 1
+    adsDuration: 1
+    mobility: 1
+    adsMovement: 1
+    adsSway: 1
+    incomingShake: 1
+    verticalRecoil: 1
+    horizontalRecoil: 1
+    opticalHeight: 0.65
+    suppressed: 0
+    requiresBracing: 0
+    laser: 0
+    flashlight: 0
+    shotSound: {fileID: 0}
+    mounts: []
+    supportHandPose: 0
+    firstPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    thirdPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    requiredLevel: 0
+  - id: Grip_01
+    displayName: "Empu\xF1adura vertical"
+    socket: SOCKET_Grip
+    kind: 1
+    model: {fileID: 100000, guid: 707a4de858c77174fbe7b4e91cfdbb73, type: 3}
+    icon: {fileID: 21300000, guid: 8ea17b9414c9f61458cd75b16eb36bf9, type: 3}
+    weaponIcons:
+    - weapon: SemiRifle
+      icon: {fileID: 21300000, guid: 2c201eda829d4554f8aefea0a86887aa, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: BurstRifle
+      icon: {fileID: 21300000, guid: 9cac75e41b9310444ae0df2025422ef7, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: P90
+      icon: {fileID: 21300000, guid: 30dff3386e8254246b357341b7fd7cef, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Vector
+      icon: {fileID: 21300000, guid: 725f1df0ad08745419ca669fd8f997e2, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: MAC10
+      icon: {fileID: 21300000, guid: 140fff26c4d031248850fe88efe9d426, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG02
+      icon: {fileID: 21300000, guid: fc6e26d61a2678b45b4d3f22e190cc4e, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG05
+      icon: {fileID: 21300000, guid: a71d8630b6b0e9645994eccf45e06fbf, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper01
+      icon: {fileID: 21300000, guid: 36d3e5eb82cab35478c9ed8da1a785cc, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper02
+      icon: {fileID: 21300000, guid: ffc36ae78309542478037c1eb36d6df5, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper03
+      icon: {fileID: 21300000, guid: f239115aad63d6549a7c40cc1996346b, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Rifle
+      icon: {fileID: 21300000, guid: 510504b45f4b35b42838f90765041163, type: 3}
+      offset: {x: 0, y: 0}
+    weapons:
+    - SemiRifle
+    - BurstRifle
+    - Vector
+    - SMG02
+    - SMG05
+    - Sniper01
+    - Sniper02
+    - Sniper03
+    - Rifle
+    magnifiedLens: 0
+    lensFieldOfView: 4.25
+    zoom: 0
+    damage: 1
+    spread: 1
+    recoil: 1
+    aimFov: 50
+    range: 1
+    adsDuration: 1.05
+    mobility: 1
+    adsMovement: 1
+    adsSway: 1
+    incomingShake: 1
+    verticalRecoil: 0.8
+    horizontalRecoil: 0.9
+    opticalHeight: 0.65
+    suppressed: 0
+    requiresBracing: 0
+    laser: 0
+    flashlight: 0
+    shotSound: {fileID: 0}
+    mounts:
+    - weapon: Sniper01
+      position: {x: 0, y: 0.35236055, z: 0}
+    - weapon: Sniper02
+      position: {x: 0, y: 0.2011917, z: 0}
+    - weapon: Sniper03
+      position: {x: 0, y: 0.12314024, z: 0}
+    supportHandPose: 1
+    firstPersonHand:
+      position: {x: -0.02187983, y: 0.071455576, z: -0.063497216}
+      elbow: {x: -0.2242657, y: 0.30595735, z: -0.19411834}
+      rotation: {x: -0.54144794, y: -0.6889598, z: -0.34147468, w: -0.33994702}
+      fingers:
+      - bone: index_01_l
+        rotation: {x: 0.089589, y: 0.23759234, z: -0.4483842, w: 0.8570154}
+      - bone: index_02_l
+        rotation: {x: 0.0025604726, y: -0.061020527, z: -0.47408044, w: 0.8783608}
+      - bone: index_03_l
+        rotation: {x: 0.0040248972, y: -0.008651351, z: -0.19343767, w: 0.9810662}
+      - bone: middle_01_l
+        rotation: {x: 0.0032985609, y: 0.20030828, z: -0.54245985, w: 0.815845}
+      - bone: middle_02_l
+        rotation: {x: -0.0073780464, y: -0.0021693143, z: -0.61869663, w: 0.78559244}
+      - bone: middle_03_l
+        rotation: {x: 0.017053066, y: 0.038617928, z: -0.31229022, w: 0.94904834}
+      - bone: pinky_01_l
+        rotation: {x: -0.07619036, y: 0.22491564, z: -0.69855136, w: 0.6750067}
+      - bone: pinky_02_l
+        rotation: {x: -0.028308298, y: 0.026431713, z: -0.7232179, w: 0.6895331}
+      - bone: pinky_03_l
+        rotation: {x: -0.02714995, y: -0.024124375, z: -0.7875092, w: 0.61523175}
+      - bone: ring_01_l
+        rotation: {x: -0.11298531, y: 0.20479959, z: -0.73574597, w: 0.63558584}
+      - bone: ring_02_l
+        rotation: {x: 0.03185549, y: 0.06270883, z: -0.66008204, w: 0.7478934}
+      - bone: ring_03_l
+        rotation: {x: -0.014799768, y: -0.020513248, z: -0.6129539, w: 0.7897137}
+      - bone: thumb_01_l
+        rotation: {x: 0.5323883, y: -0.5074428, z: 0.0014862816, w: 0.6775414}
+      - bone: thumb_02_l
+        rotation: {x: 0.013073064, y: -0.018973397, z: -0.18587954, w: 0.98230237}
+      - bone: thumb_03_l
+        rotation: {x: -0.008497184, y: -0.011714893, z: -0.052004237, w: 0.998542}
+      - bone: hand_l_holder
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+      - bone: SM_Knife_01
+        rotation: {x: -0.5160928, y: -0.36464053, z: 0.45194426, w: 0.6296285}
+    thirdPersonHand:
+      position: {x: 0.003186934, y: 0.07127878, z: -0.061607867}
+      elbow: {x: -0.20060126, y: 0.35587665, z: -0.17358753}
+      rotation: {x: -0.13402721, y: -0.10137885, z: 0.65592957, w: 0.7358782}
+      fingers:
+      - bone: Finger_01
+        rotation: {x: 0.04645587, y: -0.15133056, z: 0.58346736, w: 0.7965594}
+      - bone: Finger_02
+        rotation: {x: 0.05096474, y: 0.0042110495, z: 0.57296556, w: 0.81798255}
+      - bone: Finger_03
+        rotation: {x: 0.030709907, y: -0.032578446, z: 0.40214097, w: 0.91448253}
+      - bone: Finger_04
+        rotation: {x: 0.01664637, y: 0.096525334, z: -0.16913006, w: 0.98071444}
+      - bone: IndexFinger_01
+        rotation: {x: 0.07740179, y: -0.19255233, z: 0.45826402, w: 0.8642492}
+      - bone: IndexFinger_02
+        rotation: {x: 0.048219346, y: -0.020023916, z: 0.58228004, w: 0.81131}
+      - bone: IndexFinger_03
+        rotation: {x: 0.052582067, y: -0.029803399, z: 0.44773993, w: 0.89211875}
+      - bone: IndexFinger_04
+        rotation: {x: -0.0045196484, y: -0.028039929, z: -0.15906802, w: 0.986859}
+      - bone: Thumb_01
+        rotation: {x: -0.03619513, y: 0.15532644, z: 0.0048015565, w: 0.9871882}
+      - bone: Thumb_02
+        rotation: {x: -0.07488067, y: -0.09228519, z: 0.019929074, w: 0.9927131}
+      - bone: Thumb_03
+        rotation: {x: -0.039567307, y: -0.29685882, z: -0.23640135, w: 0.9243505}
+    requiredLevel: 0
+  - id: Bipod_01
+    displayName: "B\xEDpode ligero"
+    socket: SOCKET_Grip
+    kind: 1
+    model: {fileID: 100000, guid: a57c9e471e563034a852986569e485c4, type: 3}
+    icon: {fileID: 21300000, guid: 63c3809889ba59f4786f3a8139084f8c, type: 3}
+    weaponIcons:
+    - weapon: SemiRifle
+      icon: {fileID: 21300000, guid: a816d1d942717af47b2f199d0b41f791, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: BurstRifle
+      icon: {fileID: 21300000, guid: 109b02c3af9153d4dbdc3bf39628fb86, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper01
+      icon: {fileID: 21300000, guid: 91bbd48033081c8499bc9fafad907076, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper02
+      icon: {fileID: 21300000, guid: 5428f5fabf622864b932316bb1b88294, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper03
+      icon: {fileID: 21300000, guid: aa5299f3dff8714499b4dc1a4e09da5c, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Rifle
+      icon: {fileID: 21300000, guid: c1afa798815e0284794aeb69442dc435, type: 3}
+      offset: {x: 0, y: 0}
+    weapons:
+    - Sniper01
+    - Sniper02
+    - Sniper03
+    magnifiedLens: 0
+    lensFieldOfView: 4.25
+    zoom: 0
+    damage: 1
+    spread: 1
+    recoil: 0.85
+    aimFov: 50
+    range: 1
+    adsDuration: 1.05
+    mobility: 1
+    adsMovement: 1
+    adsSway: 0.75
+    incomingShake: 1
+    verticalRecoil: 1
+    horizontalRecoil: 1
+    opticalHeight: 0.65
+    suppressed: 0
+    requiresBracing: 1
+    laser: 0
+    flashlight: 0
+    shotSound: {fileID: 0}
+    mounts: []
+    supportHandPose: 0
+    firstPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    thirdPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    requiredLevel: 0
+  - id: Bipod_02
+    displayName: "B\xEDpode reforzado"
+    socket: SOCKET_Grip
+    kind: 1
+    model: {fileID: 100000, guid: c361195eab8debd4a9e93a094d36fd44, type: 3}
+    icon: {fileID: 21300000, guid: 94d36fc2733308a4eaffbb5e35bdaeb2, type: 3}
+    weaponIcons:
+    - weapon: SemiRifle
+      icon: {fileID: 21300000, guid: 6657982242e3ddb4b80b4149ea0af69f, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: BurstRifle
+      icon: {fileID: 21300000, guid: 4b0c441d8cafd8c48a42e560c11e3524, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper01
+      icon: {fileID: 21300000, guid: e6231f63e7423894d925d4e6a53df982, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper02
+      icon: {fileID: 21300000, guid: d89310e141ade3d4bb85dc265672df32, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper03
+      icon: {fileID: 21300000, guid: 5d12be8ca25b5104cac6444c127e3bf6, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Rifle
+      icon: {fileID: 21300000, guid: 82c9817d61286ec409bbb4ef45443347, type: 3}
+      offset: {x: 0, y: 0}
+    weapons:
+    - Sniper01
+    - Sniper02
+    - Sniper03
+    magnifiedLens: 0
+    lensFieldOfView: 4.25
+    zoom: 0
+    damage: 1
+    spread: 1
+    recoil: 0.75
+    aimFov: 50
+    range: 1
+    adsDuration: 1.15
+    mobility: 0.95
+    adsMovement: 1
+    adsSway: 0.6
+    incomingShake: 1
+    verticalRecoil: 1
+    horizontalRecoil: 1
+    opticalHeight: 0.65
+    suppressed: 0
+    requiresBracing: 1
+    laser: 0
+    flashlight: 0
+    shotSound: {fileID: 0}
+    mounts: []
+    supportHandPose: 0
+    firstPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    thirdPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    requiredLevel: 0
+  - id: Laser_Sight_01
+    displayName: "L\xE1ser"
+    socket: SOCKET_Laser
+    kind: 2
+    model: {fileID: 100000, guid: ee888c55b5f95c14eba4dc19576bb568, type: 3}
+    icon: {fileID: 21300000, guid: a9d0e22aafa3d05409d8dbecfa3a16e4, type: 3}
+    weaponIcons:
+    - weapon: AutoPistol
+      icon: {fileID: -684811584, guid: a7083b845c4beaa42aa3f25833c77bba, type: 3}
+      offset: {x: -51.19275, y: 55.03633}
+    - weapon: SemiRifle
+      icon: {fileID: 21300000, guid: b4dfe879951687848b7f0c099300aa56, type: 3}
+      offset: {x: -69.920105, y: 89.47706}
+    - weapon: BurstRifle
+      icon: {fileID: 21300000, guid: bf77ab30be58e244fa3809013174ff5e, type: 3}
+      offset: {x: -75.325195, y: 94.98163}
+    - weapon: P90
+      icon: {fileID: 21300000, guid: 3787f431c48f4ac4089df8e2d143a6a8, type: 3}
+      offset: {x: -59.92221, y: 77.64714}
+    - weapon: Vector
+      icon: {fileID: 21300000, guid: da92e54aa6f6d7f429e3a93bf766c2a9, type: 3}
+      offset: {x: -56.519135, y: 72.08507}
+    - weapon: MAC10
+      icon: {fileID: 21300000, guid: d8e44ccf22d3b7647b90de881227b299, type: 3}
+      offset: {x: -56.694275, y: 80.384315}
+    - weapon: Handgun01
+      icon: {fileID: 1737724571, guid: 9ee000a355acb704fa3e781943323935, type: 3}
+      offset: {x: -51.285995, y: 54.846085}
+    - weapon: Handgun02
+      icon: {fileID: -533000634, guid: fb3a158fb2d77eb459b40c4b366a354d, type: 3}
+      offset: {x: -49.3703, y: 56.847305}
+    - weapon: SMG02
+      icon: {fileID: 21300000, guid: 43a541eec853bdc4f8e9872b6c72a5e0, type: 3}
+      offset: {x: -57.27771, y: 77.2083}
+    - weapon: SMG05
+      icon: {fileID: 21300000, guid: a9dd4b54e91f6bf48a6085733d92569d, type: 3}
+      offset: {x: -56.56476, y: 89.19726}
+    - weapon: Sniper01
+      icon: {fileID: 21300000, guid: 372286fe72cb46546a3a6902233b675a, type: 3}
+      offset: {x: -70.40848, y: 79.49935}
+    - weapon: Sniper02
+      icon: {fileID: 21300000, guid: 291b04bf6efa057458ae5dbb308d3780, type: 3}
+      offset: {x: -57.252533, y: 77.94948}
+    - weapon: Sniper03
+      icon: {fileID: 21300000, guid: 1c21e316fe254f441a0e9a567e4d71f6, type: 3}
+      offset: {x: -62.38269, y: 82.9149}
+    - weapon: Handgun
+      icon: {fileID: -553942006, guid: af2d0c512433c16468fd996de1192738, type: 3}
+      offset: {x: -35.58304, y: 73.31625}
+    - weapon: Rifle
+      icon: {fileID: 21300000, guid: 92cdb883338b1c24c983e17964d2f5a4, type: 3}
+      offset: {x: -71.463135, y: 85.550255}
+    - weapon: Escopeta
+      icon: {fileID: 21300000, guid: ddd5aef6ad3a8444fb703544d1635fb2, type: 3}
+      offset: {x: 82.76218, y: 78.911385}
+    weapons:
+    - AutoPistol
+    - SemiRifle
+    - BurstRifle
+    - P90
+    - Vector
+    - MAC10
+    - Handgun01
+    - Handgun02
+    - SMG02
+    - SMG05
+    - Sniper01
+    - Sniper02
+    - Sniper03
+    - Handgun
+    - Rifle
+    - Escopeta
+    magnifiedLens: 0
+    lensFieldOfView: 4.25
+    zoom: 0
+    damage: 1
+    spread: 0.75
+    recoil: 1
+    aimFov: 50
+    range: 1
+    adsDuration: 1
+    mobility: 1
+    adsMovement: 1
+    adsSway: 1
+    incomingShake: 1
+    verticalRecoil: 1
+    horizontalRecoil: 1
+    opticalHeight: 0.65
+    suppressed: 0
+    requiresBracing: 0
+    laser: 1
+    flashlight: 0
+    shotSound: {fileID: 0}
+    mounts: []
+    supportHandPose: 0
+    firstPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    thirdPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    requiredLevel: 0
+  - id: Laser_Flashlight_01
+    displayName: "L\xE1ser + linterna"
+    socket: SOCKET_Laser
+    kind: 2
+    model: {fileID: 100000, guid: be92ead103ef3e448bb854eb6e17f8cb, type: 3}
+    icon: {fileID: 21300000, guid: e647be01f81742b47b19a85b24ad5c2a, type: 3}
+    weaponIcons:
+    - weapon: SemiRifle
+      icon: {fileID: 21300000, guid: eac642f26851a82409a7ac5d49129cb9, type: 3}
+      offset: {x: -70.2366, y: 46.942703}
+    - weapon: BurstRifle
+      icon: {fileID: 21300000, guid: 5f94f8d809667d649b3384d912f265f4, type: 3}
+      offset: {x: -75.251465, y: 54.41841}
+    - weapon: P90
+      icon: {fileID: 21300000, guid: 0286568c06886314f9416e392c6a97cb, type: 3}
+      offset: {x: -59.335846, y: 40.58394}
+    - weapon: Vector
+      icon: {fileID: 21300000, guid: b6b0b1324638cfb4d8a8a4a44917602f, type: 3}
+      offset: {x: -56.866364, y: 36.508957}
+    - weapon: MAC10
+      icon: {fileID: 21300000, guid: 2673667f2e20bb64e84f6400c7e6a91f, type: 3}
+      offset: {x: -55.994568, y: 42.884308}
+    - weapon: SMG02
+      icon: {fileID: 21300000, guid: 7424222510df4b94faced5679cd80e52, type: 3}
+      offset: {x: -56.655823, y: 40.708298}
+    - weapon: SMG05
+      icon: {fileID: 21300000, guid: e0e45e10497a84e4c91970264c5c0402, type: 3}
+      offset: {x: -56.882263, y: 51.697266}
+    - weapon: Sniper01
+      icon: {fileID: 21300000, guid: 5c211a242e06cdd458401f06e65cd589, type: 3}
+      offset: {x: -70.25537, y: 43.06256}
+    - weapon: Sniper02
+      icon: {fileID: 21300000, guid: a726daaa6ad191741bc582a85e0ff9ee, type: 3}
+      offset: {x: -57.601227, y: 40.400116}
+    - weapon: Sniper03
+      icon: {fileID: 21300000, guid: d4dcf5730e292664e810bb068c045f6b, type: 3}
+      offset: {x: -62.210205, y: 43.4149}
+    - weapon: Rifle
+      icon: {fileID: 21300000, guid: 405f111e0741d34479323db52502ee80, type: 3}
+      offset: {x: -70.82962, y: 44.050262}
+    - weapon: Escopeta
+      icon: {fileID: 21300000, guid: 0ab7fd41f5703c948b496ac01df9461c, type: 3}
+      offset: {x: 82.35507, y: 38.487503}
+    - weapon: Handgun
+      icon: {fileID: 606568352, guid: 8d98cf2b6502d0540a99b227cd26fa83, type: 3}
+      offset: {x: -37.00363, y: 36.82341}
+    - weapon: AutoPistol
+      icon: {fileID: 1354622865, guid: 28003887f0278164da749d0f4c3368cd, type: 3}
+      offset: {x: -51.574036, y: 16.984253}
+    - weapon: Handgun01
+      icon: {fileID: -1811409061, guid: 0ffcdd62939c2d74a8b8f6192a18f982, type: 3}
+      offset: {x: -51.77661, y: 17.810913}
+    - weapon: Handgun02
+      icon: {fileID: 1314767394, guid: e11f40de7af7f534aab603efc53145b1, type: 3}
+      offset: {x: -49.676605, y: 19.75859}
+    weapons:
+    - SemiRifle
+    - BurstRifle
+    - P90
+    - Vector
+    - MAC10
+    - SMG02
+    - SMG05
+    - Sniper01
+    - Sniper02
+    - Sniper03
+    - Rifle
+    - Escopeta
+    - Handgun
+    - AutoPistol
+    - Handgun01
+    - Handgun02
+    magnifiedLens: 0
+    lensFieldOfView: 4.25
+    zoom: 0
+    damage: 1
+    spread: 0.8
+    recoil: 1
+    aimFov: 50
+    range: 1
+    adsDuration: 1.04
+    mobility: 1
+    adsMovement: 1
+    adsSway: 1
+    incomingShake: 1
+    verticalRecoil: 1
+    horizontalRecoil: 1
+    opticalHeight: 0.65
+    suppressed: 0
+    requiresBracing: 0
+    laser: 1
+    flashlight: 1
+    shotSound: {fileID: 0}
+    mounts: []
+    supportHandPose: 0
+    firstPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    thirdPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    requiredLevel: 0
+  - id: Muzzle_Silencer_01
+    displayName: Silenciador corto
+    socket: SOCKET_Muzzle
+    kind: 3
+    model: {fileID: 100000, guid: 89021e39adba19b4a96bca608b0fa8a0, type: 3}
+    icon: {fileID: 21300000, guid: 58af76b6d610bb54fb1c29309b1b3774, type: 3}
+    weaponIcons:
+    - weapon: AutoPistol
+      icon: {fileID: -1345895408, guid: f8ebb3983f9254b49a52d7493c53a278, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SemiRifle
+      icon: {fileID: 21300000, guid: 4acc5bb4c7355c6489d6c0325132dcd4, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: BurstRifle
+      icon: {fileID: 21300000, guid: 46df06404a824174a8fca939f0269977, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: P90
+      icon: {fileID: 21300000, guid: a5acd9dbf989dad44ac99c300b9d5172, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Vector
+      icon: {fileID: 21300000, guid: 8bb87b9949ae83343b004cfc128a71c9, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: MAC10
+      icon: {fileID: 21300000, guid: 871a772c8fdb8e84abf31de30ce3a20c, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Handgun01
+      icon: {fileID: -2090129685, guid: 0236e02ebc4c5774da8b13a399cb6260, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Handgun02
+      icon: {fileID: -1972256610, guid: 081aa4a697997c84f80e12d1da83bdc4, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG02
+      icon: {fileID: 21300000, guid: 3dfcdf6c0d93e1f4587d56e1a7dfcfbe, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG05
+      icon: {fileID: 21300000, guid: 5e4b6139b416c4c4bbfaec79deac519b, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper01
+      icon: {fileID: 21300000, guid: 9e5b83d7e36fc1346b469da954bfdaf9, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper02
+      icon: {fileID: 21300000, guid: abf19276df924af48ac931b692ab3aa4, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper03
+      icon: {fileID: 21300000, guid: cf32e28f4b5e93047a1eacc331e96668, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Handgun
+      icon: {fileID: 1673506450, guid: e80b5b7149bced743bf007599992a996, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Rifle
+      icon: {fileID: 21300000, guid: 08eb47ae3fa5b5544859271d9e6ae01a, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Escopeta
+      icon: {fileID: 21300000, guid: 9842bf57dfe14dc4e9d6fad1cc19d766, type: 3}
+      offset: {x: 0, y: 0}
+    weapons:
+    - AutoPistol
+    - SemiRifle
+    - BurstRifle
+    - P90
+    - Vector
+    - MAC10
+    - Handgun01
+    - Handgun02
+    - SMG02
+    - SMG05
+    - Sniper01
+    - Sniper02
+    - Sniper03
+    - Handgun
+    - Rifle
+    - Escopeta
+    magnifiedLens: 0
+    lensFieldOfView: 4.25
+    zoom: 0
+    damage: 1
+    spread: 1
+    recoil: 1
+    aimFov: 50
+    range: 0.94
+    adsDuration: 1
+    mobility: 1
+    adsMovement: 1
+    adsSway: 1
+    incomingShake: 1
+    verticalRecoil: 1
+    horizontalRecoil: 1
+    opticalHeight: 0.65
+    suppressed: 1
+    requiresBracing: 0
+    laser: 0
+    flashlight: 0
+    shotSound: {fileID: 8300000, guid: c1bd91cf7c20534478c9b9c5d69d1732, type: 3}
+    mounts: []
+    supportHandPose: 0
+    firstPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    thirdPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    requiredLevel: 0
+  - id: Muzzle_Silencer_02
+    displayName: Silenciador largo
+    socket: SOCKET_Muzzle
+    kind: 3
+    model: {fileID: 100000, guid: b4ba6b63a20ac1d40809f039814c78e8, type: 3}
+    icon: {fileID: 21300000, guid: 567388d5fe5c7a944b5714d5bf21c882, type: 3}
+    weaponIcons:
+    - weapon: AutoPistol
+      icon: {fileID: 2019524346, guid: 4d5c1625f274197449b16e9c762db6e1, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SemiRifle
+      icon: {fileID: 21300000, guid: e1ab6bdb4f30c264bbe016e650178266, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: BurstRifle
+      icon: {fileID: 21300000, guid: 11e2c3e6b36da4d4d96415807183b4fa, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: P90
+      icon: {fileID: 21300000, guid: b97748852aa6c064999215558fca2b4a, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Vector
+      icon: {fileID: 21300000, guid: 4f20b5b8be6628e4f882c6ad91d35ed6, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: MAC10
+      icon: {fileID: 21300000, guid: 99b8129741af2104799ca5301e51e6f5, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Handgun01
+      icon: {fileID: 112432552, guid: fcb583163ebfd0b47be66e42afe7dc35, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Handgun02
+      icon: {fileID: 1949507169, guid: 38a2f32e51a88bd4ba5d5473a9736ffe, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG02
+      icon: {fileID: 21300000, guid: 4369253f318da4149993fae768be6a5d, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: SMG05
+      icon: {fileID: 21300000, guid: 3d5d64906bbb2b64ebc4c61c10534166, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper01
+      icon: {fileID: 21300000, guid: 757246ccd28aefc4787d7f2f93f41ae9, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper02
+      icon: {fileID: 21300000, guid: 8a32878d2e6a1034e8dcf7b08be1a621, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper03
+      icon: {fileID: 21300000, guid: 8b3b666b06ca0e74c94a3bbb50408fe1, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Handgun
+      icon: {fileID: -986595310, guid: 0f8893f3f2deb314790adc6d7d86d6b9, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Rifle
+      icon: {fileID: 21300000, guid: 7a33f905c2fb98246a31d475864e5971, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Escopeta
+      icon: {fileID: 21300000, guid: ba861f619a440934ea403e41b3bd41a1, type: 3}
+      offset: {x: 0, y: 0}
+    weapons:
+    - AutoPistol
+    - SemiRifle
+    - BurstRifle
+    - P90
+    - Vector
+    - MAC10
+    - Handgun01
+    - Handgun02
+    - SMG02
+    - SMG05
+    - Sniper01
+    - Sniper02
+    - Sniper03
+    - Handgun
+    - Rifle
+    - Escopeta
+    magnifiedLens: 0
+    lensFieldOfView: 4.25
+    zoom: 0
+    damage: 1
+    spread: 1
+    recoil: 1
+    aimFov: 50
+    range: 1.08
+    adsDuration: 1.1
+    mobility: 1
+    adsMovement: 1
+    adsSway: 1
+    incomingShake: 1
+    verticalRecoil: 1
+    horizontalRecoil: 1
+    opticalHeight: 0.65
+    suppressed: 1
+    requiresBracing: 0
+    laser: 0
+    flashlight: 0
+    shotSound: {fileID: 8300000, guid: c1bd91cf7c20534478c9b9c5d69d1732, type: 3}
+    mounts: []
+    supportHandPose: 0
+    firstPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    thirdPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    requiredLevel: 0
+  - id: Muzzle_Silencer_03
+    displayName: Silenciador pesado
+    socket: SOCKET_Muzzle
+    kind: 3
+    model: {fileID: 100000, guid: 647dc2abdbbf72141a1e3930efbb80fa, type: 3}
+    icon: {fileID: 21300000, guid: ebe42993938dc02448181feab8a111bd, type: 3}
+    weaponIcons:
+    - weapon: SemiRifle
+      icon: {fileID: 21300000, guid: 2663ac35939180a41b42b8bea88b1dc4, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: BurstRifle
+      icon: {fileID: 21300000, guid: 88f08d26903c2684d87f94cfc189f125, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper01
+      icon: {fileID: 21300000, guid: 2c59c428f8a450b48bcd891d19ac1a16, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper02
+      icon: {fileID: 21300000, guid: e728d9ac9cadabf48b6178e8a2605d53, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Sniper03
+      icon: {fileID: 21300000, guid: 919bb87550fc7e94297d453b7dbd3d35, type: 3}
+      offset: {x: 0, y: 0}
+    - weapon: Rifle
+      icon: {fileID: 21300000, guid: ca6129469615bd9499bf0a845aa2d15e, type: 3}
+      offset: {x: 0, y: 0}
+    weapons:
+    - SemiRifle
+    - BurstRifle
+    - Sniper01
+    - Sniper02
+    - Sniper03
+    - Rifle
+    magnifiedLens: 0
+    lensFieldOfView: 4.25
+    zoom: 0
+    damage: 1
+    spread: 1
+    recoil: 0.9
+    aimFov: 50
+    range: 1.12
+    adsDuration: 1.18
+    mobility: 0.96
+    adsMovement: 1
+    adsSway: 1
+    incomingShake: 1
+    verticalRecoil: 1
+    horizontalRecoil: 1
+    opticalHeight: 0.65
+    suppressed: 1
+    requiresBracing: 0
+    laser: 0
+    flashlight: 0
+    shotSound: {fileID: 8300000, guid: c1bd91cf7c20534478c9b9c5d69d1732, type: 3}
+    mounts: []
+    supportHandPose: 0
+    firstPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    thirdPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    requiredLevel: 0
+  - id: Flashlight_01
+    displayName: Linterna
+    socket: SOCKET_Laser
+    kind: 2
+    model: {fileID: 100000, guid: be92ead103ef3e448bb854eb6e17f8cb, type: 3}
+    icon: {fileID: 21300000, guid: e647be01f81742b47b19a85b24ad5c2a, type: 3}
+    weaponIcons:
+    - weapon: SemiRifle
+      icon: {fileID: 21300000, guid: eac642f26851a82409a7ac5d49129cb9, type: 3}
+      offset: {x: -70.2366, y: 46.942703}
+    - weapon: BurstRifle
+      icon: {fileID: 21300000, guid: 5f94f8d809667d649b3384d912f265f4, type: 3}
+      offset: {x: -75.251465, y: 54.41841}
+    - weapon: P90
+      icon: {fileID: 21300000, guid: 0286568c06886314f9416e392c6a97cb, type: 3}
+      offset: {x: -59.335846, y: 40.58394}
+    - weapon: Vector
+      icon: {fileID: 21300000, guid: b6b0b1324638cfb4d8a8a4a44917602f, type: 3}
+      offset: {x: -56.866364, y: 36.508957}
+    - weapon: MAC10
+      icon: {fileID: 21300000, guid: 2673667f2e20bb64e84f6400c7e6a91f, type: 3}
+      offset: {x: -55.994568, y: 42.884308}
+    - weapon: SMG02
+      icon: {fileID: 21300000, guid: 7424222510df4b94faced5679cd80e52, type: 3}
+      offset: {x: -56.655823, y: 40.708298}
+    - weapon: SMG05
+      icon: {fileID: 21300000, guid: e0e45e10497a84e4c91970264c5c0402, type: 3}
+      offset: {x: -56.882263, y: 51.697266}
+    - weapon: Sniper01
+      icon: {fileID: 21300000, guid: 5c211a242e06cdd458401f06e65cd589, type: 3}
+      offset: {x: -70.25537, y: 43.06256}
+    - weapon: Sniper02
+      icon: {fileID: 21300000, guid: a726daaa6ad191741bc582a85e0ff9ee, type: 3}
+      offset: {x: -57.601227, y: 40.400116}
+    - weapon: Sniper03
+      icon: {fileID: 21300000, guid: d4dcf5730e292664e810bb068c045f6b, type: 3}
+      offset: {x: -62.210205, y: 43.4149}
+    - weapon: Rifle
+      icon: {fileID: 21300000, guid: 405f111e0741d34479323db52502ee80, type: 3}
+      offset: {x: -70.82962, y: 44.050262}
+    - weapon: Escopeta
+      icon: {fileID: 21300000, guid: 0ab7fd41f5703c948b496ac01df9461c, type: 3}
+      offset: {x: 82.35507, y: 38.487503}
+    - weapon: Handgun
+      icon: {fileID: 606568352, guid: 8d98cf2b6502d0540a99b227cd26fa83, type: 3}
+      offset: {x: -37.00363, y: 36.82341}
+    - weapon: AutoPistol
+      icon: {fileID: 1354622865, guid: 28003887f0278164da749d0f4c3368cd, type: 3}
+      offset: {x: -51.574036, y: 16.984253}
+    - weapon: Handgun01
+      icon: {fileID: -1811409061, guid: 0ffcdd62939c2d74a8b8f6192a18f982, type: 3}
+      offset: {x: -51.77661, y: 17.810913}
+    - weapon: Handgun02
+      icon: {fileID: 1314767394, guid: e11f40de7af7f534aab603efc53145b1, type: 3}
+      offset: {x: -49.676605, y: 19.75859}
+    weapons:
+    - SemiRifle
+    - BurstRifle
+    - P90
+    - Vector
+    - MAC10
+    - SMG02
+    - SMG05
+    - Sniper01
+    - Sniper02
+    - Sniper03
+    - Rifle
+    - Escopeta
+    - Handgun
+    - AutoPistol
+    - Handgun01
+    - Handgun02
+    magnifiedLens: 0
+    lensFieldOfView: 4.25
+    zoom: 0
+    damage: 1
+    spread: 1
+    recoil: 1
+    aimFov: 50
+    range: 1
+    adsDuration: 1
+    mobility: 1
+    adsMovement: 1
+    adsSway: 1
+    incomingShake: 1
+    verticalRecoil: 1
+    horizontalRecoil: 1
+    opticalHeight: 0.65
+    suppressed: 0
+    requiresBracing: 0
+    laser: 0
+    flashlight: 1
+    shotSound: {fileID: 0}
+    mounts: []
+    supportHandPose: 0
+    firstPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    thirdPersonHand:
+      position: {x: 0, y: 0, z: 0}
+      elbow: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      fingers: []
+    requiredLevel: 0
+  eligibleWeapons:
+  - Handgun
+  - Rifle
+  - Escopeta
+  - AutoPistol
+  - SemiRifle
+  - BurstRifle
+  - P90
+  - Vector
+  - MAC10
+  - Handgun01
+  - Handgun02
+  - SMG02
+  - SMG05
+  - Sniper01
+  - Sniper02
+  - Sniper03
+  mountingHardware:
+  - {fileID: 100000, guid: 7c37b1117fd09d9459ad2f34aad1ab04, type: 3}
+  - {fileID: 100000, guid: 2965299f21d05dd48aa55475dde3a305, type: 3}
+  - {fileID: 100000, guid: 0aafee31234d60c4e8679071eb26db95, type: 3}
+  laserMaterial: {fileID: 2100000, guid: 11a6f0d4ee5665c42b67c55179eec9c5, type: 2}
+  transparentLens: {fileID: 2100000, guid: d3c546362480b3d40974e7f1a4694e70, type: 2}
+  reticleMaterial: {fileID: 2100000, guid: 15dc44faba0e46f418f074ef3fd0e95e, type: 2}
+  scopeLensMaterial: {fileID: 2100000, guid: 89e4658296afe6c4f89c06e4d02db0a3, type: 2}
+  scopeReticleMaterial: {fileID: 2100000, guid: ba31bcac373aa8f48ab9d3d17e093bf3, type: 2}

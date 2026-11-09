@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
@@ -1590,6 +1590,7 @@ public void EliminarZombiesHistoria()
 
     private void MostrarDerrota()
     {
+        PlayerHealth.FinPartidaPerksServidor();
         MostrarDerrotaClientRpc();
     }
    
@@ -1615,6 +1616,7 @@ public void EliminarZombiesHistoria()
     if (!IsServer || !EsModoHistoria || GameLostNetwork.Value)
         return;
 
+    PlayerHealth.FinPartidaPerksServidor();
     MostrarVictoriaClientRpc();
 }
 
@@ -1721,7 +1723,8 @@ private IEnumerator EndRoundDelay()
             DifficultyNetwork.Value
         );
 
-        MostrarVictoriaClientRpc();
+        PlayerHealth.FinPartidaPerksServidor();
+    MostrarVictoriaClientRpc();
 
         Debug.Log(
             "Ronda " +

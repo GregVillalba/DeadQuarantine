@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using Unity.Netcode;
 
 /// <summary>
@@ -74,7 +74,7 @@ private void OnClientDisconnect(ulong clientId)
     Debug.LogWarning("[HostLeftPopup] Se desconectó el cliente local. " +
         "Motivo: '" + nm.DisconnectReason + "'. " +
         "Estado de red: " + (nm.IsListening ? "activo" : "detenido"));
-    MostrarSiCorresponde();
+    if(clientId==nm.LocalClientId)MostrarSiCorresponde();
 }
 
 private void OnClientStopped(bool wasHost)
@@ -97,6 +97,7 @@ private void MostrarSiCorresponde()
 
     private void Mostrar()
     {
+        if(DeadQuarantine.PvPvE.Networking.PvPvEMatchmaking.Owns(nm))return;
         //mostrando = true;
         if (mostrando)
             return;

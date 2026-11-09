@@ -1,11 +1,11 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using Unity.Netcode;
 using UnityEngine.InputSystem;
 
-public class HUDController : MonoBehaviour
+public partial class HUDController : MonoBehaviour
 {
     [SerializeField] private PlayerHealth playerHealth;
     [SerializeField] private PlayerMovement playerMovement;
@@ -259,6 +259,7 @@ public class HUDController : MonoBehaviour
 
     private void UpdateLivesUI()
     {
+        if(PvPvEPresentationActive)return;
         if (playerHealth == null)
             return;
 
@@ -276,6 +277,8 @@ public class HUDController : MonoBehaviour
     public void SetWeapon(Weapon newWeapon, Sprite newIcon)
     {
         weapon = newWeapon;
+        var composition=weaponIcon?weaponIcon.GetComponentInParent<ImageWeapon>(true):null;
+        if(composition&&newWeapon){var attachments=newWeapon.GetComponent<WeaponAttachments>();composition.Bind(attachments,attachments&&attachments.BodySprite?attachments.BodySprite:newIcon);}
 
         if (debugCrosshair)
             Debug.Log("[HUD] SetWeapon -> " + (newWeapon != null ? newWeapon.WeaponName + " (" + newWeapon.gameObject.name + ")" : "NULL") +
@@ -309,6 +312,7 @@ public class HUDController : MonoBehaviour
 
     private void ActualizarTodo()
     {
+        RefreshPvPvEPresentation();
         UpdateHealthBar();
         UpdateIconosEstado();
         UpdateStaminaBar();
@@ -319,6 +323,7 @@ public class HUDController : MonoBehaviour
         UpdateCrosshair();
         UpdateLivesUI();
         UpdateInventarioCuras();
+        UpdatePerksHud();
     }
 
     // =========================================================
@@ -370,12 +375,22 @@ public class HUDController : MonoBehaviour
         SlotCura slot = playerHealth.GetSlotCura(0);
         bool lleno = !slot.Vacio;
 
-        MostrarIcono(hudCura, lleno ? IconoDeOferta(slot.itemId.ToString()) : null);
+        bool deClase = playerHealth.CuracionPvPvEActiva;
+        string id = lleno ? slot.itemId.ToString() : playerHealth.TipoCuracionPvPvE;
+        var roster = DeadQuarantine.PvPvE.Networking.PvPvETeamRoster.Active;
+        var catalogo = roster && roster.NetworkManager == playerHealth.NetworkManager ? roster.Configuration.Loadouts : null;
+        Sprite icono = deClase && catalogo ? catalogo.FindHealing(id)?.icon : lleno ? IconoDeOferta(id) : null;
+        MostrarIcono(hudCura, icono);
+        if (deClase) hudCura.icono.color = !lleno ? new Color(1f, 1f, 1f, .35f) : Color.white;
 
         // La cantidad solo aporta algo cuando en el slot entra más de una cura (Slot extra comprado).
-        hudCura.cantidad.text = lleno && playerHealth.CapacidadCuras > 1
-            ? slot.cantidad + "/" + playerHealth.CapacidadCuras
+        hudCura.cantidad.text = deClase || (lleno && playerHealth.CapacidadCuras > 1)
+            ? (lleno ? slot.cantidad : 0) + "/" + playerHealth.CapacidadCuras
             : string.Empty;
+        hudCura.cantidad.enableAutoSizing = deClase;
+        hudCura.cantidad.fontSizeMin = tamanoTextoSlot;
+        hudCura.cantidad.fontSizeMax = Mathf.Max(tamanoTextoSlot, 36f);
+        hudCura.cantidad.fontSize = deClase ? hudCura.cantidad.fontSizeMax : tamanoTextoSlot;
 
         hudCura.tecla.text = playerHealth.TeclaSlotCura;
         hudCura.tecla.alpha = lleno ? 1f : alfaTeclaSlotVacio;
@@ -390,10 +405,13 @@ public class HUDController : MonoBehaviour
         SlotCura slot = playerHealth.SlotGranada.Value;
         bool lleno = !slot.Vacio;
 
-        MostrarIcono(hudGranada, lleno ? IconoDeOferta(slot.itemId.ToString()) : null);
+        var roster=DeadQuarantine.PvPvE.Networking.PvPvETeamRoster.Active;
+        var classEntry=playerHealth.GranadaPvPvEActiva&&roster?System.Array.Find(roster.Configuration.Loadouts.grenades,g=>g.id==playerHealth.GranadaPvPvE.Value.itemId.ToString()):null;
+        MostrarIcono(hudGranada, classEntry!=null?classEntry.icon:(lleno?IconoDeOferta(slot.itemId.ToString()):null));
+        if(classEntry!=null)hudGranada.icono.color=new Color(1,1,1,lleno?1:.35f);
 
         // La cantidad solo aporta algo cuando en el slot entra más de una granada (Slot extra comprado).
-        hudGranada.cantidad.text = lleno && playerHealth.CapacidadGranadas > 1
+        hudGranada.cantidad.text = (lleno || playerHealth.GranadaPvPvEActiva) && playerHealth.CapacidadGranadas > 1
             ? slot.cantidad + "/" + playerHealth.CapacidadGranadas
             : string.Empty;
 
@@ -470,6 +488,8 @@ public class HUDController : MonoBehaviour
     private static void MostrarIcono(SlotHud hud, Sprite icono)
     {
         hud.icono.sprite = icono;
+        hud.icono.type=Image.Type.Simple;hud.icono.preserveAspect=true;
+        if(DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.Active){hud.icono.material=Resources.Load<Material>("PvPvE/WhiteIcon");hud.icono.color=Color.white;}
         hud.icono.enabled = icono != null;
     }
 
@@ -520,6 +540,7 @@ public class HUDController : MonoBehaviour
 
     private void OnDestroy()
     {
+        CleanupPerksHud();
         if (controlesCuchillo != null)
         {
             controlesCuchillo.Dispose();
@@ -865,6 +886,9 @@ public class HUDController : MonoBehaviour
             return;
 
         int current = playerHealth.Armor.Value;
+        // An empty armor slider was drawing a dark rectangle beneath the name in PvPvE.
+        if(armorFill){var mode=DeadQuarantine.PvPvE.Networking.PvPvECombat.Active;bool pvpve=mode&&mode.NetworkManager==playerHealth.NetworkManager;var slider=armorFill.transform.parent?armorFill.transform.parent.parent:null;if(slider)slider.gameObject.SetActive(!pvpve||current>0);}
+
         int max = Mathf.Max(playerHealth.MaxArmor, 1);
 
         if (armorFill != null)
@@ -1241,8 +1265,14 @@ public class HUDController : MonoBehaviour
 //============================================================================================
 
 //======================================== NUEVO =========================================================
+private AudioSource confirmedHitAudio;private float lastConfirmedHitSound=-1;
 public void ShowHitMarker(bool killedZombie, bool headshot = false)
 {
+    // One bounded voice for confirmed hits; pellet/multi-collider feedback cannot stack or clip.
+    if(Time.unscaledTime-lastConfirmedHitSound>=.025f){
+        var clip=Resources.Load<AudioClip>("PvPvE/ConfirmedHit");
+        if(clip){if(!confirmedHitAudio){confirmedHitAudio=gameObject.AddComponent<AudioSource>();confirmedHitAudio.playOnAwake=false;confirmedHitAudio.spatialBlend=0;confirmedHitAudio.volume=.35f;}if(weapon)confirmedHitAudio.outputAudioMixerGroup=weapon.PresentationMixer;confirmedHitAudio.Stop();confirmedHitAudio.clip=clip;confirmedHitAudio.Play();lastConfirmedHitSound=Time.unscaledTime;}
+    }
     if (hitMarker == null)
         return;
 
@@ -1271,7 +1301,7 @@ public void ShowHitMarker(bool killedZombie, bool headshot = false)
     }
 
     if (headshotSkull != null)
-        headshotSkull.SetActive(headshot && killedZombie);
+        headshotSkull.SetActive(false);
 
     if (hitMarkerCoroutine != null)
     {
@@ -1283,7 +1313,7 @@ public void ShowHitMarker(bool killedZombie, bool headshot = false)
     hitMarkerCoroutine =
         StartCoroutine(
             HitMarkerRoutine(
-                headshot
+                headshot && !DeadQuarantine.PvPvE.Networking.PvPvECombat.Active
                     ? headshotHitMarkerDuration
                     : hitMarkerDuration
             )

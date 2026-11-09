@@ -70,7 +70,9 @@ public static class WeaponIconBounds
             if (maxX < minX || maxY < minY)
                 return full;
 
-            return new Rect(minX, minY, maxX - minX + 1, maxY - minY + 1);
+            // Packed atlases trim transparent margins; return bounds in the original sprite canvas.
+            Vector2 offset = sprite.textureRectOffset;
+            return new Rect(minX + offset.x, minY + offset.y, maxX - minX + 1, maxY - minY + 1);
         }
         catch (System.Exception e)
         {
@@ -118,8 +120,7 @@ public static class WeaponIconBounds
             RenderTexture.active = previous;
             RenderTexture.ReleaseTemporary(rt);
 
-            if (readable != null)
-                Object.Destroy(readable);
+            if (readable != null){if(Application.isPlaying)Object.Destroy(readable);else Object.DestroyImmediate(readable);}
         }
     }
 }
@@ -184,6 +185,7 @@ public class ImageWeapon : MonoBehaviour
     private bool subscribedSwitcher;
     private bool externallyBound;
     private bool layoutDirty;
+    private bool modeRenderedIcon,pvpveWhiteComposition;
     private bool slotControlled;     // true solo en los iconos que genera WeaponsInventoryUISlot
     private bool slotSetupDone;
     private bool slotStandardLayout;
@@ -329,6 +331,7 @@ public class ImageWeapon : MonoBehaviour
 
     private void BindInternal(WeaponAttachments newAttachments, Sprite bodyFromPrefab, bool useAuthoredBody)
     {
+        savedGun=null;savedCatalog=null;
         fallbackBodySprite = bodyFromPrefab;
         allowAuthoredBody = useAuthoredBody;
 
@@ -392,7 +395,7 @@ public class ImageWeapon : MonoBehaviour
         if (switcher == null || !switcher.IsReady)
             return;
 
-        int index = switcher.SelectedIndex;
+        int index = switcher.CurrentWeaponIndex;
         GameObject icon = switcher.GetIconObject(index);
         bool ownIcon = icon == null || icon == gameObject || icon.transform.IsChildOf(transform);
 
@@ -402,8 +405,12 @@ public class ImageWeapon : MonoBehaviour
     // ---------- Pintar ----------
 
     /// <summary>Vuelve a pintar el icono con los accesorios actuales.</summary>
+    DeadQuarantine.PvPvE.PvPvELoadoutCatalog.Gun savedGun;
+    WeaponAttachmentCatalog savedCatalog;
+    WeaponAttachmentChoice savedChoice;
     public void Refresh()
     {
+        if(savedGun!=null&&savedCatalog){BindCatalog(savedGun,savedCatalog,savedChoice);return;}
         EnsureInit();
 
         Sprite body = attachments != null ? attachments.BodySprite : null;
@@ -414,16 +421,36 @@ public class ImageWeapon : MonoBehaviour
         if (body == null && allowAuthoredBody)
             body = authoredBodySprite;
 
+        modeRenderedIcon = false;
+        var player=GetComponentInParent<PlayerHealth>();pvpveWhiteComposition=player&&DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(player.NetworkObject);
         SetLayer(imageWeaponBody, body);
-        SetLayer(imageWeaponScopeDefault, attachments != null ? attachments.ScopeDefaultSprite : null);
-        SetLayer(imageWeaponScope, attachments != null ? attachments.ScopeSprite : null);
-        SetLayer(imageWeaponMagazine, attachments != null ? attachments.MagazineSprite : null);
-        SetLayer(imageWeaponLaser, attachments != null ? attachments.LaserSprite : null);
-        SetLayer(imageWeaponGrip, attachments != null ? attachments.GripSprite : null);
-        SetLayer(imageWeaponMuzzle, attachments != null ? attachments.MuzzleSprite : null);
+        SetLayer(imageWeaponScopeDefault, attachments ? attachments.ScopeDefaultSprite : null);
+        SetLayer(imageWeaponScope, attachments ? attachments.ScopeSprite : null);
+        SetLayer(imageWeaponMagazine, attachments ? attachments.MagazineSprite : null);
+        SetLayer(imageWeaponLaser, attachments ? attachments.LaserSprite : null);
+        SetLayer(imageWeaponGrip, attachments ? attachments.GripSprite : null);
+        SetLayer(imageWeaponMuzzle, attachments ? attachments.MuzzleSprite : null);
 
         layoutDirty = true;
         Layout();
+    }
+
+    // Same body/default sight/magazine/attachment layer composition as the source pack.
+    // This overload draws a saved class without modifying a gameplay WeaponAttachments instance.
+    public void BindCatalog(DeadQuarantine.PvPvE.PvPvELoadoutCatalog.Gun gun, WeaponAttachmentCatalog catalog, WeaponAttachmentChoice choice)
+    {
+        savedGun=gun;savedCatalog=catalog;savedChoice=choice;
+        externallyBound=true;slotControlled=false;modeRenderedIcon=false;EnsureInit();EnsureSlotSetup();UnsubscribeSwitcher();UnsubscribeAttachments();attachments=null;
+        autoFrame=true;frameScale=Vector2.one;frameOffset=Vector2.zero;applyColor=true;imageColor=Color.white;
+        Sprite Accessory(WeaponAttachmentKind kind) { var entry=catalog.Find(choice.Get(kind));return entry==null?null:System.Array.Find(entry.weaponIcons,x=>x.weapon==gun.id)?.icon; }
+        SetLayer(imageWeaponBody,gun.whiteBody);
+        SetLayer(imageWeaponScopeDefault,string.IsNullOrEmpty(choice.scope)?gun.whiteDefaultSight:null);
+        SetLayer(imageWeaponMagazine,gun.whiteMagazine);
+        SetLayer(imageWeaponScope,Accessory(WeaponAttachmentKind.Scope));
+        SetLayer(imageWeaponGrip,Accessory(WeaponAttachmentKind.Support));
+        SetLayer(imageWeaponLaser,Accessory(WeaponAttachmentKind.Utility));
+        SetLayer(imageWeaponMuzzle,Accessory(WeaponAttachmentKind.Muzzle));
+        layoutDirty=true;Layout();
     }
 
     private void SetLayer(Image img, Sprite sprite)
@@ -433,7 +460,7 @@ public class ImageWeapon : MonoBehaviour
 
         img.sprite = sprite;
         img.raycastTarget = false;
-        img.preserveAspect = false;
+        img.preserveAspect = false;img.type=Image.Type.Simple;img.useSpriteMesh=false;
 
         bool show = sprite != null;
         img.enabled = show;
@@ -462,7 +489,7 @@ public class ImageWeapon : MonoBehaviour
         if (slotControlled)
         {
             // Icono de un casillero: diseño estándar (300 x 100, posición 50, 0, 0) o encuadre automático.
-            if (slotStandardLayout)
+            if (slotStandardLayout && !modeRenderedIcon && !pvpveWhiteComposition)
             {
                 ApplyLayers(
                     new Vector2(StandardSize.x * frameScale.x, StandardSize.y * frameScale.y),
@@ -471,7 +498,7 @@ public class ImageWeapon : MonoBehaviour
                 return;
             }
         }
-        else if (!autoFrame)
+        else if (!autoFrame && !modeRenderedIcon && !pvpveWhiteComposition)
         {
             // Icono fuera de los casilleros (AmmoPanel) con Auto Frame apagado: se deja como está armado en el prefab.
             return;
@@ -505,6 +532,13 @@ public class ImageWeapon : MonoBehaviour
         Sprite body = imageWeaponBody.sprite;
         Vector2 canvas = new Vector2(body.rect.width, body.rect.height);
         Rect content = WeaponIconBounds.Get(body);
+        Vector2 utilityOffset=UtilityIconOffset();
+        foreach(var layer in AllLayers()) {
+            if(!layer || !layer.enabled || !layer.sprite)continue;
+            Rect bounds=WeaponIconBounds.Get(layer.sprite);if(layer==imageWeaponLaser)bounds.position+=utilityOffset;Vector2 spriteSize=layer.sprite.rect.size;
+            float x=canvas.x/spriteSize.x,y=canvas.y/spriteSize.y;
+            content=Rect.MinMaxRect(Mathf.Min(content.xMin,bounds.xMin*x),Mathf.Min(content.yMin,bounds.yMin*y),Mathf.Max(content.xMax,bounds.xMax*x),Mathf.Max(content.yMax,bounds.yMax*y));
+        }
 
         if (canvas.x <= 0.5f || canvas.y <= 0.5f || content.width <= 0.5f || content.height <= 0.5f)
             return;
@@ -517,20 +551,25 @@ public class ImageWeapon : MonoBehaviour
         // Píxeles del sprite -> unidades visibles, parejo en X e Y.
         float k = Mathf.Min(frame.x * sx / content.width, frame.y * sy / content.height) * frameFill;
 
-        float kx = k * frameScale.x / sx;   // unidades locales por píxel (X)
-        float ky = k * frameScale.y / sy;   // unidades locales por píxel (Y)
+        float kx = k * ((modeRenderedIcon || pvpveWhiteComposition) ? 1f : frameScale.x) / sx;   // unidades locales por píxel (X)
+        float ky = k * ((modeRenderedIcon || pvpveWhiteComposition) ? 1f : frameScale.y) / sy;   // unidades locales por píxel (Y)
 
         Vector2 contentCenter = content.center;
         Vector2 canvasCenter = canvas * 0.5f;
 
         Vector2 size = new Vector2(canvas.x * kx, canvas.y * ky);
         Vector2 position = new Vector2(
-            -(contentCenter.x - canvasCenter.x) * kx + frameOffset.x,
-            -(contentCenter.y - canvasCenter.y) * ky + frameOffset.y);
+            -(contentCenter.x - canvasCenter.x) * kx + (pvpveWhiteComposition ? 0 : frameOffset.x),
+            -(contentCenter.y - canvasCenter.y) * ky + (pvpveWhiteComposition ? 0 : frameOffset.y));
 
-        ApplyLayers(size, position, slotControlled);
+        if (modeRenderedIcon) position = Vector2.zero;
+        ApplyLayers(size, position, slotControlled || modeRenderedIcon);
     }
 
+    Vector2 UtilityIconOffset(){
+        var catalog=savedCatalog?savedCatalog:attachments?attachments.Catalog:null;var choice=savedCatalog?savedChoice:attachments?attachments.ApprovedChoice:default;string id=savedGun!=null?savedGun.id:attachments?attachments.StableWeaponId:"";
+        return catalog?.Find(choice.utility)?.weaponIcons is { } icons?System.Array.Find(icons,i=>i.weapon==id)?.offset??Vector2.zero:Vector2.zero;
+    }
     private static readonly Vector2 StandardSize = new Vector2(300f, 100f);
     private static readonly Vector2 StandardPosition = new Vector2(50f, 0f);
 
@@ -559,6 +598,7 @@ public class ImageWeapon : MonoBehaviour
                 r.anchoredPosition3D = new Vector3(position.x, position.y, 0f);
             else
                 r.anchoredPosition = position;
+            if(layers[i]==imageWeaponLaser&&imageWeaponBody&&imageWeaponBody.sprite){var pixels=UtilityIconOffset();r.anchoredPosition+=new Vector2(pixels.x*size.x/imageWeaponBody.sprite.rect.width,pixels.y*size.y/imageWeaponBody.sprite.rect.height);}
         }
     }
 
@@ -691,8 +731,7 @@ public class ImageWeapon : MonoBehaviour
             if (image.gameObject == gameObject || IsAssignedLayer(image))
                 continue;
 
-            if (image.sprite == null)
-                image.enabled = false;
+            image.enabled = false;
         }
     }
 

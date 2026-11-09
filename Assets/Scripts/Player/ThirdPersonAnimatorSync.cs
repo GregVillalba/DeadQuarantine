@@ -183,6 +183,13 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
         if (new Vector2(v.x, v.z).sqrMagnitude > 0.25f * 0.25f)
             return false;
 
+        // Integrated weapons now provide their own authored idle poses on every peer.
+        if (weapon.gameObject.name.StartsWith("DQ_Weapon_", System.StringComparison.Ordinal))
+        {
+            var profile=weapon.GetComponent<PackWeaponPresentation>();
+            return profile&&profile.bareSupportPoseEnabled;
+        }
+
         string rootName = weapon.gameObject.name;
         string displayName = weapon.WeaponName ?? string.Empty;
 
@@ -221,6 +228,8 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
         // corporal que al apuntar mientras están quietas, SIN simular que apuntan
         // (TP_IsAiming sigue reflejando el input real).
         bool aimPoseAsIdle = ShouldUseAimPoseAsIdle(weapon, reloading);
+        var poseProfile=weapon?weapon.GetComponent<PackWeaponPresentation>():null;
+        if(weapon!=lastWeapon&&poseProfile&&!poseProfile.preserveLegacyAnimation){actualAimW=aiming?1:0;aimW=(aiming||aimPoseAsIdle)?1:0;}
         actualAimW = Mathf.MoveTowards(actualAimW, aiming ? 1f : 0f,
             Time.deltaTime * aimBlendSpeed);
         aimW = Mathf.MoveTowards(aimW, (aiming || aimPoseAsIdle) ? 1f : 0f,
@@ -315,6 +324,8 @@ public class ThirdPersonAnimatorSync : MonoBehaviour
         if (actionsLayer >= 0)
         {
             float actionWeight = upperBodyWeight * Mathf.Lerp(1f, actionWeightWhileAiming, actualAimW);
+            var weapon=ResolveWeapon();var profile=weapon?weapon.GetComponent<PackWeaponPresentation>():null;
+            if(profile&&!profile.preserveLegacyAnimation&&!thirdPersonAnimator.IsInTransition(actionsLayer)&&thirdPersonAnimator.GetCurrentAnimatorStateInfo(actionsLayer).shortNameHash==Animator.StringToHash("Default"))actionWeight=0;
             thirdPersonAnimator.SetLayerWeight(actionsLayer, actionWeight);
         }
     }

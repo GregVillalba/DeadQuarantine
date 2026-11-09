@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b522eaa8828b4824fb96b451c3159998, type: 3}
+  m_Name: Wildcards
+  m_EditorClassIdentifier: Scripts::DeadQuarantine.PvPvE.PvPvEWildcardCatalog
+  entries:
+  - id: wildcard.healing
+    name: "Curaci\xF3n extra"
+    description: "M\xE1s unidades de tu curaci\xF3n seleccionada."
+    kind: 1
+    icon: {fileID: 21300000, guid: 9a1ea11fd03ec4f4092f48c83098eff5, type: 3}
+  - id: wildcard.grenades
+    name: Granadas extra
+    description: "M\xE1s unidades de tu granada seleccionada."
+    kind: 2
+    icon: {fileID: 21300000, guid: 3c84896e27573b346976e1e5ef2e6786, type: 3}
+  - id: wildcard.overkill
+    name: Overkill
+    description: Permite otra primaria en el segundo espacio.
+    kind: 3
+    icon: {fileID: -1385930016, guid: bcc477d9e47ffcf41acc147a6fc51cf9, type: 3}
+  - id: wildcard.greed
+    name: Perk 1 Greed
+    description: Un segundo perk de Movilidad. Cada perk consume un punto Pick 10.
+    kind: 7
+    icon: {fileID: 21300000, guid: 1b402ad4adca44c44895e69d6b08a91a, type: 3}
+  - id: wildcard.handling_greed
+    name: Perk 2 Greed
+    description: Un segundo perk de Manejo. Cada perk consume un punto Pick 10.
+    kind: 8
+    icon: {fileID: 21300000, guid: 7aa8cb0cd825c0546ae02942db65e991, type: 3}
+  - id: wildcard.primary_gunfighter
+    name: Primary Gunfighter
+    description: Habilita un tercer accesorio en la primaria.
+    kind: 5
+    icon: {fileID: 21300000, guid: e52152a6a49388b4c9fb41bb241410d9, type: 3}
+  - id: wildcard.secondary_gunfighter
+    name: Secondary Gunfighter
+    description: Habilita un tercer accesorio en la secundaria.
+    kind: 6
+    icon: {fileID: 21300000, guid: 00d94a123b126984dac4f20634e44b0d, type: 3}
+  extraHealingUnits: 1
+  extraGrenadeUnits: 1

@@ -92,6 +92,9 @@ public class WeaponOffer
     [Tooltip("Puntos de escudo que da la pieza de blindaje (chaleco / casco).")]
     public int armadura;
     public bool esEquipamiento;
+    public bool esLinterna;
+    public DeadQuarantine.PvPvE.PassivePerk perk;
+    public bool EsPerk => perk != DeadQuarantine.PvPvE.PassivePerk.None;
 
     [Tooltip("Chaleco o Casco: al comprarlo da 'Armadura' puntos de escudo. Si el escudo de la pieza baja, " +
              "se puede reparar en la tienda por un porcentaje del costo (ver NPCWeaponVendor).")]
@@ -141,6 +144,7 @@ public class WeaponOffer
     // Las torretas y los barriles solo existen en Supervivencia, más allá de lo que se marque en 'Modos'.
     public bool SeMuestraEnModo(ConfiguracionPartidaSeleccionada.ModoJuego modo)
     {
+        if (EsPerk && DeadQuarantine.PvPvE.Networking.PvPvETeamRoster.Active) return false;
         ModosTienda flag = DisponibilidadTienda.AFlag(modo);
 
         if (EsColocable)

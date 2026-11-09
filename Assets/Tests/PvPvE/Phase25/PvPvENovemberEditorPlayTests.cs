@@ -1,0 +1,9 @@
+using System.Reflection;using NUnit.Framework;using UnityEditor;using UnityEngine;using UnityEngine.UI;using TMPro;using DeadQuarantine.PvPvE.UI;
+public sealed class PvPvENovemberEditorComponentTests {
+ [Test] public void PreviewFrameAndScorePanelAddMissingComponentsInEditor(){
+  var flags=BindingFlags.Instance|BindingFlags.NonPublic;var host=new GameObject("Editor Preview",typeof(RectTransform),typeof(RawImage));var preview=host.AddComponent<PvPvEWeaponPreview>();var camera=new GameObject("Editor Preview Camera").AddComponent<Camera>();var holder=GameObject.CreatePrimitive(PrimitiveType.Cube);var rt=new RenderTexture(1000,600,24);
+  var panel=new GameObject("Score Panel",typeof(RectTransform),typeof(Image));var label=new GameObject("Score",typeof(RectTransform)).AddComponent<TextMeshProUGUI>();label.transform.SetParent(panel.transform,false);var score=label.gameObject.AddComponent<ScoreHUD>();
+  try{typeof(PvPvEWeaponPreview).GetField("cameraView",flags).SetValue(preview,camera);typeof(PvPvEWeaponPreview).GetField("holder",flags).SetValue(preview,holder);typeof(PvPvEWeaponPreview).GetField("texture",flags).SetValue(preview,rt);typeof(PvPvEWeaponPreview).GetMethod("Frame",flags).Invoke(preview,null);Assert.IsTrue(camera.GetComponent<Light>());typeof(ScoreHUD).GetField("textoPuntaje",flags).SetValue(score,label);typeof(ScoreHUD).GetMethod("StyleModeScore",flags).Invoke(score,null);Assert.IsTrue(panel.GetComponent<CanvasGroup>());}
+  finally{typeof(PvPvEWeaponPreview).GetField("cameraView",flags).SetValue(preview,null);typeof(PvPvEWeaponPreview).GetField("holder",flags).SetValue(preview,null);typeof(PvPvEWeaponPreview).GetField("texture",flags).SetValue(preview,null);Object.DestroyImmediate(host);Object.DestroyImmediate(camera.gameObject);Object.DestroyImmediate(holder);Object.DestroyImmediate(rt);Object.DestroyImmediate(panel);}
+ }
+}

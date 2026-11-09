@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
@@ -77,6 +77,12 @@ public class ZombieAI : NetworkBehaviour
     [SerializeField] private float alturaEfectoAturdido = 1.8f;
 
     public bool IsRunning { get; private set; }
+    readonly NetworkVariable<byte> pvpveKind=new();
+    public DeadQuarantine.PvPvE.PvPvEZombieKind PvPvEKind=>(DeadQuarantine.PvPvE.PvPvEZombieKind)pvpveKind.Value;
+    bool InPvPvE=>DeadQuarantine.PvPvE.PvPvEZombieDirector.Active||(zombieHealth&&zombieHealth.IsPvPvEZombie);
+    public void SetPvPvEKindServer(DeadQuarantine.PvPvE.PvPvEZombieKind kind){if(!IsServer||!InPvPvE)return;pvpveKind.Value=(byte)kind;ApplyPvPvEKind(0,pvpveKind.Value);}
+    void ApplyPvPvEKind(byte oldValue,byte value){if(InPvPvE)SetRunning(value!=(byte)DeadQuarantine.PvPvE.PvPvEZombieKind.Walker);}
+
 
     // true mientras está aturdido: no se mueve ni ataca, y los clientes congelan la animación.
     private NetworkVariable<bool> aturdidoNetwork =
@@ -190,6 +196,8 @@ public class ZombieAI : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        pvpveKind.OnValueChanged+=ApplyPvPvEKind;
+        if(DeadQuarantine.PvPvE.PvPvEZombieDirector.Active){ApplyPvPvEKind(0,pvpveKind.Value);if(!IsServer&&agent)agent.enabled=false;}
         aturdidoNetwork.OnValueChanged += OnAturdidoChanged;
         spawningNetwork.OnValueChanged += OnSpawningChanged;
 
@@ -224,6 +232,7 @@ public class ZombieAI : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        pvpveKind.OnValueChanged-=ApplyPvPvEKind;
         aturdidoNetwork.OnValueChanged -= OnAturdidoChanged;
         spawningNetwork.OnValueChanged -= OnSpawningChanged;
 
@@ -460,6 +469,7 @@ public class ZombieAI : NetworkBehaviour
             return;
         }
 
+        if(InPvPvE&&(!DeadQuarantine.PvPvE.Networking.PvPvECombat.Active||!DeadQuarantine.PvPvE.Networking.PvPvECombat.Active.IsPlaying)){QuedarseQuieto();return;}
         if (spawnGameplayLock)
         {
             QuedarseQuieto();
@@ -483,7 +493,7 @@ public class ZombieAI : NetworkBehaviour
 
         if (target == null)
         {
-            if (hayJugadorEnZonaSegura)
+            if (InPvPvE || hayJugadorEnZonaSegura)
                 QuedarseQuieto();
 
             return;
@@ -545,6 +555,8 @@ public class ZombieAI : NetworkBehaviour
 
     private void FindClosestPlayer()
     {
+        if(DeadQuarantine.PvPvE.PvPvEZombieDirector.Active){targetTorreta=null;target=DeadQuarantine.PvPvE.PvPvEZombieDirector.Active.Closest(transform.position);return;}
+
         if (NetworkManager.Singleton == null)
             return;
 
@@ -970,7 +982,8 @@ public class ZombieAI : NetworkBehaviour
 
                     int damage = DanoDeAtaque();
 
-                    playerHealth.TakeDamage(damage);
+                    if(InPvPvE){if(Vector3.Distance(transform.position,playerHealth.transform.position)<=attackRange)DeadQuarantine.PvPvE.Networking.PvPvECombat.Active?.ApplyZombieDamageServer(this,playerHealth,damage);}
+                    else playerHealth.TakeDamage(damage);
 
                     Debug.Log(
                         "[ZombieAI] Zombie atacó a Player " +

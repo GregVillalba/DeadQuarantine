@@ -32,6 +32,9 @@ public class NPCWeaponVendor : MonoBehaviour
 
     public IReadOnlyList<WeaponOffer> Offers => offers;
     public string NombreMercader => gameObject.name;
+    public bool PuedeComerciar => !RoundManager.Instance || (RoundManager.Instance.EsModoHistoria
+        ? !GestorEscenariosPartida.Instance || GestorEscenariosPartida.Instance.EstaEnZonaSeguraActiva(transform)
+        : RoundManager.Instance.IsShopPhaseActive);
 
     // Cada recurso del precio por el porcentaje de reparación (torreta o blindaje), redondeado para arriba.
     public PrecioRecursos PrecioReparacion(WeaponOffer oferta)
@@ -105,6 +108,18 @@ public class NPCWeaponVendor : MonoBehaviour
         if (switcher == null || playerRecursos == null)
         {
             Debug.LogWarning("[NPCWeaponVendor] No se encontraron WeaponSwitcher/PlayerRecursos en el jugador.");
+            return;
+        }
+
+        if(oferta.esLinterna){
+            pendingSwitcher=null;pendingWeapon=null;pendingRecursos=playerRecursos;pendingWeaponId=weaponId;
+            playerRecursos.OnPurchaseResult+=OnPurchaseResultInterno;playerRecursos.ComprarLinternaServerRpc(weaponId);return;
+        }
+        if (oferta.EsPerk)
+        {
+            pendingSwitcher = null; pendingWeapon = null; pendingRecursos = playerRecursos; pendingWeaponId = weaponId;
+            playerRecursos.OnPurchaseResult += OnPurchaseResultInterno;
+            playerRecursos.ComprarPerkServerRpc(weaponId);
             return;
         }
 

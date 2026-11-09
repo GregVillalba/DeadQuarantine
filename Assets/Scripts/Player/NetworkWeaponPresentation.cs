@@ -44,6 +44,8 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
     byte appliedFlags;
     uint shotSequence, acceptedSequence;
     double nextAcceptedShot;
+    WeaponSupportPose.Binding supportArm;
+    bool boltRifleInSupportHand;
     int lastSkin=-1;
     Renderer[] bodyRenderers=Array.Empty<Renderer>();
     public int EquippedIndex => state.Value.Weapon;
@@ -67,33 +69,66 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
         if(held)Destroy(held);if(audioOutput)Destroy(audioOutput);
         base.OnNetworkDespawn();
     }
-    void Update()
+    void Update()=>PublishStateIfChanged();
+    void PublishStateIfChanged()
     {
         if(!IsSpawned || !IsOwner || !Switcher || !Switcher.CurrentWeapon)return;
         var weapon=Switcher.CurrentWeapon;
-        var value=new State{Weapon=Switcher.CurrentWeaponIndex,Flags=(byte)((weapon.IsReloading?1:0)|(weapon.ShellLoading?2:0)|(weapon.IsChambering?4:0)|(weapon.IsAiming?8:0)|(weapon.CurrentAmmo==0?16:0)|(Switcher.IsHolstering?32:0)|(Switcher.IsUnholstering?64:0))};
+        bool empty=weapon.gameObject.name.StartsWith("DQ_Weapon_",StringComparison.Ordinal)?weapon.PresentationEmpty:weapon.CurrentAmmo==0;
+        var value=new State{Weapon=Switcher.CurrentWeaponIndex,Flags=(byte)((weapon.IsReloading?1:0)|(weapon.ShellLoading?2:0)|(weapon.IsChambering?4:0)|(weapon.IsAiming?8:0)|(empty?16:0)|(Switcher.IsHolstering?32:0)|(Switcher.IsUnholstering?64:0))};
         if(value.Equals(sent))return;
         sent=value;Apply(value);StateServerRpc(value);
     }
     void LateUpdate()
     {
         if(!IsSpawned || !Body)return;
+        if(parts && BodyAnimator && shown>=0 && shown<Weapons.Length && (appliedFlags&1)!=0 && !Weapons[shown].Source.UsesMultiPartReload && Weapons[shown].Source.gameObject.name.StartsWith("DQ_Weapon_",StringComparison.Ordinal)) {
+            int actions=BodyAnimator.GetLayerIndex("Actions");
+            if(actions>=0) {
+                var action=BodyAnimator.GetCurrentAnimatorStateInfo(actions);
+                string clip=(action.IsName("Reload Empty")||action.IsName("Reload_Empty"))?"Reload Empty":action.IsName("Reload")?"Reload":null;
+                if(clip!=null && parts.HasState(0,Animator.StringToHash(clip))){parts.Play(clip,0,Mathf.Clamp01(action.normalizedTime));parts.Update(0);}
+            }
+        }
+        ApplySupportHand();
         int skin=GetComponent<PlayerCharacter>().AppliedIndex;
         if(skin!=lastSkin) {lastSkin=skin;bodyRenderers=Body.GetComponentsInChildren<Renderer>(true);}
-        foreach(var renderer in bodyRenderers)if(renderer)renderer.forceRenderingOff=IsOwner && !ShowLocalBodyForTesting;
+        foreach(var renderer in bodyRenderers)if(renderer)renderer.forceRenderingOff=DeadPvPvEBody || IsOwner && !ShowLocalBodyForTesting;
+    }
+    // Humanoid TP clips move the loading hand independently of the gun.
+    // The bolt rifle stays in its supporting left hand while the right hand loads/cycles it.
+    void AttachBoltRifleForAction(State value,Definition definition){
+        if(definition.Id!="Sniper01"||!held||!BodyAnimator)return;
+        bool support=(value.Flags&5)!=0;
+        if(support==boltRifleInSupportHand)return;
+        if(support){var left=BodyAnimator.GetBoneTransform(HumanBodyBones.LeftHand);if(!left)return;held.transform.SetParent(left,true);}
+        else{held.transform.SetParent(hand,false);held.transform.localPosition=definition.GripPosition;held.transform.localRotation=Quaternion.Euler(definition.GripRotation);}
+        boltRifleInSupportHand=support;
+    }
+    bool DeadPvPvEBody=>DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(NetworkObject)&&GetComponent<PlayerHealth>() is {IsAlive:false};
+    void ApplySupportHand(){
+        if(!BodyAnimator||!held||shown<0||shown>=Weapons.Length||(appliedFlags&101)!=0)return;
+        var health=GetComponent<PlayerHealth>();if(!health.IsAlive||health.IsDowned)return;
+        var profile=Weapons[shown].Source.GetComponent<PackWeaponPresentation>();var attachments=held.GetComponent<WeaponAttachments>();var pose=profile?profile.SupportPose(attachments,true):null;
+        if(pose!=null){supportArm??=new WeaponSupportPose.Binding(BodyAnimator);supportArm.Apply(profile.SupportFrame(attachments,Find(held.transform,"SOCKET_Grip")),pose);}
     }
     [ServerRpc] void StateServerRpc(State value)
     {
         if(value.Weapon<0 || value.Weapon>=Weapons.Length)return;
-        value.Flags&=127;state.Value=value;
+        if(!GetComponent<PlayerHealth>().ArmaPermitidaPorClase(Weapons[value.Weapon].Id))return;
+        value.Flags&=127;
+        var combat=DeadQuarantine.PvPvE.Networking.PvPvECombat.Active;
+        if(combat&&!combat.ObserveStateServer(GetComponent<PlayerHealth>(),value.Weapon,value.Flags))return;
+        state.Value=value;
     }
     void StateChanged(State old,State value) {if(!IsOwner)Apply(value);}
     void Apply(State value)
     {
         if(value.Weapon<0 || value.Weapon>=Weapons.Length || !hand)return;
         var definition=Weapons[value.Weapon];
-        if(shown!=value.Weapon) {
-            shown=value.Weapon;appliedFlags=0;
+        bool equipmentChanged=shown!=value.Weapon;bool finishedDraw=(appliedFlags&96)!=0&&(value.Flags&96)==0;
+        if(equipmentChanged) {
+            shown=value.Weapon;appliedFlags=0;boltRifleInSupportHand=false;
             if(audioOutput)audioOutput.outputAudioMixerGroup=definition.Source.PresentationMixer;
             if(BodyAnimator && definition.Controller && BodyAnimator.runtimeAnimatorController!=definition.Controller)BodyAnimator.runtimeAnimatorController=definition.Controller;
             if(BodyAnimator)BodyAnimator.SetFloat("TP_WeaponID", definition.AnimatorWeaponId>0?definition.AnimatorWeaponId:value.Weapon+1);
@@ -116,7 +151,7 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
             );
             muzzle=Find(held.transform,"SOCKET_Muzzle");eject=Find(held.transform,"SOCKET_Eject_C") ?? Find(held.transform,"SOCKET_Eject");
             flash=muzzle?muzzle.GetComponent<Muzzle>():null;parts=held.GetComponent<Animator>();
-            foreach(var renderer in held.GetComponentsInChildren<Renderer>(true))renderer.forceRenderingOff=IsOwner && !ShowLocalBodyForTesting;
+            foreach(var renderer in held.GetComponentsInChildren<Renderer>(true))renderer.forceRenderingOff=DeadPvPvEBody || IsOwner && !ShowLocalBodyForTesting;
             bodyRenderers=Body.GetComponentsInChildren<Renderer>(true);
         }
         if((!IsOwner || ShowLocalBodyForTesting) && (value.Flags&1)!=0 && (appliedFlags&1)==0) {
@@ -124,7 +159,12 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
             var reloadSound=definition.Source.PresentationReloadSound((value.Flags&16)!=0);
             if(reloadSound && !IsOwner)audioOutput.PlayOneShot(reloadSound);
         }
-        if(parts)parts.speed=(value.Flags&1)!=0?definition.Source.PresentationThirdPersonPartsReloadSpeed((value.Flags&16)!=0):1;
+        // Gloves must also affect models whose inactive FP source has not initialized its character reference.
+        var perkHealth = GetComponent<PlayerHealth>();
+        var perkCharacter = GetComponent<PlayerCharacter>();
+        float perkReloadScale = perkHealth && perkHealth.TienePerk(DeadQuarantine.PvPvE.PassivePerk.Gloves) && perkCharacter && definition.Source
+            ? perkCharacter.ReloadSpeedMultiplier / Mathf.Max(.01f, definition.Source.PresentationCharacterReloadSpeed) : 1f;
+        if(parts)parts.speed=(value.Flags&1)!=0?definition.Source.PresentationThirdPersonPartsReloadSpeed((value.Flags&16)!=0)*perkReloadScale:1;
         if (BodyAnimator)
         {
             int switchLayer =
@@ -208,26 +248,43 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
                 BodyAnimator.SetFloat(
                     "TP_ReloadSpeed",
                     definition.Source != null
-                        ? definition.Source.PresentationThirdPersonReloadSpeed(empty)
+                        ? definition.Source.PresentationThirdPersonReloadSpeed(empty) * perkReloadScale
                         : (character != null ? character.ReloadSpeedMultiplier : 1f)
                 );
             }
         }
-        appliedFlags=value.Flags;
+        GetComponent<NetworkWeaponAttachments>()?.RefreshVisibleWeapon();
+        AttachBoltRifleForAction(value,definition);appliedFlags=value.Flags;
+        var poseProfile=definition.Source.GetComponent<PackWeaponPresentation>();
+        if((equipmentChanged||finishedDraw)&&poseProfile&&!poseProfile.preserveLegacyAnimation&&BodyAnimator&&BodyAnimator.isActiveAndEnabled){
+            BodyAnimator.SetFloat("TP_AimWeight",poseProfile.bareSupportPoseEnabled||(value.Flags&8)!=0?1:0);
+            // Evaluate the newly selected controller once before its first visible frame.
+            // Incoming equipment updates can arrive after this frame's animation pass.
+            BodyAnimator.Update(0);ApplySupportHand();
+        }
     }
     public void PublishShot(Weapon source,Vector3[] targets)
     {
         if(!IsSpawned || !IsOwner || !Switcher || Switcher.CurrentWeapon!=source)return;
+        // An animation can end after Update. Queue its reload-stop before the reliable shot RPC,
+        // so the first valid round after a reload is not rejected against the previous frame's flag.
+        var mode=DeadQuarantine.PvPvE.Networking.PvPvECombat.Active;
+        if(mode&&mode.IsSpawned&&mode.NetworkManager==NetworkManager)PublishStateIfChanged();
         GetComponentInChildren<ThirdPersonAnimatorSync>(true)?.NotifyFire(source);
         Vector3 origin=source.AimOrigin;
         ShotServerRpc(Switcher.CurrentWeaponIndex,++shotSequence,origin,targets);
     }
     [ServerRpc] void ShotServerRpc(int index,uint sequence,Vector3 origin,Vector3[] targets)
     {
+        if(!DeadQuarantine.PvPvE.Networking.PvPvETeamDeployment.AllowsOffense(GetComponent<PlayerHealth>()))return;
         if(index<0 || index>=Weapons.Length || sequence<=acceptedSequence || !Finite(origin) || targets==null || targets.Length<1 || targets.Length>16)return;
+        if(!GetComponent<PlayerHealth>().ArmaPermitidaPorClase(Weapons[index].Id))return;
         var source=Weapons[index].Source;
         if(!source || Vector3.Distance(origin,transform.position+Vector3.up*1.5f)>4 || NetworkManager.ServerTime.Time+.025<nextAcceptedShot)return;
         for(int i=0;i<targets.Length;i++)if(!Finite(targets[i]) || Vector3.Distance(origin,targets[i])>source.PresentationRange+5)return;
+        var combat=DeadQuarantine.PvPvE.Networking.PvPvECombat.Active;
+        if(combat&&!combat.ResolveShotServer(GetComponent<PlayerHealth>(),index,sequence,origin,targets,out targets))return;
+        GetComponent<NetworkWeaponAttachments>()?.PublishShotVisibility(index);
         acceptedSequence=sequence;nextAcceptedShot=NetworkManager.ServerTime.Time+Mathf.Max(.025f,source.PresentationFireInterval);
         ShotClientRpc(index,targets);
     }
@@ -239,7 +296,7 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
         RemoteShotCount++;
         var source=Weapons[index].Source;
         if(source.PresentationShotSound){audioOutput.PlayOneShot(source.PresentationShotSound);RemoteSoundEvents++;}
-        if(flash && flash.HasParticleEffect){flash.PlayEffect();RemoteFlashEvents++;}PlayParts("Fire");
+        if(!source.ShotIsSuppressed && flash && flash.HasParticleEffect){flash.PlayEffect();RemoteFlashEvents++;}PlayParts("Fire");
         foreach(var target in targets)if(source.PresentationTrail) {
             var go=Instantiate(source.PresentationTrail,muzzle.position,Quaternion.identity);
             var trail=go.GetComponent<BulletTrail>();if(trail){trail.Init(target);RemoteTrailEvents++;}
