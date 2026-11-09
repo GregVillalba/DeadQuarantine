@@ -231,7 +231,7 @@ public void MostrarAvisoContinuarAMansion()
         if (confirmoContinuarSafeZone)
             return;
 
-        if (NetworkManager.Singleton != null &&
+        if (!EsSinglePlayer() && NetworkManager.Singleton != null &&
             NetworkManager.Singleton.IsListening)
         {
             GestorHistoriaPartida gestor = GestorHistoriaPartida.Instance;
@@ -258,7 +258,8 @@ public void MostrarAvisoContinuarAMansion()
         if (textoAvisoSafeZone == null)
             return;
 
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+        if (EsSinglePlayer() || NetworkManager.Singleton == null ||
+            !NetworkManager.Singleton.IsListening)
         {
             textoAvisoSafeZone.text = "Presiona ENTER para continuar.";
             return;
