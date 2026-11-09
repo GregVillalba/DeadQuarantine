@@ -234,7 +234,7 @@ public class GameStartCurtain : MonoBehaviour
         GestorEscenariosPartida gestor = GestorEscenariosPartida.Instance;
         if (gestor != null && gestor.UsaEscenasAditivasMultiplayer)
         {
-            if (!gestor.MapaMultiplayerListo)
+            if (!gestor.MapaMultiplayerListo || !gestor.PresentacionLocalPreparada)
                 return;
 
             if (!mapaAditivoListoDetectado)
@@ -381,8 +381,16 @@ public class GameStartCurtain : MonoBehaviour
 
         AudioListener.pause = false;
 
-        RevelarHUDParaJugadorLocal();
-        DesbloquearJugadorLocal();
+        NetworkObject jugadorLocal = NetworkManager.Singleton != null &&
+            NetworkManager.Singleton.LocalClient != null
+            ? NetworkManager.Singleton.LocalClient.PlayerObject : null;
+        StoryIntroController intro = jugadorLocal != null
+            ? jugadorLocal.GetComponentInChildren<StoryIntroController>(true) : null;
+        if (intro == null || !intro.HistoriaActiva)
+        {
+            RevelarHUDParaJugadorLocal();
+            DesbloquearJugadorLocal();
+        }
     }
 
     private void DesbloquearJugadorLocal()

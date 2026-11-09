@@ -4,6 +4,7 @@ using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class RoundManager : NetworkBehaviour
 {
@@ -295,7 +296,8 @@ private bool iniciarRondaDesdeGuardado;
 
         ApplyModeAndDifficulty();
 
-   if (LoadGameMenuController.CargandoPartidaDesdeMenu)
+   if (SceneManager.GetActiveScene().name == "MainSceneSinglePlayer" &&
+       LoadGameMenuController.CargandoPartidaDesdeMenu)
 {
     if (LoadGameMenuController.CargandoSupervivenciaDesdeMenu)
     {
@@ -473,7 +475,31 @@ private IEnumerator EsperarFinIntroLocal()
             );
         }
 
+        // La primera ronda espera a que cada jugador cierre su cartel inicial.
+        while (round == 1 && !EsModoHistoria && !TodosConfirmaronIntroduccionInicial())
+            yield return null;
+
         StartRound(round);
+    }
+
+    private bool TodosConfirmaronIntroduccionInicial()
+    {
+        if (NetworkManager.Singleton == null ||
+            NetworkManager.Singleton.ConnectedClientsList.Count < expectedPlayerCount)
+            return false;
+
+        foreach (NetworkClient client in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            if (client.PlayerObject == null)
+                return false;
+
+            StoryIntroController intro =
+                client.PlayerObject.GetComponentInChildren<StoryIntroController>(true);
+            if (intro == null || !intro.IntroduccionInicialConfirmada)
+                return false;
+        }
+
+        return true;
     }
 
     private bool AllPlayersAtSpawn()
@@ -1153,6 +1179,9 @@ private IEnumerator WaitForPlayersThenStartHistoria()
         );
     }
 
+    while (!TodosConfirmaronIntroduccionInicial())
+        yield return null;
+
     IniciarHistoria();
 }
 
@@ -1617,8 +1646,68 @@ public void EliminarZombiesHistoria()
         return;
 
     PlayerHealth.FinPartidaPerksServidor();
-    MostrarVictoriaClientRpc();
+    if (SceneManager.GetActiveScene().name == "MainSceneSinglePlayer")
+        MostrarVictoriaClientRpc();
+    else
+        MostrarVictoriaHistoriaConFadeClientRpc();
 }
+
+    private bool victoriaHistoriaLocalIniciada;
+
+    [ClientRpc]
+    private void MostrarVictoriaHistoriaConFadeClientRpc()
+    {
+        if (victoriaHistoriaLocalIniciada)
+            return;
+
+        victoriaHistoriaLocalIniciada = true;
+        StartCoroutine(MostrarVictoriaHistoriaConFadeLocal());
+    }
+
+    private IEnumerator MostrarVictoriaHistoriaConFadeLocal()
+    {
+        GameObject cortina = new GameObject("FadeVictoriaHistoria", typeof(Canvas));
+        Canvas canvas = cortina.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 32767;
+
+        GameObject fondo = new GameObject("FondoNegro", typeof(RectTransform),
+            typeof(CanvasRenderer), typeof(Image), typeof(CanvasGroup));
+        fondo.transform.SetParent(cortina.transform, false);
+        RectTransform rect = fondo.GetComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        fondo.GetComponent<Image>().color = Color.black;
+        CanvasGroup grupo = fondo.GetComponent<CanvasGroup>();
+        grupo.alpha = 0f;
+
+        const float duracion = 0.8f;
+        for (float tiempo = 0f; tiempo < duracion; tiempo += Time.unscaledDeltaTime)
+        {
+            grupo.alpha = Mathf.Clamp01(tiempo / duracion);
+            yield return null;
+        }
+        grupo.alpha = 1f;
+
+        NetworkObject jugador = NetworkManager.Singleton != null &&
+            NetworkManager.Singleton.LocalClient != null
+            ? NetworkManager.Singleton.LocalClient.PlayerObject : null;
+        PauseController pause = jugador != null
+            ? jugador.GetComponentInChildren<PauseController>(true) : null;
+        if (pause != null)
+            pause.MostrarVictoria();
+        else
+            Debug.LogError("[RoundManager] No se encontró PauseController local para la victoria.");
+
+        for (float tiempo = 0f; tiempo < duracion; tiempo += Time.unscaledDeltaTime)
+        {
+            grupo.alpha = 1f - Mathf.Clamp01(tiempo / duracion);
+            yield return null;
+        }
+        Destroy(cortina);
+    }
 
 
     [ClientRpc]

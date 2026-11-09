@@ -80,7 +80,8 @@ public class GestorMansionHistoria : MonoBehaviour
     private void Update()
     {
         if (!EsServidor || estadoActual != EstadoMision.IrAlHelipuerto ||
-            NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+            NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening ||
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "MainSceneSinglePlayer")
             return;
 
         // Respaldo del AnimationEvent: si el clip terminó pero el evento se
@@ -98,7 +99,8 @@ public class GestorMansionHistoria : MonoBehaviour
 
     private bool TodosEnHelipuerto()
     {
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening ||
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "MainSceneSinglePlayer")
             return true;
 
         if (triggerHelipuerto == null)
@@ -123,7 +125,7 @@ public class GestorMansionHistoria : MonoBehaviour
                 cliente.PlayerObject.GetComponent<CharacterController>();
             if (cuerpo != null && cuerpo.enabled)
             {
-                if (!zona.Contains(cuerpo.bounds.center))
+                if (!zona.Intersects(cuerpo.bounds))
                     return false;
             }
             else if (!zona.Contains(cliente.PlayerObject.transform.position))
@@ -361,8 +363,7 @@ private void IntentarCompletarMision()
     if (!EsServidor ||
         estadoActual != EstadoMision.IrAlHelipuerto ||
         !jugadorLlegoAlHelipuerto ||
-        !TodosEnHelipuerto() ||
-        !helicopteroTerminoDescenso)
+        !TodosEnHelipuerto())
     {
         return;
     }
@@ -376,8 +377,7 @@ public void CompletarMision()
     if (!EsServidor ||
         estadoActual != EstadoMision.IrAlHelipuerto ||
         !jugadorLlegoAlHelipuerto ||
-        !TodosEnHelipuerto() ||
-        !helicopteroTerminoDescenso)
+        !TodosEnHelipuerto())
     {
         return;
     }
@@ -400,59 +400,36 @@ public void CompletarMision()
         textoTemporizador.gameObject.SetActive(false);
 
     Debug.Log(
-        "[Mansion] Descenso terminado y jugador en el helipuerto. " +
+        "[Mansion] Todos los jugadores llegaron al helipuerto. " +
         "Iniciando transición de victoria."
     );
 
-    if (FadeTransicionHistoria.Instance == null)
+    if (RoundManager.Instance == null)
     {
-        Debug.LogError(
-            "[Mansion] No se encontró FadeTransicionHistoria."
-        );
+        Debug.LogError("[Mansion] No se encontró RoundManager para mostrar la victoria.");
         return;
     }
 
-    FadeTransicionHistoria.Instance.EjecutarTransicion(() =>
+    if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening &&
+        UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != "MainSceneSinglePlayer")
     {
-        /*PauseController pauseController =
-            FindAnyObjectByType<PauseController>();
+        RoundManager.Instance.MostrarVictoriaHistoria();
+        RoundManager.Instance.DesbloquearLogroHistoria();
+        return;
+    }
 
-        if (pauseController == null)
-        {
-            Debug.LogError(
-                "[Mansion] No se encontró PauseController para mostrar la victoria."
-            );
-            return;
-        }
-
-       pauseController.MostrarVictoria();
-
-        // El logro aparece SOBRE la pantalla de victoria.
-        if (RoundManager.Instance != null)
-        {
-            RoundManager.Instance.DesbloquearLogroHistoria();
-        }
-        else
-        {
-            Debug.LogError(
-                "[Mansion] No se encontró RoundManager para desbloquear el logro."
-            );
-        }
-
-        Debug.Log("[Mansion] Pantalla de victoria activada.");*/
-
-        if (RoundManager.Instance != null)
+    if (FadeTransicionHistoria.Instance != null)
+        FadeTransicionHistoria.Instance.EjecutarTransicion(() =>
         {
             RoundManager.Instance.MostrarVictoriaHistoria();
             RoundManager.Instance.DesbloquearLogroHistoria();
-        }
-        else
-        {
-            Debug.LogError(
-            "[Mansion] No se encontró RoundManager para mostrar la victoria."
-        );
-        }
-    });
+        });
+    else
+    {
+        Debug.LogWarning("[Mansion] No se encontró FadeTransicionHistoria; se muestra la victoria.");
+        RoundManager.Instance.MostrarVictoriaHistoria();
+        RoundManager.Instance.DesbloquearLogroHistoria();
+    }
 }
 
 
