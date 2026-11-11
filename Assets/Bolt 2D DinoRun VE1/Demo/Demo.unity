@@ -503,7 +503,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScrollAndRecycle
   speed: 6
-  esperarInicio: 1
 --- !u!61 &128501276
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -538,7 +537,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 1.5}
+  m_Offset: {x: 0, y: 0}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0}
@@ -1027,7 +1026,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScrollAndRecycle
   speed: 6
-  esperarInicio: 1
 --- !u!61 &495515992
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -1062,7 +1060,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 1.5}
+  m_Offset: {x: 0, y: 0}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0}
@@ -1437,7 +1435,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScrollAndRecycle
   speed: 2
-  esperarInicio: 1
 --- !u!1 &780593702
 GameObject:
   m_ObjectHideFlags: 0
@@ -1546,7 +1543,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScrollAndRecycle
   speed: 6
-  esperarInicio: 1
 --- !u!61 &780593706
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -1654,7 +1650,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 300, y: 210}
+  m_AnchoredPosition: {x: 350, y: 210}
   m_SizeDelta: {x: 400, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &814937359
@@ -1677,7 +1673,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 
+  m_text: x
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: dc36b3fdc14f47ebb36fd484a67e268a, type: 2}
   m_sharedMaterial: {fileID: 2140032, guid: dc36b3fdc14f47ebb36fd484a67e268a, type: 2}
@@ -2029,7 +2025,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScrollAndRecycle
   speed: 6
-  esperarInicio: 1
 --- !u!61 &888534328
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -2137,7 +2132,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 300, y: 250}
+  m_AnchoredPosition: {x: 350, y: 240}
   m_SizeDelta: {x: 400, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &993387763
@@ -2160,7 +2155,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 
+  m_text: x
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: dc36b3fdc14f47ebb36fd484a67e268a, type: 2}
   m_sharedMaterial: {fileID: 2140032, guid: dc36b3fdc14f47ebb36fd484a67e268a, type: 2}
@@ -2380,7 +2375,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScrollAndRecycle
   speed: 6
-  esperarInicio: 1
 --- !u!61 &1076141580
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -3038,7 +3032,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RestartUIRawImage
   rawImagePressed: {fileID: 1176675766}
   rawImageGameOver: {fileID: 888325975}
-  delaySeconds: 1
+  delaySeconds: 0.25
 --- !u!1 &1231468974
 GameObject:
   m_ObjectHideFlags: 0
@@ -3307,7 +3301,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScrollAndRecycle
   speed: 6
-  esperarInicio: 1
 --- !u!61 &1275495363
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -3489,7 +3482,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScrollAndRecycle
   speed: 6
-  esperarInicio: 1
 --- !u!61 &1298065276
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -3653,7 +3645,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScrollAndRecycle
   speed: 2
-  esperarInicio: 1
 --- !u!4 &1310725333
 Transform:
   m_ObjectHideFlags: 0
@@ -3687,6 +3678,7 @@ GameObject:
   - component: {fileID: 1396613339}
   - component: {fileID: 1396613340}
   - component: {fileID: 1396613341}
+  - component: {fileID: 1396613342}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -3743,7 +3735,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -2311659948842064771, guid: 51c81e11cf1b83741a6d4debdf26562c, type: 3}
+  m_Sprite: {fileID: -1541887665, guid: 5468cc3b53b037641a74fb70d0910da5, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -3763,8 +3755,8 @@ Transform:
   m_GameObject: {fileID: 1396613336}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.5, y: 3, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: -3.5, y: 3.5, z: 0}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -3832,17 +3824,17 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0.5}
+  m_Offset: {x: 0.0030357838, y: -0.26217127}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0.5, y: 0}
-    oldSize: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 1.67, y: 2.49}
     newSize: {x: 1, y: 1}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 2.3996758, y: 2.714572}
   m_EdgeRadius: 0
 --- !u!50 &1396613341
 Rigidbody2D:
@@ -3871,6 +3863,26 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!114 &1396613342
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1396613336}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b96f81158df45dd9ab171af77e2a301, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DinoSpriteAnimator
+  runFrames:
+  - {fileID: -1541887665, guid: 5468cc3b53b037641a74fb70d0910da5, type: 3}
+  - {fileID: 1032897909, guid: 5468cc3b53b037641a74fb70d0910da5, type: 3}
+  - {fileID: 1843736282, guid: 5468cc3b53b037641a74fb70d0910da5, type: 3}
+  - {fileID: 132543890, guid: 5468cc3b53b037641a74fb70d0910da5, type: 3}
+  jumpFrame: {fileID: -1541887665, guid: 5468cc3b53b037641a74fb70d0910da5, type: 3}
+  dieFrame: {fileID: -396369801, guid: 5468cc3b53b037641a74fb70d0910da5, type: 3}
+  framesPerSecond: 10
 --- !u!1 &1416413606
 GameObject:
   m_ObjectHideFlags: 0
@@ -3883,6 +3895,7 @@ GameObject:
   - component: {fileID: 1416413608}
   - component: {fileID: 1416413607}
   - component: {fileID: 1416413610}
+  - component: {fileID: 1416413611}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -3907,8 +3920,8 @@ Camera:
   m_GameObject: {fileID: 1416413606}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.24132253, g: 0.253869, b: 0.2735849, a: 0}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0.22, g: 0.66, b: 0.96, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -4008,6 +4021,20 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &1416413611
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1416413606}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a216c49a1394f59a47bba3f0a51ae73, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DinoWorldCoverage
+  skyFallback: {r: 0.22, g: 0.66, b: 0.96, a: 1}
+  groundScrollSpeed: 6
 --- !u!1 &1512203022
 GameObject:
   m_ObjectHideFlags: 0
@@ -4150,7 +4177,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScrollAndRecycle
   speed: 2
-  esperarInicio: 1
 --- !u!1 &1575640374
 GameObject:
   m_ObjectHideFlags: 0
@@ -4383,7 +4409,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScrollAndRecycle
   speed: 6
-  esperarInicio: 1
 --- !u!61 &1718997245
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -4731,7 +4756,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScrollAndRecycle
   speed: 2
-  esperarInicio: 1
 --- !u!4 &1767630230
 Transform:
   m_ObjectHideFlags: 0
@@ -5160,7 +5184,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScrollAndRecycle
   speed: 6
-  esperarInicio: 1
 --- !u!61 &1938651081
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -5328,7 +5351,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScrollAndRecycle
   speed: 6
-  esperarInicio: 1
 --- !u!61 &2129299045
 BoxCollider2D:
   m_ObjectHideFlags: 0

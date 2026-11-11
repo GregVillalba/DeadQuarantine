@@ -15,7 +15,7 @@ public class RestartUIRawImage : MonoBehaviour
 
     [Header("Configuración")]
     [Tooltip("Segundos que se ve la imagen 'presionado' antes de reiniciar")]
-    [SerializeField] private float delaySeconds = 2f;
+    [SerializeField, Min(0f)] private float delaySeconds = 0.25f;
 
     private Button btn;
     private RawImage myRawImage;

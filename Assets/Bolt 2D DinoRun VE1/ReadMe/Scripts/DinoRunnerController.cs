@@ -12,11 +12,10 @@ public class DinoPlayer : MonoBehaviour
     // ─────────────────────────────────────────────────────────────
     // CONTADOR TOTAL DE CANTIMPLORAS EN LA SESIÓN DEL ARCADE
     // ─────────────────────────────────────────────────────────────
-    // Se mantiene sumando a lo largo de las rondas y solo se limpia al salir con ESC.
     private static int cantimplorasTotalesSesion = 0;
 
     [Header("Salto")]
-    [SerializeField] private float jumpForce = 12f;
+    [SerializeField] private float jumpForce = 14f; // Fuerza directa para respuesta seca
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private Transform groundCheck;
     [SerializeField] private float checkRadius = 0.2f;
@@ -35,7 +34,6 @@ public class DinoPlayer : MonoBehaviour
     [Tooltip("Texto permanente ubicado debajo del puntaje que muestra las cantimploras ganadas.")]
     [SerializeField] private TextMeshProUGUI textoNotificacionPremio;
 
-    // Forzado a 500 para ignorar configuraciones viejas del Inspector
     private const int PUNTOS_POR_CANTIMPLORA = 500;
 
     public int score = 0;
@@ -52,42 +50,43 @@ public class DinoPlayer : MonoBehaviour
 
     private Collider2D dinoCollider;
     private Rigidbody2D rb;
-    private bool isGrounded = false;
+    private bool isGrounded = true;
+
+    private float groundYBase;
 
     private void Awake()
     {
         Instance = this;
 
-        // Cada ronda arranca en 0 puntos y 0 entregas propias de esta ronda
+        // Guarda la altura exacta donde lo dejaste en el editor como el límite del suelo
+        groundYBase = transform.position.y;
+
         score = 0;
         cantimplorasEntregadasEstaRonda = 0;
 
         rb = GetComponent<Rigidbody2D>();
         if (rb == null)
-        {
             rb = gameObject.AddComponent<Rigidbody2D>();
-        }
 
+        // Inicia apoyado sin caer
+        rb.bodyType = RigidbodyType2D.Kinematic;
+        rb.linearVelocity = Vector2.zero;
         rb.gravityScale = 4.2f;
-        rb.freezeRotation = true;
+        rb.constraints = RigidbodyConstraints2D.FreezeRotation | RigidbodyConstraints2D.FreezePositionX;
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
 
         if (GetComponent<Collider2D>() == null)
-        {
             gameObject.AddComponent<BoxCollider2D>();
-        }
+
         dinoCollider = GetComponent<Collider2D>();
 
         if (botonReiniciar == null && gameOverCanvas != null)
-        {
             botonReiniciar = gameOverCanvas.GetComponentInChildren<Button>(true);
-        }
 
         if (startInstructionsUI != null) startInstructionsUI.SetActive(true);
         MostrarGameOver(false);
         if (imagenReiniciando != null) imagenReiniciando.SetActive(false);
 
-        // Muestra el acumulado de cantimploras que llevas en la sesión
         if (textoNotificacionPremio != null)
         {
             textoNotificacionPremio.gameObject.SetActive(true);
@@ -97,74 +96,110 @@ public class DinoPlayer : MonoBehaviour
         ActualizarTextoPuntaje();
     }
 
-    private void Start()
-    {
-        Time.timeScale = 1f;
-        Application.runInBackground = true;
-
-        if (rb == null)
-            rb = GetComponent<Rigidbody2D>();
-    }
-
     private void Update()
     {
-        // 1. SALIDA POR ESCAPE (Resetea el contador general a 0)
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             SalirDelMinijuego();
             return;
         }
 
-        // 2. LECTURA DE TECLA ESPACIO
         bool espacioPresionado = Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame;
         bool espacioSoltado = Keyboard.current != null && Keyboard.current.spaceKey.wasReleasedThisFrame;
 
-        // 3. INICIO CON PRIMER ESPACIO
+        // INICIO
         if (!isGameStarted)
         {
+            transform.position = new Vector3(transform.position.x, groundYBase, transform.position.z);
+
             if (espacioPresionado)
             {
                 isGameStarted = true;
+                rb.bodyType = RigidbodyType2D.Dynamic;
+
                 if (startInstructionsUI != null)
                     startInstructionsUI.SetActive(false);
 
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+                EjecutarSalto();
             }
             return;
         }
 
         if (isGameOver) return;
 
-        // 3.5 CHOQUE CON CACTUS (usa hitbox ajustado, no el collider completo)
         ChequearChoqueConCactus();
         if (isGameOver) return;
 
-        // 4. DETECCIÓN DE SUELO Y SALTO
-        bool tocandoPiso = false;
-        if (groundCheck != null)
+        // 1. FRENO DE PISO INQUEBRANTABLE:
+        // Si el dinosaurio toca o baja de la altura inicial que tenía en el editor,
+        // lo frena y lo apoya exactamente sobre la línea de tierra.
+        if (transform.position.y <= groundYBase)
         {
-            tocandoPiso = Physics2D.OverlapCircle(groundCheck.position, checkRadius, groundLayer);
+            transform.position = new Vector3(transform.position.x, groundYBase, transform.position.z);
+            if (rb.linearVelocity.y < 0f)
+            {
+                rb.linearVelocity = new Vector2(0f, 0f);
+            }
+            isGrounded = true;
         }
 
-        bool enSuelo = isGrounded || tocandoPiso || Mathf.Abs(rb.linearVelocity.y) < 0.15f;
+        // 2. DETECCIÓN DE SUELO PARA SALTAR:
+        bool tocandoPiso = groundCheck != null &&
+            Physics2D.OverlapCircle(groundCheck.position, checkRadius, groundLayer);
+        bool enSuelo = isGrounded || tocandoPiso || Mathf.Abs(rb.linearVelocity.y) < 0.05f;
 
+        // 3. SALTO INSTANTÁNEO
         if (espacioPresionado && enSuelo)
         {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
-            isGrounded = false;
+            EjecutarSalto();
         }
 
+        // 4. CORTE RÁPIDO AL SOLTAR ESPACIO
         if (espacioSoltado && rb.linearVelocity.y > 0)
         {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * 0.5f);
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y * 0.4f);
+        }
+    }
+
+    private void EjecutarSalto()
+    {
+        rb.linearVelocity = new Vector2(0f, jumpForce);
+        isGrounded = false;
+    }
+
+    private void Start()
+    {
+        Time.timeScale = 1f;
+        Application.runInBackground = true;
+    }
+
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.name.Contains("Ground") || collision.gameObject.CompareTag("Ground"))
+        {
+            isGrounded = true;
+        }
+    }
+
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        if (collision.gameObject.name.Contains("Ground") || collision.gameObject.CompareTag("Ground"))
+        {
+            isGrounded = true;
+        }
+    }
+
+    private void OnCollisionExit2D(Collision2D collision)
+    {
+        if (collision.gameObject.name.Contains("Ground") || collision.gameObject.CompareTag("Ground"))
+        {
+            isGrounded = false;
         }
     }
 
     private void SalirDelMinijuego()
     {
-        // -------------------------------------------------------------
-        // RESET TOTAL: SOLO SI SE PRESIONÓ ESCAPE
-        // -------------------------------------------------------------
         cantimplorasTotalesSesion = 0;
         score = 0;
         cantimplorasEntregadasEstaRonda = 0;
@@ -193,17 +228,13 @@ public class DinoPlayer : MonoBehaviour
     private void ActualizarTextoPuntaje()
     {
         if (scoreText != null)
-        {
             scoreText.text = $"PUNTOS: {score:D5}";
-        }
     }
 
     private void ActualizarTextoCantimploras()
     {
         if (textoNotificacionPremio != null)
-        {
-            textoNotificacionPremio.text = $"<color=#00FF66>Cantimploras: +{cantimplorasTotalesSesion}</color>";
-        }
+            textoNotificacionPremio.text = $"<color=#FF4B00>Cantimploras: +{cantimplorasTotalesSesion}</color>";
     }
 
     public void AddScore(int amount)
@@ -215,14 +246,8 @@ public class DinoPlayer : MonoBehaviour
         VerificarEntregaCantimploras();
     }
 
-    /// <summary>
-    /// Evalúa únicamente los puntos de ESTA ronda divididos por 500.
-    /// Si sacas 300 pts -> 300 / 500 = 0 cantimploras.
-    /// Si sacas 700 pts -> 700 / 500 = 1 cantimplora.
-    /// </summary>
     public void VerificarEntregaCantimploras()
     {
-        // Cálculo estricto por 500 puntos dentro de la partida actual
         int correspondientesEstaRonda = score / PUNTOS_POR_CANTIMPLORA;
 
         if (correspondientesEstaRonda > cantimplorasEntregadasEstaRonda)
@@ -235,9 +260,7 @@ public class DinoPlayer : MonoBehaviour
                 cantimplorasTotalesSesion++;
 
                 if (MinijuegoArcadeTrigger.InstanciaActiva != null)
-                {
                     MinijuegoArcadeTrigger.InstanciaActiva.DropearRecompensa();
-                }
                 else
                 {
                     var trigger = FindAnyObjectByType<MinijuegoArcadeTrigger>();
@@ -265,41 +288,14 @@ public class DinoPlayer : MonoBehaviour
         Debug.Log($"[DinoPlayer] Ronda terminada con {score} puntos. Cantimploras acumuladas en sesión: {cantimplorasTotalesSesion}");
     }
 
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        if (collision.gameObject.name.Contains("Ground") || collision.gameObject.CompareTag("Ground"))
-        {
-            isGrounded = true;
-        }
-    }
-
-    private void OnCollisionStay2D(Collision2D collision)
-    {
-        if (collision.gameObject.name.Contains("Ground") || collision.gameObject.CompareTag("Ground"))
-        {
-            isGrounded = true;
-        }
-    }
-
-    private void OnCollisionExit2D(Collision2D collision)
-    {
-        if (collision.gameObject.name.Contains("Ground") || collision.gameObject.CompareTag("Ground"))
-        {
-            isGrounded = false;
-        }
-    }
-
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (!isGameStarted || isGameOver) return;
 
-        // Los cactus se evalúan con hitbox ajustado en ChequearChoqueConCactus()
         if (other.GetComponentInParent<CactusMove>() != null) return;
 
         if (other.CompareTag("Obstacle"))
-        {
             TriggerGameOver();
-        }
     }
 
     private void ChequearChoqueConCactus()
@@ -322,7 +318,6 @@ public class DinoPlayer : MonoBehaviour
         }
     }
 
-    // Achica un bounds por cada lado según una fracción de su tamaño (comparación solo en 2D)
     private static Rect RectEncogido(Bounds b, float fraccion)
     {
         float w = b.size.x * (1f - 2f * fraccion);
@@ -330,7 +325,6 @@ public class DinoPlayer : MonoBehaviour
         return new Rect(b.center.x - w * 0.5f, b.center.y - h * 0.5f, w, h);
     }
 
-    // Seleccioná el Dino en la jerarquía para ver los hitbox: rojo = dino, amarillo = cactus
     private void OnDrawGizmosSelected()
     {
         Collider2D c = dinoCollider != null ? dinoCollider : GetComponent<Collider2D>();
@@ -399,349 +393,3 @@ public class DinoPlayer : MonoBehaviour
         }
     }
 }
-
-
-
-
-
-
-
-/*using System.Collections;
-using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
-using UnityEngine.SceneManagement;
-using UnityEngine.InputSystem;
-
-public class DinoPlayer : MonoBehaviour
-{
-    public static DinoPlayer Instance { get; private set; }
-
-    // ─────────────────────────────────────────────────────────────
-    // CONTADOR TOTAL DE CANTIMPLORAS EN LA SESIÓN DEL ARCADE
-    // ─────────────────────────────────────────────────────────────
-    // Se mantiene sumando a lo largo de las rondas y solo se limpia al salir con ESC.
-    private static int cantimplorasTotalesSesion = 0;
-
-    [Header("Salto")]
-    [SerializeField] private float jumpForce = 12f;
-    [SerializeField] private LayerMask groundLayer;
-    [SerializeField] private Transform groundCheck;
-    [SerializeField] private float checkRadius = 0.2f;
-
-    [Header("UI / Inicio")]
-    [Tooltip("Objeto que contiene SOLO el texto 'Presiona Espacio para comenzar'.")]
-    [SerializeField] private GameObject startInstructionsUI;
-
-    [Header("UI / Game Over")]
-    [SerializeField] private GameObject gameOverCanvas;
-    [SerializeField] private Button botonReiniciar;
-    [SerializeField] private GameObject imagenReiniciando;
-
-    [Header("Puntaje y Recompensas")]
-    [SerializeField] private TextMeshProUGUI scoreText;
-    [Tooltip("Texto permanente ubicado debajo del puntaje que muestra las cantimploras ganadas.")]
-    [SerializeField] private TextMeshProUGUI textoNotificacionPremio;
-
-    // Forzado a 500 para ignorar configuraciones viejas del Inspector
-    private const int PUNTOS_POR_CANTIMPLORA = 500;
-
-    public int score = 0;
-    private int cantimplorasEntregadasEstaRonda = 0;
-
-    [HideInInspector] public bool isGameStarted = false;
-    [HideInInspector] public bool isGameOver = false;
-
-    private Rigidbody2D rb;
-    private bool isGrounded = false;
-
-    private void Awake()
-    {
-        Instance = this;
-
-        // Cada ronda arranca en 0 puntos y 0 entregas propias de esta ronda
-        score = 0;
-        cantimplorasEntregadasEstaRonda = 0;
-
-        rb = GetComponent<Rigidbody2D>();
-        if (rb == null)
-        {
-            rb = gameObject.AddComponent<Rigidbody2D>();
-        }
-
-        rb.gravityScale = 4.2f;
-        rb.freezeRotation = true;
-        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-
-        if (GetComponent<Collider2D>() == null)
-        {
-            gameObject.AddComponent<BoxCollider2D>();
-        }
-
-        if (botonReiniciar == null && gameOverCanvas != null)
-        {
-            botonReiniciar = gameOverCanvas.GetComponentInChildren<Button>(true);
-        }
-
-        if (startInstructionsUI != null) startInstructionsUI.SetActive(true);
-        MostrarGameOver(false);
-        if (imagenReiniciando != null) imagenReiniciando.SetActive(false);
-
-        // Muestra el acumulado de cantimploras que llevas en la sesión
-        if (textoNotificacionPremio != null)
-        {
-            textoNotificacionPremio.gameObject.SetActive(true);
-            ActualizarTextoCantimploras();
-        }
-
-        ActualizarTextoPuntaje();
-    }
-
-    private void Start()
-    {
-        Time.timeScale = 1f;
-        Application.runInBackground = true;
-
-        if (rb == null)
-            rb = GetComponent<Rigidbody2D>();
-    }
-
-    private void Update()
-    {
-        // 1. SALIDA POR ESCAPE (Resetea el contador general a 0)
-        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
-        {
-            SalirDelMinijuego();
-            return;
-        }
-
-        // 2. LECTURA DE TECLA ESPACIO
-        bool espacioPresionado = Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame;
-        bool espacioSoltado = Keyboard.current != null && Keyboard.current.spaceKey.wasReleasedThisFrame;
-
-        // 3. INICIO CON PRIMER ESPACIO
-        if (!isGameStarted)
-        {
-            if (espacioPresionado)
-            {
-                isGameStarted = true;
-                if (startInstructionsUI != null)
-                    startInstructionsUI.SetActive(false);
-
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
-            }
-            return;
-        }
-
-        if (isGameOver) return;
-
-        // 4. DETECCIÓN DE SUELO Y SALTO
-        bool tocandoPiso = false;
-        if (groundCheck != null)
-        {
-            tocandoPiso = Physics2D.OverlapCircle(groundCheck.position, checkRadius, groundLayer);
-        }
-
-        bool enSuelo = isGrounded || tocandoPiso || Mathf.Abs(rb.linearVelocity.y) < 0.15f;
-
-        if (espacioPresionado && enSuelo)
-        {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
-            isGrounded = false;
-        }
-
-        if (espacioSoltado && rb.linearVelocity.y > 0)
-        {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * 0.5f);
-        }
-    }
-
-    private void SalirDelMinijuego()
-    {
-        // -------------------------------------------------------------
-        // RESET TOTAL: SOLO SI SE PRESIONÓ ESCAPE
-        // -------------------------------------------------------------
-        cantimplorasTotalesSesion = 0;
-        score = 0;
-        cantimplorasEntregadasEstaRonda = 0;
-        ActualizarTextoCantimploras();
-
-        Time.timeScale = 1f;
-
-        if (MinijuegoArcadeTrigger.InstanciaActiva != null)
-        {
-            MinijuegoArcadeTrigger.InstanciaActiva.SalirDelMinijuego();
-            return;
-        }
-
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-
-        GameObject jugadorLocal = GameObject.FindGameObjectWithTag("Player");
-        if (jugadorLocal != null)
-        {
-            jugadorLocal.SendMessage("SalirMinijuego", SendMessageOptions.DontRequireReceiver);
-        }
-
-        SceneManager.UnloadSceneAsync("DEMO");
-    }
-
-    private void ActualizarTextoPuntaje()
-    {
-        if (scoreText != null)
-        {
-            scoreText.text = $"PUNTOS: {score:D5}";
-        }
-    }
-
-    private void ActualizarTextoCantimploras()
-    {
-        if (textoNotificacionPremio != null)
-        {
-            textoNotificacionPremio.text = $"<color=#00FF66>Cantimploras: +{cantimplorasTotalesSesion}</color>";
-        }
-    }
-
-    public void AddScore(int amount)
-    {
-        if (isGameOver) return;
-
-        score += amount;
-        ActualizarTextoPuntaje();
-        VerificarEntregaCantimploras();
-    }
-
-    /// <summary>
-    /// Evalúa únicamente los puntos de ESTA ronda divididos por 500.
-    /// Si sacas 300 pts -> 300 / 500 = 0 cantimploras.
-    /// Si sacas 700 pts -> 700 / 500 = 1 cantimplora.
-    /// </summary>
-    public void VerificarEntregaCantimploras()
-    {
-        // Cálculo estricto por 500 puntos dentro de la partida actual
-        int correspondientesEstaRonda = score / PUNTOS_POR_CANTIMPLORA;
-
-        if (correspondientesEstaRonda > cantimplorasEntregadasEstaRonda)
-        {
-            int cantidadNuevas = correspondientesEstaRonda - cantimplorasEntregadasEstaRonda;
-
-            for (int i = 0; i < cantidadNuevas; i++)
-            {
-                cantimplorasEntregadasEstaRonda++;
-                cantimplorasTotalesSesion++;
-
-                if (MinijuegoArcadeTrigger.InstanciaActiva != null)
-                {
-                    MinijuegoArcadeTrigger.InstanciaActiva.DropearRecompensa();
-                }
-                else
-                {
-                    var trigger = FindAnyObjectByType<MinijuegoArcadeTrigger>();
-                    if (trigger != null) trigger.DropearRecompensa();
-                }
-            }
-
-            ActualizarTextoCantimploras();
-        }
-    }
-
-    public void TriggerGameOver()
-    {
-        if (isGameOver) return;
-        isGameOver = true;
-
-        rb.linearVelocity = Vector2.zero;
-        rb.bodyType = RigidbodyType2D.Kinematic;
-
-        MostrarGameOver(true);
-
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-
-        Debug.Log($"[DinoPlayer] Ronda terminada con {score} puntos. Cantimploras acumuladas en sesión: {cantimplorasTotalesSesion}");
-    }
-
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        if (collision.gameObject.name.Contains("Ground") || collision.gameObject.CompareTag("Ground"))
-        {
-            isGrounded = true;
-        }
-    }
-
-    private void OnCollisionStay2D(Collision2D collision)
-    {
-        if (collision.gameObject.name.Contains("Ground") || collision.gameObject.CompareTag("Ground"))
-        {
-            isGrounded = true;
-        }
-    }
-
-    private void OnCollisionExit2D(Collision2D collision)
-    {
-        if (collision.gameObject.name.Contains("Ground") || collision.gameObject.CompareTag("Ground"))
-        {
-            isGrounded = false;
-        }
-    }
-
-    private void OnTriggerEnter2D(Collider2D other)
-    {
-        if (!isGameStarted || isGameOver) return;
-
-        if (other.gameObject.name.Contains("Cactus") || other.CompareTag("Obstacle"))
-        {
-            TriggerGameOver();
-        }
-    }
-
-    private void MostrarGameOver(bool mostrar)
-    {
-        if (mostrar)
-        {
-            ActivarJerarquia(gameOverCanvas);
-            ActivarJerarquia(botonReiniciar != null ? botonReiniciar.gameObject : null);
-
-            BloquearCanvas(gameOverCanvas, true);
-            if (botonReiniciar != null) botonReiniciar.gameObject.SetActive(true);
-        }
-        else
-        {
-            if (botonReiniciar != null) botonReiniciar.gameObject.SetActive(false);
-            BloquearCanvas(gameOverCanvas, false);
-        }
-    }
-
-    private static void ActivarJerarquia(GameObject objeto)
-    {
-        if (objeto == null) return;
-
-        Transform t = objeto.transform;
-        while (t != null)
-        {
-            if (!t.gameObject.activeSelf) t.gameObject.SetActive(true);
-
-            Canvas c = t.GetComponent<Canvas>();
-            if (c != null && !c.enabled) c.enabled = true;
-
-            t = t.parent;
-        }
-    }
-
-    private void BloquearCanvas(GameObject canvasObj, bool activar)
-    {
-        if (canvasObj == null) return;
-        canvasObj.SetActive(activar);
-
-        Canvas c = canvasObj.GetComponent<Canvas>();
-        if (c != null) c.enabled = activar;
-
-        CanvasGroup cg = canvasObj.GetComponent<CanvasGroup>();
-        if (cg != null)
-        {
-            cg.alpha = activar ? 1f : 0f;
-            cg.interactable = activar;
-            cg.blocksRaycasts = activar;
-        }
-    }
-}*/

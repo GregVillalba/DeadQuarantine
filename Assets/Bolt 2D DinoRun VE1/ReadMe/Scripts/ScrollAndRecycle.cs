@@ -5,31 +5,47 @@ public class ScrollAndRecycle : MonoBehaviour
     [Header("Velocidad")]
     [SerializeField] private float speed = 6f;
 
-    [Header("Límites de Reciclado en X")]
-    [SerializeField] private float endX = -10f;   // Posición donde desaparece por la izquierda
-    [SerializeField] private float startX = 10f;  // Posición donde reaparece por la derecha
-
     private DinoPlayer dino;
+    private Renderer[] renderers;
 
-    void Start()
+    private void Start()
     {
-        dino = Object.FindFirstObjectByType<DinoPlayer>();
+        dino = FindFirstObjectByType<DinoPlayer>();
+        renderers = GetComponentsInChildren<Renderer>();
     }
 
-    void Update()
+    private void Update()
     {
-        // Detenido si el juego no empezó o si terminó
         if (dino == null || !dino.isGameStarted || dino.isGameOver) return;
 
-        // Mover hacia la izquierda
         transform.position += Vector3.left * speed * Time.deltaTime;
+        if (renderers == null || renderers.Length == 0) return;
 
-        // Si superó el borde izquierdo, reaparece en startX a la derecha
-        if (transform.position.x <= endX)
+        Bounds ownBounds = GetVisualBounds();
+        float leftEdge = Camera.main != null
+            ? Camera.main.ViewportToWorldPoint(new Vector3(0f, 0f, 0f)).x
+            : -10f;
+
+        if (ownBounds.max.x >= leftEdge) return;
+
+        float rightmost = ownBounds.max.x;
+        foreach (ScrollAndRecycle other in FindObjectsByType<ScrollAndRecycle>(FindObjectsSortMode.None))
         {
-            Vector3 pos = transform.position;
-            pos.x = startX;
-            transform.position = pos;
+            if (other == this || other == null || other.speed != speed ||
+                other.renderers == null || other.renderers.Length == 0)
+                continue;
+
+            rightmost = Mathf.Max(rightmost, other.GetVisualBounds().max.x);
         }
+
+        transform.position += Vector3.right * (rightmost - ownBounds.min.x);
+    }
+
+    private Bounds GetVisualBounds()
+    {
+        Bounds bounds = renderers[0].bounds;
+        for (int i = 1; i < renderers.Length; i++)
+            bounds.Encapsulate(renderers[i].bounds);
+        return bounds;
     }
 }
