@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
+using Unity.Collections;
 using Unity.Netcode;
 
 using Unity.Services.Authentication;
@@ -47,8 +48,12 @@ public class NetworkBootstrap : MonoBehaviour
     public ISession CurrentSession => currentSession;
 
     private bool isIntentionalLeave;
+    private bool returningToMenu;
 
     private readonly HashSet<ulong> clientesSincronizados = new HashSet<ulong>();
+    private readonly HashSet<ulong> clientesSincronizando = new HashSet<ulong>();
+    private int bajasDuranteInicio;
+    private const string SalidaDuranteCargaMensaje = "Historia.SalidaDuranteCarga";
     private bool multiplayerGameStartInProgress;
 
 
@@ -57,15 +62,53 @@ public class NetworkBootstrap : MonoBehaviour
     // ============================================================
 
     private NetworkSceneManager loadingSceneEvents;
+    private readonly List<AsyncOperation> cargasLocales = new List<AsyncOperation>();
+
     private void Update(){
-        var manager=NetworkManager.Singleton;if(manager==null||manager.SceneManager==loadingSceneEvents)return;
-        if(loadingSceneEvents!=null)loadingSceneEvents.OnSceneEvent-=OriginalLoadingEvent;
-        loadingSceneEvents=manager.SceneManager;if(loadingSceneEvents!=null)loadingSceneEvents.OnSceneEvent+=OriginalLoadingEvent;
+        RegistrarEventosDeCarga();
     }
-    private void OriginalLoadingEvent(SceneEvent evt){
-        if(evt.SceneName=="MainSceneMultiPlayer"&&evt.SceneEventType==SceneEventType.Load&&evt.ClientId==NetworkManager.Singleton.LocalClientId)
-            DeadQuarantine.PvPvE.PvPvELoadingScreen.BeginOriginal(evt.SceneName);
-        if(evt.SceneName=="MainSceneMultiPlayer"&&evt.SceneEventType==SceneEventType.LoadComplete&&evt.ClientId==NetworkManager.Singleton.LocalClientId)
+    private void LateUpdate() => GameStartCurtain.MantenerEntradaDeCarga();
+
+    private void RegistrarEventosDeCarga()
+    {
+        NetworkSceneManager escenas = NetworkManager.Singleton?.SceneManager;
+        if (escenas == loadingSceneEvents)
+            return;
+
+        if (loadingSceneEvents != null)
+            loadingSceneEvents.OnSceneEvent -= AlCambiarCarga;
+        loadingSceneEvents = escenas;
+        if (loadingSceneEvents != null)
+        {
+            loadingSceneEvents.OnSceneEvent += AlCambiarCarga;
+            loadingSceneEvents.VerifySceneBeforeLoading = PuedeCargarEscenaDeRed;
+        }
+    }
+
+    private bool PuedeCargarEscenaDeRed(int indice, string escena, LoadSceneMode modo)
+    {
+        return !returningToMenu;
+    }
+
+    private void AlCambiarCarga(SceneEvent evento)
+    {
+        NetworkManager red = NetworkManager.Singleton;
+        if (red == null || evento.ClientId != red.LocalClientId ||
+            DeadQuarantine.PvPvE.Networking.PvPvEMatchmaking.Owns(red))
+            return;
+
+        if (evento.AsyncOperation != null)
+        {
+            cargasLocales.RemoveAll(carga => carga.isDone);
+            cargasLocales.Add(evento.AsyncOperation);
+        }
+
+        if (isIntentionalLeave || evento.SceneName != "MainSceneMultiPlayer")
+            return;
+
+        if (evento.SceneEventType == SceneEventType.Load)
+            DeadQuarantine.PvPvE.PvPvELoadingScreen.BeginOriginal(evento.SceneName);
+        else if (evento.SceneEventType == SceneEventType.LoadComplete)
             DeadQuarantine.PvPvE.PvPvELoadingScreen.OriginalProgress(1);
     }
     private void Awake()
@@ -89,9 +132,19 @@ public class NetworkBootstrap : MonoBehaviour
 
     private void OnDestroy()
     {
-        if(loadingSceneEvents!=null)loadingSceneEvents.OnSceneEvent-=OriginalLoadingEvent;
+        if (loadingSceneEvents != null)
+            loadingSceneEvents.OnSceneEvent -= AlCambiarCarga;
         if (Instance == this)
+        {
             Application.wantsToQuit -= OnWantsToQuit;
+            NetworkManager red = NetworkManager.Singleton;
+            if (red != null)
+            {
+                red.OnConnectionEvent -= AlCambiarConexion;
+                red.OnServerStopped -= OnServidorDetenido;
+                red.OnClientStarted -= AlIniciarCliente;
+            }
+        }
     }
 
 
@@ -186,11 +239,7 @@ public class NetworkBootstrap : MonoBehaviour
                 CurrentJoinCode
             );
 
-            if (NetworkManager.Singleton != null)
-               // NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
-               NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
-               NetworkManager.Singleton.OnServerStopped -= OnServidorDetenido;
-NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
+            RegistrarEventosDeDesconexion();
 
             return CurrentJoinCode;
         }
@@ -248,11 +297,7 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
                 "[Network] Unido a la sala: " +
                 CurrentJoinCode
             );
-            if (NetworkManager.Singleton != null)
-               // NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
-               NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
-                NetworkManager.Singleton.OnServerStopped -= OnServidorDetenido;
-                NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
+            RegistrarEventosDeDesconexion();
             return true;
         }
         catch (Exception e)
@@ -300,6 +345,15 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
 
     private void OnPlayerLeft(string playerId)
     {
+        if (!isIntentionalLeave && (NetworkManager.Singleton == null ||
+                                   !NetworkManager.Singleton.IsListening))
+        {
+            if (currentSession != null && playerId == currentSession.Host)
+                GameStartCurtain.AvisarDesconexionDelHost();
+            else
+                GameStartCurtain.AvisarSalidaDeCompanero();
+        }
+
         Debug.Log(
             "[Network] PLAYER LEFT: " +
             playerId
@@ -343,8 +397,12 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
             {
                 NetworkManager.Singleton.OnServerStarted -= RegistrarSincronizacion;
                 if (NetworkManager.Singleton.SceneManager != null)
+                {
+                    NetworkManager.Singleton.SceneManager.OnSynchronize -= AlIniciarSincronizacion;
                     NetworkManager.Singleton.SceneManager.OnSynchronizeComplete -= OnClienteSincronizado;
+                }
                 clientesSincronizados.Clear();
+                clientesSincronizando.Clear();
             }
 
             // Si Relay ya inició, conservar el bloqueo durante toda la partida.
@@ -355,6 +413,7 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
 
     private async Task<bool> StartMultiplayerGameCore()
     {
+        ISession sesionInicial = currentSession;
         Debug.Log(
             "[Network] ===== START MULTIPLAYER GAME ====="
         );
@@ -424,7 +483,10 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
                 "[Network] >>> INICIANDO RELAY <<<"
             );
 
+            int invitadosIniciales = currentSession.Players.Count - 1;
+            bajasDuranteInicio = 0;
             clientesSincronizados.Clear();
+            clientesSincronizando.Clear();
             NetworkManager.Singleton.OnServerStarted -= RegistrarSincronizacion;
             NetworkManager.Singleton.OnServerStarted += RegistrarSincronizacion;
 
@@ -439,6 +501,8 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
 
             // Esperamos a que StartRelayNetworkAsync termine.
             await relayTask;
+            if (isIntentionalLeave || currentSession != sesionInicial)
+                return false;
 
 
             Debug.Log(
@@ -463,6 +527,8 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
             )
             {
                 await Task.Delay(100);
+                if (isIntentionalLeave || currentSession != sesionInicial)
+                    return false;
 
                 tiempoEsperado += 0.1f;
 
@@ -515,70 +581,50 @@ NetworkManager.Singleton.OnServerStopped += OnServidorDetenido;
             // Si se carga la escena antes de que el invitado termine de
             // conectarse, la recibe dos veces ("Server Scene Handle already exist").
 
-          /*  int jugadoresEsperados = currentSession.Players.Count;
-            float esperaClientes = 0f;
-
-            while (
-                NetworkManager.Singleton.ConnectedClientsIds.Count <
-                jugadoresEsperados
-            )
+            float espera = 0f;
+            while (true)
             {
-                await Task.Delay(100);
+                NetworkManager red = NetworkManager.Singleton;
+                if (isIntentionalLeave || currentSession != sesionInicial ||
+                    red == null || !red.IsListening || red.ShutdownInProgress)
+                    return false;
 
-                esperaClientes += 0.1f;
-
-                if (esperaClientes >= 15f)
+                int conectados = 0;
+                int listos = 0;
+                foreach (ulong id in red.ConnectedClientsIds)
                 {
-                    // Si ya hay al menos 2 conectados se sigue con los que están (alguien pudo haberse ido).
-                    if (NetworkManager.Singleton.ConnectedClientsIds.Count >= 2)
-                    {
-                        Debug.LogWarning(
-                            "[Network] No todos los invitados se conectaron: sigo con los que están."
-                        );
+                    if (id == NetworkManager.ServerClientId)
+                        continue;
 
+                    conectados++;
+                    if (clientesSincronizados.Contains(id))
+                        listos++;
+                }
+
+                int invitadosEsperados = Mathf.Min(
+                    Mathf.Max(0, invitadosIniciales - bajasDuranteInicio),
+                    Mathf.Max(0, currentSession.Players.Count - 1));
+                if (listos >= invitadosEsperados && listos == conectados)
+                    break;
+
+                if (espera >= 20f)
+                {
+                    if (listos >= 1)
+                    {
+                        Debug.LogWarning("[Network] No todos los invitados sincronizaron: sigo con los que están.");
                         break;
                     }
 
-                    Debug.LogError(
-                        "[Network] Los invitados no se conectaron a tiempo."
-                    );
-
+                    Debug.LogError("[Network] Ningún invitado terminó de sincronizar.");
                     return false;
                 }
+
+                await Task.Delay(100);
+                espera += 0.1f;
             }
 
-            // Margen para que el invitado termine de sincronizar la escena actual.
-            await Task.Delay(1500); */
-
-            int invitadosEsperados = currentSession.Players.Count - 1;
-float espera = 0f;
-
-while (true)
-{
-    int listos = 0;
-    foreach (ulong id in NetworkManager.Singleton.ConnectedClientsIds)
-        if (id != NetworkManager.ServerClientId && clientesSincronizados.Contains(id))
-            listos++;
-
-    if (listos >= invitadosEsperados)
-        break;
-
-    if (espera >= 20f)
-    {
-        if (listos >= 1)
-        {
-            Debug.LogWarning("[Network] No todos los invitados sincronizaron: sigo con los que están.");
-            break;
-        }
-        Debug.LogError("[Network] Ningún invitado terminó de sincronizar.");
-        return false;
-    }
-
-    await Task.Delay(100);
-    espera += 0.1f;
-}
-
-NetworkManager.Singleton.SceneManager.OnSynchronizeComplete -= OnClienteSincronizado;
+            NetworkManager.Singleton.SceneManager.OnSynchronize -= AlIniciarSincronizacion;
+            NetworkManager.Singleton.SceneManager.OnSynchronizeComplete -= OnClienteSincronizado;
 
 
             // ========================================================
@@ -632,7 +678,16 @@ NetworkManager.Singleton.SceneManager.OnSynchronizeComplete -= OnClienteSincroni
     private void RegistrarSincronizacion()
 {
     NetworkManager.Singleton.OnServerStarted -= RegistrarSincronizacion;
+    RegistrarEventosDeCarga();
+    NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(
+        SalidaDuranteCargaMensaje, AlRecibirSalidaDuranteCarga);
+    NetworkManager.Singleton.SceneManager.OnSynchronize += AlIniciarSincronizacion;
     NetworkManager.Singleton.SceneManager.OnSynchronizeComplete += OnClienteSincronizado;
+}
+
+private void AlIniciarSincronizacion(ulong clientId)
+{
+    clientesSincronizando.Add(clientId);
 }
 
 private void OnClienteSincronizado(ulong clientId)
@@ -640,99 +695,175 @@ private void OnClienteSincronizado(ulong clientId)
     clientesSincronizados.Add(clientId);
 }
 
-   /* private void OnClientDisconnected(ulong clientId)
+    private void RegistrarEventosDeDesconexion()
     {
-        if (NetworkManager.Singleton == null)
+        NetworkManager red = NetworkManager.Singleton;
+        if (red == null)
             return;
 
-        // Solo nos interesa cuando el que se desconectó somos nosotros mismos
-        // (por ejemplo, porque el Host cerró la partida).
-        if (clientId != NetworkManager.Singleton.LocalClientId)
-            return;
+        red.OnConnectionEvent -= AlCambiarConexion;
+        red.OnConnectionEvent += AlCambiarConexion;
+        red.OnServerStopped -= OnServidorDetenido;
+        red.OnServerStopped += OnServidorDetenido;
+        red.OnClientStarted -= AlIniciarCliente;
+        red.OnClientStarted += AlIniciarCliente;
+    }
 
+    private void AlIniciarCliente()
+    {
+        RegistrarEventosDeCarga();
         if (isIntentionalLeave)
+            NetworkManager.Singleton.Shutdown(true);
+    }
+
+    private void AlCambiarConexion(NetworkManager red, ConnectionEventData evento)
+    {
+        if (isIntentionalLeave || returningToMenu ||
+            DeadQuarantine.PvPvE.Networking.PvPvEMatchmaking.Owns(red))
+            return;
+
+        bool salioUnCompanero = red.IsServer
+            ? evento.EventType == ConnectionEvent.ClientDisconnected && evento.ClientId != red.LocalClientId
+            : evento.EventType == ConnectionEvent.PeerDisconnected;
+        if (salioUnCompanero)
         {
-            isIntentionalLeave = false;
+            if (red.IsServer)
+            {
+                bool estabaSincronizando = clientesSincronizando.Remove(evento.ClientId);
+                bool estabaSincronizado = clientesSincronizados.Remove(evento.ClientId);
+                if (estabaSincronizando || estabaSincronizado)
+                    bajasDuranteInicio++;
+            }
+            GameStartCurtain.AvisarSalidaDeCompanero();
+            OnGuestLeft?.Invoke();
             return;
         }
 
-        Debug.LogWarning("[Network] Se perdió la conexión con el Host. Volviendo al menú.");
+        if (red.IsServer || evento.EventType != ConnectionEvent.ClientDisconnected ||
+            evento.ClientId != red.LocalClientId)
+            return;
 
-        _ = GoToMenuDueToDisconnect();
-    }*/
+        if (GameStartCurtain.AvisarDesconexionDelHost())
+            return;
 
-    private void OnClientDisconnected(ulong clientId)
-{
-    if (DeadQuarantine.PvPvE.Networking.PvPvEMatchmaking.Owns(NetworkManager.Singleton)) return;
-    if (NetworkManager.Singleton == null)
-        return;
-
-    Debug.LogWarning($"[Network] Desconexión de clientId={clientId}. Motivo: '{NetworkManager.Singleton.DisconnectReason}'");
-
-    // HOST: se fue otro jugador
-    if (IsHost)
-    {
-        if (clientId != NetworkManager.Singleton.LocalClientId && !isIntentionalLeave)
-            OnGuestLeft?.Invoke();
-
-        return;
+        if (OnHostLeft != null)
+            OnHostLeft.Invoke();
+        else
+            _ = GoToMenuDueToDisconnect();
     }
 
-    // INVITADO: solo nos interesa cuando el desconectado somos nosotros
-    if (clientId != NetworkManager.Singleton.LocalClientId)
-        return;
-
-    if (isIntentionalLeave)
+    private void OnServidorDetenido(bool eraHost)
     {
-        isIntentionalLeave = false;
-        return;
+        if (isIntentionalLeave || returningToMenu ||
+            DeadQuarantine.PvPvE.Networking.PvPvEMatchmaking.Owns(NetworkManager.Singleton))
+            return;
+
+        Debug.LogWarning("[Network] El servidor se detuvo. Vuelvo al menú.");
+        _ = GoToMenuDueToDisconnect();
     }
 
-    Debug.LogWarning("[Network] Se perdió la conexión con el Host.");
+    public Task SalirDuranteCarga() => VolverAlMenu(true);
 
-    // Si hay un cartel escuchando, él decide cuándo salir; si no, vuelve al menú como antes.
-    if (OnHostLeft != null)
-        OnHostLeft.Invoke();
-    else
-        _ = GoToMenuDueToDisconnect();
-}
+    public Task GoToMenuDueToDisconnect() => VolverAlMenu(false);
 
-private void OnServidorDetenido(bool eraHost)
-{
-    if (DeadQuarantine.PvPvE.Networking.PvPvEMatchmaking.Owns(NetworkManager.Singleton)) return;
-    if (NetworkManager.Singleton != null)
-        NetworkManager.Singleton.OnServerStopped -= OnServidorDetenido;
-
-    if (isIntentionalLeave)
-        return;
-
-    Debug.LogError("[Network] El servidor se detuvo por una falla de transporte. Vuelvo al menú.");
-    _ = GoToMenuDueToDisconnect();
-}
-
-    //private async Task GoToMenuDueToDisconnect()
-    public async Task GoToMenuDueToDisconnect()
+    private void AlRecibirSalidaDuranteCarga(ulong clientId, FastBufferReader mensaje)
     {
-        if (NetworkManager.Singleton != null)
-            NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
+        NetworkManager red = NetworkManager.Singleton;
+        if (red != null && red.IsServer && clientId != red.LocalClientId &&
+            red.ConnectedClients.ContainsKey(clientId))
+            red.DisconnectClient(clientId, null);
+    }
 
+    private async Task VolverAlMenu(bool cerrarSalaSiSoyHost)
+    {
+        if (returningToMenu)
+            return;
+
+        returningToMenu = true;
+        NotifyIntentionalLeave();
+        GameStartCurtain.MostrarSalidaAlMenu();
         Time.timeScale = 1f;
         AudioListener.pause = false;
 
-        try
+        NetworkManager red = NetworkManager.Singleton;
+        if (red != null)
         {
-            if (currentSession != null)
-                await currentSession.LeaveAsync();
-        }
-        catch (Exception e)
-        {
-            Debug.LogWarning("[Network] Error al abandonar la sesión tras desconexión: " + e.Message);
+            red.OnConnectionEvent -= AlCambiarConexion;
+            red.OnServerStopped -= OnServidorDetenido;
+            if (red.IsListening && !red.ShutdownInProgress)
+            {
+                if (cerrarSalaSiSoyHost && !red.IsServer && red.IsConnectedClient)
+                {
+                    using var mensaje = new FastBufferWriter(1, Allocator.Temp);
+                    mensaje.WriteByteSafe(0);
+                    red.CustomMessagingManager.SendNamedMessage(
+                        SalidaDuranteCargaMensaje, NetworkManager.ServerClientId, mensaje);
+                }
+                red.Shutdown();
+            }
         }
 
+        ISession sesion = currentSession;
         currentSession = null;
         CurrentJoinCode = null;
 
-        SceneManager.LoadScene("PantallasUI");
+        try
+        {
+            // Esperar el cierre de NGO antes de que Services toque el mismo transporte.
+            while (red != null && red.ShutdownInProgress)
+                await Task.Yield();
+            _ = CerrarSesionAlVolverAlMenu(sesion, cerrarSalaSiSoyHost);
+
+            // Unity no permite cancelar una carga que ya empezó. El menú debe ser
+            // la última escena que se active, incluso si había un Load Single en curso.
+            while (cargasLocales.Exists(carga => !carga.isDone))
+                await Task.Yield();
+            cargasLocales.Clear();
+
+            await SceneManager.LoadSceneAsync("PantallasUI", LoadSceneMode.Single);
+            GameStartCurtain.CerrarCortinaPersistente();
+        }
+        finally
+        {
+            returningToMenu = false;
+        }
+    }
+
+    private async Task CerrarSesionAlVolverAlMenu(ISession sesion, bool cerrarSalaSiSoyHost)
+    {
+        if (sesion == null)
+            return;
+
+        sesion.PlayerJoined -= OnPlayerJoined;
+        sesion.PlayerLeaving -= OnPlayerLeft;
+        sesion.Network.StateChanged -= OnNetworkStateChanged;
+        sesion.Network.StartFailed -= OnNetworkStartFailed;
+
+        try
+        {
+            if (cerrarSalaSiSoyHost && sesion.IsHost)
+            {
+                var host = sesion.AsHost();
+                host.SetProperty(CerradaProperty, new SessionProperty("1"));
+                try
+                {
+                    await host.SavePropertiesAsync();
+                    await Task.Delay(1200);
+                }
+                finally
+                {
+                    await host.DeleteAsync();
+                }
+            }
+            else
+            {
+                await sesion.LeaveAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning("[Network] Error al cerrar la sesión: " + e.Message);
+        }
     }
 
     // ============================================================

@@ -1,8 +1,9 @@
-﻿
+
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Unity.Netcode;
 using Unity.Netcode.Components;
+using Unity.Collections;
 
 public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
 {
@@ -19,6 +20,19 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Owner
         );
+
+    private readonly NetworkVariable<FixedString64Bytes> escenaSpawnConfirmada =
+        new NetworkVariable<FixedString64Bytes>(
+            default,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Owner
+        );
+
+    public bool ConfirmoSpawnEnEscena(string nombreEscena)
+    {
+        return !string.IsNullOrEmpty(nombreEscena) && IsAtSpawn.Value &&
+               escenaSpawnConfirmada.Value.Equals(new FixedString64Bytes(nombreEscena));
+    }
 
     public NetworkVariable<bool> SpawnCheckpointActivo =
         new NetworkVariable<bool>(
@@ -285,7 +299,8 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
             "[SpawnAssigner] Jugador movido a SpawnIndex " + index
         );
 
-        IsAtSpawn.Value = true;
+        ConfirmarSpawn(gestor != null && gestor.UsaEscenasAditivasMultiplayer
+            ? gestor.NombreMapaMultiplayerActivo : null);
     }
 
     // =========================================================
@@ -294,7 +309,8 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
 
     public void AplicarSpawnCheckpoint(
         Vector3 posicion,
-        Quaternion rotacion
+        Quaternion rotacion,
+        string nombreEscena = ""
     )
     {
         if (!IsServer || !IsSpawned)
@@ -303,52 +319,21 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
         // Impide que el spawn normal vuelva a ejecutarse.
         SpawnCheckpointActivo.Value = true;
 
-        AplicarSpawnCheckpointClientRpc(
-            posicion,
-            rotacion
-        );
+        AplicarSpawnCheckpointClientRpc(posicion, rotacion, nombreEscena);
     }
 
     [ClientRpc]
     private void AplicarSpawnCheckpointClientRpc(
         Vector3 posicion,
-        Quaternion rotacion
-    )
+        Quaternion rotacion,
+        string nombreEscena)
     {
         if (!IsOwner)
             return;
 
-        CharacterController cc =
-            GetComponent<CharacterController>();
-
-        if (cc != null)
-            cc.enabled = false;
-
-        transform.SetPositionAndRotation(
-            posicion,
-            rotacion
-        );
-
-        if (cc != null)
-            cc.enabled = true;
-
-        NetworkTransform networkTransform =
-            GetComponent<NetworkTransform>();
-
-        if (networkTransform != null && networkTransform.IsSpawned)
-        {
-            networkTransform.Teleport(
-                posicion,
-                rotacion,
-                transform.localScale
-            );
-        }
-
-        IsAtSpawn.Value = true;
-
-        Debug.Log(
-            "[SpawnAssigner] Jugador trasladado al checkpoint."
-        );
+        AplicarTeletransporteLocal(posicion, rotacion);
+        ConfirmarSpawn(nombreEscena);
+        Debug.Log("[SpawnAssigner] Jugador trasladado al checkpoint.");
     }
 
     public void SolicitarMapaMultiplayer(string sceneName)
@@ -364,29 +349,32 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
         if (gestor != null) gestor.SolicitarMapaDesdeRpc(sceneName);
     }
 
-    public void AplicarSpawnDeEscenario(Vector3 posicion, Quaternion rotacion)
+    public void AplicarSpawnDeEscenario(
+        Vector3 posicion, Quaternion rotacion, string nombreEscena)
     {
-        if (!IsServer || !IsSpawned) return;
-        SpawnCheckpointActivo.Value = false;
-        AplicarSpawnEscenarioClientRpc(posicion, rotacion);
-    }
-
-    public void ColocarJugadorLocalEnEscenario(Transform spawn)
-    {
-        if (!IsSpawned || !IsOwner || spawn == null)
+        if (!IsServer || !IsSpawned)
             return;
 
-        IsAtSpawn.Value = false;
-        AplicarTeletransporteLocal(spawn.position, spawn.rotation);
-        IsAtSpawn.Value = true;
+        SpawnCheckpointActivo.Value = false;
+        AplicarSpawnEscenarioClientRpc(posicion, rotacion, nombreEscena);
     }
 
     [ClientRpc]
-    private void AplicarSpawnEscenarioClientRpc(Vector3 posicion, Quaternion rotacion)
+    private void AplicarSpawnEscenarioClientRpc(
+        Vector3 posicion, Quaternion rotacion, string nombreEscena)
     {
-        if (!IsOwner) return;
-        IsAtSpawn.Value = false;
+        if (!IsOwner)
+            return;
+
         AplicarTeletransporteLocal(posicion, rotacion);
+        ConfirmarSpawn(nombreEscena);
+    }
+
+    private void ConfirmarSpawn(string nombreEscena)
+    {
+        if (!string.IsNullOrEmpty(nombreEscena))
+            escenaSpawnConfirmada.Value = new FixedString64Bytes(nombreEscena);
+
         IsAtSpawn.Value = true;
     }
 

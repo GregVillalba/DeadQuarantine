@@ -13,6 +13,7 @@ public class GestorEscenariosPartida : MonoBehaviour
     [SerializeField] private bool usarEscenasAditivasMultiplayer;
     public bool UsaEscenasAditivasMultiplayer => usarEscenasAditivasMultiplayer;
     public bool MapaMultiplayerListo { get; private set; }
+    public string NombreMapaMultiplayerActivo => escenaAditivaActiva.name;
     public bool PresentacionLocalPreparada { get; private set; }
     public void IniciarCargaMultiplayer()
     {
@@ -71,7 +72,13 @@ public class GestorEscenariosPartida : MonoBehaviour
         Instance = this;
 
         if (usarEscenasAditivasMultiplayer)
+        {
+            NetworkManager red = NetworkManager.Singleton;
+            if (red != null && red.IsListening)
+                red.SceneManager.OnLoadEventCompleted += OnLoadAditivoCompletado;
+
             return;
+        }
 
         PrepararEscenario(escenarioLaboratorio);
         PrepararEscenario(escenarioCiudad);
@@ -80,21 +87,10 @@ public class GestorEscenariosPartida : MonoBehaviour
         ConfigurarEscenarioInicial();
     }
 
-    private void Start()
-    {
-        if (!usarEscenasAditivasMultiplayer || NetworkManager.Singleton == null ||
-            !NetworkManager.Singleton.IsListening)
-            return;
-
-        NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnLoadAditivoCompletado;
-        if (NetworkManager.Singleton.IsServer && !cargaInicialAditivaIniciada)
-            StartCoroutine(CargarEscenaInicialAditiva());
-    }
-
     private System.Collections.IEnumerator CargarEscenaInicialAditiva()
     {
         cargaInicialAditivaIniciada = true;
-        yield return null;
+        // Iniciar la carga aditiva después de que Netcode termine el evento anterior.
         yield return null;
         if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
             yield break;
@@ -108,7 +104,19 @@ public class GestorEscenariosPartida : MonoBehaviour
     private void OnLoadAditivoCompletado(string sceneName, LoadSceneMode mode,
         List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
-        if (!usarEscenasAditivasMultiplayer || !sceneName.StartsWith("MP_"))
+        if (!usarEscenasAditivasMultiplayer)
+            return;
+
+        NetworkManager red = NetworkManager.Singleton;
+        if (sceneName == "MainSceneMultiPlayer")
+        {
+            if (red != null && red.IsServer && !cargaInicialAditivaIniciada)
+                StartCoroutine(CargarEscenaInicialAditiva());
+
+            return;
+        }
+
+        if (!sceneName.StartsWith("MP_"))
             return;
 
         Scene nueva = SceneManager.GetSceneByName(sceneName);
@@ -123,26 +131,15 @@ public class GestorEscenariosPartida : MonoBehaviour
         BindearMapaAditivo(nueva);
         SceneManager.SetActiveScene(nueva);
         MapaMultiplayerListo = true;
+        if (red != null && red.IsServer)
+            AplicarMapaALosJugadores(sceneName);
+
         EventoMapaMultiplayerListo?.Invoke();
-        if (sceneName == "MP_Ciudad" && NetworkManager.Singleton != null &&
-            !NetworkManager.Singleton.IsServer && escenarioActivo != null &&
-            NetworkManager.Singleton.LocalClient != null &&
-            NetworkManager.Singleton.LocalClient.PlayerObject != null)
-        {
-            MultiplayerPlayerSpawnAssigner local =
-                NetworkManager.Singleton.LocalClient.PlayerObject
-                    .GetComponent<MultiplayerPlayerSpawnAssigner>();
-            if (local != null)
-                local.ColocarJugadorLocalEnEscenario(
-                    escenarioActivo.ObtenerSpawnJugador(
-                        Mathf.Max(0, local.AssignedSpawnIndex.Value)));
-        }
         StartCoroutine(PrepararPresentacionMapaLocal(sceneName));
 
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
+        if (red == null || !red.IsServer)
             return;
 
-        AplicarMapaALosJugadores(sceneName);
         if (!string.IsNullOrEmpty(anterior) && anterior != sceneName)
         {
             Scene escenaVieja = SceneManager.GetSceneByName(anterior);
@@ -265,12 +262,13 @@ public class GestorEscenariosPartida : MonoBehaviour
             {
                 Transform spawn = ObtenerSpawnZonaSegura(zona1, assigner.AssignedSpawnIndex.Value);
                 if (spawn != null)
-                    assigner.AplicarSpawnCheckpoint(spawn.position, spawn.rotation);
+                    assigner.AplicarSpawnCheckpoint(spawn.position, spawn.rotation, sceneName);
             }
-            else if (escenarioActivo != null)
+            else if (escenarioActivo != null && assigner.AssignedSpawnIndex.Value >= 0)
             {
                 Transform spawn = escenarioActivo.ObtenerSpawnJugador(assigner.AssignedSpawnIndex.Value);
-                if (spawn != null) assigner.AplicarSpawnDeEscenario(spawn.position, spawn.rotation);
+                if (spawn != null)
+                    assigner.AplicarSpawnDeEscenario(spawn.position, spawn.rotation, sceneName);
             }
         }
     }

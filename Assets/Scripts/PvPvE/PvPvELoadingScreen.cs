@@ -10,18 +10,32 @@ namespace DeadQuarantine.PvPvE {
  public sealed class PvPvELoadingScreen:MonoBehaviour {
   PvPvEPreparationFlow flow;PvPvEMapVoting voting;PvPvETeamRoster roster;Canvas canvas;
   static PvPvENetworkSettings originalSettings;static PvPvELoadingScreen originalScreen;
-  bool original,cooperative;string originalTarget,originalOrigin,cooperativeTarget;float originalProgress;PvPvEMapOption originalMap;PvPvENetworkSettings cooperativeSettings;TextMeshProUGUI modeLabel;
+  bool original,cooperative;string originalTarget,originalOrigin,cooperativeTarget;float originalProgress;PvPvEMapOption originalMap;Texture2D safeZonePreview;TextMeshProUGUI modeLabel;
   public static void ConfigureOriginal(PvPvENetworkSettings settings)=>originalSettings=settings;
   public static bool BeginCooperative(PvPvENetworkSettings settings,string destination=null){
    var cfg=ConfiguracionPartidaSeleccionada.Instancia;
-   if(!settings||!cfg||PvPvETeamRoster.Active)return false;
-   var selected=destination=="MP_Ciudad"?ConfiguracionPartidaSeleccionada.Escenario.Ciudad:destination=="MP_Cabana"?ConfiguracionPartidaSeleccionada.Escenario.Cabana:destination=="MP_Laboratorio"?ConfiguracionPartidaSeleccionada.Escenario.Laboratorio:cfg.escenarioSeleccionado;
-   var map=System.Array.Find(settings.Maps,m=>m.Id==selected);
-   if(map==null)return false;
+   if(PvPvETeamRoster.Active)return false;
+   string resource = destination switch
+   {
+    "MP_ZonaSegura1" => "PreviewZonaSegura",
+    "MP_ZonaSegura2" => "PreviewZonaSegura2",
+    _ => null
+   };
+   var selected = destination switch
+   {
+    "MP_Ciudad" => ConfiguracionPartidaSeleccionada.Escenario.Ciudad,
+    "MP_Cabana" => ConfiguracionPartidaSeleccionada.Escenario.Cabana,
+    "MP_Laboratorio" => ConfiguracionPartidaSeleccionada.Escenario.Laboratorio,
+    _ => cfg ? cfg.escenarioSeleccionado : ConfiguracionPartidaSeleccionada.Escenario.Laboratorio
+   };
+   var map=settings && settings.Maps!=null?System.Array.Find(settings.Maps,m=>m.Id==selected):null;
+   if(map==null && resource==null)return false;
    if(originalScreen&&!originalScreen.cooperative)CancelOriginal();
-   if(!originalScreen){var go=new GameObject("Cooperative loading");DontDestroyOnLoad(go);originalScreen=go.AddComponent<PvPvELoadingScreen>();originalScreen.original=true;originalScreen.cooperative=true;originalScreen.cooperativeSettings=settings;originalScreen.Build();originalScreen.canvas.sortingOrder=short.MaxValue-1;}
-   var screen=originalScreen;screen.cooperativeTarget=destination;screen.originalMap=map;screen.mapName.text=destination!=null&&destination.StartsWith("MP_ZonaSegura")?"ZONA SEGURA":map.Name;
-   screen.modeLabel.text=cfg.modoSeleccionado switch{ConfiguracionPartidaSeleccionada.ModoJuego.Historia=>"HISTORIA",ConfiguracionPartidaSeleccionada.ModoJuego.Ronda5=>"RONDA 5",_=>"SUPERVIVENCIA"};
+   if(!originalScreen){var go=new GameObject("Cooperative loading");DontDestroyOnLoad(go);originalScreen=go.AddComponent<PvPvELoadingScreen>();originalScreen.original=true;originalScreen.cooperative=true;originalScreen.Build();originalScreen.canvas.sortingOrder=short.MaxValue-1;}
+   var screen=originalScreen;screen.cooperativeTarget=destination;screen.originalMap=map;
+   screen.safeZonePreview=resource!=null?Resources.Load<Texture2D>(resource):null;
+   screen.mapName.text=resource!=null?"ZONA SEGURA":map.Name;
+   screen.modeLabel.text=resource!=null?"HISTORIA":cfg?.modoSeleccionado switch{ConfiguracionPartidaSeleccionada.ModoJuego.Historia=>"HISTORIA",ConfiguracionPartidaSeleccionada.ModoJuego.Ronda5=>"RONDA 5",_=>"SUPERVIVENCIA"};
    screen.UpdateOriginal();return true;
   }
   public static void CancelCooperative(){if(originalScreen&&originalScreen.cooperative)CancelOriginal();}
@@ -46,7 +60,9 @@ namespace DeadQuarantine.PvPvE {
    // Story cinematics legitimately disable the FP camera. Loading ends at initialization/spawn;
    // the existing intro/Ready systems retain ownership of gameplay controls.
    if(!cooperative&&scene==originalTarget&&player&&player.IsSpawned&&(!spawn||spawn.IsAtSpawn.Value)){CancelOriginal();return;}
-   var views=originalMap.LoadingViews;preview.texture=cooperative&&cooperativeTarget!=null&&cooperativeTarget.StartsWith("MP_ZonaSegura")?Resources.Load<Texture2D>("PreviewZonaSegura"):views!=null&&views.Length>0?views[(int)(Time.unscaledTime/5)%views.Length]:originalMap.Preview;
+   var views=originalMap?.LoadingViews;
+   preview.texture=safeZonePreview?safeZonePreview:
+    views!=null&&views.Length>0?views[(int)(Time.unscaledTime/5)%views.Length]:originalMap?.Preview;
    preview.color=preview.texture?Color.white:PanelColor;
    if(!cooperative)status.text=originalProgress<.9f?"CARGANDO ESCENARIO · "+Mathf.RoundToInt(originalProgress*100)+"%":"PREPARANDO JUGADORES";
    FitPreview();
@@ -71,7 +87,7 @@ namespace DeadQuarantine.PvPvE {
    FitPreview();
   }
   void FitPreview(){
-   float screen=((RectTransform)canvas.transform).rect.width/((RectTransform)canvas.transform).rect.height;
+   float screen=(float)Mathf.Max(1,Screen.width)/Mathf.Max(1,Screen.height);
    float image=preview.texture?(float)preview.texture.width/preview.texture.height:screen;
    preview.uvRect=screen>image?new Rect(0,(1-image/screen)*.5f,1,image/screen):new Rect((1-screen/image)*.5f,0,screen/image,1);
   }

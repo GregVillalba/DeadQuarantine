@@ -1024,7 +1024,7 @@ public class MultiplayerLobbyController : MonoBehaviour
                 countdownPanel.SetActive(false);
 
             bool partidaIniciada = await network.StartMultiplayerGame();
-            if (!partidaIniciada)
+            if (!partidaIniciada && this != null && !network.IsLeavingIntentionally)
             {
                 await VolverAlLobbyPorFalloInicio();
             }
@@ -1032,7 +1032,8 @@ public class MultiplayerLobbyController : MonoBehaviour
         catch (Exception e)
         {
             Debug.LogError("[Lobby] Falló la cuenta atrás: " + e.Message);
-            await VolverAlLobbyPorFalloInicio();
+            if (this != null && network != null && !network.IsLeavingIntentionally)
+                await VolverAlLobbyPorFalloInicio();
         }
     }
 

@@ -270,17 +270,15 @@ public void MostrarAvisoContinuarAMansion()
             ? gestor.ConfirmacionesZonaSeguraNetwork.Value
             : 0;
         int total = Mathf.Max(
-            2,
+            1,
             gestor != null && gestor.IsSpawned
                 ? gestor.JugadoresZonaSeguraNetwork.Value
                 : NetworkManager.Singleton.ConnectedClientsIds.Count
         );
 
-        int conectados = NetworkManager.Singleton.ConnectedClientsIds.Count;
-        if (conectados < 2)
+        if (total == 1)
         {
-            textoAvisoSafeZone.text =
-                $"Se necesitan al menos 2 jugadores conectados para continuar ({conectados}/2).";
+            textoAvisoSafeZone.text = "Presiona ENTER para continuar.";
             return;
         }
 

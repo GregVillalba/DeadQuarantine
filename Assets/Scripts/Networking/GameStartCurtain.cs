@@ -1,10 +1,21 @@
 using UnityEngine;
 using Unity.Netcode;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
+using UnityEngine.UI;
+using TMPro;
+using static DeadQuarantine.PvPvE.PvPvEUIFactory;
 
 public class GameStartCurtain : MonoBehaviour
 {
     private static GameObject cortinaPersistenteLobby;
     private static Sprite spriteCargaAsignado;
+    private static Image fondoPersistente;
+    private static Button botonSalir;
+    private static TextMeshProUGUI etiquetaSalir;
+    private static TextMeshProUGUI avisoCarga;
+    private static bool anfitrionDesconectado;
+    private static bool saliendoAlMenu;
 
     [SerializeField] private Sprite imagenCargaLobby;
 
@@ -21,24 +32,22 @@ public class GameStartCurtain : MonoBehaviour
         if (instancia != null)
         {
             instancia.curtainHidden = false;
-            instancia.mapaAditivoListoDetectado = false;
+            instancia.BloquearJugadorLocalInmediatamente();
         }
         MostrarCortinaPersistente(destino);
     }
 
     private static void MostrarCortinaPersistente(string destino = null)
     {
+        if (anfitrionDesconectado || NetworkBootstrap.Instance?.IsLeavingIntentionally == true)
+            return;
+
         bool pantallaCooperativa = DeadQuarantine.PvPvE.PvPvELoadingScreen.BeginCooperative(
             NetworkBootstrap.Instance != null ? NetworkBootstrap.Instance.CooperativeLoadingSettings : null, destino);
         if (cortinaPersistenteLobby != null)
         {
-            UnityEngine.UI.Image fondoExistente =
-                cortinaPersistenteLobby.GetComponentInChildren<UnityEngine.UI.Image>(true);
-            if (fondoExistente != null)
-            {
-                if (pantallaCooperativa) fondoExistente.color = Color.clear;
-                else AsignarImagenCarga(fondoExistente);
-            }
+            if (pantallaCooperativa) fondoPersistente.color = Color.clear;
+            else AsignarImagenCarga(fondoPersistente);
             cortinaPersistenteLobby.SetActive(true);
             return;
         }
@@ -67,12 +76,95 @@ public class GameStartCurtain : MonoBehaviour
         rect.offsetMin = Vector2.zero;
         rect.offsetMax = Vector2.zero;
 
-        UnityEngine.UI.Image imagen = fondo.AddComponent<UnityEngine.UI.Image>();
-        if (pantallaCooperativa) imagen.color = Color.clear;
-        else AsignarImagenCarga(imagen);
-        imagen.raycastTarget = true;
+        fondoPersistente = fondo.AddComponent<Image>();
+        if (pantallaCooperativa) fondoPersistente.color = Color.clear;
+        else AsignarImagenCarga(fondoPersistente);
+
+        RectTransform boton = Panel(raiz.transform, "Salir de la partida", 0, 0, 1, 1, 1f);
+        Place(boton, new Vector2(.76f, .89f), new Vector2(.97f, .96f));
+        Image imagenBoton = boton.GetComponent<Image>();
+        imagenBoton.raycastTarget = true;
+        botonSalir = boton.gameObject.AddComponent<Button>();
+        botonSalir.targetGraphic = imagenBoton;
+        StyleButton(botonSalir);
+        etiquetaSalir = Text(boton, "Etiqueta", "Salir de la partida", 0, 0, 1, 1, null, 26);
+        Place(etiquetaSalir.rectTransform, Vector2.zero, Vector2.one);
+        etiquetaSalir.alignment = TextAlignmentOptions.Center;
+        botonSalir.onClick.AddListener(SalirDesdeCortina);
+
+        RectTransform aviso = Panel(raiz.transform, "Aviso de desconexión", 0, 0, 1, 1, 1f);
+        Place(aviso, new Vector2(.17f, .49f), new Vector2(.83f, .61f));
+        avisoCarga = Text(aviso, "Mensaje", "", 0, 0, 1, 1, null, 30);
+        Place(avisoCarga.rectTransform, new Vector2(.03f, .06f), new Vector2(.97f, .94f));
+        avisoCarga.alignment = TextAlignmentOptions.Center;
+        aviso.gameObject.SetActive(false);
 
         AudioListener.pause = true;
+    }
+
+    public static void MantenerEntradaDeCarga()
+    {
+        if (cortinaPersistenteLobby == null || !cortinaPersistenteLobby.activeInHierarchy)
+            return;
+
+        if (EventSystem.current == null)
+        {
+            GameObject entradaCarga = new GameObject("Entrada de pantalla de carga",
+                typeof(EventSystem), typeof(InputSystemUIInputModule));
+            entradaCarga.transform.SetParent(cortinaPersistenteLobby.transform, false);
+            entradaCarga.GetComponent<InputSystemUIInputModule>().AssignDefaultActions();
+        }
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    public static void AvisarSalidaDeCompanero()
+    {
+        if (cortinaPersistenteLobby == null || anfitrionDesconectado)
+            return;
+
+        avisoCarga.text = "Un compañero abandonó la partida.";
+        avisoCarga.transform.parent.gameObject.SetActive(true);
+    }
+
+    public static bool AvisarDesconexionDelHost()
+    {
+        if (cortinaPersistenteLobby == null)
+            return false;
+
+        anfitrionDesconectado = true;
+        botonSalir.interactable = true;
+        avisoCarga.text = "Se perdió la conexión con el anfitrión. La partida se cerró.";
+        avisoCarga.transform.parent.gameObject.SetActive(true);
+        etiquetaSalir.text = "Volver al menú";
+        AudioListener.pause = false;
+        return true;
+    }
+
+    public static void MostrarSalidaAlMenu()
+    {
+        saliendoAlMenu = true;
+        DeadQuarantine.PvPvE.PvPvELoadingScreen.CancelOriginal();
+        if (cortinaPersistenteLobby == null)
+            return;
+
+        fondoPersistente.sprite = null;
+        fondoPersistente.color = Color.black;
+        botonSalir.gameObject.SetActive(false);
+        avisoCarga.text = "Volviendo al menú…";
+        avisoCarga.transform.parent.gameObject.SetActive(true);
+    }
+
+    private static void SalirDesdeCortina()
+    {
+        NetworkBootstrap network = NetworkBootstrap.Instance;
+        if (network == null)
+            return;
+
+        botonSalir.interactable = false;
+        etiquetaSalir.text = "Saliendo…";
+        _ = anfitrionDesconectado ? network.GoToMenuDueToDisconnect() : network.SalirDuranteCarga();
     }
 
     private static void AsignarImagenCarga(UnityEngine.UI.Image imagen)
@@ -123,6 +215,14 @@ public class GameStartCurtain : MonoBehaviour
 
     public static void CancelarCortinaDesdeLobby()
     {
+        if (!anfitrionDesconectado && !saliendoAlMenu)
+            CerrarCortinaPersistente();
+    }
+
+    public static void CerrarCortinaPersistente()
+    {
+        anfitrionDesconectado = false;
+        saliendoAlMenu = false;
         DeadQuarantine.PvPvE.PvPvELoadingScreen.CancelCooperative();
         if (cortinaPersistenteLobby != null)
         {
@@ -144,10 +244,16 @@ public class GameStartCurtain : MonoBehaviour
 
     private float proximoLog;
 
-    private bool mapaAditivoListoDetectado;
 
     private void Awake()
     {
+        if (saliendoAlMenu)
+        {
+            if (curtainCanvas != null)
+                curtainCanvas.SetActive(false);
+            return;
+        }
+
         if (imagenCargaLobby != null)
             spriteCargaAsignado = imagenCargaLobby;
         Debug.Log("[GameStartCurtain] Awake");
@@ -231,7 +337,8 @@ public class GameStartCurtain : MonoBehaviour
 
     private void Update()
     {
-        if (curtainHidden)
+        if (curtainHidden || anfitrionDesconectado ||
+            NetworkBootstrap.Instance?.IsLeavingIntentionally == true)
             return;
 
 
@@ -239,26 +346,22 @@ public class GameStartCurtain : MonoBehaviour
         {
             Debug.LogError("[GameStartCurtain] La red no está activa: vuelvo al menú.");
             curtainHidden = true;
-            CancelarCortinaDesdeLobby();
-
-            if (NetworkBootstrap.Instance != null)
+            if (!AvisarDesconexionDelHost() && NetworkBootstrap.Instance != null)
                 _ = NetworkBootstrap.Instance.GoToMenuDueToDisconnect();
 
             return;
         }
         GestorEscenariosPartida gestor = GestorEscenariosPartida.Instance;
+        string mapaAditivo = null;
         if (gestor != null && gestor.UsaEscenasAditivasMultiplayer)
         {
             if (!gestor.MapaMultiplayerListo || !gestor.PresentacionLocalPreparada)
                 return;
 
-            if (!mapaAditivoListoDetectado)
-            {
-                mapaAditivoListoDetectado = true;
-            }
+            mapaAditivo = gestor.NombreMapaMultiplayerActivo;
         }
 
-        if (!TodosListos())
+        if (!TodosListos(mapaAditivo))
             return;
 
         OcultarCortina();
@@ -278,6 +381,7 @@ public class GameStartCurtain : MonoBehaviour
 
     private MultiplayerPlayerSpawnAssigner[] ObtenerAssignersDePlayersReales()
     {
+        NetworkManager red = NetworkManager.Singleton;
         MultiplayerPlayerSpawnAssigner[] todos =
             FindObjectsByType<MultiplayerPlayerSpawnAssigner>(
                 FindObjectsSortMode.None);
@@ -294,7 +398,9 @@ public class GameStartCurtain : MonoBehaviour
 
             // MainSceneMultiPlayer tiene un NetworkObject de escena llamado
             // "multiplayer" con este componente, pero NO es un PlayerObject.
-            if (no == null || !no.IsPlayerObject)
+            if (no == null || !no.IsSpawned || !no.IsPlayerObject)
+                continue;
+            if (red != null && red.IsConnectedClient && !SigueConectado(red, no.OwnerClientId))
                 continue;
 
             reales.Add(a);
@@ -303,50 +409,16 @@ public class GameStartCurtain : MonoBehaviour
         return reales.ToArray();
     }
 
-    private bool TodosListos()
+    private bool TodosListos(string mapaAditivo)
     {
-        // FindObjectsByType SÍ funciona igual en Host y en Cliente,
-        // porque cada Player es un NetworkObject spawneado y visible
-        // localmente en todas las máquinas — a diferencia de
-        // ConnectedClientsList, que solo está completa en el servidor.
-       /* MultiplayerPlayerSpawnAssigner[] assigners =
-            FindObjectsByType<MultiplayerPlayerSpawnAssigner>(FindObjectsSortMode.None);
-
-        if (assigners.Length < jugadoresEsperados)
-            return false;
-
-        foreach (MultiplayerPlayerSpawnAssigner assigner in assigners)
-        {
-            if (!assigner.IsAtSpawn.Value)
-                return false;
-        }
-
-        if (Time.time >= proximoLog)
-        {
-            proximoLog = Time.time + 2f;
-
-            string estados = "";
-
-            foreach (MultiplayerPlayerSpawnAssigner a in assigners)
-                estados += a.IsAtSpawn.Value + " ";
-
-            Debug.Log(
-                "[Curtain] Jugadores: " + assigners.Length + "/" + jugadoresEsperados +
-                " | IsAtSpawn: " + estados
-            );
-
-        }*/
-
         MultiplayerPlayerSpawnAssigner[] assigners =
             ObtenerAssignersDePlayersReales();
 
         int jugadoresEsperados = expectedPlayerCount;
 
-        if (NetworkBootstrap.Instance != null &&
-            NetworkBootstrap.Instance.PlayerCount > 0)
-        {
-            jugadoresEsperados = NetworkBootstrap.Instance.PlayerCount;
-        }
+        NetworkManager red = NetworkManager.Singleton;
+        if (red != null && red.IsConnectedClient)
+            jugadoresEsperados = Mathf.Max(1, red.ConnectedClientsIds.Count);
 
         // Log de diagnóstico: va ANTES de los return para verse siempre.
         if (Time.unscaledTime >= proximoLog)
@@ -356,11 +428,16 @@ public class GameStartCurtain : MonoBehaviour
             string estados = "";
 
             foreach (MultiplayerPlayerSpawnAssigner a in assigners)
-                estados += a.IsAtSpawn.Value + " ";
+            {
+                bool listo = mapaAditivo == null
+                    ? a.IsAtSpawn.Value
+                    : a.ConfirmoSpawnEnEscena(mapaAditivo);
+                estados += listo + " ";
+            }
 
             Debug.Log(
                 "[Curtain] Jugadores: " + assigners.Length + "/" + jugadoresEsperados +
-                " | IsAtSpawn: " + estados
+                " | Mapa: " + mapaAditivo + " | Listos: " + estados
             );
         }
 
@@ -369,13 +446,22 @@ public class GameStartCurtain : MonoBehaviour
 
         foreach (MultiplayerPlayerSpawnAssigner assigner in assigners)
         {
-            if (!assigner.IsAtSpawn.Value)
+            bool listo = mapaAditivo == null
+                ? assigner.IsAtSpawn.Value
+                : assigner.ConfirmoSpawnEnEscena(mapaAditivo);
+            if (!listo)
                 return false;
         }
 
         return true;
+    }
 
-       // return true;
+    private static bool SigueConectado(NetworkManager red, ulong clientId)
+    {
+        foreach (ulong conectado in red.ConnectedClientsIds)
+            if (conectado == clientId)
+                return true;
+        return false;
     }
 
     private void OcultarCortina()
@@ -383,19 +469,9 @@ public class GameStartCurtain : MonoBehaviour
         Debug.Log("[GameStartCurtain] OcultarCortina() ejecutado.");
 
         curtainHidden = true;
-        DeadQuarantine.PvPvE.PvPvELoadingScreen.CancelCooperative();
-
         if (curtainCanvas != null)
             curtainCanvas.SetActive(false);
-
-        if (cortinaPersistenteLobby != null)
-        {
-            cortinaPersistenteLobby.SetActive(false);
-            Object.Destroy(cortinaPersistenteLobby);
-            cortinaPersistenteLobby = null;
-        }
-
-        AudioListener.pause = false;
+        CerrarCortinaPersistente();
 
         NetworkObject jugadorLocal = NetworkManager.Singleton != null &&
             NetworkManager.Singleton.LocalClient != null

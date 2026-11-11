@@ -23,7 +23,6 @@ public class GestorHistoriaPartida : NetworkBehaviour
     private const int MansionHelipuerto = 3;
     private const int MansionCompletada = 4;
     private const int IrAlCaminoSalida = 10;
-    private const int MinJugadoresMultiplayer = 2;
 
     private bool animacionAperturaEjecutada;
     private bool misionCiudadInicializada;
@@ -219,7 +218,8 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
                 {
                     RoundManager.Instance.ActualizarSpawnPointsDelEscenario();
                     RoundManager.Instance.EliminarZombiesHistoria();
-                    RoundManager.Instance.ReanudarSpawnsHistoria();
+                    StartCoroutine(IniciarCombateAlConfirmarLlegada(
+                        GestorEscenariosPartida.Instance, mapaActual));
                 }
                 IniciarMisionCiudad();
             }
@@ -230,14 +230,52 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
                     RoundManager.Instance.ActualizarSpawnPointsDelEscenario();
                     RoundManager.Instance.EliminarZombiesHistoria();
                 }
-                IniciarMisionCabana();
-                GestorMansionHistoria mansion = FindAnyObjectByType<GestorMansionHistoria>();
-                if (mansion != null)
-                    mansion.IniciarMision();
+                StartCoroutine(IniciarCombateAlConfirmarLlegada(
+                    GestorEscenariosPartida.Instance, mapaActual));
             }
         }
         else
             AplicarEstadoPuerta(PuertaAbiertaNetwork.Value);
+    }
+
+    private IEnumerator IniciarCombateAlConfirmarLlegada(
+        GestorEscenariosPartida gestor, string mapa)
+    {
+        while (IsSpawned && IsServer && gestor != null && gestor.MapaMultiplayerListo &&
+               gestor.NombreMapaMultiplayerActivo == mapa && NetworkManager.Singleton != null)
+        {
+            bool todosEnMapa = NetworkManager.Singleton.ConnectedClientsList.Count > 0;
+            foreach (NetworkClient cliente in NetworkManager.Singleton.ConnectedClientsList)
+            {
+                NetworkObject jugador = cliente.PlayerObject;
+                if (jugador != null &&
+                    jugador.TryGetComponent(out MultiplayerPlayerSpawnAssigner assigner) &&
+                    assigner.ConfirmoSpawnEnEscena(mapa))
+                    continue;
+
+                todosEnMapa = false;
+                break;
+            }
+
+            if (todosEnMapa)
+            {
+                if (mapa == "MP_Cabana")
+                {
+                    IniciarMisionCabana();
+                    GestorMansionHistoria mansion = FindAnyObjectByType<GestorMansionHistoria>();
+                    if (mansion != null)
+                        mansion.IniciarMision();
+                }
+                else if (RoundManager.Instance != null)
+                {
+                    RoundManager.Instance.ReanudarSpawnsHistoria();
+                }
+
+                yield break;
+            }
+
+            yield return null;
+        }
     }
 
     private void InicializarMisionEscenarioActual()
@@ -345,7 +383,7 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
             jugadoresConfirmaronAvanceZonaSegura.Count;
 
         if (ConfirmacionesZonaSeguraNetwork.Value >=
-            Mathf.Max(MinJugadoresMultiplayer, JugadoresZonaSeguraNetwork.Value))
+            Mathf.Max(1, JugadoresZonaSeguraNetwork.Value))
             AvanzarAlSiguienteEscenarioDesdeZonaSegura();
     }
 
@@ -386,7 +424,7 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
             jugadoresConfirmaronAvanceZonaSegura.Count;
 
         if (ConfirmacionesZonaSeguraNetwork.Value >=
-            Mathf.Max(MinJugadoresMultiplayer, JugadoresZonaSeguraNetwork.Value))
+            Mathf.Max(1, JugadoresZonaSeguraNetwork.Value))
             AvanzarAlSiguienteEscenarioDesdeZonaSegura();
     }
 
@@ -485,7 +523,7 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
             SceneManager.GetActiveScene().name == "MP_Ciudad" &&
             EstadoMisionNetwork.Value == IrAlCaminoSalida &&
             puntoSalidaCiudad != null && NetworkManager.Singleton != null &&
-            NetworkManager.Singleton.ConnectedClientsList.Count >= MinJugadoresMultiplayer &&
+            NetworkManager.Singleton.ConnectedClientsList.Count > 0 &&
             TodosLosJugadoresEnTrigger(puntoSalidaCiudad, distanciaActivacionSalidaCiudad))
             EstadoMisionNetwork.Value = HistoriaCiudadCompletada;
 
@@ -508,7 +546,7 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
                 return;
         }
 
-        if (NetworkManager.Singleton.ConnectedClientsList.Count < MinJugadoresMultiplayer)
+        if (NetworkManager.Singleton.ConnectedClientsList.Count == 0)
             return;
 
         transicionSafeZone1MultiplayerIniciada = true;
@@ -755,17 +793,6 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
                 textoTituloObjetivo.text = "ZONA SEGURA";
 
                 if (EsZonaSeguraMultiplayerActiva() &&
-                    NetworkManager.Singleton != null &&
-                    NetworkManager.Singleton.ConnectedClientsIds.Count <
-                        MinJugadoresMultiplayer)
-                {
-                    textoDescripcionObjetivo.text =
-                        "Se necesitan al menos 2 jugadores conectados " +
-                        "para continuar. (" +
-                        NetworkManager.Singleton.ConnectedClientsIds.Count +
-                        "/2)";
-                }
-                else if (EsZonaSeguraMultiplayerActiva() &&
                          localConfirmoAvanceZonaSegura)
                 {
                     textoDescripcionObjetivo.text =
@@ -1093,7 +1120,7 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
         int cantidadConectada =
             NetworkManager.Singleton.ConnectedClientsList.Count;
 
-        if (cantidadConectada < MinJugadoresMultiplayer ||
+        if (cantidadConectada == 0 ||
             cantidadConectada > NetworkBootstrap.MaxPlayersPerRoom)
         {
             return false;
