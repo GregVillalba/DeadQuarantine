@@ -566,6 +566,8 @@ public class ZombieAI : NetworkBehaviour
             Mathf.Infinity;
 
         Transform closestPlayer = null;
+        int jugadoresVivos = 0;
+        int jugadoresEnMinijuego = 0;
 
         foreach (
             NetworkClient client
@@ -585,6 +587,17 @@ public class ZombieAI : NetworkBehaviour
             // Solamente jugadores vivos.
             if (!playerHealth.IsAlive)
                 continue;
+
+            jugadoresVivos++;
+
+            // El servidor omite al jugador que está usando el arcade.
+            PauseController pauseController =
+                client.PlayerObject.GetComponent<PauseController>();
+            if (pauseController != null && pauseController.EnMinijuegoNet.Value)
+            {
+                jugadoresEnMinijuego++;
+                continue;
+            }
 
             // Modo Historia: igual que a un abatido, se ignora al que está en la zona segura.
             if (EstaEnZonaSegura(client.ClientId))
@@ -607,6 +620,16 @@ public class ZombieAI : NetworkBehaviour
                 closestDistance = distance;
                 closestPlayer = player;
             }
+        }
+
+        // Si todos los jugadores vivos están en el minijuego, no se elige tampoco
+        // una torreta como objetivo: los zombis quedan quietos hasta que alguien salga.
+        if (jugadoresVivos > 0 && jugadoresEnMinijuego == jugadoresVivos)
+        {
+            hayJugadorEnZonaSegura = true;
+            targetTorreta = null;
+            target = null;
+            return;
         }
 
         // Torretas sanas: compiten con los jugadores por cercanía (se mide hasta su borde, no hasta el centro).
