@@ -485,7 +485,7 @@ private IEnumerator EsperarFinIntroLocal()
     private bool TodosConfirmaronIntroduccionInicial()
     {
         if (NetworkManager.Singleton == null ||
-            NetworkManager.Singleton.ConnectedClientsList.Count < expectedPlayerCount)
+            NetworkManager.Singleton.ConnectedClientsList.Count < (EsModoHistoria ? 2 : expectedPlayerCount))
             return false;
 
         foreach (NetworkClient client in NetworkManager.Singleton.ConnectedClientsList)
@@ -502,14 +502,14 @@ private IEnumerator EsperarFinIntroLocal()
         return true;
     }
 
-    private bool AllPlayersAtSpawn()
+    private bool AllPlayersAtSpawn(string mapa = null)
     {
         if (NetworkManager.Singleton == null)
             return false;
 
         var connectedClients = NetworkManager.Singleton.ConnectedClientsList;
 
-        if (connectedClients.Count < expectedPlayerCount)
+        if (connectedClients.Count < (EsModoHistoria ? 2 : expectedPlayerCount))
             return false;
 
         foreach (NetworkClient client in connectedClients)
@@ -520,7 +520,9 @@ private IEnumerator EsperarFinIntroLocal()
             MultiplayerPlayerSpawnAssigner assigner =
                 client.PlayerObject.GetComponent<MultiplayerPlayerSpawnAssigner>();
 
-            if (assigner == null || !assigner.IsAtSpawn.Value)
+            if (assigner == null || (mapa == null
+                    ? !assigner.IsAtSpawn.Value
+                    : !assigner.ConfirmoSpawnEnEscena(mapa)))
                 return false;
         }
 
@@ -1160,29 +1162,23 @@ public void StartRound(int round)
 
 private IEnumerator WaitForPlayersThenStartHistoria()
 {
-    float elapsed = 0f;
+    NetworkManager red = NetworkManager.Singleton;
+    GestorEscenariosPartida gestor = GestorEscenariosPartida.Instance;
+    string mapa = gestor != null && gestor.UsaEscenasAditivasMultiplayer
+        ? gestor.NombreMapaMultiplayerActivo
+        : null;
 
-    while (elapsed < maxWaitForPlayersTime)
+    while (IsSpawned && IsServer && red != null && red.IsListening &&
+           !red.ShutdownInProgress && red.ConnectedClientsList.Count >= 2)
     {
-        if (AllPlayersAtSpawn())
-            break;
+        if (AllPlayersAtSpawn(mapa) && TodosConfirmaronIntroduccionInicial())
+        {
+            IniciarHistoria();
+            yield break;
+        }
 
-        elapsed += Time.deltaTime;
         yield return null;
     }
-
-    if (!AllPlayersAtSpawn())
-    {
-        Debug.LogWarning(
-            "[RoundManager] Historia: se agotó el tiempo de espera. " +
-            "Iniciando de todas formas."
-        );
-    }
-
-    while (!TodosConfirmaronIntroduccionInicial())
-        yield return null;
-
-    IniciarHistoria();
 }
 
 public void IniciarHistoria()

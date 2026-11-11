@@ -372,19 +372,14 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
             return;
 
         ulong clientId = rpcParams.Receive.SenderClientId;
-        if (!NetworkManager.Singleton.ConnectedClients.ContainsKey(clientId))
+        if (!NetworkManager.Singleton.ConnectedClients.TryGetValue(clientId, out NetworkClient cliente) ||
+            JugadorEliminado(cliente.PlayerObject))
             return;
 
-        ActualizarCantidadJugadoresZonaSegura();
         if (!jugadoresConfirmaronAvanceZonaSegura.Add(clientId))
             return;
 
-        ConfirmacionesZonaSeguraNetwork.Value =
-            jugadoresConfirmaronAvanceZonaSegura.Count;
-
-        if (ConfirmacionesZonaSeguraNetwork.Value >=
-            Mathf.Max(1, JugadoresZonaSeguraNetwork.Value))
-            AvanzarAlSiguienteEscenarioDesdeZonaSegura();
+        ActualizarCantidadJugadoresZonaSegura();
     }
 
     private void ReiniciarConfirmacionesZonaSegura()
@@ -392,17 +387,31 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
         jugadoresConfirmaronAvanceZonaSegura.Clear();
         transicionZonaSeguraMultiplayerIniciada = false;
         ActualizarCantidadJugadoresZonaSegura();
-        ConfirmacionesZonaSeguraNetwork.Value = 0;
     }
 
     private void ActualizarCantidadJugadoresZonaSegura()
     {
-        if (!IsServer || NetworkManager.Singleton == null ||
+        NetworkManager red = NetworkManager.Singleton;
+        if (!IsSpawned || !IsServer || red == null || red.ShutdownInProgress ||
             !EsZonaSeguraMultiplayerActiva())
             return;
 
-        JugadoresZonaSeguraNetwork.Value =
-            NetworkManager.Singleton.ConnectedClientsList.Count;
+        int participantes = 0;
+        int confirmados = 0;
+        foreach (NetworkClient cliente in red.ConnectedClientsList)
+        {
+            if (JugadorEliminado(cliente.PlayerObject))
+                continue;
+
+            participantes++;
+            if (jugadoresConfirmaronAvanceZonaSegura.Contains(cliente.ClientId))
+                confirmados++;
+        }
+
+        JugadoresZonaSeguraNetwork.Value = participantes;
+        ConfirmacionesZonaSeguraNetwork.Value = confirmados;
+        if (participantes > 0 && confirmados == participantes)
+            AvanzarAlSiguienteEscenarioDesdeZonaSegura();
     }
 
     private void AlConectarJugadorZonaSegura(ulong clientId)
@@ -414,18 +423,13 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
     {
         jugadoresEnTriggerLaboratorio.Remove(clientId);
         jugadoresEnTriggerSalidaCiudad.Remove(clientId);
+        jugadoresEnZonaSegura.Remove(clientId);
 
         if (!EsZonaSeguraMultiplayerActiva())
             return;
 
         jugadoresConfirmaronAvanceZonaSegura.Remove(clientId);
         ActualizarCantidadJugadoresZonaSegura();
-        ConfirmacionesZonaSeguraNetwork.Value =
-            jugadoresConfirmaronAvanceZonaSegura.Count;
-
-        if (ConfirmacionesZonaSeguraNetwork.Value >=
-            Mathf.Max(1, JugadoresZonaSeguraNetwork.Value))
-            AvanzarAlSiguienteEscenarioDesdeZonaSegura();
     }
 
     private bool EsZonaSeguraMultiplayerActiva()
@@ -510,6 +514,8 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
 
     private void Update()
     {
+        ActualizarCantidadJugadoresZonaSegura();
+
         if (IsSpawned && Time.unscaledTime >= proximaSincronizacionObjetivo)
         {
             proximaSincronizacionObjetivo = Time.unscaledTime + 5f;
@@ -537,16 +543,7 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
 
         // Los jugadores pueden estar frente a la puerta antes de que termine
         // la misión. La comprobación directa evita depender de OnTriggerEnter.
-        foreach (NetworkClient cliente in NetworkManager.Singleton.ConnectedClientsList)
-        {
-            if (!JugadorDentroDelTrigger(
-                    cliente.ClientId,
-                    puntoTriggerLaboratorio,
-                    distanciaActivacionTriggerLaboratorio))
-                return;
-        }
-
-        if (NetworkManager.Singleton.ConnectedClientsList.Count == 0)
+        if (!TodosLosJugadoresEnTrigger(puntoTriggerLaboratorio, distanciaActivacionTriggerLaboratorio))
             return;
 
         transicionSafeZone1MultiplayerIniciada = true;
@@ -1008,19 +1005,8 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
         );
     }
 
-    private bool TodosEnZonaSegura()
-    {
-        if (NetworkManager.Singleton == null)
-            return false;
-
-        foreach (NetworkClient cliente in NetworkManager.Singleton.ConnectedClientsList)
-        {
-            if (!jugadoresEnZonaSegura.Contains(cliente.ClientId))
-                return false;
-        }
-
-        return true;
-    }
+    private bool TodosEnZonaSegura() =>
+        TodosLosJugadoresConectadosEstanDentro(jugadoresEnZonaSegura);
 
     public void NotificarPresenciaEnTriggerHistoria(
         bool esTriggerLaboratorio,
@@ -1045,7 +1031,8 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
         }
 
         ulong clientId = rpcParams.Receive.SenderClientId;
-        if (!NetworkManager.Singleton.ConnectedClients.ContainsKey(clientId))
+        if (!NetworkManager.Singleton.ConnectedClients.TryGetValue(clientId, out NetworkClient cliente) ||
+            JugadorEliminado(cliente.PlayerObject))
             return;
 
         HashSet<ulong> jugadoresDentro;
@@ -1117,23 +1104,19 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
         if (NetworkManager.Singleton == null)
             return false;
 
-        int cantidadConectada =
-            NetworkManager.Singleton.ConnectedClientsList.Count;
-
-        if (cantidadConectada == 0 ||
-            cantidadConectada > NetworkBootstrap.MaxPlayersPerRoom)
-        {
-            return false;
-        }
-
+        bool hayParticipantes = false;
         foreach (NetworkClient cliente in
                  NetworkManager.Singleton.ConnectedClientsList)
         {
+            if (JugadorEliminado(cliente.PlayerObject))
+                continue;
+
             if (!jugadoresDentro.Contains(cliente.ClientId))
                 return false;
+            hayParticipantes = true;
         }
 
-        return true;
+        return hayParticipantes;
     }
 
     private bool TodosLosJugadoresEnTrigger(Transform punto, float distancia)
@@ -1141,11 +1124,24 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
         if (NetworkManager.Singleton == null)
             return false;
 
+        bool hayParticipantes = false;
         foreach (NetworkClient cliente in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            if (JugadorEliminado(cliente.PlayerObject))
+                continue;
+
             if (!JugadorDentroDelTrigger(cliente.ClientId, punto, distancia))
                 return false;
+            hayParticipantes = true;
+        }
 
-        return true;
+        return hayParticipantes;
+    }
+
+    internal static bool JugadorEliminado(NetworkObject jugador)
+    {
+        return jugador != null && jugador.TryGetComponent(out PlayerHealth salud) &&
+            (salud.IsDead || salud.IsSpectating);
     }
 
     private bool JugadorDentroDelTrigger(

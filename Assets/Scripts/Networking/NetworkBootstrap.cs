@@ -345,13 +345,32 @@ public class NetworkBootstrap : MonoBehaviour
 
     private void OnPlayerLeft(string playerId)
     {
+        ISession sesion = currentSession;
+        if (sesion == null)
+            return;
+
         if (!isIntentionalLeave && (NetworkManager.Singleton == null ||
                                    !NetworkManager.Singleton.IsListening))
         {
-            if (currentSession != null && playerId == currentSession.Host)
+            if (playerId == sesion.Host)
                 GameStartCurtain.AvisarDesconexionDelHost();
             else
+            {
                 GameStartCurtain.AvisarSalidaDeCompanero();
+                if (sesion.IsHost && GameStartCurtain.CargaEnCurso)
+                {
+                    bool quedanInvitados = false;
+                    foreach (IReadOnlyPlayer jugador in sesion.Players)
+                        if (jugador.Id != sesion.Host && jugador.Id != playerId)
+                        {
+                            quedanInvitados = true;
+                            break;
+                        }
+
+                    if (!quedanInvitados)
+                        _ = CerrarPartidaSinInvitados();
+                }
+            }
         }
 
         Debug.Log(
@@ -361,7 +380,7 @@ public class NetworkBootstrap : MonoBehaviour
 
         Debug.Log(
             "[Network] Jugadores actuales: " +
-            currentSession.Players.Count
+            sesion.Players.Count
         );
     }
 
@@ -604,7 +623,13 @@ public class NetworkBootstrap : MonoBehaviour
                 int invitadosEsperados = Mathf.Min(
                     Mathf.Max(0, invitadosIniciales - bajasDuranteInicio),
                     Mathf.Max(0, currentSession.Players.Count - 1));
-                if (listos >= invitadosEsperados && listos == conectados)
+                if (conectados == 0 && invitadosEsperados == 0)
+                {
+                    _ = CerrarPartidaSinInvitados();
+                    return false;
+                }
+
+                if (listos > 0 && listos >= invitadosEsperados && listos == conectados)
                     break;
 
                 if (espera >= 20f)
@@ -616,6 +641,7 @@ public class NetworkBootstrap : MonoBehaviour
                     }
 
                     Debug.LogError("[Network] Ningún invitado terminó de sincronizar.");
+                    _ = CerrarPartidaSinInvitados();
                     return false;
                 }
 
@@ -733,6 +759,13 @@ private void OnClienteSincronizado(ulong clientId)
                 bool estabaSincronizado = clientesSincronizados.Remove(evento.ClientId);
                 if (estabaSincronizando || estabaSincronizado)
                     bajasDuranteInicio++;
+
+                if (red.ConnectedClientsIds.Count <= 1 && !red.ShutdownInProgress)
+                {
+                    OnGuestLeft?.Invoke();
+                    _ = CerrarPartidaSinInvitados();
+                    return;
+                }
             }
             GameStartCurtain.AvisarSalidaDeCompanero();
             OnGuestLeft?.Invoke();
@@ -766,6 +799,13 @@ private void OnClienteSincronizado(ulong clientId)
 
     public Task GoToMenuDueToDisconnect() => VolverAlMenu(false);
 
+    private Task CerrarPartidaSinInvitados()
+    {
+        const string aviso = "Se cerró la partida porque se desconectó el último invitado.";
+        Debug.LogWarning("[Network] " + aviso);
+        return VolverAlMenu(true, aviso);
+    }
+
     private void AlRecibirSalidaDuranteCarga(ulong clientId, FastBufferReader mensaje)
     {
         NetworkManager red = NetworkManager.Singleton;
@@ -774,14 +814,14 @@ private void OnClienteSincronizado(ulong clientId)
             red.DisconnectClient(clientId, null);
     }
 
-    private async Task VolverAlMenu(bool cerrarSalaSiSoyHost)
+    private async Task VolverAlMenu(bool cerrarSalaSiSoyHost, string aviso = null)
     {
         if (returningToMenu)
             return;
 
         returningToMenu = true;
         NotifyIntentionalLeave();
-        GameStartCurtain.MostrarSalidaAlMenu();
+        GameStartCurtain.MostrarSalidaAlMenu(aviso);
         Time.timeScale = 1f;
         AudioListener.pause = false;
 

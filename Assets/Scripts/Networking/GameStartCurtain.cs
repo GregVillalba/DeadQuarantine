@@ -16,6 +16,7 @@ public class GameStartCurtain : MonoBehaviour
     private static TextMeshProUGUI avisoCarga;
     private static bool anfitrionDesconectado;
     private static bool saliendoAlMenu;
+    public static bool CargaEnCurso => cortinaPersistenteLobby != null && !saliendoAlMenu;
 
     [SerializeField] private Sprite imagenCargaLobby;
 
@@ -142,7 +143,7 @@ public class GameStartCurtain : MonoBehaviour
         return true;
     }
 
-    public static void MostrarSalidaAlMenu()
+    public static void MostrarSalidaAlMenu(string aviso = null)
     {
         saliendoAlMenu = true;
         DeadQuarantine.PvPvE.PvPvELoadingScreen.CancelOriginal();
@@ -152,7 +153,7 @@ public class GameStartCurtain : MonoBehaviour
         fondoPersistente.sprite = null;
         fondoPersistente.color = Color.black;
         botonSalir.gameObject.SetActive(false);
-        avisoCarga.text = "Volviendo al menú…";
+        avisoCarga.text = aviso ?? "Volviendo al menú…";
         avisoCarga.transform.parent.gameObject.SetActive(true);
     }
 

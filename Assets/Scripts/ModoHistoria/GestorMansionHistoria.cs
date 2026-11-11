@@ -111,15 +111,17 @@ public class GestorMansionHistoria : MonoBehaviour
                 triggerHelipuerto = activador.GetComponent<Collider>();
         }
 
-        if (triggerHelipuerto == null ||
-            NetworkManager.Singleton.ConnectedClientsList.Count < 2)
+        if (triggerHelipuerto == null)
             return false;
 
         Bounds zona = triggerHelipuerto.bounds;
+        bool hayParticipantes = false;
         foreach (NetworkClient cliente in NetworkManager.Singleton.ConnectedClientsList)
         {
             if (cliente.PlayerObject == null)
                 return false;
+            if (GestorHistoriaPartida.JugadorEliminado(cliente.PlayerObject))
+                continue;
 
             CharacterController cuerpo =
                 cliente.PlayerObject.GetComponent<CharacterController>();
@@ -130,9 +132,11 @@ public class GestorMansionHistoria : MonoBehaviour
             }
             else if (!zona.Contains(cliente.PlayerObject.transform.position))
                 return false;
+
+            hayParticipantes = true;
         }
 
-        return true;
+        return hayParticipantes;
     }
 
     private void OnDestroy()
