@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 // Presentation only. Weapon.cs retains the project's existing firing and damage path.
 public sealed class NetworkWeaponPresentation : NetworkBehaviour
@@ -60,7 +59,7 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
     public GameObject VisibleWeapon => held;
     public override void OnNetworkSpawn()
     {
-        storyIntro=GetComponent<StoryIntroController>();
+        storyIntro=GetComponentInParent<NetworkObject>()?.GetComponentInChildren<StoryIntroController>(true);
         hand=Array.Find(Body.GetComponentsInChildren<Transform>(true),t=>t.name=="Hand_R");
         audioOutput=gameObject.AddComponent<AudioSource>();audioOutput.playOnAwake=false;audioOutput.spatialBlend=1;
         audioOutput.minDistance=3;audioOutput.maxDistance=90;audioOutput.rolloffMode=AudioRolloffMode.Logarithmic;
@@ -100,7 +99,9 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
         foreach(var renderer in bodyRenderers)if(renderer)renderer.forceRenderingOff=DeadPvPvEBody || IsOwner && !ShowLocalBodyForTesting || ocultoPorIntroduccion;
     }
     bool IntroMultiplayerSinConfirmar =>
-        storyIntro != null && SceneManager.GetActiveScene().name.StartsWith("MP_") &&
+        storyIntro != null &&
+        GestorEscenariosPartida.Instance != null &&
+        GestorEscenariosPartida.Instance.UsaEscenasAditivasMultiplayer &&
         !storyIntro.IntroduccionInicialConfirmada;
     // Humanoid TP clips move the loading hand independently of the gun.
     // The bolt rifle stays in its supporting left hand while the right hand loads/cycles it.

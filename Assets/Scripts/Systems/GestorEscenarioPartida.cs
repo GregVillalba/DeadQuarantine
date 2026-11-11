@@ -14,6 +14,11 @@ public class GestorEscenariosPartida : MonoBehaviour
     public bool UsaEscenasAditivasMultiplayer => usarEscenasAditivasMultiplayer;
     public bool MapaMultiplayerListo { get; private set; }
     public bool PresentacionLocalPreparada { get; private set; }
+    public void IniciarCargaMultiplayer()
+    {
+        MapaMultiplayerListo = false;
+        PresentacionLocalPreparada = false;
+    }
     public event System.Action EventoMapaMultiplayerListo;
 
 

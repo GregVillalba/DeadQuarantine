@@ -10,11 +10,25 @@ namespace DeadQuarantine.PvPvE {
  public sealed class PvPvELoadingScreen:MonoBehaviour {
   PvPvEPreparationFlow flow;PvPvEMapVoting voting;PvPvETeamRoster roster;Canvas canvas;
   static PvPvENetworkSettings originalSettings;static PvPvELoadingScreen originalScreen;
-  bool original;string originalTarget,originalOrigin;float originalProgress;PvPvEMapOption originalMap;TextMeshProUGUI modeLabel;
+  bool original,cooperative;string originalTarget,originalOrigin,cooperativeTarget;float originalProgress;PvPvEMapOption originalMap;PvPvENetworkSettings cooperativeSettings;TextMeshProUGUI modeLabel;
   public static void ConfigureOriginal(PvPvENetworkSettings settings)=>originalSettings=settings;
+  public static bool BeginCooperative(PvPvENetworkSettings settings,string destination=null){
+   var cfg=ConfiguracionPartidaSeleccionada.Instancia;
+   if(!settings||!cfg||PvPvETeamRoster.Active)return false;
+   var selected=destination=="MP_Ciudad"?ConfiguracionPartidaSeleccionada.Escenario.Ciudad:destination=="MP_Cabana"?ConfiguracionPartidaSeleccionada.Escenario.Cabana:destination=="MP_Laboratorio"?ConfiguracionPartidaSeleccionada.Escenario.Laboratorio:cfg.escenarioSeleccionado;
+   var map=System.Array.Find(settings.Maps,m=>m.Id==selected);
+   if(map==null)return false;
+   if(originalScreen&&!originalScreen.cooperative)CancelOriginal();
+   if(!originalScreen){var go=new GameObject("Cooperative loading");DontDestroyOnLoad(go);originalScreen=go.AddComponent<PvPvELoadingScreen>();originalScreen.original=true;originalScreen.cooperative=true;originalScreen.cooperativeSettings=settings;originalScreen.Build();originalScreen.canvas.sortingOrder=short.MaxValue-1;}
+   var screen=originalScreen;screen.cooperativeTarget=destination;screen.originalMap=map;screen.mapName.text=destination!=null&&destination.StartsWith("MP_ZonaSegura")?"ZONA SEGURA":map.Name;
+   screen.modeLabel.text=cfg.modoSeleccionado switch{ConfiguracionPartidaSeleccionada.ModoJuego.Historia=>"HISTORIA",ConfiguracionPartidaSeleccionada.ModoJuego.Ronda5=>"RONDA 5",_=>"SUPERVIVENCIA"};
+   screen.UpdateOriginal();return true;
+  }
+  public static void CancelCooperative(){if(originalScreen&&originalScreen.cooperative)CancelOriginal();}
+  public static bool CooperativeActive=>originalScreen&&originalScreen.cooperative;
   public static void BeginOriginal(string scene){
    if(PvPvETeamRoster.Active)return;
-   if(originalScreen){originalScreen.originalTarget=scene;return;}
+   if(originalScreen){if(!originalScreen.cooperative)originalScreen.originalTarget=scene;return;}
    var settings=originalSettings;var matchmaking=PvPvEMatchmaking.Active;if(matchmaking)settings=matchmaking.Settings;
    var cfg=ConfiguracionPartidaSeleccionada.Instancia;if(!settings||cfg==null)return;
    var go=new GameObject("Original mode loading");DontDestroyOnLoad(go);var screen=go.AddComponent<PvPvELoadingScreen>();screen.original=true;screen.originalTarget=scene;screen.originalOrigin=UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
@@ -25,15 +39,16 @@ namespace DeadQuarantine.PvPvE {
   public static void CancelOriginal(){if(originalScreen){Destroy(originalScreen.gameObject);originalScreen=null;}}
   void UpdateOriginal(){
    var scene=UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-   if(scene!=originalOrigin&&scene!=originalTarget){CancelOriginal();return;}
+   if(cooperative){status.text=GestorEscenariosPartida.Instance&&GestorEscenariosPartida.Instance.MapaMultiplayerListo?"PREPARANDO JUGADORES":cooperativeTarget!=null&&cooperativeTarget.StartsWith("MP_ZonaSegura")?"CARGANDO ZONA SEGURA":"CARGANDO ESCENARIO";}
+   else if(scene!=originalOrigin&&scene!=originalTarget){CancelOriginal();return;}
    var manager=Unity.Netcode.NetworkManager.Singleton;var player=manager&&manager.LocalClient!=null?manager.LocalClient.PlayerObject:null;
    var spawn=player?player.GetComponent<MultiplayerPlayerSpawnAssigner>():null;
    // Story cinematics legitimately disable the FP camera. Loading ends at initialization/spawn;
    // the existing intro/Ready systems retain ownership of gameplay controls.
-   if(scene==originalTarget&&player&&player.IsSpawned&&(!spawn||spawn.IsAtSpawn.Value)){CancelOriginal();return;}
-   var views=originalMap.LoadingViews;preview.texture=views!=null&&views.Length>0?views[(int)(Time.unscaledTime/5)%views.Length]:originalMap.Preview;
+   if(!cooperative&&scene==originalTarget&&player&&player.IsSpawned&&(!spawn||spawn.IsAtSpawn.Value)){CancelOriginal();return;}
+   var views=originalMap.LoadingViews;preview.texture=cooperative&&cooperativeTarget!=null&&cooperativeTarget.StartsWith("MP_ZonaSegura")?Resources.Load<Texture2D>("PreviewZonaSegura"):views!=null&&views.Length>0?views[(int)(Time.unscaledTime/5)%views.Length]:originalMap.Preview;
    preview.color=preview.texture?Color.white:PanelColor;
-   status.text=originalProgress<.9f?"CARGANDO ESCENARIO · "+Mathf.RoundToInt(originalProgress*100)+"%":"PREPARANDO JUGADORES";
+   if(!cooperative)status.text=originalProgress<.9f?"CARGANDO ESCENARIO · "+Mathf.RoundToInt(originalProgress*100)+"%":"PREPARANDO JUGADORES";
    FitPreview();
   }
   Camera loadingCamera;RawImage preview;TextMeshProUGUI mapName,status;bool disposed;

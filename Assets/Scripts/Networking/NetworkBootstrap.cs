@@ -13,6 +13,8 @@ using UnityEngine.SceneManagement;
 
 public class NetworkBootstrap : MonoBehaviour
 {
+    [SerializeField] private DeadQuarantine.PvPvE.Networking.PvPvENetworkSettings cooperativeLoadingSettings;
+    public DeadQuarantine.PvPvE.Networking.PvPvENetworkSettings CooperativeLoadingSettings => cooperativeLoadingSettings;
     // Máximo de jugadores por sala. Es una constante (y no un campo del Inspector) a propósito: la escena tenía guardado
     // "maxConnections: 2" y eso pisaba el valor del script.
     public const int MaxPlayersPerRoom = 4;

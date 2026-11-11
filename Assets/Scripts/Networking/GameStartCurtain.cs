@@ -13,19 +13,32 @@ public class GameStartCurtain : MonoBehaviour
         MostrarCortinaPersistente();
     }
 
-    public static void MostrarCortinaTransicion()
+    public static void MostrarCortinaTransicion(string destino)
     {
-        MostrarCortinaPersistente();
+        if (GestorEscenariosPartida.Instance != null)
+            GestorEscenariosPartida.Instance.IniciarCargaMultiplayer();
+        GameStartCurtain instancia = FindAnyObjectByType<GameStartCurtain>();
+        if (instancia != null)
+        {
+            instancia.curtainHidden = false;
+            instancia.mapaAditivoListoDetectado = false;
+        }
+        MostrarCortinaPersistente(destino);
     }
 
-    private static void MostrarCortinaPersistente()
+    private static void MostrarCortinaPersistente(string destino = null)
     {
+        bool pantallaCooperativa = DeadQuarantine.PvPvE.PvPvELoadingScreen.BeginCooperative(
+            NetworkBootstrap.Instance != null ? NetworkBootstrap.Instance.CooperativeLoadingSettings : null, destino);
         if (cortinaPersistenteLobby != null)
         {
             UnityEngine.UI.Image fondoExistente =
                 cortinaPersistenteLobby.GetComponentInChildren<UnityEngine.UI.Image>(true);
             if (fondoExistente != null)
-                AsignarImagenCarga(fondoExistente);
+            {
+                if (pantallaCooperativa) fondoExistente.color = Color.clear;
+                else AsignarImagenCarga(fondoExistente);
+            }
             cortinaPersistenteLobby.SetActive(true);
             return;
         }
@@ -55,7 +68,8 @@ public class GameStartCurtain : MonoBehaviour
         rect.offsetMax = Vector2.zero;
 
         UnityEngine.UI.Image imagen = fondo.AddComponent<UnityEngine.UI.Image>();
-        AsignarImagenCarga(imagen);
+        if (pantallaCooperativa) imagen.color = Color.clear;
+        else AsignarImagenCarga(imagen);
         imagen.raycastTarget = true;
 
         AudioListener.pause = true;
@@ -109,6 +123,7 @@ public class GameStartCurtain : MonoBehaviour
 
     public static void CancelarCortinaDesdeLobby()
     {
+        DeadQuarantine.PvPvE.PvPvELoadingScreen.CancelCooperative();
         if (cortinaPersistenteLobby != null)
         {
             cortinaPersistenteLobby.SetActive(false);
@@ -140,7 +155,7 @@ public class GameStartCurtain : MonoBehaviour
         OcultarRestosDelLobby();
 
         if (curtainCanvas != null)
-            curtainCanvas.SetActive(true);
+            curtainCanvas.SetActive(!DeadQuarantine.PvPvE.PvPvELoadingScreen.CooperativeActive);
 
         BloquearJugadorLocalInmediatamente();
 
@@ -368,6 +383,7 @@ public class GameStartCurtain : MonoBehaviour
         Debug.Log("[GameStartCurtain] OcultarCortina() ejecutado.");
 
         curtainHidden = true;
+        DeadQuarantine.PvPvE.PvPvELoadingScreen.CancelCooperative();
 
         if (curtainCanvas != null)
             curtainCanvas.SetActive(false);

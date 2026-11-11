@@ -677,7 +677,8 @@ private void ReanudarTiempoSiSinglePlayer()
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
-        if (IsSpawned && SceneManager.GetActiveScene().name.StartsWith("MP_"))
+        if (IsSpawned && GestorEscenariosPartida.Instance != null &&
+            GestorEscenariosPartida.Instance.UsaEscenasAditivasMultiplayer)
             introduccionInicialConfirmada.Value = true;
 
         Debug.Log("[StoryIntro] ContinuarHistoria() FIN.");

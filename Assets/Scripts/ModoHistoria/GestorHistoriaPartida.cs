@@ -1152,7 +1152,7 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
 
     private IEnumerator TransicionarSafeZone1ConCortina()
     {
-        yield return MostrarCortinaYEsperarClientes();
+        yield return MostrarCortinaYEsperarClientes("MP_ZonaSegura1");
 
         if (!IsServer || GestorEscenariosPartida.Instance == null)
         {
@@ -1169,7 +1169,10 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
     private IEnumerator ActivarEscenarioConCortina(
         ConfiguracionPartidaSeleccionada.Escenario escenario)
     {
-        yield return MostrarCortinaYEsperarClientes();
+        string destino = escenario == ConfiguracionPartidaSeleccionada.Escenario.Ciudad
+            ? "MP_Ciudad" : escenario == ConfiguracionPartidaSeleccionada.Escenario.Cabana
+                ? "MP_Cabana" : "MP_Laboratorio";
+        yield return MostrarCortinaYEsperarClientes(destino);
 
         if (IsServer && GestorEscenariosPartida.Instance != null)
             GestorEscenariosPartida.Instance.ActivarEscenario(escenario);
@@ -1177,11 +1180,11 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
 
     private IEnumerator EjecutarConCortina(System.Action accion)
     {
-        yield return MostrarCortinaYEsperarClientes();
+        yield return MostrarCortinaYEsperarClientes("MP_ZonaSegura2");
         accion?.Invoke();
     }
 
-    private IEnumerator MostrarCortinaYEsperarClientes()
+    private IEnumerator MostrarCortinaYEsperarClientes(string destino)
     {
         clientesConCortinaTransicionVisible.Clear();
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
@@ -1192,7 +1195,7 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
             );
         }
 
-        MostrarCortinaTransicionClientRpc();
+        MostrarCortinaTransicionClientRpc(destino);
 
         float tiempoEspera = 0f;
         const float tiempoMaximoEspera = 3f;
@@ -1224,9 +1227,9 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
     }
 
     [ClientRpc]
-    private void MostrarCortinaTransicionClientRpc()
+    private void MostrarCortinaTransicionClientRpc(string destino)
     {
-        GameStartCurtain.MostrarCortinaTransicion();
+        GameStartCurtain.MostrarCortinaTransicion(destino);
         ConfirmarCortinaTransicionListaRpc();
     }
 
