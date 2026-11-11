@@ -16,6 +16,7 @@ public class GameStartCurtain : MonoBehaviour
     private static TextMeshProUGUI avisoCarga;
     private static bool anfitrionDesconectado;
     private static bool saliendoAlMenu;
+    private static double? inicioCortinaPersistente;
     public static bool CargaEnCurso => cortinaPersistenteLobby != null && !saliendoAlMenu;
 
     [SerializeField] private Sprite imagenCargaLobby;
@@ -33,6 +34,8 @@ public class GameStartCurtain : MonoBehaviour
         if (instancia != null)
         {
             instancia.curtainHidden = false;
+            instancia.inicioEsperaCarga = Time.realtimeSinceStartupAsDouble;
+            instancia.mapaListoDesde = null;
             instancia.BloquearJugadorLocalInmediatamente();
         }
         MostrarCortinaPersistente(destino);
@@ -43,6 +46,7 @@ public class GameStartCurtain : MonoBehaviour
         if (anfitrionDesconectado || NetworkBootstrap.Instance?.IsLeavingIntentionally == true)
             return;
 
+        inicioCortinaPersistente ??= Time.realtimeSinceStartupAsDouble;
         bool pantallaCooperativa = DeadQuarantine.PvPvE.PvPvELoadingScreen.BeginCooperative(
             NetworkBootstrap.Instance != null ? NetworkBootstrap.Instance.CooperativeLoadingSettings : null, destino);
         if (cortinaPersistenteLobby != null)
@@ -224,6 +228,7 @@ public class GameStartCurtain : MonoBehaviour
     {
         anfitrionDesconectado = false;
         saliendoAlMenu = false;
+        inicioCortinaPersistente = null;
         DeadQuarantine.PvPvE.PvPvELoadingScreen.CancelCooperative();
         if (cortinaPersistenteLobby != null)
         {
@@ -242,12 +247,15 @@ public class GameStartCurtain : MonoBehaviour
     [SerializeField] private int expectedPlayerCount = 2;
 
     private bool curtainHidden;
+    private double inicioEsperaCarga;
+    private double? mapaListoDesde;
 
     private float proximoLog;
 
 
     private void Awake()
     {
+        inicioEsperaCarga = inicioCortinaPersistente ?? Time.realtimeSinceStartupAsDouble;
         if (saliendoAlMenu)
         {
             if (curtainCanvas != null)
@@ -356,7 +364,11 @@ public class GameStartCurtain : MonoBehaviour
         string mapaAditivo = null;
         if (gestor != null && gestor.UsaEscenasAditivasMultiplayer)
         {
-            if (!gestor.MapaMultiplayerListo || !gestor.PresentacionLocalPreparada)
+            if (!gestor.MapaMultiplayerListo)
+                return;
+
+            mapaListoDesde ??= Time.realtimeSinceStartupAsDouble;
+            if (!gestor.PresentacionLocalPreparada)
                 return;
 
             mapaAditivo = gestor.NombreMapaMultiplayerActivo;
@@ -364,6 +376,15 @@ public class GameStartCurtain : MonoBehaviour
 
         if (!TodosListos(mapaAditivo))
             return;
+
+        if (mapaAditivo != null && mapaListoDesde.HasValue)
+        {
+            double ahora = Time.realtimeSinceStartupAsDouble;
+            NetworkManager red = NetworkManager.Singleton;
+            Debug.Log($"[Carga MP] mapa={mapaAditivo} | local={red.LocalClientId} | " +
+                $"jugadores={red.ConnectedClientsIds.Count} | cortina={ahora - inicioEsperaCarga:F2}s | " +
+                $"desdeMapaListo={ahora - mapaListoDesde.Value:F2}s");
+        }
 
         OcultarCortina();
     }

@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.AI;
@@ -242,5 +244,52 @@ public static partial class OriginalCityWeaponsTools
   for(int i=0;i<count;i++)for(int j=0;j<3;j++) {string a=Key(mesh.vertices[mesh.indices[i*3+j]]),b=Key(mesh.vertices[mesh.indices[i*3+(j+1)%3]]);string edge=string.CompareOrdinal(a,b)<0?a+"/"+b:b+"/"+a;if(edges.TryGetValue(edge,out int other))parent[Find(i)]=Find(other);else edges[edge]=i;}
   return Enumerable.Range(0,count).GroupBy(Find).Select(g=>g.ToList()).ToArray();
  }
+}
+
+public sealed class CityNavigationBuildProcessor : IProcessSceneWithReport
+{
+    public int callbackOrder => 0;
+
+    public void OnProcessScene(Scene scene, BuildReport report)
+    {
+        if (report == null || scene.path != "Assets/Scenes/MP_Ciudad.unity")
+            return;
+
+        foreach (GameObject root in scene.GetRootGameObjects())
+        {
+            NavMeshSurface surface = root.GetComponent<NavMeshSurface>();
+            if (surface == null || surface.navMeshData == null ||
+                surface.collectObjects != CollectObjects.Children)
+                continue;
+
+            NavMeshModifier[] modifiers = root.GetComponentsInChildren<NavMeshModifier>(true);
+            NavMeshModifierVolume[] volumes = root.GetComponentsInChildren<NavMeshModifierVolume>(true);
+            Transform generatedExclusions = root.transform.Find("Navegacion_Ciudad");
+            int removedObjects = 0;
+
+            foreach (NavMeshModifier modifier in modifiers)
+                UnityEngine.Object.DestroyImmediate(modifier);
+
+            foreach (NavMeshModifierVolume volume in volumes)
+            {
+                // The city bake tool creates these leaf objects as input to the bake.
+                if (generatedExclusions != null && volume.transform.parent == generatedExclusions &&
+                    volume.transform.childCount == 0 &&
+                    volume.name.StartsWith("Superficie_Sin_Acceso_", StringComparison.Ordinal) &&
+                    volume.GetComponents<Component>().Length == 2)
+                {
+                    UnityEngine.Object.DestroyImmediate(volume.gameObject);
+                    removedObjects++;
+                }
+                else
+                {
+                    UnityEngine.Object.DestroyImmediate(volume);
+                }
+            }
+
+            Debug.Log($"[Carga MP_Ciudad] Build: {modifiers.Length} modificadores, " +
+                $"{volumes.Length} volúmenes y {removedObjects} objetos de horneado retirados.");
+        }
+    }
 }
 #endif
