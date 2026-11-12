@@ -32,9 +32,11 @@ public class NPCWeaponVendor : MonoBehaviour
 
     public IReadOnlyList<WeaponOffer> Offers => offers;
     public string NombreMercader => gameObject.name;
-    public bool PuedeComerciar => !RoundManager.Instance || (RoundManager.Instance.EsModoHistoria
-        ? !GestorEscenariosPartida.Instance || GestorEscenariosPartida.Instance.EstaEnZonaSeguraActiva(transform)
-        : RoundManager.Instance.IsShopPhaseActive);
+    // En PvP no se comercia nunca (el mercader además se oculta con MercaderSegunModo).
+    public bool PuedeComerciar => !DisponibilidadTienda.EsPvP &&
+        (!RoundManager.Instance || (RoundManager.Instance.EsModoHistoria
+            ? !GestorEscenariosPartida.Instance || GestorEscenariosPartida.Instance.EstaEnZonaSeguraActiva(transform)
+            : RoundManager.Instance.IsShopPhaseActive));
 
     // Cada recurso del precio por el porcentaje de reparación (torreta o blindaje), redondeado para arriba.
     public PrecioRecursos PrecioReparacion(WeaponOffer oferta)

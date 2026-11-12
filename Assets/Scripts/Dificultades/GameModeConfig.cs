@@ -105,6 +105,13 @@ public class GameModeConfig : ScriptableObject
     [Tooltip("Despues de la primera, hay tienda cada N rondas (2 = rondas impares: 3, 5, 7...).")]
     [Min(1)] public int shopEveryNRounds = 2;
 
+    [Header("Infinito: inflación de la tienda")]
+    [Tooltip("Cuánto suben los precios del mercader en cada fase de compras, sobre el precio base (0.25 = +25%). " +
+             "Es igual en las tres dificultades. 0 = precios fijos.")]
+    [Min(0f)] public float shopPriceIncreasePerShop = 0.25f;
+    [Tooltip("Multiplicador máximo de precios (3 = el triple del precio base).")]
+    [Min(1f)] public float maxShopPriceMultiplier = 3f;
+
     // =========================================================
     // CALCULOS (solo se usan con infiniteRounds activado)
     // =========================================================
@@ -221,5 +228,28 @@ public class GameModeConfig : ScriptableObject
     {
         return round >= shopFirstRound &&
                (round - shopFirstRound) % shopEveryNRounds == 0;
+    }
+
+    // Número de la fase de compras que se abre al terminar esa ronda (1 = la primera). 0 = todavía no hubo tienda.
+    public int GetShopNumber(int round)
+    {
+        if (round < shopFirstRound)
+            return 0;
+
+        return (round - shopFirstRound) / Mathf.Max(1, shopEveryNRounds) + 1;
+    }
+
+    // Multiplicador de los precios del mercader en la tienda que se abre al terminar esa ronda.
+    // La primera tienda cobra el precio base; cada una siguiente suma shopPriceIncreasePerShop, hasta el tope.
+    // Fuera de Supervivencia (infiniteRounds apagado) siempre es 1.
+    public float GetShopPriceMultiplier(int round)
+    {
+        if (!infiniteRounds)
+            return 1f;
+
+        int tiendasAnteriores = Mathf.Max(0, GetShopNumber(round) - 1);
+        float multiplier = 1f + Mathf.Max(0f, shopPriceIncreasePerShop) * tiendasAnteriores;
+
+        return Mathf.Clamp(multiplier, 1f, Mathf.Max(1f, maxShopPriceMultiplier));
     }
 }

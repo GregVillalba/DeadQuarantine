@@ -29,6 +29,27 @@ public struct PrecioRecursos : INetworkSerializeByMemcpy
         }
     }
 
+    /// <summary>
+    /// El precio con la inflación de la tienda: cada recurso por el multiplicador, redondeado al entero más cercano
+    /// (la mitad sube). Un multiplicador menor a 1 no abarata: se toma como 1. Lo que no se pide sigue en 0.
+    /// </summary>
+    public PrecioRecursos Multiplicado(float multiplicador)
+    {
+        if (multiplicador <= 1f)
+            return this;
+
+        return new PrecioRecursos(
+            Redondear(Cantidad(TipoRecurso.PilaDeLatas) * multiplicador),
+            Redondear(Cantidad(TipoRecurso.Cantimplora) * multiplicador),
+            Redondear(Cantidad(TipoRecurso.Bidon) * multiplicador));
+    }
+
+    // El margen evita que un 2.5 guardado como 2.4999998 baje a 2.
+    private static int Redondear(float valor)
+    {
+        return Mathf.FloorToInt(valor + 0.5001f);
+    }
+
     public bool EsGratis =>
         Cantidad(TipoRecurso.PilaDeLatas) == 0 &&
         Cantidad(TipoRecurso.Cantimplora) == 0 &&

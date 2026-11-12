@@ -126,8 +126,14 @@ public class WeaponOffer
     /// <summary>La compra equipa (o repara) un chaleco / casco en vez de desbloquear un arma.</summary>
     public bool EsBlindaje => piezaBlindaje != PiezaBlindaje.Ninguna && armadura > 0;
 
-    /// <summary>Lo que pide el mercader por esta oferta, en recursos.</summary>
-    public PrecioRecursos Precio => new PrecioRecursos(precioPilaDeLatas, precioCantimplora, precioBidon);
+    /// <summary>Precio configurado en el Inspector, sin la inflación de Supervivencia.</summary>
+    public PrecioRecursos PrecioBase => new PrecioRecursos(precioPilaDeLatas, precioCantimplora, precioBidon);
+
+    /// <summary>
+    /// Lo que pide el mercader por esta oferta ahora, en recursos. En Supervivencia es el precio base por el
+    /// multiplicador de la fase de compras actual (RoundManager.MultiplicadorPreciosTienda); en el resto, el base.
+    /// </summary>
+    public PrecioRecursos Precio => PrecioBase.Multiplicado(RoundManager.MultiplicadorPreciosTienda);
 
     /// <summary>Cuánto pide la oferta de un recurso (0 = no lo pide).</summary>
     public int PrecioEnRecursos(TipoRecurso tipo)

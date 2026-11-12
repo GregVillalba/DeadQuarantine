@@ -8,6 +8,7 @@ using UnityEngine;
 /// punto. Cuando alguien junta uno, ese punto vuelve a tener su recurso segundosReaparicion después (cada punto
 /// cuenta su tiempo, también en la fase de compras). Al cambiar de escenario (Historia) saca los del anterior.
 /// Funciona en los 3 modos: el escenario activo lo decide GestorEscenariosPartida.
+/// En los modos sin recursos (PvP, ver RecursosSegunModo) no hace aparecer ninguno.
 /// </summary>
 public class GestorRecursosEscenario : MonoBehaviour
 {
@@ -69,6 +70,15 @@ public class GestorRecursosEscenario : MonoBehaviour
             puntosEnUso.Clear();
             escenarioConRecursos = null;
             OpcionElegida = -1;
+            return;
+        }
+
+        // Modo sin recursos (ej. PvP, ver RecursosSegunModo): no aparece ninguno y se sacan los que hubiera.
+        if (!RecursosSegunModo.HayRecursosEnPartidaActual)
+        {
+            if (puntosEnUso.Count > 0 || escenarioConRecursos != null)
+                QuitarRecursos();
+
             return;
         }
 
