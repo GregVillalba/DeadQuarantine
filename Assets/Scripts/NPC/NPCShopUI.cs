@@ -125,6 +125,10 @@ public class NPCShopUI : MonoBehaviour
     [SerializeField] private Button listoButton;
     [SerializeField] private TextMeshProUGUI listoButtonText;
     [SerializeField] private TextMeshProUGUI tiempoTiendaText;
+    [Tooltip("Opcional. Aviso de inflación de Supervivencia (ej: \"Precios x1,75\"). Si queda vacío, el aviso se " +
+             "agrega en un segundo renglón más chico de Tiempo Tienda Text. Con precios base (x1) no se muestra.")]
+    [SerializeField] private TextMeshProUGUI inflacionText;
+    [SerializeField] private string formatoInflacion = "Precios x{0}";
     [Tooltip("Texto debajo del botón Listo (multijugador). Al lado se dibuja un círculo por compañero: verde listo, rojo comprando, gris no conectado.")]
     [SerializeField] private TextMeshProUGUI otroJugadorListoText;
     [SerializeField] private string textoJugadoresListos = "Jugadores listos:";
@@ -1161,8 +1165,12 @@ public class NPCShopUI : MonoBehaviour
 
     // Sin RoundManager (ej. escenas de prueba) el mercader queda siempre habilitado.
     // En Historia no hay rondas: se comercia en la zona segura que separa un escenario del siguiente.
+    // En PvP no se comercia: la tienda no abre aunque quede un mercader a la vista.
     private bool TiendaHabilitada(NPCWeaponVendor vendor)
     {
+        if (DisponibilidadTienda.EsPvP)
+            return false;
+
         if (RoundManager.Instance == null)
             return true;
 
@@ -1216,13 +1224,35 @@ public class NPCShopUI : MonoBehaviour
         bool faseActiva = RoundManager.Instance != null && RoundManager.Instance.IsShopPhaseActive;
         string tiempo = faseActiva ? FormatearTiempo(RoundManager.Instance.ShopPhaseRemaining) : string.Empty;
 
+        // Inflación de Supervivencia: se avisa cuánto subieron los precios respecto del precio base.
+        string inflacion = faseActiva ? TextoInflacion(RoundManager.MultiplicadorPreciosTienda) : string.Empty;
+
         if (tiempoTiendaText != null)
         {
             if (tiempoTiendaText.gameObject.activeSelf != faseActiva)
                 tiempoTiendaText.gameObject.SetActive(faseActiva);
 
             if (faseActiva)
-                tiempoTiendaText.text = "Tiempo restante: " + tiempo;
+            {
+                string textoTiempo = "Tiempo restante: " + tiempo;
+
+                // Sin texto propio para la inflación, va en un segundo renglón más chico.
+                if (inflacionText == null && inflacion.Length > 0)
+                    textoTiempo += "\n<size=70%>" + inflacion + "</size>";
+
+                tiempoTiendaText.text = textoTiempo;
+            }
+        }
+
+        if (inflacionText != null)
+        {
+            bool mostrarInflacion = inflacion.Length > 0;
+
+            if (inflacionText.gameObject.activeSelf != mostrarInflacion)
+                inflacionText.gameObject.SetActive(mostrarInflacion);
+
+            if (mostrarInflacion)
+                inflacionText.text = inflacion;
         }
 
         // También cuenta si el jugador saltó la fase con la tecla (sin abrir la tienda).
@@ -1278,6 +1308,19 @@ public class NPCShopUI : MonoBehaviour
             if (locked)
                 weapon.ForceStopAiming();
         }
+    }
+
+    // "Precios x1,75". Vacío con precios base (multiplicador 1): no hay nada que avisar.
+    private string TextoInflacion(float multiplicador)
+    {
+        if (multiplicador <= 1.001f)
+            return string.Empty;
+
+        string valor = multiplicador
+            .ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)
+            .Replace('.', ',');
+
+        return string.Format(formatoInflacion, valor);
     }
 
     private static string FormatearTiempo(int segundos)

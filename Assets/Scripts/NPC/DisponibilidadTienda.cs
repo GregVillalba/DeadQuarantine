@@ -16,7 +16,10 @@ public enum ModosTienda
 {
     Historia = 1 << 0,
     Ronda5 = 1 << 1,
-    Supervivencia = 1 << 2
+    Supervivencia = 1 << 2,
+
+    // PvP (Team Deathmatch): reutiliza los 3 mapas, pero ahí no se comercia ni se juntan recursos.
+    PvP = 1 << 3
 }
 
 /// <summary>
@@ -28,8 +31,32 @@ public static class DisponibilidadTienda
     public const DificultadesTienda TodasLasDificultades =
         DificultadesTienda.Normal | DificultadesTienda.Dificil | DificultadesTienda.Pesadilla;
 
+    // Los modos con mercader y recursos. PvP queda afuera a propósito: ahí no se comercia.
     public const ModosTienda TodosLosModos =
         ModosTienda.Historia | ModosTienda.Ronda5 | ModosTienda.Supervivencia;
+
+    /// <summary>
+    /// Partida PvP (Team Deathmatch). No es un ModoJuego de ConfiguracionPartidaSeleccionada (ahí queda en Ninguno):
+    /// se reconoce por la escena de sus mapas (PvPvEMapContext) o por el roster de equipos de la sesión.
+    /// </summary>
+    public static bool EsPvP =>
+        DeadQuarantine.PvPvE.Networking.PvPvEMapContext.Active != null ||
+        DeadQuarantine.PvPvE.Networking.PvPvETeamRoster.Active != null;
+
+    /// <summary>
+    /// Modo de la partida actual como flag, contando PvP. 0 = ninguno (escena abierta directo desde el editor,
+    /// tutorial): no se filtra nada. Lo usan MercaderSegunModo y RecursosSegunModo.
+    /// </summary>
+    public static ModosTienda FlagModoActual()
+    {
+        return AFlag(ModoActual(), EsPvP);
+    }
+
+    /// <summary>En PvP el flag es PvP sin importar el modo elegido en el menú; si no, el del modo.</summary>
+    public static ModosTienda AFlag(ConfiguracionPartidaSeleccionada.ModoJuego modo, bool esPvP)
+    {
+        return esPvP ? ModosTienda.PvP : AFlag(modo);
+    }
 
     public static bool SeMuestraEnPartidaActual(WeaponOffer oferta)
     {

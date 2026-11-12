@@ -124,6 +124,10 @@ public class DropRecursosZombie : MonoBehaviour
         if (EsZombieDelTutorial())
             return false;
 
+        // Modo sin recursos (ej. PvP, ver RecursosSegunModo): los zombies no sueltan nada.
+        if (!RecursosSegunModo.HayRecursosEnPartidaActual)
+            return false;
+
         return tabla.MaximoPorRonda <= 0 || SoltadosEnEstaRonda() < tabla.MaximoPorRonda;
     }
 

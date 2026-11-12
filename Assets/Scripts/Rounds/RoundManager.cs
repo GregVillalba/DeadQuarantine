@@ -152,6 +152,20 @@ private bool iniciarRondaDesdeGuardado;
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Server);
 
+    // Inflación de la tienda en Supervivencia: multiplicador de los precios del mercader. Lo calcula el servidor
+    // al abrir cada fase de compras (GameModeConfig.GetShopPriceMultiplier) y lo leen todos, así el cliente
+    // muestra y paga el mismo precio que cobra el servidor. En los demás modos queda en 1.
+    public NetworkVariable<float> ShopPriceMultiplierNetwork =
+        new NetworkVariable<float>(1f,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server);
+
+    /// <summary>Multiplicador actual de los precios del mercader. 1 = precio base (sin partida o fuera de Supervivencia).</summary>
+    public static float MultiplicadorPreciosTienda =>
+        Instance != null && Instance.IsSpawned
+            ? Mathf.Max(1f, Instance.ShopPriceMultiplierNetwork.Value)
+            : 1f;
+
     // =========================================================
     // PROPIEDADES
     // =========================================================
@@ -1904,12 +1918,20 @@ private IEnumerator EndRoundDelay()
 
         float remaining = shopPhaseDuration;
 
+        // Antes de habilitar al mercader: los precios de esta tienda ya llegan con la inflación de la ronda.
+        GameModeConfig reglasTienda = RulesMode;
+
+        ShopPriceMultiplierNetwork.Value = reglasTienda != null
+            ? reglasTienda.GetShopPriceMultiplier(CurrentRoundNetwork.Value)
+            : 1f;
+
         ShopPhaseRemainingNetwork.Value = Mathf.CeilToInt(remaining);
         ShopPhaseActiveNetwork.Value = true;
 
         MostrarPanelFaseComprasClientRpc();
 
-        Debug.Log("[RoundManager] Fase de compras iniciada (" + shopPhaseDuration + " s).");
+        Debug.Log("[RoundManager] Fase de compras iniciada (" + shopPhaseDuration + " s). Precios x" +
+                  ShopPriceMultiplierNetwork.Value.ToString("0.##") + ".");
 
         // El tiempo corre normalmente (el juego no se pausa).
         while (remaining > 0f && !AllPlayersReadyForShopEnd())

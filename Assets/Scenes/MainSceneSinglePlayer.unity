@@ -27302,6 +27302,7 @@ GameObject:
   - component: {fileID: 1231964030}
   - component: {fileID: 1231964029}
   - component: {fileID: 7700000000000006001}
+  - component: {fileID: 7700000000000006002}
   m_Layer: 0
   m_Name: GestorEscenarioPartida
   m_TagString: Untagged
@@ -49462,6 +49463,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Scripts::GestorRecursosEscenario
   prefabRecurso: {fileID: 7600000000000004003, guid: 43e22383af3849d089bd1022a3989fcb, type: 3}
   segundosReaparicion: 240
+--- !u!114 &7700000000000006002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1231964028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3049bcd156aa45da88458fd548e7ca25, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::RecursosSegunModo
+  modosConRecursos: 7
 --- !u!1001 &8118330680350265402
 PrefabInstance:
   m_ObjectHideFlags: 0
