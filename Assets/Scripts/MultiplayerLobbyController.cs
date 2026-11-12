@@ -1629,6 +1629,10 @@ private static bool HayNetcodeActivo()
         if (saliendoPorCierre)
             return;
 
+        if (network != null && network.IntentarCerrarPartidaPorSalidaDelHost(
+                texto + " Volviendo al menú principal…"))
+            return;
+
         saliendoPorCierre = true;
 
         await SalirDeSala();

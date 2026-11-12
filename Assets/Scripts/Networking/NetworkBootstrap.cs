@@ -53,7 +53,9 @@ public class NetworkBootstrap : MonoBehaviour
     private readonly HashSet<ulong> clientesSincronizados = new HashSet<ulong>();
     private readonly HashSet<ulong> clientesSincronizando = new HashSet<ulong>();
     private int bajasDuranteInicio;
-    private const string SalidaDuranteCargaMensaje = "Historia.SalidaDuranteCarga";
+    private const string SalidaDelInvitadoMensaje = "Historia.SalidaDuranteCarga";
+    private const string CierreDelHostMensaje = "Historia.CierreDelHostDuranteCarga";
+    private const string AvisoCierreDelHost = "El anfitrión salió de la partida. Volviendo al menú principal…";
     private bool multiplayerGameStartInProgress;
 
 
@@ -143,6 +145,7 @@ public class NetworkBootstrap : MonoBehaviour
                 red.OnConnectionEvent -= AlCambiarConexion;
                 red.OnServerStopped -= OnServidorDetenido;
                 red.OnClientStarted -= AlIniciarCliente;
+                red.OnClientStopped -= AlDetenerCliente;
             }
         }
     }
@@ -286,6 +289,8 @@ public class NetworkBootstrap : MonoBehaviour
             currentSession.PlayerJoined += OnPlayerJoined;
             currentSession.PlayerLeaving += OnPlayerLeft;
 
+            currentSession.Deleted += AlEliminarSesion;
+
             /*
              * IMPORTANTE:
              * Usamos el código REAL de la sesión.
@@ -353,7 +358,7 @@ public class NetworkBootstrap : MonoBehaviour
                                    !NetworkManager.Singleton.IsListening))
         {
             if (playerId == sesion.Host)
-                GameStartCurtain.AvisarDesconexionDelHost();
+                IntentarCerrarPartidaPorSalidaDelHost();
             else
             {
                 GameStartCurtain.AvisarSalidaDeCompanero();
@@ -384,6 +389,10 @@ public class NetworkBootstrap : MonoBehaviour
         );
     }
 
+    private void AlEliminarSesion()
+    {
+        IntentarCerrarPartidaPorSalidaDelHost("El anfitrión cerró la sala. Volviendo al menú principal…");
+    }
 
     // ============================================================
     // EMPEZAR PARTIDA
@@ -706,7 +715,7 @@ public class NetworkBootstrap : MonoBehaviour
     NetworkManager.Singleton.OnServerStarted -= RegistrarSincronizacion;
     RegistrarEventosDeCarga();
     NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(
-        SalidaDuranteCargaMensaje, AlRecibirSalidaDuranteCarga);
+        SalidaDelInvitadoMensaje, AlRecibirSalidaDelInvitado);
     NetworkManager.Singleton.SceneManager.OnSynchronize += AlIniciarSincronizacion;
     NetworkManager.Singleton.SceneManager.OnSynchronizeComplete += OnClienteSincronizado;
 }
@@ -733,13 +742,27 @@ private void OnClienteSincronizado(ulong clientId)
         red.OnServerStopped += OnServidorDetenido;
         red.OnClientStarted -= AlIniciarCliente;
         red.OnClientStarted += AlIniciarCliente;
+        red.OnClientStopped -= AlDetenerCliente;
+        red.OnClientStopped += AlDetenerCliente;
     }
 
     private void AlIniciarCliente()
     {
         RegistrarEventosDeCarga();
         if (isIntentionalLeave)
+        {
             NetworkManager.Singleton.Shutdown(true);
+            return;
+        }
+
+        NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(
+            CierreDelHostMensaje, AlRecibirCierreDelHost);
+    }
+
+    private void AlDetenerCliente(bool eraHost)
+    {
+        if (!eraHost && !DeadQuarantine.PvPvE.Networking.PvPvEMatchmaking.Owns(NetworkManager.Singleton))
+            IntentarCerrarPartidaPorSalidaDelHost();
     }
 
     private void AlCambiarConexion(NetworkManager red, ConnectionEventData evento)
@@ -776,7 +799,7 @@ private void OnClienteSincronizado(ulong clientId)
             evento.ClientId != red.LocalClientId)
             return;
 
-        if (GameStartCurtain.AvisarDesconexionDelHost())
+        if (IntentarCerrarPartidaPorSalidaDelHost())
             return;
 
         if (OnHostLeft != null)
@@ -795,18 +818,41 @@ private void OnClienteSincronizado(ulong clientId)
         _ = GoToMenuDueToDisconnect();
     }
 
-    public Task SalirDuranteCarga() => VolverAlMenu(true);
+    public Task SalirDePartidaCooperativa() => VolverAlMenu(true, salidaVoluntaria: true);
 
     public Task GoToMenuDueToDisconnect() => VolverAlMenu(false);
+
+    public bool IntentarCerrarPartidaPorSalidaDelHost(string aviso = null)
+    {
+        if (returningToMenu)
+            return true;
+
+        bool partidaActiva = GameStartCurtain.CargaEnCurso ||
+            SceneManager.GetSceneByName("MainSceneMultiPlayer").isLoaded;
+        if (isIntentionalLeave || IsHost || !partidaActiva)
+            return false;
+
+        _ = VolverAlMenu(false, aviso ??
+            "Se perdió la conexión con el anfitrión. Volviendo al menú principal…",
+            conservarAviso: true);
+        return true;
+    }
+
+    private void AlRecibirCierreDelHost(ulong clientId, FastBufferReader mensaje)
+    {
+        if (clientId == NetworkManager.ServerClientId && !isIntentionalLeave &&
+            NetworkManager.Singleton != null && !NetworkManager.Singleton.IsServer)
+            _ = VolverAlMenu(false, AvisoCierreDelHost, conservarAviso: true);
+    }
 
     private Task CerrarPartidaSinInvitados()
     {
         const string aviso = "Se cerró la partida porque se desconectó el último invitado.";
         Debug.LogWarning("[Network] " + aviso);
-        return VolverAlMenu(true, aviso);
+        return VolverAlMenu(true, aviso, conservarAviso: true);
     }
 
-    private void AlRecibirSalidaDuranteCarga(ulong clientId, FastBufferReader mensaje)
+    private void AlRecibirSalidaDelInvitado(ulong clientId, FastBufferReader mensaje)
     {
         NetworkManager red = NetworkManager.Singleton;
         if (red != null && red.IsServer && clientId != red.LocalClientId &&
@@ -814,7 +860,8 @@ private void OnClienteSincronizado(ulong clientId)
             red.DisconnectClient(clientId, null);
     }
 
-    private async Task VolverAlMenu(bool cerrarSalaSiSoyHost, string aviso = null)
+    private async Task VolverAlMenu(bool cerrarSalaSiSoyHost, string aviso = null,
+        bool salidaVoluntaria = false, bool conservarAviso = false)
     {
         if (returningToMenu)
             return;
@@ -822,6 +869,7 @@ private void OnClienteSincronizado(ulong clientId)
         returningToMenu = true;
         NotifyIntentionalLeave();
         GameStartCurtain.MostrarSalidaAlMenu(aviso);
+        Task tiempoDeLectura = conservarAviso ? Task.Delay(2500) : Task.CompletedTask;
         Time.timeScale = 1f;
         AudioListener.pause = false;
 
@@ -832,12 +880,21 @@ private void OnClienteSincronizado(ulong clientId)
             red.OnServerStopped -= OnServidorDetenido;
             if (red.IsListening && !red.ShutdownInProgress)
             {
-                if (cerrarSalaSiSoyHost && !red.IsServer && red.IsConnectedClient)
+                if (salidaVoluntaria && red.IsServer)
+                {
+                    using var mensaje = new FastBufferWriter(1, Allocator.Temp);
+                    mensaje.WriteByteSafe(0);
+                    foreach (ulong clientId in red.ConnectedClientsIds)
+                        if (clientId != NetworkManager.ServerClientId)
+                            red.CustomMessagingManager.SendNamedMessage(
+                                CierreDelHostMensaje, clientId, mensaje);
+                }
+                else if (salidaVoluntaria && red.IsConnectedClient)
                 {
                     using var mensaje = new FastBufferWriter(1, Allocator.Temp);
                     mensaje.WriteByteSafe(0);
                     red.CustomMessagingManager.SendNamedMessage(
-                        SalidaDuranteCargaMensaje, NetworkManager.ServerClientId, mensaje);
+                        SalidaDelInvitadoMensaje, NetworkManager.ServerClientId, mensaje);
                 }
                 red.Shutdown();
             }
@@ -861,6 +918,7 @@ private void OnClienteSincronizado(ulong clientId)
             cargasLocales.Clear();
 
             await SceneManager.LoadSceneAsync("PantallasUI", LoadSceneMode.Single);
+            await tiempoDeLectura;
             GameStartCurtain.CerrarCortinaPersistente();
         }
         finally
@@ -876,6 +934,7 @@ private void OnClienteSincronizado(ulong clientId)
 
         sesion.PlayerJoined -= OnPlayerJoined;
         sesion.PlayerLeaving -= OnPlayerLeft;
+        sesion.Deleted -= AlEliminarSesion;
         sesion.Network.StateChanged -= OnNetworkStateChanged;
         sesion.Network.StartFailed -= OnNetworkStartFailed;
 
@@ -1039,6 +1098,7 @@ private void OnClienteSincronizado(ulong clientId)
         {
             if (currentSession != null)
             {
+                currentSession.Deleted -= AlEliminarSesion;
                 await currentSession.LeaveAsync();
 
                 currentSession = null;

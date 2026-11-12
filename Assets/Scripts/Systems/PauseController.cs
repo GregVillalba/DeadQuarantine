@@ -475,11 +475,14 @@ public class PauseController : NetworkBehaviour
         if (!IsOwner) return;
         if (DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.Active) { _ = DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.ExitToMenuAsync(); return; }
 
+        if (!EsSinglePlayer() && NetworkBootstrap.Instance != null)
+        {
+            _ = NetworkBootstrap.Instance.SalirDePartidaCooperativa();
+            return;
+        }
+
         Time.timeScale = 1f;
         AudioListener.pause = false;
-
-        if (NetworkBootstrap.Instance != null)
-            NetworkBootstrap.Instance.NotifyIntentionalLeave();
 
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             NetworkManager.Singleton.Shutdown();

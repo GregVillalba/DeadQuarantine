@@ -14,7 +14,6 @@ public class GameStartCurtain : MonoBehaviour
     private static Button botonSalir;
     private static TextMeshProUGUI etiquetaSalir;
     private static TextMeshProUGUI avisoCarga;
-    private static bool anfitrionDesconectado;
     private static bool saliendoAlMenu;
     private static double? inicioCortinaPersistente;
     public static bool CargaEnCurso => cortinaPersistenteLobby != null && !saliendoAlMenu;
@@ -43,7 +42,7 @@ public class GameStartCurtain : MonoBehaviour
 
     private static void MostrarCortinaPersistente(string destino = null)
     {
-        if (anfitrionDesconectado || NetworkBootstrap.Instance?.IsLeavingIntentionally == true)
+        if (saliendoAlMenu || NetworkBootstrap.Instance?.IsLeavingIntentionally == true)
             return;
 
         inicioCortinaPersistente ??= Time.realtimeSinceStartupAsDouble;
@@ -57,6 +56,12 @@ public class GameStartCurtain : MonoBehaviour
             return;
         }
 
+        CrearCortinaPersistente(pantallaCooperativa);
+        AudioListener.pause = true;
+    }
+
+    private static void CrearCortinaPersistente(bool pantallaCooperativa)
+    {
         GameObject raiz = new GameObject("CortinaCargaMultiplayer");
         cortinaPersistenteLobby = raiz;
         Object.DontDestroyOnLoad(raiz);
@@ -104,7 +109,6 @@ public class GameStartCurtain : MonoBehaviour
         avisoCarga.alignment = TextAlignmentOptions.Center;
         aviso.gameObject.SetActive(false);
 
-        AudioListener.pause = true;
     }
 
     public static void MantenerEntradaDeCarga()
@@ -126,25 +130,11 @@ public class GameStartCurtain : MonoBehaviour
 
     public static void AvisarSalidaDeCompanero()
     {
-        if (cortinaPersistenteLobby == null || anfitrionDesconectado)
+        if (!CargaEnCurso)
             return;
 
         avisoCarga.text = "Un compañero abandonó la partida.";
         avisoCarga.transform.parent.gameObject.SetActive(true);
-    }
-
-    public static bool AvisarDesconexionDelHost()
-    {
-        if (cortinaPersistenteLobby == null)
-            return false;
-
-        anfitrionDesconectado = true;
-        botonSalir.interactable = true;
-        avisoCarga.text = "Se perdió la conexión con el anfitrión. La partida se cerró.";
-        avisoCarga.transform.parent.gameObject.SetActive(true);
-        etiquetaSalir.text = "Volver al menú";
-        AudioListener.pause = false;
-        return true;
     }
 
     public static void MostrarSalidaAlMenu(string aviso = null)
@@ -152,7 +142,11 @@ public class GameStartCurtain : MonoBehaviour
         saliendoAlMenu = true;
         DeadQuarantine.PvPvE.PvPvELoadingScreen.CancelOriginal();
         if (cortinaPersistenteLobby == null)
-            return;
+        {
+            if (aviso == null)
+                return;
+            CrearCortinaPersistente(true);
+        }
 
         fondoPersistente.sprite = null;
         fondoPersistente.color = Color.black;
@@ -169,7 +163,7 @@ public class GameStartCurtain : MonoBehaviour
 
         botonSalir.interactable = false;
         etiquetaSalir.text = "Saliendo…";
-        _ = anfitrionDesconectado ? network.GoToMenuDueToDisconnect() : network.SalirDuranteCarga();
+        _ = network.SalirDePartidaCooperativa();
     }
 
     private static void AsignarImagenCarga(UnityEngine.UI.Image imagen)
@@ -220,13 +214,12 @@ public class GameStartCurtain : MonoBehaviour
 
     public static void CancelarCortinaDesdeLobby()
     {
-        if (!anfitrionDesconectado && !saliendoAlMenu)
+        if (!saliendoAlMenu)
             CerrarCortinaPersistente();
     }
 
     public static void CerrarCortinaPersistente()
     {
-        anfitrionDesconectado = false;
         saliendoAlMenu = false;
         inicioCortinaPersistente = null;
         DeadQuarantine.PvPvE.PvPvELoadingScreen.CancelCooperative();
@@ -346,7 +339,7 @@ public class GameStartCurtain : MonoBehaviour
 
     private void Update()
     {
-        if (curtainHidden || anfitrionDesconectado ||
+        if (curtainHidden || saliendoAlMenu ||
             NetworkBootstrap.Instance?.IsLeavingIntentionally == true)
             return;
 
@@ -355,8 +348,9 @@ public class GameStartCurtain : MonoBehaviour
         {
             Debug.LogError("[GameStartCurtain] La red no está activa: vuelvo al menú.");
             curtainHidden = true;
-            if (!AvisarDesconexionDelHost() && NetworkBootstrap.Instance != null)
-                _ = NetworkBootstrap.Instance.GoToMenuDueToDisconnect();
+            NetworkBootstrap network = NetworkBootstrap.Instance;
+            if (network != null && !network.IntentarCerrarPartidaPorSalidaDelHost())
+                _ = network.GoToMenuDueToDisconnect();
 
             return;
         }

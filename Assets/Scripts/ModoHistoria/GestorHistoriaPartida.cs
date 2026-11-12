@@ -425,11 +425,47 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
         jugadoresEnTriggerSalidaCiudad.Remove(clientId);
         jugadoresEnZonaSegura.Remove(clientId);
 
+        TransferirObjetivoDelJugadorDesconectado(clientId);
+
         if (!EsZonaSeguraMultiplayerActiva())
             return;
 
         jugadoresConfirmaronAvanceZonaSegura.Remove(clientId);
         ActualizarCantidadJugadoresZonaSegura();
+    }
+
+    private void TransferirObjetivoDelJugadorDesconectado(ulong clientId)
+    {
+        NetworkManager red = NetworkManager.Singleton;
+        if (!IsSpawned || !IsServer || red == null || red.ShutdownInProgress ||
+            red.ConnectedClientsList.Count < 2)
+            return;
+
+        int estado = EstadoMisionNetwork.Value;
+        bool teniaTarjeta = estado == AbrirPuerta && ClienteConTarjetaNetwork.Value == clientId;
+        bool teniaRadio = (estado == BuscarSenal || estado == ContactarSobrevivientes) &&
+            ClienteConRadioNetwork.Value == clientId;
+        if (!teniaTarjeta && !teniaRadio)
+            return;
+
+        foreach (NetworkClient cliente in red.ConnectedClientsList)
+        {
+            NetworkObject jugador = cliente.PlayerObject;
+            if (cliente.ClientId == clientId || jugador == null ||
+                !jugador.TryGetComponent(out PlayerHealth salud) || !salud.IsAlive)
+                continue;
+
+            if (teniaTarjeta)
+                ClienteConTarjetaNetwork.Value = cliente.ClientId;
+            else
+            {
+                ClienteConRadioNetwork.Value = cliente.ClientId;
+                if (estado == BuscarSenal)
+                    ActivarDetectorSenal(cliente.ClientId);
+            }
+
+            return;
+        }
     }
 
     private bool EsZonaSeguraMultiplayerActiva()
