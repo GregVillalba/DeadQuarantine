@@ -518,13 +518,10 @@ public partial class PlayerHealth : NetworkBehaviour
     // REVIVIDO POR UN COMPAÑERO
     // =========================================================
 
-    public void ReviveFromTeammate()
+    public bool ReviveFromTeammate()
     {
-        if (!IsServer)
-            return;
-
-        if (State.Value != PlayerState.Downed)
-            return;
+        if (!IsServer || !IsDowned)
+            return false;
 
         if (downedCoroutine != null)
         {
@@ -534,6 +531,7 @@ public partial class PlayerHealth : NetworkBehaviour
 
         DownedTimeRemaining.Value = 0f;
         RecoverFromDowned(false);
+        return IsAlive;
     }
 
     private bool HayOtroJugadorVivo()

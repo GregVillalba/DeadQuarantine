@@ -6,5 +6,7 @@ public enum AchievementCategory
     Historia,
     Rondas,
     EasterEggs,
-    Minijuegos
+    Minijuegos,
+    PvPvE,
+    Cooperativo
 }

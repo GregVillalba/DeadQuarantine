@@ -74,6 +74,7 @@ public class RoundManager : NetworkBehaviour
 
     
     [Header("Misión de la mansión")]
+    [SerializeField] private GameObject bossMansionPrefab;
 [SerializeField] private float tiempoResistenciaMansion = 120f;
 [SerializeField] private int saludBossMansion = 2500;
 
@@ -1409,7 +1410,17 @@ public void EliminarZombiesHistoria()
     ZombieAppearance zombieAppearance =
         zombieInstance.GetComponent<ZombieAppearance>();
 
-    if (zombieAppearance != null)
+    if (esBossHistoria &&
+        (zombieAppearance == null || !zombieAppearance.TrySelectStoryBossModel()))
+    {
+        Debug.LogError(
+            "[RoundManager] El prefab del boss de la mansión necesita un modelo de Historia válido."
+        );
+        Destroy(zombieInstance);
+        return false;
+    }
+
+    if (!esBossHistoria && zombieAppearance != null)
         zombieAppearance.SelectRandomModel();
 
     ZombieHealth zombieHealthComponent =
@@ -2294,10 +2305,10 @@ public void IniciarMisionMansion(Transform puntoSpawnBoss)
         return;
     }
 
-    if (!HasBossPrefab())
+    if (bossMansionPrefab == null)
     {
         Debug.LogError(
-            "[RoundManager] No hay prefabs de boss asignados."
+            "[RoundManager] Falta asignar el prefab del boss de la mansión."
         );
         return;
     }
@@ -2360,21 +2371,8 @@ private IEnumerator SecuenciaMisionMansion(
     // No detenemos los spawns ni eliminamos los zombies existentes.
     // Los zombies comunes siguen activos durante el combate contra el boss.
 
-    GameObject bossPrefab = GetRandomBossPrefab();
-
-    if (bossPrefab == null)
-    {
-        Debug.LogError(
-            "[RoundManager] No se encontró un prefab válido para el boss."
-        );
-
-        misionMansionActiva = false;
-        misionMansionRoutine = null;
-        yield break;
-    }
-
     bool bossCreado = SpawnZombie(
-        bossPrefab,
+        bossMansionPrefab,
         puntoSpawnBoss,
         saludBossMansion,
         true,

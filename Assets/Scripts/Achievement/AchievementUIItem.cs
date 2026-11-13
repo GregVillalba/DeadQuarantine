@@ -180,11 +180,7 @@ public class AchievementUIItem : MonoBehaviour
         // ESTADO GENERAL
         // ========================================================
 
-        // El logro solamente está completamente desbloqueado
-        // cuando llegó a ORO.
-
-        bool desbloqueadoCompletamente =
-            rango == AchievementRank.Oro;
+        bool desbloqueadoCompletamente = EstaDesbloqueado();
 
 
         if (estadoLogrado != null)

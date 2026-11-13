@@ -110,6 +110,14 @@ public class MinijuegoArcadeTrigger : MonoBehaviour
         StartCoroutine(CerrarMinijuego());
     }
 
+    public void RegistrarInicioDePartida()
+    {
+        if (!minijuegoActivo || cargando || cerrando || jugadorObj == null)
+            return;
+
+        jugadorObj.BroadcastMessage("RegistrarPartidaArcade", SendMessageOptions.DontRequireReceiver);
+    }
+
     public void ReiniciarMinijuego()
     {
         if (!minijuegoActivo || cargando || cerrando) return;

@@ -95,7 +95,11 @@ public class GameplayPopupsController : MonoBehaviour
     {
         BuscarAchievementHUD();
 
-        if (achievementHUD == null)
+        if (achievementHUD == null || !achievementHUD.isActiveAndEnabled)
+            return false;
+
+        Canvas canvas = achievementHUD.GetComponentInParent<Canvas>();
+        if (canvas != null && !canvas.isActiveAndEnabled)
             return false;
 
         achievementHUD.Show(id, rango);

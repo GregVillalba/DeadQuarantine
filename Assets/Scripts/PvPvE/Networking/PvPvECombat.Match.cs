@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
 namespace DeadQuarantine.PvPvE.Networking {
@@ -33,6 +34,34 @@ namespace DeadQuarantine.PvPvE.Networking {
    if(!IsServer||!IsPlaying)return;
    Winner.Value=winner;ResultReason.Value=new FixedString128Bytes(reason);MatchStoppedAt.Value=Now;
    ResultsDeadline.Value=Now+Math.Max(1,Settings.ResultsSeconds);ScoreLocked.Value=true;Resolution.Value=PvPvEMatchResolution.Results;zombies.Clear();contributions.Clear();
+   if(winner!=PvPvETeam.None)AwardTeamVictoryServer(winner);
+  }
+
+  void AwardTeamVictoryServer(PvPvETeam winner)
+  {
+   var recipients = new List<ulong>();
+   foreach (var member in roster.Members)
+   {
+    if (member.Team == winner && NetworkManager.ConnectedClients.ContainsKey(member.ClientId))
+     recipients.Add(member.ClientId);
+   }
+
+   if (recipients.Count > 0)
+   {
+    TeamVictoryClientRpc(new ClientRpcParams
+    {
+     Send = new ClientRpcSendParams { TargetClientIds = recipients }
+    });
+   }
+  }
+
+  [ClientRpc]
+  void TeamVictoryClientRpc(ClientRpcParams recipients = default)
+  {
+   var achievements = AchievementsManager.Instance;
+   if (achievements != null &&
+       !achievements.EstaDesbloqueado(AchievementId.VictoriaEnEquipo))
+    achievements.Desbloquear(AchievementId.VictoriaEnEquipo);
   }
   public void ResetMatchServer(){
    if(!IsServer||flow.Stage.Value!=PvPvEPrepareStage.ReturningToLobby)return;

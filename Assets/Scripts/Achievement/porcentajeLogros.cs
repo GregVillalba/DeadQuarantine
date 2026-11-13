@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 using TMPro;
+using Newtonsoft.Json;
 
 public class LogrosGlobalesOrdenados : MonoBehaviour
 {
@@ -34,8 +35,7 @@ public class LogrosGlobalesOrdenados : MonoBehaviour
     private class LogroDTO
     {
         public int id;
-        public string clave;
-        public string titulo;
+        public int id_logro;
         public float porcentaje_global;
     }
 
@@ -68,7 +68,7 @@ public class LogrosGlobalesOrdenados : MonoBehaviour
 
             try
             {
-                data = JsonUtility.FromJson<RespuestaApi>(json);
+                data = JsonConvert.DeserializeObject<RespuestaApi>(json);
             }
             catch (Exception ex)
             {
@@ -86,7 +86,7 @@ public class LogrosGlobalesOrdenados : MonoBehaviour
             Dictionary<int, float> porcentajePorId = new Dictionary<int, float>();
             foreach (var l in data.logros)
             {
-                porcentajePorId[l.id] = l.porcentaje_global;
+                porcentajePorId[l.id_logro != 0 ? l.id_logro : l.id] = l.porcentaje_global;
             }
 
             foreach (var item in listaTarjetas)

@@ -16,8 +16,6 @@ public class ActivadorSalidaCiudadHistoria : MonoBehaviour
     private readonly HashSet<Collider> collidersJugadorLocal =
         new HashSet<Collider>();
 
-    private bool activado;
-
     public void ConfigurarComoTriggerLaboratorio()
     {
         tipoTrigger = TipoTriggerHistoria.PuertaLaboratorio;
@@ -56,24 +54,19 @@ public class ActivadorSalidaCiudadHistoria : MonoBehaviour
             return;
         }
 
-        if (tipoTrigger != TipoTriggerHistoria.SalidaCiudad || activado)
-            return;
+        IntentarCompletarSalidaSinglePlayer(gestor, other);
+    }
 
-        Transform jugadorSinglePlayer = other.transform.root;
+    private void OnTriggerStay(Collider other)
+    {
+        if (!EsMultiplayerAditivo())
+            IntentarCompletarSalidaSinglePlayer(GestorHistoriaPartida.Instance, other);
+    }
 
-        if (!jugadorSinglePlayer.CompareTag("Player"))
-            return;
-
-        if (!gestor.EsperandoSalidaCiudad)
-            return;
-
-        activado = true;
-
-        Debug.Log(
-            "[Salida Ciudad] Jugador llegó al camino de salida."
-        );
-
-        gestor.IntentarCompletarSalidaCiudad();
+    private void IntentarCompletarSalidaSinglePlayer(GestorHistoriaPartida gestor, Collider other)
+    {
+        if (tipoTrigger == TipoTriggerHistoria.SalidaCiudad && gestor != null)
+            gestor.IntentarCompletarSalidaCiudadSinglePlayer(transform, other);
     }
 
     private void OnTriggerExit(Collider other)

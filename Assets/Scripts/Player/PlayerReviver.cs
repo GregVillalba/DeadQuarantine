@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.InputSystem;
+using DeadQuarantine.PvPvE.Networking;
 
 // Reanimar a un compañero abatido manteniendo la acción Interact (E).
 // Va en el prefab del jugador, junto a PlayerHealth. Solo actúa en el dueño.
@@ -141,7 +142,19 @@ public override void OnNetworkDespawn()
         if (!candidato.IsSpawned || !candidato.IsDowned)
             return false;
 
-        return DistanciaA(candidato) <= rangoReanimar;
+        return DistanciaA(candidato) <= rangoReanimar && EsCompanero(candidato);
+    }
+
+    private bool EsCompanero(PlayerHealth candidato)
+    {
+        var roster = PvPvETeamRoster.Active;
+        if (roster == null || roster.NetworkManager != NetworkManager)
+            return true;
+
+        return roster.TryGetMember(OwnerClientId, out var reanimador) &&
+               roster.TryGetMember(candidato.OwnerClientId, out var abatido) &&
+               reanimador.Team != PvPvETeam.None &&
+               reanimador.Team == abatido.Team;
     }
 
     private float DistanciaA(PlayerHealth otro)
@@ -272,10 +285,7 @@ public override void OnNetworkDespawn()
 
         PlayerHealth target = targetObject.GetComponent<PlayerHealth>();
 
-        if (target == null || target == playerHealth)
-            return;
-
-        if (!target.IsDowned)
+        if (target == null || target == playerHealth || !target.IsDowned || !EsCompanero(target))
             return;
 
         float distancia = Vector3.Distance(
@@ -286,6 +296,18 @@ public override void OnNetworkDespawn()
         if (distancia > rangoReanimar + margenValidacionServidor)
             return;
 
-        target.ReviveFromTeammate();
+        if (target.ReviveFromTeammate())
+        {
+            ConfirmarReanimacionClientRpc(new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams { TargetClientIds = new[] { OwnerClientId } }
+            });
+        }
+    }
+
+    [ClientRpc]
+    private void ConfirmarReanimacionClientRpc(ClientRpcParams destinatario = default)
+    {
+        AchievementsManager.Instance?.Desbloquear(AchievementId.NadieSeQuedaAtras);
     }
 }

@@ -6,5 +6,8 @@ public enum AchievementId
     Historiador,
     CampeonDelPoligono,
     CompletadorDeRondas,
-    DondeEstaWally
+    DondeEstaWally,
+    VictoriaEnEquipo,
+    NadieSeQuedaAtras,
+    CampeonDesconectado
 }

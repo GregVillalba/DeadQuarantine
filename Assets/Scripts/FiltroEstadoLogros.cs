@@ -125,7 +125,8 @@ public class FiltroLogros : MonoBehaviour
         foreach (var txt in textos)
         {
             if (txt == null) continue;
-            if (ContienePalabra(palabras, Canon(txt.text))) return true;
+            string modo = Canon(txt.text);
+            if (modo == "ambos" || ContienePalabra(palabras, modo)) return true;
         }
         return false;
     }
@@ -225,7 +226,7 @@ public class FiltroLogros : MonoBehaviour
 
     private bool EsEtiquetaModo(string contenido)
     {
-        return ContienePalabra(palabrasSingleplayer, contenido)
+        return contenido == "ambos" || ContienePalabra(palabrasSingleplayer, contenido)
             || ContienePalabra(palabrasMultiplayer, contenido);
     }
 

@@ -4,6 +4,7 @@ using Unity.Netcode;
 public class ZombieAppearance : NetworkBehaviour
 {
     [SerializeField] private Transform models;
+    [SerializeField] private GameObject storyBossModel;
 
     private GameObject[] modelObjects;
 
@@ -43,12 +44,26 @@ public class ZombieAppearance : NetworkBehaviour
                 modelObjects.Length
             );
 
-        selectedModelIndex.Value =
-            randomIndex;
+        SelectModel(randomIndex);
+    }
 
-        ApplySelectedModel(
-            randomIndex
-        );
+    public bool TrySelectStoryBossModel()
+    {
+        if (storyBossModel == null || modelObjects == null)
+            return false;
+
+        int modelIndex = System.Array.IndexOf(modelObjects, storyBossModel);
+        if (modelIndex < 0)
+            return false;
+
+        SelectModel(modelIndex);
+        return true;
+    }
+
+    private void SelectModel(int modelIndex)
+    {
+        selectedModelIndex.Value = modelIndex;
+        ApplySelectedModel(modelIndex);
     }
 
     public override void OnNetworkSpawn()

@@ -241,6 +241,12 @@ public class PauseController : NetworkBehaviour
         Cursor.lockState = CursorLockMode.Locked;
     }
 
+    private void RegistrarPartidaArcade()
+    {
+        if (IsOwner)
+            AchievementsManager.Instance?.Desbloquear(AchievementId.CampeonDesconectado);
+    }
+
     private void SolicitarEstadoMinijuego(bool activo)
     {
         if (!IsSpawned)

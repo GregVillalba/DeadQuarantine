@@ -30,6 +30,11 @@ public class AchievementHUD : MonoBehaviour
     private float maxVisibleTime = 5f;
 
     private CanvasGroup canvasGroup;
+    private Canvas notificationCanvas;
+    private bool notificationCanvasOriginalOverride;
+    private int notificationCanvasOriginalOrder;
+    private int notificationCanvasOriginalLayer;
+    private bool notificationCanvasWasRaised;
 
     private struct AchievementNotification
     {
@@ -57,6 +62,8 @@ public class AchievementHUD : MonoBehaviour
         if (canvasGroup == null)
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
 
+        ConfigurarEscalaResponsive();
+
         OcultarVisualmente();
 
         if (database != null)
@@ -64,6 +71,33 @@ public class AchievementHUD : MonoBehaviour
         else
             Debug.LogError(
                 "[ACHIEVEMENT HUD] No tiene una AchievementDatabase asignada.");
+    }
+
+    private void ConfigurarEscalaResponsive()
+    {
+        Canvas canvas = GetComponentInParent<Canvas>();
+        if (canvas == null)
+            return;
+
+        CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
+        if (scaler == null)
+            scaler = canvas.gameObject.AddComponent<CanvasScaler>();
+
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = 0.5f;
+
+        RectTransform rect = transform as RectTransform;
+        if (rect == null)
+            return;
+
+        // Posición relativa a pantalla: centro del popup en 82% del ancho
+        // y 25% de la altura desde abajo, como en el HUD de referencia.
+        rect.anchorMin = new Vector2(0.82f, 0.25f);
+        rect.anchorMax = rect.anchorMin;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
     }
 
     public void Show(AchievementId id)
@@ -82,9 +116,16 @@ public class AchievementHUD : MonoBehaviour
         IniciarColaSiVisible();
     }
 
+    private void Update()
+    {
+        if (mostrarColasCoroutine != null)
+            ElevarAvisoSobreResultados();
+    }
+
     private void OnDisable()
     {
         mostrarColasCoroutine = null;
+        RestaurarOrdenCanvas();
     }
 
     private void IniciarColaSiVisible()
@@ -93,6 +134,7 @@ public class AchievementHUD : MonoBehaviour
             colaLogros.Count == 0 || mostrarColasCoroutine != null)
             return;
 
+        ElevarAvisoSobreResultados();
         MostrarVisualmente();
         mostrarColasCoroutine = StartCoroutine(MostrarColaDeLogros());
     }
@@ -113,6 +155,70 @@ public class AchievementHUD : MonoBehaviour
         }
 
         mostrarColasCoroutine = null;
+        RestaurarOrdenCanvas();
+    }
+
+    private void ElevarAvisoSobreResultados()
+    {
+        if (notificationCanvasWasRaised)
+            return;
+
+        notificationCanvas = GetComponentInParent<Canvas>();
+        if (notificationCanvas == null)
+            return;
+
+        int highestLayer = SortingLayer.GetLayerValueFromID(
+            notificationCanvas.sortingLayerID);
+        int highestLayerId = notificationCanvas.sortingLayerID;
+        int highestOrder = notificationCanvas.sortingOrder;
+        Canvas[] activeCanvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+        foreach (Canvas candidate in activeCanvases)
+        {
+            if (candidate == null || candidate == notificationCanvas ||
+                !candidate.isActiveAndEnabled ||
+                candidate.rootCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
+                continue;
+
+            int layerValue = SortingLayer.GetLayerValueFromID(candidate.sortingLayerID);
+            if (layerValue > highestLayer)
+            {
+                highestLayer = layerValue;
+                highestLayerId = candidate.sortingLayerID;
+                highestOrder = candidate.sortingOrder;
+            }
+            else if (layerValue == highestLayer)
+            {
+                highestOrder = Mathf.Max(highestOrder, candidate.sortingOrder);
+            }
+        }
+
+        if (highestLayer == SortingLayer.GetLayerValueFromID(
+                notificationCanvas.sortingLayerID) &&
+            highestOrder <= notificationCanvas.sortingOrder)
+        {
+            notificationCanvas = null;
+            return;
+        }
+
+        notificationCanvasOriginalOverride = notificationCanvas.overrideSorting;
+        notificationCanvasOriginalOrder = notificationCanvas.sortingOrder;
+        notificationCanvasOriginalLayer = notificationCanvas.sortingLayerID;
+        notificationCanvas.overrideSorting = true;
+        notificationCanvas.sortingLayerID = highestLayerId;
+        notificationCanvas.sortingOrder = highestOrder + 1;
+        notificationCanvasWasRaised = true;
+    }
+
+    private void RestaurarOrdenCanvas()
+    {
+        if (!notificationCanvasWasRaised || notificationCanvas == null)
+            return;
+
+        notificationCanvas.overrideSorting = notificationCanvasOriginalOverride;
+        notificationCanvas.sortingOrder = notificationCanvasOriginalOrder;
+        notificationCanvas.sortingLayerID = notificationCanvasOriginalLayer;
+        notificationCanvasWasRaised = false;
+        notificationCanvas = null;
     }
 
     private void MostrarInformacion(

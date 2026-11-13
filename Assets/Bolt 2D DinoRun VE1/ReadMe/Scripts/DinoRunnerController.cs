@@ -121,6 +121,7 @@ public class DinoPlayer : MonoBehaviour
                     startInstructionsUI.SetActive(false);
 
                 EjecutarSalto();
+                MinijuegoArcadeTrigger.InstanciaActiva?.RegistrarInicioDePartida();
             }
             return;
         }

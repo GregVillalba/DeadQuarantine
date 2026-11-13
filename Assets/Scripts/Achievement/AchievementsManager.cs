@@ -34,6 +34,7 @@ public class AchievementsManager : MonoBehaviour
     private PlayerScore playerScore;
     private string rutaArchivo;
     private AchievementsData datos;
+    private bool impedirGuardadoPorArchivoCorrupto;
     private readonly Queue<KeyValuePair<AchievementId, AchievementRank>> avisosPendientes =
         new Queue<KeyValuePair<AchievementId, AchievementRank>>();
 
@@ -122,7 +123,7 @@ public class AchievementsManager : MonoBehaviour
     {
         get
         {
-            return SceneManager.GetActiveScene().name != escenaSinLogros;
+            return !SceneManager.GetSceneByName(escenaSinLogros).isLoaded;
         }
     }
 
@@ -390,27 +391,31 @@ public class AchievementsManager : MonoBehaviour
             datos.easterEggsEncontrados = new List<string>();
         }
 
-        if (datos.easterEggsEncontrados.Contains(easterEggId))
+        bool nuevoEasterEgg = !datos.easterEggsEncontrados.Contains(easterEggId);
+        if (nuevoEasterEgg)
         {
-            Debug.Log(
-                "[ACHIEVEMENTS] Easter Egg ya registrado: " + easterEggId
-            );
-            return false;
+            datos.easterEggsEncontrados.Add(easterEggId);
+            GuardarProgreso();
         }
 
-        datos.easterEggsEncontrados.Add(easterEggId);
-        GuardarProgreso();
+        // Reparar guardados antiguos donde el Easter Egg quedó registrado,
+        // pero el progreso del logro no llegó a actualizarse.
+        AchievementData logroEasterEggs = ObtenerLogro(
+            AchievementId.DondeEstaWally);
+        int progresoEsperado = datos.easterEggsEncontrados.Count;
+        if (logroEasterEggs != null &&
+            logroEasterEggs.progreso < progresoEsperado)
+        {
+            SumarProgreso(
+                AchievementId.DondeEstaWally,
+                progresoEsperado - logroEasterEggs.progreso);
+        }
 
-        SumarProgreso(
-            AchievementId.DondeEstaWally,
-            1
-        );
+        Debug.Log(nuevoEasterEgg
+            ? "[ACHIEVEMENTS] Nuevo Easter Egg registrado: " + easterEggId
+            : "[ACHIEVEMENTS] Easter Egg ya registrado; progreso reconciliado: " + easterEggId);
 
-        Debug.Log(
-            "[ACHIEVEMENTS] Nuevo Easter Egg registrado: " + easterEggId
-        );
-
-        return true;
+        return nuevoEasterEgg;
     }
 
     // ============================================================
@@ -745,6 +750,15 @@ public class AchievementsManager : MonoBehaviour
             case AchievementId.CampeonDelPoligono:
                 return "poligono_completado";
 
+            case AchievementId.VictoriaEnEquipo:
+                return "pvp_partida_ganada";
+
+            case AchievementId.NadieSeQuedaAtras:
+                return "multiplayer_revivir_companero";
+
+            case AchievementId.CampeonDesconectado:
+                return "dino_completado";
+
             case AchievementId.DondeEstaWally:
                 if (rango == AchievementRank.Bronce) return "easter_egg_1";
                 if (rango == AchievementRank.Plata) return "easter_egg_2";
@@ -926,9 +940,15 @@ public class AchievementsManager : MonoBehaviour
 
     private void GuardarProgreso()
     {
-        if (datos == null) return;
+        if (datos == null || impedirGuardadoPorArchivoCorrupto) return;
         string json = JsonUtility.ToJson(datos, true);
-        File.WriteAllText(rutaArchivo, json);
+        string rutaTemporal = rutaArchivo + ".tmp";
+        File.WriteAllText(rutaTemporal, json);
+
+        if (File.Exists(rutaArchivo))
+            File.Replace(rutaTemporal, rutaArchivo, null);
+        else
+            File.Move(rutaTemporal, rutaArchivo);
     }
 
     private void CargarProgreso()
@@ -936,11 +956,40 @@ public class AchievementsManager : MonoBehaviour
         if (!File.Exists(rutaArchivo))
         {
             datos = new AchievementsData();
+            Debug.Log(
+                $"[ACHIEVEMENTS] No existe un guardado local en '{rutaArchivo}'. Se inicia un progreso nuevo."
+            );
             return;
         }
 
-        string json = File.ReadAllText(rutaArchivo);
-        datos = JsonUtility.FromJson<AchievementsData>(json);
+        try
+        {
+            string json = File.ReadAllText(rutaArchivo);
+            datos = JsonUtility.FromJson<AchievementsData>(json);
+        }
+        catch (System.Exception e)
+        {
+            string copiaSeguridad = rutaArchivo + ".corrupto." +
+                System.Guid.NewGuid().ToString("N") + ".json";
+
+            try
+            {
+                File.Copy(rutaArchivo, copiaSeguridad, false);
+                Debug.LogError(
+                    $"[ACHIEVEMENTS] JSON inválido en '{rutaArchivo}'. Se conservó una copia en '{copiaSeguridad}'. Se iniciará un progreso nuevo. Detalle: {e.Message}"
+                );
+            }
+            catch (System.Exception backupError)
+            {
+                impedirGuardadoPorArchivoCorrupto = true;
+                Debug.LogError(
+                    $"[ACHIEVEMENTS] JSON inválido en '{rutaArchivo}' y no se pudo respaldar. Se conserva el archivo original y se bloquean los guardados para evitar sobrescribirlo. Error de respaldo: {backupError.Message}"
+                );
+            }
+
+            datos = new AchievementsData();
+            return;
+        }
 
         if (datos == null)
             datos = new AchievementsData();
@@ -950,6 +999,20 @@ public class AchievementsManager : MonoBehaviour
 
         if (datos.easterEggsEncontrados == null)
             datos.easterEggsEncontrados = new List<string>();
+
+        Debug.Log(
+            $"[ACHIEVEMENTS] Progreso cargado desde '{rutaArchivo}'. Registros: {datos.logros.Count}."
+        );
+
+        foreach (AchievementData logro in datos.logros)
+        {
+            if (logro == null)
+                continue;
+
+            Debug.Log(
+                $"[ACHIEVEMENTS] Cargado id='{logro.id}', progreso={logro.progreso}, rango={logro.rangoActual}, desbloqueado={logro.desbloqueado}."
+            );
+        }
     }
 
    private void OnDestroy()

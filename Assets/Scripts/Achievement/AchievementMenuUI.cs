@@ -116,9 +116,7 @@ public class AchievementsMenuUI : MonoBehaviour
         // OBTENER TOTAL
         // ========================================================
 
-        int logrosTotales =
-            AchievementsManager.Instance
-                .ObtenerCantidadTotalLogros();
+        int logrosTotales = elementos.Length;
 
 
         // ========================================================
@@ -174,6 +172,8 @@ public class AchievementsMenuUI : MonoBehaviour
                 dropdownFiltro.value
             );
         }
+
+        GetComponent<FiltroLogros>()?.AplicarFiltros();
     }
 
 

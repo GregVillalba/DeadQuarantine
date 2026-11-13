@@ -74,10 +74,6 @@ public class GestorHistoriaPartida : NetworkBehaviour
     [SerializeField] private TMP_Text textoTituloObjetivo;
     [SerializeField] private TMP_Text textoDescripcionObjetivo;
 
-    public bool EsperandoSalidaCiudad =>
-        IsSpawned &&
-        EstadoMisionActual == IrAlCaminoSalida;
-
     public int EstadoMisionActual => estadoObjetivoRecibido >= 0
         ? estadoObjetivoRecibido
         : EstadoMisionNetwork.Value;
@@ -2100,55 +2096,23 @@ private void RegistrarSenalEncontradaRpc(
         );
     }
 
-    public void IntentarCompletarSalidaCiudad()
+    internal void IntentarCompletarSalidaCiudadSinglePlayer(Transform salida, Collider contacto)
     {
-        if (!IsSpawned)
-            return;
-
-        SolicitarLlegadaSalidaCiudadRpc();
-    }
-
-    [Rpc(
-        SendTo.Server,
-        InvokePermission = RpcInvokePermission.Everyone
-    )]
-    private void SolicitarLlegadaSalidaCiudadRpc(
-        RpcParams rpcParams = default
-    )
-    {
-        if (!IsServer || !EsHistoriaCiudad())
-            return;
-
-        if (EstadoMisionNetwork.Value != IrAlCaminoSalida)
-            return;
-
-        if (puntoSalidaCiudad == null)
+        if (!IsSpawned || !IsServer ||
+            SceneManager.GetActiveScene().name != "MainSceneSinglePlayer" ||
+            !EsHistoriaCiudad() ||
+            EstadoMisionNetwork.Value != IrAlCaminoSalida ||
+            puntoSalidaCiudad != salida)
         {
-            Debug.LogError(
-                "[Historia] No asignaste el punto de salida de Ciudad."
-            );
             return;
         }
 
-        ulong clientId = rpcParams.Receive.SenderClientId;
-
-        if (!JugadorCercaDelPunto(
-            clientId,
-            puntoSalidaCiudad.position,
-            distanciaActivacionSalidaCiudad))
-        {
-            Debug.LogWarning(
-                "[Historia] El jugador está demasiado lejos del camino de salida."
-            );
+        NetworkObject jugador = contacto.GetComponentInParent<NetworkObject>();
+        if (jugador == null || jugador != NetworkManager.Singleton?.LocalClient?.PlayerObject)
             return;
-        }
 
         EstadoMisionNetwork.Value = HistoriaCiudadCompletada;
-
-        Debug.Log(
-            "[Historia] Jugador llegó al camino de salida. " +
-            "Iniciando transición a SafeZone2."
-        );
+        Debug.Log("[Historia] Jugador llegó al camino de salida. Iniciando transición a SafeZone2.");
     }
 
     public void RestaurarDesdeCheckpoint(
