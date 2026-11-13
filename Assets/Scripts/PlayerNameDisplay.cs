@@ -2,6 +2,7 @@ using UnityEngine;
 using Unity.Netcode;
 using Unity.Collections;
 using TMPro;
+using UnityEngine.UI;
 
 public class PlayerNameplate : NetworkBehaviour
 {
@@ -15,11 +16,25 @@ public class PlayerNameplate : NetworkBehaviour
     [Header("Ajustes")]
     [SerializeField] private Vector3 offset = new Vector3(0, 2.2f, 0);
 
+    [Header("Estado abatido")]
+[SerializeField] private PlayerHealth playerHealth;
+[SerializeField] private GameObject downedGroup;    // objeto "Abatido"
+[SerializeField] private TMP_Text txtDownedTimer;   // objeto "Minutero"
+[SerializeField] private Color downedNameColor = Color.red;
+
+private Color normalNameColor = Color.white;
+private int lastShownSeconds = -1;
+[SerializeField] private Graphic downedIcon;   // Icono (si es Image)
+private Material timerOverlayMaterial, timerOriginalMaterial, iconOverlayMaterial;
+
+
     private NetworkVariable<FixedString32Bytes> networkPlayerName = new NetworkVariable<FixedString32Bytes>(
         new FixedString32Bytes("JUGADOR"),
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
     );
+
+
 
     [SerializeField] private Material overlayTemplate;
     private Material overlayMaterial,originalMaterial;
@@ -30,6 +45,15 @@ public class PlayerNameplate : NetworkBehaviour
     public bool NameVisible => nameplateContainer && nameplateContainer.activeInHierarchy;
     public float NameOpacity => opacity;
 
+    public string UsernameOnly
+{
+    get
+    {
+        string n = networkPlayerName.Value.ToString();
+        return string.IsNullOrWhiteSpace(n) ? "JUGADOR" : n.Trim();
+    }
+}
+
     private void Awake()
     {
         if (playerCharacter == null)
@@ -37,6 +61,12 @@ public class PlayerNameplate : NetworkBehaviour
 
         if (playerCharacter == null)
             playerCharacter = GetComponentInParent<PlayerCharacter>();
+
+        if (playerHealth == null)
+    playerHealth = GetComponent<PlayerHealth>();
+if (playerHealth == null)
+    playerHealth = GetComponentInParent<PlayerHealth>();
+    
 
         networkPlayerName.OnValueChanged += OnNameChanged;
     }
@@ -57,6 +87,33 @@ public class PlayerNameplate : NetworkBehaviour
             if(overlayTemplate)overlayMaterial.shader=overlayTemplate.shader;
             overlayMaterial.SetFloat(ShaderUtilities.ShaderTag_ZTestMode,(float)UnityEngine.Rendering.CompareFunction.Always);
             txtPlayerName.fontSharedMaterial=overlayMaterial;txtPlayerName.isOverlay=true;txtPlayerName.raycastTarget=false;
+        }
+
+        if (txtPlayerName != null)
+            normalNameColor = txtPlayerName.color;
+
+        if (playerHealth != null)
+        {
+            playerHealth.State.OnValueChanged += OnPlayerStateChanged;
+            ApplyDownedVisuals(playerHealth.State.Value);
+        }
+
+        if (txtDownedTimer != null)
+        {
+            timerOriginalMaterial = txtDownedTimer.fontSharedMaterial;
+            timerOverlayMaterial = new Material(timerOriginalMaterial) { name = "Player Timer Overlay", renderQueue = 4000 };
+            if (overlayTemplate) timerOverlayMaterial.shader = overlayTemplate.shader;
+            timerOverlayMaterial.SetFloat(ShaderUtilities.ShaderTag_ZTestMode, (float)UnityEngine.Rendering.CompareFunction.Always);
+            txtDownedTimer.fontSharedMaterial = timerOverlayMaterial;
+            txtDownedTimer.isOverlay = true;
+            txtDownedTimer.raycastTarget = false;
+        }
+
+        if (downedIcon != null)
+        {
+            iconOverlayMaterial = new Material(downedIcon.material);
+            iconOverlayMaterial.SetInt("unity_GUIZTestMode", (int)UnityEngine.Rendering.CompareFunction.Always);
+            downedIcon.material = iconOverlayMaterial;
         }
 
         if (playerCharacter != null)
@@ -80,11 +137,17 @@ public class PlayerNameplate : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        if (playerHealth != null)
+            playerHealth.State.OnValueChanged -= OnPlayerStateChanged;
+
         if (playerCharacter != null)
             playerCharacter.CharacterIndex.OnValueChanged -= OnCharacterChanged;
 
         if(txtPlayerName && originalMaterial)txtPlayerName.fontSharedMaterial=originalMaterial;
         if(overlayMaterial)Destroy(overlayMaterial);
+        if (txtDownedTimer && timerOriginalMaterial) txtDownedTimer.fontSharedMaterial = timerOriginalMaterial;
+        if (timerOverlayMaterial) Destroy(timerOverlayMaterial);
+        if (iconOverlayMaterial) Destroy(iconOverlayMaterial);
         base.OnNetworkDespawn();
     }
 
@@ -141,6 +204,8 @@ public class PlayerNameplate : NetworkBehaviour
             if (localCamera == null) return;
         }
 
+        UpdateDownedTimer();
+
         if(IsOwner) {nameplateContainer.SetActive(false);return;}
         nameplateContainer.transform.position=transform.position+offset;
         if(Time.unscaledTime>=nextOcclusionCheck) {
@@ -155,6 +220,8 @@ public class PlayerNameplate : NetworkBehaviour
         }
         opacity=Mathf.MoveTowards(opacity,IsOccluded?.35f:1f,Time.unscaledDeltaTime*5);
         if(txtPlayerName)txtPlayerName.alpha=opacity;
+        if (txtDownedTimer) txtDownedTimer.alpha = opacity;
+        if (downedIcon) downedIcon.canvasRenderer.SetAlpha(opacity);
         // Efecto Billboard hacia la cámara activa
         Vector3 direccionACamara = nameplateContainer.transform.position - localCamera.transform.position;
         if (direccionACamara.sqrMagnitude > 0.001f)
@@ -162,4 +229,40 @@ public class PlayerNameplate : NetworkBehaviour
             nameplateContainer.transform.rotation = Quaternion.LookRotation(direccionACamara);
         }
     }
+
+    private void OnPlayerStateChanged(PlayerHealth.PlayerState previous, PlayerHealth.PlayerState current)
+{
+    ApplyDownedVisuals(current);
+}
+
+private void ApplyDownedVisuals(PlayerHealth.PlayerState state)
+{
+    bool downed = state == PlayerHealth.PlayerState.Downed;
+
+    if (downedGroup != null)
+        downedGroup.SetActive(downed);
+
+    if (txtPlayerName != null)
+        txtPlayerName.color = downed ? downedNameColor : normalNameColor;
+
+    lastShownSeconds = -1;
+    if (downed)
+        UpdateDownedTimer();
+}
+
+private void UpdateDownedTimer()
+{
+    if (txtDownedTimer == null || playerHealth == null)
+        return;
+
+    if (playerHealth.State.Value != PlayerHealth.PlayerState.Downed)
+        return;
+
+    int seconds = Mathf.Max(0, Mathf.CeilToInt(playerHealth.DownedTimeRemaining.Value));
+    if (seconds == lastShownSeconds)
+        return;
+
+    lastShownSeconds = seconds;
+    txtDownedTimer.text = seconds.ToString();
+}
 }
