@@ -3,7 +3,7 @@
 **Dead Quarantine** es un prototipo de videojuego de acción y disparos en primera persona (FPS) cooperativo para hasta 2 jugadores desarrollado en **Unity 6**. El proyecto fue creado en el marco de la materia **Laboratorio de Construcción de Software (PP1)** de la **Universidad Nacional de General Sarmiento (UNGS)**.
 
 Inspirado en los clásicos modos de supervivencia por hordas, los jugadores deben resistir 5 rondas consecutivas dentro de una casa abandonada, enfrentando hordas progresivas de zombis y derrotando a un temible Zombie Boss final.
-
+---
 ---
 ## Dead Quarantine II : Branch Develop_branch
 ---
