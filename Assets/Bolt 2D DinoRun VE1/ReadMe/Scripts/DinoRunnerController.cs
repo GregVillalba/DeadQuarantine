@@ -34,7 +34,7 @@ public class DinoPlayer : MonoBehaviour
     [Tooltip("Texto permanente ubicado debajo del puntaje que muestra las cantimploras ganadas.")]
     [SerializeField] private TextMeshProUGUI textoNotificacionPremio;
 
-    private const int PUNTOS_POR_CANTIMPLORA = 500;
+    private const int PUNTOS_POR_CANTIMPLORA = 200;
 
     public int score = 0;
     private int cantimplorasEntregadasEstaRonda = 0;

@@ -1,4 +1,5 @@
 using System.Collections;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -13,6 +14,9 @@ namespace ithappy.Casino
     [RequireComponent(typeof(PresetUVSlotMachine))]
     public sealed class SlotMachineJugable : MonoBehaviour
     {
+        private const string JackpotMessage = "DeadQuarantine.SlotMachineJackpot";
+        private static bool jackpotMessageRegistered;
+
         [Header("Chances")]
         [SerializeField, Min(1)] private int chancesMaximas = 5;
         [Header("Probabilidad de ganar según dificultad")]
@@ -54,6 +58,17 @@ namespace ithappy.Casino
         {
             machine = GetComponent<PresetUVSlotMachine>();
             chancesRestantes = chancesMaximas;
+            RegistrarMensajePremio();
+        }
+
+        private static void RegistrarMensajePremio()
+        {
+            NetworkManager red = NetworkManager.Singleton;
+            if (jackpotMessageRegistered || red == null || red.CustomMessagingManager == null)
+                return;
+
+            red.CustomMessagingManager.RegisterNamedMessageHandler(JackpotMessage, RecibirSolicitudPremio);
+            jackpotMessageRegistered = true;
         }
 
         /// <summary>Gasta una chance y gira. Devuelve false si no se pudo.</summary>
@@ -120,7 +135,65 @@ namespace ithappy.Casino
             if (retrasoPremio > 0f)
                 yield return new WaitForSeconds(retrasoPremio);
 
-            SoltarSuministros();
+            NetworkManager red = NetworkManager.Singleton;
+            if (red == null || !red.IsListening || red.IsServer)
+            {
+                SoltarSuministros();
+                yield break;
+            }
+
+            // El giro se resuelve localmente en el cliente. El servidor debe crear el drop
+            // para que RecursoDrop lo replique al resto de la partida.
+            RegistrarMensajePremio();
+            if (red.CustomMessagingManager != null)
+            {
+                Vector3 posicion = (puntoDeSalida != null ? puntoDeSalida : transform).position;
+                using (var writer = new FastBufferWriter(sizeof(float) * 3, Allocator.Temp))
+                {
+                    writer.WriteValueSafe(posicion.x);
+                    writer.WriteValueSafe(posicion.y);
+                    writer.WriteValueSafe(posicion.z);
+                    red.CustomMessagingManager.SendNamedMessage(JackpotMessage, NetworkManager.ServerClientId, writer);
+                }
+            }
+        }
+
+        private static void RecibirSolicitudPremio(ulong remitente, FastBufferReader reader)
+        {
+            NetworkManager red = NetworkManager.Singleton;
+            if (red == null || !red.IsServer ||
+                !red.ConnectedClients.TryGetValue(remitente, out NetworkClient cliente) ||
+                cliente.PlayerObject == null)
+                return;
+
+            reader.ReadValueSafe(out float x);
+            reader.ReadValueSafe(out float y);
+            reader.ReadValueSafe(out float z);
+            Vector3 posicionReportada = new Vector3(x, y, z);
+
+            SlotMachineJugable maquinaCercana = null;
+            float distanciaMinima = float.MaxValue;
+            foreach (SlotMachineJugable candidata in FindObjectsOfType<SlotMachineJugable>())
+            {
+                Transform origen = candidata.puntoDeSalida != null ? candidata.puntoDeSalida : candidata.transform;
+                float distancia = Vector3.Distance(origen.position, posicionReportada);
+                if (distancia < distanciaMinima)
+                {
+                    distanciaMinima = distancia;
+                    maquinaCercana = candidata;
+                }
+            }
+
+            if (maquinaCercana == null || distanciaMinima > 2f)
+                return;
+
+            Transform salida = maquinaCercana.puntoDeSalida != null
+                ? maquinaCercana.puntoDeSalida
+                : maquinaCercana.transform;
+            if (Vector3.Distance(cliente.PlayerObject.transform.position, salida.position) > 6f)
+                return;
+
+            maquinaCercana.SoltarSuministros();
         }
 
         /// <summary>Solo servidor/host, igual que DropRecursosZombie.Soltar().</summary>

@@ -12,6 +12,7 @@ public class CactusMove : MonoBehaviour
     public Collider2D ColliderCactus { get; private set; }
 
     private DinoPlayer dino;
+    private Collider2D colliderDino;
     private bool scored = false;
 
     // El spawner define la velocidad para que todos los cactus sean consistentes
@@ -23,6 +24,12 @@ public class CactusMove : MonoBehaviour
     void Awake()
     {
         ColliderCactus = GetComponentInChildren<Collider2D>();
+
+        // El prefab también trae este componente para reciclar elementos del escenario.
+        // En los cactus debe quedar un único controlador de movimiento y puntaje.
+        ScrollAndRecycle reciclador = GetComponent<ScrollAndRecycle>();
+        if (reciclador != null)
+            reciclador.enabled = false;
     }
 
     void OnEnable()
@@ -38,6 +45,8 @@ public class CactusMove : MonoBehaviour
     void Start()
     {
         dino = Object.FindFirstObjectByType<DinoPlayer>();
+        if (dino != null)
+            colliderDino = dino.GetComponent<Collider2D>();
     }
 
     void Update()
@@ -45,11 +54,13 @@ public class CactusMove : MonoBehaviour
         // No se mueve si el juego no empezó o si ya perdiste
         if (dino == null || !dino.isGameStarted || dino.isGameOver) return;
 
+        float xAnterior = transform.position.x;
+
         // Desplazamiento
         transform.position += Vector3.left * speed * Time.deltaTime;
 
-        // Detección de salto exitoso: cuando el cactus pasa por detrás del jugador en X
-        if (!scored && transform.position.x < dino.transform.position.x)
+        float xDino = colliderDino != null ? colliderDino.bounds.center.x : dino.transform.position.x;
+        if (!scored && xAnterior >= xDino && transform.position.x < xDino)
         {
             scored = true;
             dino.AddScore(100);
