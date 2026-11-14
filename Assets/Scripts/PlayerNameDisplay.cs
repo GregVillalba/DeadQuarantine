@@ -3,6 +3,7 @@ using Unity.Netcode;
 using Unity.Collections;
 using TMPro;
 using UnityEngine.UI;
+using System.Collections.Generic;
 
 public class PlayerNameplate : NetworkBehaviour
 {
@@ -45,6 +46,18 @@ private Material timerOverlayMaterial, timerOriginalMaterial, iconOverlayMateria
     public bool NameVisible => nameplateContainer && nameplateContainer.activeInHierarchy;
     public float NameOpacity => opacity;
 
+    private static readonly Dictionary<ulong, string> nombresPorCliente = new Dictionary<ulong, string>();
+
+public static string GetNombreCliente(ulong clientId)
+{
+    return nombresPorCliente.TryGetValue(clientId, out string n) && !string.IsNullOrWhiteSpace(n)
+        ? n.Trim()
+        : "UN JUGADOR";
+}
+public static bool ConoceNombreCliente(ulong clientId)
+{
+    return nombresPorCliente.TryGetValue(clientId, out string n) && !string.IsNullOrWhiteSpace(n);
+}
     public string UsernameOnly
 {
     get
@@ -131,6 +144,7 @@ if (playerHealth == null)
         }
         else
         {
+            nombresPorCliente[OwnerClientId] = networkPlayerName.Value.ToString();
             ActualizarTexto(networkPlayerName.Value.ToString());
         }
     }
@@ -159,6 +173,7 @@ if (playerHealth == null)
 
     private void OnNameChanged(FixedString32Bytes antiguoNombre, FixedString32Bytes nuevoNombre)
     {
+        nombresPorCliente[OwnerClientId] = nuevoNombre.ToString();
         ActualizarTexto(nuevoNombre.ToString());
     }
 

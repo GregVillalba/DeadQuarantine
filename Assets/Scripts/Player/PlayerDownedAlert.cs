@@ -18,11 +18,17 @@ public class PlayerDownedAlert : NetworkBehaviour
    // [SerializeField] private string formatoTexto = "¡Compañero abatido! Reanimalo: {0} s";
 
    [SerializeField] private TextMeshProUGUI[] textosAviso;   // 3 líneas (máx. 3 compañeros)
-[Tooltip("{0} = nombre del jugador, {1} = segundos restantes.")]
-[SerializeField] private string formatoTexto = "{0} abatido! Reanimalo en {1} seg";
+//[Tooltip("{0} = nombre del jugador, {1} = segundos restantes.")]
+//[SerializeField] private string formatoTexto = "{0} abatido! Reanimalo en {1} seg";
 
-private readonly List<(string nombre, float tiempo)> abatidos =
-    new List<(string nombre, float tiempo)>();
+[Tooltip("{0} = nombre, {1} = metros, {2} = segundos restantes.")]
+[SerializeField] private string formatoTexto = "{0} fue abatido a {1} metros! Revivelo en {2} seg";
+
+//private readonly List<(string nombre, float tiempo)> abatidos =
+  //  new List<(string nombre, float tiempo)>();
+
+  private readonly List<(string nombre, float tiempo, int metros)> abatidos =
+    new List<(string nombre, float tiempo, int metros)>();
 
     [Header("Urgencia")]
     [Tooltip("Por debajo de estos segundos el texto cambia de color.")]
@@ -112,7 +118,13 @@ foreach (PlayerHealth jugador in jugadores)
     PlayerNameplate rotulo = jugador.GetComponentInChildren<PlayerNameplate>(true);
     string nombre = rotulo != null ? rotulo.UsernameOnly : "JUGADOR";
 
-    abatidos.Add((nombre, jugador.DownedTimeRemaining.Value));
+   // abatidos.Add((nombre, jugador.DownedTimeRemaining.Value));
+
+   int metros = Mathf.RoundToInt(
+    Vector3.Distance(playerHealth.transform.position, jugador.transform.position)
+);
+
+abatidos.Add((nombre, jugador.DownedTimeRemaining.Value, metros));
 }
 
 if (abatidos.Count == 0)
@@ -171,9 +183,13 @@ Mostrar();
         if (!texto.gameObject.activeSelf)
             texto.gameObject.SetActive(true);
 
-        var (nombre, tiempo) = abatidos[i];
+       /* var (nombre, tiempo) = abatidos[i];
 
-        texto.text = string.Format(formatoTexto, nombre, Mathf.CeilToInt(tiempo));
+        texto.text = string.Format(formatoTexto, nombre, Mathf.CeilToInt(tiempo));*/
+
+        var (nombre, tiempo, metros) = abatidos[i];
+
+        texto.text = string.Format(formatoTexto, nombre, metros, Mathf.CeilToInt(tiempo));
         texto.color = tiempo <= umbralUrgente ? colorUrgente : colorNormal;
     }
 }

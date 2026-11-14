@@ -128,14 +128,25 @@ public class GameStartCurtain : MonoBehaviour
         Cursor.visible = true;
     }
 
-    public static void AvisarSalidaDeCompanero()
+    /*public static void AvisarSalidaDeCompanero()
     {
         if (!CargaEnCurso)
             return;
 
         avisoCarga.text = "Un compañero abandonó la partida.";
         avisoCarga.transform.parent.gameObject.SetActive(true);
-    }
+    }*/
+
+    public static void AvisarSalidaDeCompanero(string nombre = null)
+{
+    if (!CargaEnCurso)
+        return;
+
+    avisoCarga.text = string.IsNullOrWhiteSpace(nombre)
+        ? "Un compañero abandonó la partida."
+        : nombre.Trim() + " abandonó la partida.";
+    avisoCarga.transform.parent.gameObject.SetActive(true);
+}
 
     public static void MostrarSalidaAlMenu(string aviso = null)
     {
