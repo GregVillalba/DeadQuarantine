@@ -5,6 +5,8 @@
 Inspirado en los clásicos modos de supervivencia por hordas, los jugadores deben resistir 5 rondas consecutivas dentro de una casa abandonada, enfrentando hordas progresivas de zombis y derrotando a un temible Zombie Boss final.
 
 ---
+## Dead Quarantine II : Branch Develop_branch
+---
 
 ## 👥 Equipo de Desarrollo (Grupo 6 - Comisión 1)
 
