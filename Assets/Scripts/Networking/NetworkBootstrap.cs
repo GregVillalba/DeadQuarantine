@@ -32,7 +32,8 @@ public class NetworkBootstrap : MonoBehaviour
 
     public string CurrentJoinCode { get; private set; }
 
-    public event Action OnGuestLeft; // lo recibe el HOST cuando el invitado se va
+   // public event Action OnGuestLeft; // lo recibe el HOST cuando el invitado se va
+   public event Action<string> OnGuestLeft; // lo reciben TODOS; lleva el nombre de quien se fue
     public event Action OnHostLeft;  // lo recibe el INVITADO cuando el host se va
 
     public bool IsHost =>
@@ -361,7 +362,8 @@ public class NetworkBootstrap : MonoBehaviour
                 IntentarCerrarPartidaPorSalidaDelHost();
             else
             {
-                GameStartCurtain.AvisarSalidaDeCompanero();
+                //GameStartCurtain.AvisarSalidaDeCompanero();
+                GameStartCurtain.AvisarSalidaDeCompanero(NombreDeJugadorEnSesion(sesion, playerId));
                 if (sesion.IsHost && GameStartCurtain.CargaEnCurso)
                 {
                     bool quedanInvitados = false;
@@ -388,6 +390,19 @@ public class NetworkBootstrap : MonoBehaviour
             sesion.Players.Count
         );
     }
+
+    private static string NombreDeJugadorEnSesion(ISession sesion, string playerId)
+{
+    foreach (IReadOnlyPlayer jugador in sesion.Players)
+    {
+        if (jugador.Id == playerId &&
+            jugador.Properties.TryGetValue("Username", out var propiedad) &&
+            !string.IsNullOrWhiteSpace(propiedad.Value))
+            return propiedad.Value.Trim();
+    }
+
+    return null;
+}
 
     private void AlEliminarSesion()
     {
@@ -776,6 +791,7 @@ private void OnClienteSincronizado(ulong clientId)
             : evento.EventType == ConnectionEvent.PeerDisconnected;
         if (salioUnCompanero)
         {
+            string nombre = PlayerNameplate.GetNombreCliente(evento.ClientId);
             if (red.IsServer)
             {
                 bool estabaSincronizando = clientesSincronizando.Remove(evento.ClientId);
@@ -785,13 +801,17 @@ private void OnClienteSincronizado(ulong clientId)
 
                 if (red.ConnectedClientsIds.Count <= 1 && !red.ShutdownInProgress)
                 {
-                    OnGuestLeft?.Invoke();
+                   // OnGuestLeft?.Invoke();
+                   OnGuestLeft?.Invoke(nombre);
                     _ = CerrarPartidaSinInvitados();
                     return;
                 }
             }
-            GameStartCurtain.AvisarSalidaDeCompanero();
-            OnGuestLeft?.Invoke();
+           // GameStartCurtain.AvisarSalidaDeCompanero();
+           // OnGuestLeft?.Invoke();
+           GameStartCurtain.AvisarSalidaDeCompanero(
+            PlayerNameplate.ConoceNombreCliente(evento.ClientId) ? nombre : null);
+           OnGuestLeft?.Invoke(nombre);
             return;
         }
 

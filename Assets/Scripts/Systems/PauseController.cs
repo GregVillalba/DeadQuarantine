@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 using Unity.Netcode;
 using System.Collections;
 using TMPro;
+using System.Collections.Generic;
 
 public class PauseController : NetworkBehaviour
 {
@@ -63,6 +64,11 @@ public class PauseController : NetworkBehaviour
     [Header("Aviso: compañero abandonó")]
     [SerializeField] private GameObject panelCompaneroAbandono;
     [SerializeField] private float duracionPanelCompaneroAbandono = 4f;
+    [SerializeField] private TextMeshProUGUI textoCompaneroAbandono;
+    [SerializeField] private string formatoCompaneroAbandono = "{0} abandonó la partida";
+    
+
+    private readonly List<(string linea, float vence)> avisosAbandono = new List<(string linea, float vence)>();
 
     [Header("Guardar Score (Modo Supervivencia)")]
     [SerializeField] private GuardarScoreCartelUI cartelGuardarScore;
@@ -98,6 +104,7 @@ public class PauseController : NetworkBehaviour
     private Coroutine ocultarPanelRondaCoroutine;
     private Coroutine ocultarPanelFaseComprasCoroutine;
     private Coroutine ocultarPanelCompaneroCoroutine;
+    
 
     // Estado del minijuego arcade
     private bool minijuegoActivo;
@@ -783,7 +790,7 @@ public class PauseController : NetworkBehaviour
         OcultarPanelFaseCompras();
     }
 
-    private void MostrarAvisoCompaneroAbandono()
+    /*private void MostrarAvisoCompaneroAbandono()
     {
         if (panelCompaneroAbandono == null) return;
 
@@ -796,5 +803,44 @@ public class PauseController : NetworkBehaviour
     {
         yield return new WaitForSeconds(segundos);
         if (panelCompaneroAbandono != null) panelCompaneroAbandono.SetActive(false);
+    }*/
+
+    private void MostrarAvisoCompaneroAbandono(string nombre)
+{
+    if (panelCompaneroAbandono == null) return;
+
+    string linea = string.Format(formatoCompaneroAbandono, nombre);
+    avisosAbandono.Add((linea, Time.unscaledTime + duracionPanelCompaneroAbandono));
+    ActualizarAvisosAbandono();
+
+    if (ocultarPanelCompaneroCoroutine != null) StopCoroutine(ocultarPanelCompaneroCoroutine);
+    ocultarPanelCompaneroCoroutine = StartCoroutine(LimpiarAvisosAbandono());
+}
+
+private IEnumerator LimpiarAvisosAbandono()
+{
+    while (avisosAbandono.Count > 0)
+    {
+        yield return new WaitForSecondsRealtime(0.25f);
+        avisosAbandono.RemoveAll(a => a.vence <= Time.unscaledTime);
+        ActualizarAvisosAbandono();
     }
+}
+
+private void ActualizarAvisosAbandono()
+{
+    if (panelCompaneroAbandono == null) return;
+
+    if (avisosAbandono.Count == 0)
+    {
+        panelCompaneroAbandono.SetActive(false);
+        return;
+    }
+
+    panelCompaneroAbandono.SetActive(true);
+
+    if (textoCompaneroAbandono != null)
+        textoCompaneroAbandono.text = string.Join("\n", avisosAbandono.Select(a => a.linea));
+}
+
 }
