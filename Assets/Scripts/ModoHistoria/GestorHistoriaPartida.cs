@@ -1683,6 +1683,12 @@ private void RegistrarSenalEncontradaRpc(
             detector.ReintentarBusquedaDeSenal();
     }
 
+    internal void PrepararPatrullasLaboratorio(RoundManager rondas)
+    {
+        if (EsHistoriaLaboratorio())
+            rondas.CrearPatrullaHistoria(puntoSpawnTarjeta, 2, 8f);
+    }
+
     public void IniciarMisionCiudad()
     {
         if (!IsServer || !EsHistoriaCiudad())
@@ -1707,6 +1713,13 @@ private void RegistrarSenalEncontradaRpc(
         EstadoMisionNetwork.Value = BuscarRadio;
 
         misionCiudadInicializada = true;
+
+        RoundManager rondas = RoundManager.Instance;
+        if (rondas != null)
+        {
+            rondas.CrearPatrullaHistoria(puntoSpawnRadio, 2, 10f);
+            rondas.CrearPatrullaHistoria(puntoSalidaCiudad, 3, 14f);
+        }
 
         Debug.Log(
             "[Historia] Misión de Ciudad iniciada. Radio creada."

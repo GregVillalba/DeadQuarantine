@@ -1,8 +1,9 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
+using UnityEngine.AI;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
@@ -66,7 +67,7 @@ public class RoundManager : NetworkBehaviour
     [SerializeField] private int debugStartRound = 1;
 
     [Header("Modo Historia")]
-    [SerializeField] private int maxZombiesHistoria = 25;
+    [SerializeField] private int maxZombiesHistoria = 32;
 
     private bool historiaPartidaIniciada;
     private bool historiaSpawningActivo;
@@ -1234,72 +1235,106 @@ public void IniciarHistoria()
 
     Debug.Log(
         "[RoundManager] Modo Historia iniciado. Límite de zombies vivos: " +
-        maxZombiesHistoria
+        LimiteZombiesVivosHistoria
     );
 
+    GestorHistoriaPartida.Instance?.PrepararPatrullasLaboratorio(this);
     historiaSpawnRoutine = StartCoroutine(
         HistoriaSpawnRoutine()
     );
 }
 
+internal void CrearPatrullaHistoria(Transform referencia, int cantidad, float radio)
+{
+    if (!IsServer || !EsModoHistoria || !historiaPartidaIniciada ||
+        referencia == null || !referencia.gameObject.activeInHierarchy ||
+        zombiePrefab == null || !zombiePrefab.TryGetComponent(out NavMeshAgent agentePrefab))
+    {
+        return;
+    }
+
+    cantidad += BalanceHistoria.PatrullerosAdicionales;
+
+    var filtro = new NavMeshQueryFilter
+    {
+        agentTypeID = agentePrefab.agentTypeID,
+        areaMask = agentePrefab.areaMask
+    };
+    if (!NavMesh.SamplePosition(referencia.position, out NavMeshHit centro, 4f, filtro))
+    {
+        Debug.LogWarning($"[Historia] No hay NavMesh cerca de {referencia.name}.", referencia);
+        return;
+    }
+
+    int salud = BalanceHistoria.Vida;
+    var posiciones = new List<Vector3>(cantidad);
+    var ruta = new NavMeshPath();
+    for (int intento = 0; intento < cantidad * 16 && posiciones.Count < cantidad &&
+         AliveZombiesNetwork.Value < LimiteZombiesVivosHistoria; intento++)
+    {
+        Vector2 desplazamiento = Random.insideUnitCircle * radio;
+        Vector3 candidato = centro.position + new Vector3(desplazamiento.x, 0f, desplazamiento.y);
+        if (!NavMesh.SamplePosition(candidato, out NavMeshHit punto, 1.5f, filtro) ||
+            (punto.position - centro.position).sqrMagnitude < 4f ||
+            Mathf.Abs(punto.position.y - centro.position.y) > 2f ||
+            posiciones.Exists(posicion => (posicion - punto.position).sqrMagnitude < 4f) ||
+            !NavMesh.CalculatePath(centro.position, punto.position, filtro, ruta) ||
+            ruta.status != NavMeshPathStatus.PathComplete)
+        {
+            continue;
+        }
+
+        Quaternion rotacion = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+        if (SpawnZombieAtPosition(zombiePrefab, punto.position, rotacion, salud, false,
+                                 patrullaHistoria: true))
+        {
+            posiciones.Add(punto.position);
+            AliveZombiesNetwork.Value++;
+        }
+    }
+}
+
+private (int Limite, float DemoraInicial, Vector2 Intervalo, int PatrullerosAdicionales,
+         int Vida, int Dano, float MultiplicadorVidaBoss, int DanoBoss) BalanceHistoria =>
+    ((DifficultyLevel)DifficultyNetwork.Value) switch
+    {
+        DifficultyLevel.Dificil => (22, 2f, new Vector2(1.2f, 1.9f), 1, 32, 28, 0.88f, 42),
+        DifficultyLevel.Pesadilla => (28, 1.5f, new Vector2(0.9f, 1.5f), 2, 40, 42, 1f, 58),
+        _ => (16, 2.5f, new Vector2(1.6f, 2.5f), 0, 24, 18, 0.72f, 30)
+    };
+
+private int LimiteZombiesVivosHistoria
+{
+    get
+    {
+        int jugadores = NetworkManager.Singleton?.ConnectedClientsList.Count ?? 1;
+        int jugadoresAdicionales = Mathf.Max(0, jugadores - 1);
+        return Mathf.Min(maxZombiesHistoria, BalanceHistoria.Limite + jugadoresAdicionales * 3);
+    }
+}
+
+internal int ObtenerDanoZombieHistoria(bool esBoss) =>
+    esBoss ? BalanceHistoria.DanoBoss : BalanceHistoria.Dano;
+
 private IEnumerator HistoriaSpawnRoutine()
 {
-    if (initialSpawnDelay > 0f)
-        yield return new WaitForSeconds(initialSpawnDelay);
+    var balance = BalanceHistoria;
+    yield return new WaitForSeconds(balance.DemoraInicial);
 
-    while (historiaSpawningActivo &&
-           !GameLostNetwork.Value &&
-           AliveZombiesNetwork.Value < maxZombiesHistoria)
+    while (historiaSpawningActivo && !GameLostNetwork.Value)
     {
-        Transform spawnPoint = ObtenerSpawnAleatorioHistoria();
+        int limite = LimiteZombiesVivosHistoria;
+        if (misionMansionActiva && !bossMansionAparecio)
+            limite--;
 
-        if (spawnPoint == null)
+        if (AliveZombiesNetwork.Value < limite)
         {
-            Debug.LogError(
-                "[RoundManager] Historia: no hay Spawn Points válidos."
-            );
-            break;
+            Transform spawnPoint = ObtenerSpawnAleatorioHistoria();
+            if (spawnPoint != null && SpawnZombie(zombiePrefab, spawnPoint, balance.Vida, true))
+                AliveZombiesNetwork.Value++;
         }
 
-        // Mantiene una dificultad inicial equivalente a la primera ronda.
-        int saludZombie = Mathf.Max(
-            1,
-            Mathf.RoundToInt(
-                shotsIncreasePerRound *
-                damagePerShot *
-                healthMultiplier
-            )
-        );
-
-       float probabilidadCorredor = misionMansionActiva
-        ? 0.90f
-        : Mathf.Clamp01(runChanceBonus);
-
-        bool willRun = Random.value < probabilidadCorredor;
-
-        if (SpawnZombie(
-            zombiePrefab,
-            spawnPoint,
-            saludZombie,
-            willRun
-        ))
-        {
-            AliveZombiesNetwork.Value++;
-
-        }
-
-        if (!historiaSpawningActivo ||
-            AliveZombiesNetwork.Value >= maxZombiesHistoria)
-        {
-            break;
-        }
-
-        float intervalo = Random.Range(
-            round1MinSpawnInterval,
-            round1MaxSpawnInterval
-        );
-
-        yield return new WaitForSeconds(intervalo);
+        yield return new WaitForSeconds(Random.Range(balance.Intervalo.x, balance.Intervalo.y));
     }
 
     historiaSpawnRoutine = null;
@@ -1307,21 +1342,53 @@ private IEnumerator HistoriaSpawnRoutine()
 
 private Transform ObtenerSpawnAleatorioHistoria()
 {
-    if (spawnPoints == null || spawnPoints.Length == 0)
+    const float distanciaMinima = 7f;
+    const float distanciaPreferida = 22f;
+    NetworkManager red = NetworkManager.Singleton;
+    if (spawnPoints == null || red == null)
         return null;
 
-    // Se intenta encontrar un punto válido al azar.
-    for (int i = 0; i < spawnPoints.Length; i++)
+    Transform cercano = null;
+    Transform lejano = null;
+    int puntosCercanos = 0;
+    int puntosLejanos = 0;
+    foreach (Transform punto in spawnPoints)
     {
-        Transform punto = spawnPoints[
-            Random.Range(0, spawnPoints.Length)
-        ];
+        if (punto == null || !punto.gameObject.activeInHierarchy)
+            continue;
 
-        if (punto != null)
-            return punto;
+        float distanciaAlJugadorCuadrada = float.PositiveInfinity;
+        foreach (NetworkClient cliente in red.ConnectedClientsList)
+        {
+            NetworkObject jugador = cliente.PlayerObject;
+            if (jugador == null || GestorHistoriaPartida.JugadorEliminado(jugador))
+                continue;
+
+            float distanciaCuadrada = (jugador.transform.position - punto.position).sqrMagnitude;
+            distanciaAlJugadorCuadrada = Mathf.Min(distanciaAlJugadorCuadrada, distanciaCuadrada);
+            if (distanciaAlJugadorCuadrada < distanciaMinima * distanciaMinima)
+                break;
+        }
+
+        if (distanciaAlJugadorCuadrada < distanciaMinima * distanciaMinima ||
+            float.IsPositiveInfinity(distanciaAlJugadorCuadrada))
+            continue;
+
+        if (distanciaAlJugadorCuadrada <= distanciaPreferida * distanciaPreferida)
+        {
+            puntosCercanos++;
+            if (Random.Range(0, puntosCercanos) == 0)
+                cercano = punto;
+        }
+        else
+        {
+            puntosLejanos++;
+            if (Random.Range(0, puntosLejanos) == 0)
+                lejano = punto;
+        }
     }
 
-    return null;
+    return cercano != null ? cercano : lejano;
 }
 
 // Llamar cuando se cumpla el objetivo de la misión.
@@ -1401,11 +1468,23 @@ public void EliminarZombiesHistoria()
     if (prefab == null || spawnPoint == null)
         return false;
 
-    GameObject zombieInstance = Instantiate(
-        prefab,
-        spawnPoint.position,
-        spawnPoint.rotation
+    return SpawnZombieAtPosition(
+        prefab, spawnPoint.position, spawnPoint.rotation, health, willRun, speedMultiplier, esBossHistoria
     );
+}
+
+private bool SpawnZombieAtPosition(
+    GameObject prefab,
+    Vector3 position,
+    Quaternion rotation,
+    int health,
+    bool willRun,
+    float speedMultiplier = 1f,
+    bool esBossHistoria = false,
+    bool patrullaHistoria = false
+)
+{
+    GameObject zombieInstance = Instantiate(prefab, position, rotation);
 
     ZombieAppearance zombieAppearance =
         zombieInstance.GetComponent<ZombieAppearance>();
@@ -1450,6 +1529,9 @@ public void EliminarZombiesHistoria()
         Destroy(zombieInstance);
         return false;
     }
+
+    if (patrullaHistoria && zombieAIComponent != null)
+        zombieAIComponent.ConfigurarPatrullaHistoria(position);
 
     netObj.Spawn();
 
@@ -2289,7 +2371,7 @@ public void ActualizarSpawnPointsDelEscenario()
     ConfigurarSpawnPointsDelEscenario();
 }
 
-public void IniciarMisionMansion(Transform puntoSpawnBoss)
+public void IniciarMisionMansion(Transform puntoSpawnBoss, Transform[] puntosPatrullaExterior)
 {
     if (!IsServer || !EsModoHistoria)
         return;
@@ -2337,6 +2419,9 @@ public void IniciarMisionMansion(Transform puntoSpawnBoss)
     if (misionMansionRoutine != null)
         StopCoroutine(misionMansionRoutine);
 
+    foreach (Transform punto in puntosPatrullaExterior)
+        CrearPatrullaHistoria(punto, 2, 5f);
+
     misionMansionRoutine =
         StartCoroutine(SecuenciaMisionMansion(puntoSpawnBoss));
 }
@@ -2374,7 +2459,7 @@ private IEnumerator SecuenciaMisionMansion(
     bool bossCreado = SpawnZombie(
         bossMansionPrefab,
         puntoSpawnBoss,
-        saludBossMansion,
+        Mathf.Max(1, Mathf.RoundToInt(saludBossMansion * BalanceHistoria.MultiplicadorVidaBoss)),
         true,
         1f,
         true

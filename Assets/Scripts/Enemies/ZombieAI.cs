@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
@@ -164,6 +164,13 @@ public class ZombieAI : NetworkBehaviour
 
     private float nextAttackTime;
     private float nextPathUpdateTime;
+    private const float StoryAlertDistance = 6f;
+    private const float StoryPatrolRadius = 5f;
+    private bool storyPatrolling;
+    private ulong? storyShooterClientId;
+    private Vector3 storyPatrolOrigin;
+    private float nextStoryPatrolTime;
+
     private Transform target;
     // Si el objetivo es una torreta (Supervivencia) en vez de un jugador.
     private TorretaAutomatica targetTorreta;
@@ -224,10 +231,13 @@ public class ZombieAI : NetworkBehaviour
             agent.autoBraking = true;
         }
 
-        FindClosestPlayer();
+        if (!storyPatrolling)
+        {
+            FindClosestPlayer();
 
-        if (emergeFromGround && animationDriver == null)
-            IniciarAparicionDesdeTierra();
+            if (emergeFromGround && animationDriver == null)
+                IniciarAparicionDesdeTierra();
+        }
     }
 
     public override void OnNetworkDespawn()
@@ -379,6 +389,56 @@ public class ZombieAI : NetworkBehaviour
         }
     }
 
+    internal void ConfigurarPatrullaHistoria(Vector3 origen)
+    {
+        storyPatrolling = true;
+        storyPatrolOrigin = origen;
+    }
+
+    internal void AlertarPorDisparo(ulong shooterClientId)
+    {
+        if (!IsServer || !storyPatrolling)
+            return;
+
+        storyShooterClientId = shooterClientId;
+        ActivarPersecucionHistoria();
+    }
+
+    private void ActivarPersecucionHistoria()
+    {
+        storyPatrolling = false;
+        nextPathUpdateTime = 0f;
+        SetRunning(true);
+    }
+
+    private void ActualizarPatrullaHistoria()
+    {
+        if (AgenteSobreNavMesh() && !agent.pathPending &&
+            (!agent.hasPath || agent.remainingDistance <= 0.25f) &&
+            Time.time >= nextStoryPatrolTime)
+        {
+            nextStoryPatrolTime = Time.time + Random.Range(1f, 3f);
+            var filter = new NavMeshQueryFilter { agentTypeID = agent.agentTypeID, areaMask = agent.areaMask };
+            for (int attempt = 0; attempt < 8; attempt++)
+            {
+                Vector2 offset = Random.insideUnitCircle * StoryPatrolRadius;
+                Vector3 candidate = storyPatrolOrigin + new Vector3(offset.x, 0f, offset.y);
+                if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 1f, filter) ||
+                    NavMesh.Raycast(storyPatrolOrigin, hit.position, out _, filter) ||
+                    (hit.position - transform.position).sqrMagnitude < 1f)
+                {
+                    continue;
+                }
+
+                agent.isStopped = false;
+                agent.SetDestination(hit.position);
+                break;
+            }
+        }
+
+        UpdateAnimator();
+    }
+
     public void SetRunning(bool isRunning)
     {
         IsRunning = isRunning;
@@ -490,6 +550,17 @@ public class ZombieAI : NetworkBehaviour
 
         ActualizarTerreno();
         FindClosestPlayer();
+
+        if (storyPatrolling)
+        {
+            if (target == null)
+            {
+                ActualizarPatrullaHistoria();
+                return;
+            }
+
+            ActivarPersecucionHistoria();
+        }
 
         if (target == null)
         {
@@ -606,6 +677,13 @@ public class ZombieAI : NetworkBehaviour
                 continue;
             }
 
+            if (storyShooterClientId == client.ClientId)
+            {
+                targetTorreta = null;
+                target = client.PlayerObject.transform;
+                return;
+            }
+
             Transform player =
                 client.PlayerObject.transform;
 
@@ -615,12 +693,14 @@ public class ZombieAI : NetworkBehaviour
                     player.position
                 );
 
-            if (distance < closestDistance)
+            if (distance < closestDistance && (!storyPatrolling || distance <= StoryAlertDistance))
             {
                 closestDistance = distance;
                 closestPlayer = player;
             }
         }
+
+        storyShooterClientId = null;
 
         // Si todos los jugadores vivos están en el minijuego, no se elige tampoco
         // una torreta como objetivo: los zombis quedan quietos hasta que alguien salga.
@@ -629,6 +709,13 @@ public class ZombieAI : NetworkBehaviour
             hayJugadorEnZonaSegura = true;
             targetTorreta = null;
             target = null;
+            return;
+        }
+
+        if (storyPatrolling)
+        {
+            targetTorreta = null;
+            target = closestPlayer;
             return;
         }
 
@@ -1024,10 +1111,11 @@ public class ZombieAI : NetworkBehaviour
     // Daño de la dificultad (si está activo y configurado) o el del prefab.
     private int DanoDeAtaque()
     {
-        DifficultySettings settings =
-            RoundManager.Instance != null
-                ? RoundManager.Instance.ActiveSettings
-                : null;
+        RoundManager rondas = RoundManager.Instance;
+        if (useDifficultyDamageOverride && rondas != null && rondas.EsModoHistoria && !InPvPvE)
+            return rondas.ObtenerDanoZombieHistoria(zombieHealth != null && zombieHealth.EsBossHistoria);
+
+        DifficultySettings settings = rondas != null ? rondas.ActiveSettings : null;
 
         int damage =
             (useDifficultyDamageOverride && settings != null && settings.zombieDamage > 0)

@@ -28,6 +28,7 @@ public class GestorMansionHistoria : MonoBehaviour
 
     [Header("Configuración de la misión")]
     [SerializeField] private Transform puntoSpawnBoss;
+    [SerializeField] private Transform[] puntosPatrullaExterior = System.Array.Empty<Transform>();
 
     [Header("Helicóptero")]
     [SerializeField] private Animator animatorHelicoptero;
@@ -205,7 +206,8 @@ public class GestorMansionHistoria : MonoBehaviour
             StartCoroutine(MostrarCuentaRegresiva());
 
         RoundManager.Instance.IniciarMisionMansion(
-            puntoSpawnBoss
+            puntoSpawnBoss,
+            puntosPatrullaExterior
         );
     }
 

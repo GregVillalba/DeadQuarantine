@@ -428,7 +428,8 @@ public void MarcarComoBossHistoria()
     Vector3 hitNormal,
     bool esHeadshot = false,
     bool registrarHeadshot = false,
-    int hitVariantExplicito = -1
+    int hitVariantExplicito = -1,
+    bool esDisparo = false
 )
 {
     if (IsDead)
@@ -440,7 +441,8 @@ public void MarcarComoBossHistoria()
         hitNormal,
         esHeadshot,
         registrarHeadshot,
-        hitVariantExplicito
+        hitVariantExplicito,
+        esDisparo
     );
 }
 
@@ -452,6 +454,7 @@ private void TakeDamageServerRpc(
     bool esHeadshot,
     bool registrarHeadshot,
     int hitVariantExplicito,
+    bool esDisparo,
     ServerRpcParams rpcParams = default
 )
     {
@@ -464,7 +467,8 @@ private void TakeDamageServerRpc(
             registrarHeadshot,
             hitVariantExplicito,
             rpcParams.Receive.SenderClientId,
-            true
+            true,
+            esDisparo: esDisparo
         );
     }
 
@@ -515,7 +519,8 @@ private void TakeDamageServerRpc(
         int hitVariantExplicito,
         ulong shooterClientId,
         bool efectosDeImpacto,
-        bool mostrarHitMarker = true
+        bool mostrarHitMarker = true,
+        bool esDisparo = false
     )
     {
         if (IsDead || amount<=0)
@@ -567,6 +572,9 @@ private void TakeDamageServerRpc(
         }
         else if (efectosDeImpacto)
         {
+            if (esDisparo && zombieAI != null)
+                zombieAI.AlertarPorDisparo(shooterClientId);
+
             // 0 = cabeza, 1 = brazo izquierdo, 2 = brazo derecho.
             // -1 = torso/piernas: conserva sangre/sonido pero no corta la locomoción.
             int hitVariant = DeterminarHitReactionLocalizado(

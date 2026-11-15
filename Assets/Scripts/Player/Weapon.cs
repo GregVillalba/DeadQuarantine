@@ -1974,7 +1974,8 @@ if (zombieHealth != null)
         hit.normal,
         esHeadshot,
         registrarHeadshot,
-        hitVariantExplicito
+        hitVariantExplicito,
+        esDisparo: true
     );
 
     if (playerScore != null)
