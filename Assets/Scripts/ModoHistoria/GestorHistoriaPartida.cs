@@ -78,6 +78,11 @@ public class GestorHistoriaPartida : NetworkBehaviour
         ? estadoObjetivoRecibido
         : EstadoMisionNetwork.Value;
 
+    internal bool ContactoRadioPendienteLocal =>
+        IsSpawned && IsClient &&
+        EstadoMisionNetwork.Value == ContactarSobrevivientes &&
+        ClienteConRadioNetwork.Value == NetworkManager.LocalClientId;
+
     public static GestorHistoriaPartida Instance { get; private set; }
 
     public NetworkVariable<int> EstadoMisionNetwork =
@@ -433,8 +438,7 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
     private void TransferirObjetivoDelJugadorDesconectado(ulong clientId)
     {
         NetworkManager red = NetworkManager.Singleton;
-        if (!IsSpawned || !IsServer || red == null || red.ShutdownInProgress ||
-            red.ConnectedClientsList.Count < 2)
+        if (!IsSpawned || !IsServer || red == null || red.ShutdownInProgress)
             return;
 
         int estado = EstadoMisionNetwork.Value;
@@ -800,7 +804,7 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
                 textoTituloObjetivo.color = Color.white;
                 textoTituloObjetivo.text = "OBJETIVO";
                 textoDescripcionObjetivo.text =
-                    "Intenta comunicarte con los sobrevivientes.";
+                    "Escucha la transmisión de los sobrevivientes.";
                 break;
 
             case IrAlCaminoSalida:
@@ -1787,7 +1791,7 @@ private void RegistrarSenalEncontradaRpc(
 
     public void ConfirmarContactoSobrevivientes()
     {
-        if (!IsSpawned)
+        if (!ContactoRadioPendienteLocal)
             return;
 
         ConfirmarContactoSobrevivientesRpc();
