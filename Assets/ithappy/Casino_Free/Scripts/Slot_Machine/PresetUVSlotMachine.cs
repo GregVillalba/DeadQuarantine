@@ -117,6 +117,7 @@ namespace ithappy.Casino
         [Header("Preview")]
         [SerializeField, Min(1)] private int previewRow = 1;
         [SerializeField, Min(0)] private int previewPresetIndex;
+        [SerializeField, HideInInspector] private int debugRow;
 
         private MaterialPropertyBlock[] blocks;
         private Vector4[] originalST;
@@ -136,8 +137,15 @@ namespace ithappy.Casino
         public bool IsSpinning => isSpinning;
         public int ChancesLeft => chancesLeft;
         public bool CanPlay => !isSpinning && chancesLeft > 0;
+        public int PresetCount => presets != null ? presets.Count : 0;
 
-        /// <summary>Se dispara al frenar el último rodillo. true = victoria (4 sietes).</summary>
+        public bool IsPresetWin(int index)
+        {
+            return presets != null && index >= 0 && index < presets.Count &&
+                   presets[index] != null && presets[index].isWin;
+        }
+
+        /// <summary>Se dispara al frenar el último rodillo. true = jackpot completo.</summary>
         public event Action<bool> OnSpinFinished;
 
         private void Awake()
@@ -532,17 +540,8 @@ namespace ithappy.Casino
                 }
             }
 
-            // SOLO activa serpentinas/partículas si el preset es de 4 sietes:
-            // Comprueba si el nombre contiene "7" o si las 4 filas son iguales a la fila del 7
-            bool esCuatroSietes = preset != null &&
-                                  (preset.presetName.Contains("7") ||
-                                   preset.presetName.ToLower().Contains("seven") ||
-                                   (preset.reel1Row == preset.reel2Row &&
-                                    preset.reel2Row == preset.reel3Row &&
-                                    preset.reel3Row == preset.reel4Row &&
-                                    preset.isWin));
-
-            if (win && esCuatroSietes)
+            // Solo los presets marcados isWin son jackpots completos.
+            if (win)
             {
                 PlayWinFeedback();
             }
@@ -691,11 +690,26 @@ namespace ithappy.Casino
         [ContextMenu("PREVIEW/Apply Row To All Reels")]
         private void PreviewAllReels()
         {
+            PreviewRowForDebug(previewRow);
+        }
+
+        [ContextMenu("PREVIEW/Next Texture Row (check Console)")]
+        private void PreviewNextTextureRow()
+        {
+            debugRow = debugRow % Mathf.Max(1, rowsCount) + 1;
+            PreviewRowForDebug(debugRow);
+            Debug.Log($"[SlotMachine] Mostrando fila de textura {debugRow}/{rowsCount} en los 4 rodillos de '{name}'. Revisá el símbolo visible.", this);
+        }
+
+        /// <summary>Applies a texture row to each reel for visual row identification.</summary>
+        public void PreviewRowForDebug(int row)
+        {
             EnsureInitialized();
+            row = Mathf.Clamp(row, 1, rowsCount);
 
             for (int i = 0; i < ReelCount; i++)
             {
-                float offset = GetRowOffset(previewRow, reels[i].rowShift);
+                float offset = GetRowOffset(row, reels[i].rowShift);
                 currentOffsets[i] = offset;
                 ApplyOffset(i, offset);
             }

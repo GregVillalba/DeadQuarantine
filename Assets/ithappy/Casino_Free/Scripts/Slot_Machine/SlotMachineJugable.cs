@@ -28,17 +28,19 @@ namespace ithappy.Casino
 
         [Header("Presets (posición en la lista 'Presets' de PresetUVSlotMachine, empieza en 0)")]
         [Tooltip("Índices de los presets con 4 sietes (isWin = true).")]
-        [SerializeField] private int[] presetsGanadores = { 0 };
+        [SerializeField] private int[] presetsGanadores = { 0, 1, 2 };
         [Tooltip("Índices de los presets que pierden (isWin = false).")]
-        [SerializeField] private int[] presetsPerdedores = { 1 };
+        [SerializeField] private int[] presetsPerdedores = { 3, 4, 5, 6, 7 };
+
+        [Header("Preset y recurso de cada jackpot (índices desde 0)")]
+        [SerializeField, Min(0)] private int presetSietes = 0;
+        [SerializeField, Min(0)] private int presetDiamantes = 1;
+        [SerializeField, Min(0)] private int presetCerezas = 2;
 
         [Header("Recursos al ganar")]
         [Tooltip("Prefab del recurso en el piso (RecursoDrop). Tiene que estar en DefaultNetworkPrefabs.")]
         [SerializeField] private RecursoDrop prefabRecurso;
-        [SerializeField] private TipoRecurso tipoAgua;
-        [SerializeField] private TipoRecurso tipoGasolina;
-        [SerializeField, Min(1)] private int cantidadMin = 1;
-        [SerializeField, Min(1)] private int cantidadMax = 3;
+        [SerializeField, Min(0.1f)] private float separacionDrops = 0.5f;
 
         [Header("Ubicación del drop")]
         [Tooltip("Adelante de la máquina, a la altura del piso. Si queda vacío se usa la máquina.")]
@@ -49,6 +51,7 @@ namespace ithappy.Casino
 
         private PresetUVSlotMachine machine;
         private int chancesRestantes;
+        private TipoRecurso recursoPremioActual;
 
         public int ChancesLeft => chancesRestantes;
         public bool IsSpinning => machine != null && machine.IsSpinning;
@@ -58,6 +61,10 @@ namespace ithappy.Casino
         {
             machine = GetComponent<PresetUVSlotMachine>();
             chancesRestantes = chancesMaximas;
+            if (presetsGanadores == null || presetsGanadores.Length == 0)
+                presetsGanadores = new[] { presetSietes, presetDiamantes, presetCerezas };
+            if (presetsPerdedores == null || presetsPerdedores.Length == 0)
+                presetsPerdedores = new[] { 3, 4, 5, 6, 7 };
             RegistrarMensajePremio();
         }
 
@@ -92,6 +99,9 @@ namespace ithappy.Casino
             if (!machine.IsSpinning)
                 return false;
 
+            if (!TryGetRewardType(indice, out recursoPremioActual))
+                recursoPremioActual = TipoRecurso.PilaDeLatas;
+
             chancesRestantes--;
             StartCoroutine(EsperarResultado(gana));
             return true;
@@ -116,12 +126,22 @@ namespace ithappy.Casino
 
         private int ElegirPreset(bool gana)
         {
-            int[] lista = gana ? presetsGanadores : presetsPerdedores;
+            int[] configurados = gana ? presetsGanadores : presetsPerdedores;
+            var candidatos = new System.Collections.Generic.List<int>();
 
-            if (lista == null || lista.Length == 0)
-                lista = gana ? presetsPerdedores : presetsGanadores;
+            if (configurados != null)
+                foreach (int indice in configurados)
+                    if (machine.IsPresetWin(indice) == gana)
+                        candidatos.Add(indice);
 
-            return lista == null || lista.Length == 0 ? -1 : lista[Random.Range(0, lista.Length)];
+            // Si el prefab tenía índices antiguos, usar automáticamente todos los presets
+            // cuyo isWin coincide con el resultado solicitado.
+            if (candidatos.Count == 0)
+                for (int i = 0; i < machine.PresetCount; i++)
+                    if (machine.IsPresetWin(i) == gana)
+                        candidatos.Add(i);
+
+            return candidatos.Count == 0 ? -1 : candidatos[Random.Range(0, candidatos.Count)];
         }
 
         private IEnumerator EsperarResultado(bool gano)
@@ -138,7 +158,7 @@ namespace ithappy.Casino
             NetworkManager red = NetworkManager.Singleton;
             if (red == null || !red.IsListening || red.IsServer)
             {
-                SoltarSuministros();
+                SoltarSuministros(recursoPremioActual);
                 yield break;
             }
 
@@ -148,11 +168,12 @@ namespace ithappy.Casino
             if (red.CustomMessagingManager != null)
             {
                 Vector3 posicion = (puntoDeSalida != null ? puntoDeSalida : transform).position;
-                using (var writer = new FastBufferWriter(sizeof(float) * 3, Allocator.Temp))
+                using (var writer = new FastBufferWriter(sizeof(float) * 3 + sizeof(byte), Allocator.Temp))
                 {
                     writer.WriteValueSafe(posicion.x);
                     writer.WriteValueSafe(posicion.y);
                     writer.WriteValueSafe(posicion.z);
+                    writer.WriteValueSafe((byte)recursoPremioActual);
                     red.CustomMessagingManager.SendNamedMessage(JackpotMessage, NetworkManager.ServerClientId, writer);
                 }
             }
@@ -169,6 +190,10 @@ namespace ithappy.Casino
             reader.ReadValueSafe(out float x);
             reader.ReadValueSafe(out float y);
             reader.ReadValueSafe(out float z);
+            reader.ReadValueSafe(out byte tipoByte);
+            if (!System.Enum.IsDefined(typeof(TipoRecurso), (int)tipoByte))
+                return;
+            TipoRecurso tipoPremio = (TipoRecurso)tipoByte;
             Vector3 posicionReportada = new Vector3(x, y, z);
 
             SlotMachineJugable maquinaCercana = null;
@@ -193,11 +218,11 @@ namespace ithappy.Casino
             if (Vector3.Distance(cliente.PlayerObject.transform.position, salida.position) > 6f)
                 return;
 
-            maquinaCercana.SoltarSuministros();
+            maquinaCercana.SoltarSuministros(tipoPremio);
         }
 
         /// <summary>Solo servidor/host, igual que DropRecursosZombie.Soltar().</summary>
-        private void SoltarSuministros()
+        private void SoltarSuministros(TipoRecurso tipo)
         {
             NetworkManager red = NetworkManager.Singleton;
 
@@ -205,20 +230,27 @@ namespace ithappy.Casino
                 return;
 
             Transform origen = puntoDeSalida != null ? puntoDeSalida : transform;
-            Vector3 lado = origen.right * (separacion * 0.5f);
+            Vector3 lado = origen.right * (separacionDrops * 0.5f);
             Vector3 centro = origen.position + Vector3.up * alturaSobreElPiso;
 
-            SoltarUno(tipoAgua, centro - lado);
-            SoltarUno(tipoGasolina, centro + lado);
+            SoltarUno(tipo, centro - lado);
+            SoltarUno(tipo, centro + lado);
         }
 
         private void SoltarUno(TipoRecurso tipo, Vector3 posicion)
         {
-            int cantidad = Random.Range(cantidadMin, Mathf.Max(cantidadMin, cantidadMax) + 1);
-
             RecursoDrop recurso = Instantiate(prefabRecurso, posicion, Quaternion.identity);
-            recurso.Configurar(tipo, cantidad);
+            recurso.Configurar(tipo, 1);
             recurso.NetworkObject.Spawn(true);
+        }
+
+        private bool TryGetRewardType(int presetIndex, out TipoRecurso tipo)
+        {
+            if (presetIndex == presetCerezas) { tipo = TipoRecurso.PilaDeLatas; return true; }
+            if (presetIndex == presetDiamantes) { tipo = TipoRecurso.Cantimplora; return true; }
+            if (presetIndex == presetSietes) { tipo = TipoRecurso.Bidon; return true; }
+            tipo = default;
+            return false;
         }
     }
 }
