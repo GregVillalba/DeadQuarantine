@@ -522,6 +522,14 @@ public class MultiplayerLobbyController : MonoBehaviour
             return;
         }
 
+        // El anfitrión eligió una dificultad que no tiene desbloqueada: el botón no hace nada
+        // (no puede marcarse listo, así que la partida no arranca). Si ya estaba listo, sí puede desmarcarse.
+        if (network.CurrentSession.IsHost && !miReady &&
+            LobbyGameSettingsRuntime.DificultadSeleccionadaBloqueada())
+        {
+            return;
+        }
+
         miReady = !miReady;
 
         await CambiarReady(miReady);
@@ -649,7 +657,11 @@ public class MultiplayerLobbyController : MonoBehaviour
         }
 
         bool host = network.CurrentSession.IsHost;
-        bool configuracionValida = LobbyGameSettingsRuntime.ConfiguracionValida();
+
+        // Para el anfitrión, una dificultad que no tiene desbloqueada cuenta como configuración no válida.
+        bool configuracionValida =
+            LobbyGameSettingsRuntime.ConfiguracionValida() &&
+            !(host && LobbyGameSettingsRuntime.DificultadSeleccionadaBloqueada());
 
         if (host && countdownIniciado && (!todosListos || !configuracionValida))
             CancelarCountdown();
@@ -1067,7 +1079,8 @@ public class MultiplayerLobbyController : MonoBehaviour
     private bool SesionListaParaIniciar()
     {
         if (network == null || network.CurrentSession == null ||
-            !network.CurrentSession.IsHost || !LobbyGameSettingsRuntime.ConfiguracionValida())
+            !network.CurrentSession.IsHost || !LobbyGameSettingsRuntime.ConfiguracionValida() ||
+            LobbyGameSettingsRuntime.DificultadSeleccionadaBloqueada())
             return false;
 
         List<IReadOnlyPlayer> jugadores =

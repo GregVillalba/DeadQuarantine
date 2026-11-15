@@ -105,6 +105,9 @@ public void GuardarPartida(int rondaActual)
 
     datos.rondaActual = rondaActual;
     datos.partidaPerdida = false;
+    datos.empezoSinDesbloqueos =
+        DesbloqueoDificultades.EmpezoSinDesbloqueos(
+            ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia) ? 1 : 2;
     datos.jugador = jugador;
     datos.fechaGuardado = System.DateTime.Now.ToString("o");
 
@@ -249,6 +252,15 @@ private IEnumerator RestaurarDatosCuandoJugadorEsteListo(
         jugador.armas,
         jugador.armaEquipada
     );
+
+    // La partida cargada sigue siendo la misma partida para la condición especial
+    // de desbloqueo de dificultades.
+    if (datos.empezoSinDesbloqueos != 0)
+    {
+        DesbloqueoDificultades.RestaurarEmpezoSinDesbloqueos(
+            ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia,
+            datos.empezoSinDesbloqueos == 1);
+    }
 
     // Evita volver a guardar la misma ronda al cargarla.
     ultimaRondaGuardada = datos.rondaActual;

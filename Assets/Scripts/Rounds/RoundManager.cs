@@ -271,6 +271,11 @@ private bool iniciarRondaDesdeGuardado;
 
     public override void OnNetworkSpawn()
     {
+        // Desbloqueo de dificultades: cada cliente anota qué tenía desbloqueado al empezar
+        // la partida (lo necesita la condición especial).
+        DesbloqueoDificultades.RegistrarInicioDePartida();
+        AvisoDesbloqueoDificultad.ReiniciarPartida();
+
         CurrentRoundNetwork.OnValueChanged +=
             OnRoundChanged;
 
@@ -1748,6 +1753,14 @@ private bool SpawnZombieAtPosition(
     if (!IsServer || !EsModoHistoria || GameLostNetwork.Value)
         return;
 
+    // Desbloqueo de dificultades: Historia completada.
+    EvaluarDesbloqueoDificultadClientRpc(
+        ModoNetwork.Value,
+        DifficultyNetwork.Value,
+        0,
+        true
+    );
+
     PlayerHealth.FinPartidaPerksServidor();
     if (SceneManager.GetActiveScene().name == "MainSceneSinglePlayer")
         MostrarVictoriaClientRpc();
@@ -1869,6 +1882,79 @@ private void DesbloquearLogroModoClientRpc(
     );
 }
 
+    // =========================================================
+    // DESBLOQUEO DE DIFICULTADES
+    // =========================================================
+
+    // Cada cliente evalúa SU progreso con SU puntaje y SUS caídas: el desbloqueo es local de cada
+    // máquina. El servidor solo avisa que se cumplió un hito (victoria o ronda superada).
+    [ClientRpc]
+    private void EvaluarDesbloqueoDificultadClientRpc(
+        int modo,
+        int dificultad,
+        int rondaSuperada,
+        bool partidaCompletada
+    )
+    {
+        // Igual que los logros: en el tutorial no se desbloquea nada.
+        if (AchievementsManager.Instance != null &&
+            !AchievementsManager.Instance.LogrosHabilitados)
+        {
+            return;
+        }
+
+        if (DeadQuarantine.PvPvE.Networking.PvPvECombat.Active)
+            return;
+
+        NetworkObject jugador =
+            NetworkManager.Singleton != null &&
+            NetworkManager.Singleton.LocalClient != null
+                ? NetworkManager.Singleton.LocalClient.PlayerObject
+                : null;
+
+        PlayerScore score = jugador != null
+            ? jugador.GetComponentInChildren<PlayerScore>(true)
+            : null;
+
+        if (score == null)
+        {
+            Debug.LogWarning(
+                "[RoundManager] No se encontró el PlayerScore local para evaluar el desbloqueo de dificultades."
+            );
+            return;
+        }
+
+        ConfiguracionPartidaSeleccionada.ModoJuego modoJugado =
+            (ConfiguracionPartidaSeleccionada.ModoJuego)modo;
+
+        // DifficultyLevel (0..2) -> ConfiguracionPartidaSeleccionada.Dificultad (1..3).
+        ConfiguracionPartidaSeleccionada.Dificultad dificultadJugada =
+            (ConfiguracionPartidaSeleccionada.Dificultad)(dificultad + 1);
+
+        bool desbloqueo = DesbloqueoDificultades.EvaluarPartida(
+            modoJugado,
+            dificultadJugada,
+            score.PuntajeFinal, // ya descuenta 500 por caída
+            score.CaidasNetwork.Value,
+            rondaSuperada,
+            partidaCompletada,
+            out ConfiguracionPartidaSeleccionada.Dificultad anterior,
+            out ConfiguracionPartidaSeleccionada.Dificultad nueva
+        );
+
+        if (!desbloqueo)
+            return;
+
+        // Al ganar, el aviso lo muestra la pantalla de resultado (debajo de "Desempeño global de combate").
+        // A mitad de partida (Supervivencia) no hay pantalla de resultado: se muestra el cartel.
+        AvisoDesbloqueoDificultad.Registrar(
+            modoJugado,
+            anterior,
+            nueva,
+            !partidaCompletada
+        );
+    }
+
     [ClientRpc]
     private void MostrarDerrotaClientRpc()
     {
@@ -1915,6 +2001,18 @@ private IEnumerator EndRoundDelay()
             DifficultyNetwork.Value
         );
 
+        // Desbloqueo de dificultades: 5 Rondas completadas.
+        // (Historia se evalúa en MostrarVictoriaHistoria.)
+        if (!EsModoHistoria)
+        {
+            EvaluarDesbloqueoDificultadClientRpc(
+                ModoNetwork.Value,
+                DifficultyNetwork.Value,
+                CurrentRoundNetwork.Value,
+                true
+            );
+        }
+
         PlayerHealth.FinPartidaPerksServidor();
     MostrarVictoriaClientRpc();
 
@@ -1930,6 +2028,18 @@ private IEnumerator EndRoundDelay()
         }
 
         yield break;
+    }
+
+    // Desbloqueo de dificultades: en Supervivencia se evalúa al superar cada ronda
+    // (los requisitos piden superar la ronda 10 / 20).
+    if (infiniteMode)
+    {
+        EvaluarDesbloqueoDificultadClientRpc(
+            ModoNetwork.Value,
+            DifficultyNetwork.Value,
+            CurrentRoundNetwork.Value,
+            false
+        );
     }
 
     pendingNextRound =

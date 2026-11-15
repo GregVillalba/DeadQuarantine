@@ -300,7 +300,8 @@ public sealed class SinglePlayerCinematicPresenter : MonoBehaviour
                     ? username : username + " - " + partyCharacterName.ToUpperInvariant();
         }
 
-        string mode = LobbyGameSettingsRuntime.ObtenerResumenModoDificultad();
+        // true: si la dificultad elegida está bloqueada se escribe en rojo.
+        string mode = LobbyGameSettingsRuntime.ObtenerResumenModoDificultad(true);
         if (mode != previousMode)
         {
             previousMode = mode;

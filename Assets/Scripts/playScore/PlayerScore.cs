@@ -50,6 +50,20 @@ public NetworkVariable<int> HeadshotsRealizadosNetwork =
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
     );
+
+    // Cada caída resta estos puntos del puntaje final de la partida.
+    public const int PenalizacionPorCaida = 500;
+
+    /// <summary>Puntos que se descuentan por las caídas acumuladas.</summary>
+    public int PenalizacionCaidas => CaidasNetwork.Value * PenalizacionPorCaida;
+
+    /// <summary>
+    /// Puntaje de la partida con las caídas ya descontadas (nunca menor a 0). Es el que se muestra
+    /// en la pantalla de resultado, el que se guarda en el ranking y el que se usa para desbloquear
+    /// dificultades. ScoreNetwork sigue siendo el puntaje ganado, sin descuento.
+    /// </summary>
+    public int PuntajeFinal => Mathf.Max(0, ScoreNetwork.Value - PenalizacionCaidas);
+
 public void SumarCaida()
 {
     if (!IsServer)

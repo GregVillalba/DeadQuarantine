@@ -537,7 +537,12 @@ public class LobbyCinematicPartyPresenter : MonoBehaviour
         bool inRoom = multiplayerLobbyController == null || multiplayerLobbyController.EnSala;
         if (modeDifficultyText != null)
         {
-            string value = inRoom ? LobbyGameSettingsRuntime.ObtenerResumenModoDificultad() : "SIN CONFIGURAR";
+            // Solo al anfitrión se le marca en rojo una dificultad bloqueada: los invitados juegan lo que él elija.
+            bool esAnfitrion = multiplayerLobbyController != null && multiplayerLobbyController.EsAnfitrion;
+
+            string value = inRoom
+                ? LobbyGameSettingsRuntime.ObtenerResumenModoDificultad(esAnfitrion)
+                : "SIN CONFIGURAR";
 
             if (value != lastModeDifficulty)
             {
