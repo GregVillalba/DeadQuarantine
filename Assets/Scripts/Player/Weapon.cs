@@ -173,7 +173,9 @@ public partial class Weapon : MonoBehaviour
     public float AttachmentRecoilMultiplier => RuntimeAttachments != null ? RuntimeAttachments.RecoilMultiplier : 1f;
     public bool ShotIsSuppressed => RuntimeAttachments != null && RuntimeAttachments.Suppressed;
     public AudioClip PresentationShotSound => RuntimeAttachments != null && RuntimeAttachments.ShotSound ? RuntimeAttachments.ShotSound : shootSound;
-    public float AttachmentAimFov => RuntimeAttachments != null ? RuntimeAttachments.AimFov(aimFOV) : aimFOV;
+    public float AttachmentAimFov => RuntimeAttachments != null
+        ? RuntimeAttachments.HasMagnifiedLens ? HipFieldOfView : RuntimeAttachments.AimFov(aimFOV)
+        : aimFOV;
     public void SetAttachmentSight(Transform sight) { if(RuntimeAttachments!=null&&RuntimeAttachments.HasRuntimeCatalog)SetPackAttachmentSight(sight); }
     public UnityEngine.Audio.AudioMixerGroup PresentationMixer => audioSource ? audioSource.outputAudioMixerGroup : null;
     public GameObject PresentationTrail => bulletTrailPrefab;
@@ -727,7 +729,7 @@ public partial class Weapon : MonoBehaviour
 
     }
 
-    private Ray GetShotAimRay()
+    internal Ray GetShotAimRay()
     {
         // ADS: la direccion fisica de la bala es el CENTRO de la camara
         // jugable. WeaponCamera solo dibuja el arma; sus SOCKET_Default

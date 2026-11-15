@@ -160,6 +160,206 @@ public partial class HUDController : MonoBehaviour
     private bool etiquetaActualizada;
     private bool avisoMunicionIntentado;
 
+    internal static Image FindPlayerStatusBackground(Transform hudElement)
+    {
+        for (var parent = hudElement; parent; parent = parent.parent)
+        {
+            if (parent.Find("info_general/Background")?.GetComponent<Image>() is Image background)
+                return background;
+        }
+        return null;
+    }
+
+    internal Image PlayerStatusBackground => FindPlayerStatusBackground(ammoText ? ammoText.transform : transform);
+
+    internal static Image FindAmmoBackground(Transform hudElement)
+    {
+        for (var parent = hudElement; parent; parent = parent.parent)
+        {
+            if (parent.Find("AmmoPanel/Background")?.GetComponent<Image>() is Image background)
+                return background;
+        }
+        return null;
+    }
+
+    internal static void FollowFrameSlope(RectTransform content, bool right)
+    {
+        content.localRotation = Quaternion.Euler(0f, 0f, right ? -1.3f : 1.3f);
+    }
+
+    private void Awake()
+    {
+        if (fondoPanelObjetivo)
+        {
+            var panel = fondoPanelObjetivo.rectTransform;
+            var history = (RectTransform)panel.parent;
+            ClearLegacyFrame(fondoObjetivos);
+            PlaceHudPanel(history, false, 490, 170, 58);
+            panel.sizeDelta = history.sizeDelta;
+            UIEffects.EnsureHudSway(panel, transform);
+            ClearLegacyFrame(fondoPanelObjetivo);
+            StyleHudBackground(panel, "Background");
+            AddHudSeparator(panel, 113, false);
+            ArrangeObjectiveText(panel.Find("FILA1/Objetivo"), 119, 152, 116, 28);
+            ArrangeObjectiveText(panel.Find("FILA2/Descripcion"), 22, 108, 28, 25);
+            ArrangeObjectiveText(panel.Find("Temporizador"), 119, 152, 28, 25, true);
+        }
+        if (fondoRondas)
+        {
+            var panel = fondoRondas.rectTransform;
+            PlaceHudPanel(panel, true, 460, 141, 58);
+            UIEffects.EnsureHudSway(panel, transform);
+            ClearLegacyFrame(fondoRondas);
+            StyleHudBackground(panel, "Fondo de estado", right: true);
+            AddHudSeparator(panel, 71, true);
+            if (panel.Find("Image") is RectTransform content)
+            {
+                ClearLegacyFrame(content.GetComponent<Image>());
+                FitHudRect(content, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            }
+            ArrangeHudMetric(roundsText, "Rounds_Text", 74, 127, 37);
+            ArrangeHudMetric(zombiesText, "Zombies_Text", 16, 68, 37);
+        }
+
+        var roundNotice = ammoText && ammoText.canvas
+            ? ammoText.canvas.transform.Find("Ronda_Start") as RectTransform : null;
+        if (roundNotice && PlayerStatusBackground)
+        {
+            ClearLegacyFrame(roundNotice.GetComponent<Image>());
+            ClearLegacyFrame(roundNotice.Find("Image")?.GetComponent<Image>());
+            roundNotice.sizeDelta = new Vector2(350, 145);
+            StyleHudBackground(roundNotice, "Fondo de estado");
+            UIEffects.EnsureHudSway(roundNotice, transform);
+        }
+    }
+
+    internal static void ClearLegacyFrame(Image frame)
+    {
+        if (!frame) return;
+        frame.color = Color.clear;
+        frame.raycastTarget = false;
+        if (frame.TryGetComponent<Outline>(out var outline)) outline.enabled = false;
+    }
+
+    private void StyleHudBackground(RectTransform panel, string childName, bool right = false)
+    {
+        var source = right ? FindAmmoBackground(panel) : PlayerStatusBackground;
+        if (!source) return;
+        var frame = panel.Find(childName)?.GetComponent<Image>();
+        if (!frame)
+        {
+            frame = new GameObject(childName, typeof(Image)).GetComponent<Image>();
+            frame.transform.SetParent(panel, false);
+            frame.transform.SetAsFirstSibling();
+        }
+        ApplyStatusFrame(frame, source, right);
+    }
+
+    internal static void AddHudSeparator(RectTransform panel, float y, bool right)
+    {
+        var separator = new GameObject("Separador HUD", typeof(Image)).GetComponent<Image>();
+        separator.transform.SetParent(panel, false);
+        separator.color = new Color(.64f, .88f, .72f, .38f);
+        separator.raycastTarget = false;
+        FitHudRect(separator.rectTransform, Vector2.zero, Vector2.right, new Vector2(28, y), new Vector2(-28, y + 1.5f));
+        FollowFrameSlope(separator.rectTransform, right);
+    }
+
+    private void ArrangeObjectiveText(Transform target, float bottom, float top, float right,
+        float size, bool timer = false)
+    {
+        if (!target || !target.TryGetComponent<TMP_Text>(out var label)) return;
+        if (target.parent.name.StartsWith("FILA"))
+            FitHudRect((RectTransform)target.parent, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        FitHudRect(label.rectTransform, Vector2.zero, Vector2.right,
+            new Vector2(timer ? 354 : 24, bottom), new Vector2(-right, top));
+        FollowFrameSlope(label.rectTransform, false);
+        label.alignment = timer ? TextAlignmentOptions.MidlineRight :
+            bottom < 20 ? TextAlignmentOptions.TopLeft : TextAlignmentOptions.MidlineLeft;
+        label.fontSizeMax = size;
+        label.fontSizeMin = 15;
+        label.enableAutoSizing = true;
+        label.margin = Vector4.zero;
+        label.overflowMode = TextOverflowModes.Ellipsis;
+        if (!timer && bottom >= 20)
+        {
+            label.fontStyle = FontStyles.Bold;
+            label.characterSpacing = 1f;
+        }
+    }
+
+    internal static void FitHudRect(RectTransform rect, Vector2 min, Vector2 max, Vector2 lower, Vector2 upper)
+    {
+        rect.anchorMin = min;
+        rect.anchorMax = max;
+        rect.offsetMin = lower;
+        rect.offsetMax = upper;
+    }
+
+    internal static void PlaceHudPanel(RectTransform rect, bool right, float width, float height, float top)
+    {
+        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(right ? 1 : 0, 1);
+        rect.anchoredPosition = new Vector2(right ? -64 : 64, -top);
+        rect.sizeDelta = new Vector2(width, height);
+    }
+
+    internal static void ApplyStatusFrame(Image frame, Image source, bool right)
+    {
+        if (!frame || !source) return;
+        frame.sprite = source.sprite;
+        frame.overrideSprite = source.overrideSprite;
+        frame.type = source.type;
+        frame.material = source.material;
+        frame.color = source.color;
+        frame.preserveAspect = source.preserveAspect;
+        frame.fillCenter = source.fillCenter;
+        frame.useSpriteMesh = source.useSpriteMesh;
+        frame.pixelsPerUnitMultiplier = source.pixelsPerUnitMultiplier;
+        if (frame.TryGetComponent<Outline>(out var outline)) outline.enabled = false;
+        frame.raycastTarget = false;
+        var rect = frame.rectTransform;
+        rect.localScale = Vector3.one;
+        rect.pivot = new Vector2(.5f, .5f);
+        rect.localRotation = Quaternion.Euler(0, right ? 180f : 0f, 0);
+        FitHudRect(rect, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+    }
+
+    internal static void ArrangeHudMetric(TMP_Text value, string labelName, float bottom, float top, float size)
+    {
+        if (!value) return;
+        var row = (RectTransform)value.transform.parent;
+        FitHudRect(row, Vector2.zero, Vector2.right, new Vector2(0, bottom), new Vector2(0, top));
+        FollowFrameSlope(row, true);
+        if (row.Find(labelName)?.GetComponent<TMP_Text>() is TMP_Text label)
+        {
+            FitHudRect(label.rectTransform, Vector2.zero, Vector2.one, new Vector2(24, 0), new Vector2(-145, 0));
+            label.alignment = TextAlignmentOptions.MidlineLeft;
+            label.enableAutoSizing = true;
+            label.fontSizeMin = 20;
+            label.fontSizeMax = 24;
+            label.overflowMode = TextOverflowModes.Ellipsis;
+            label.fontStyle = FontStyles.Bold;
+            label.characterSpacing = .8f;
+            label.margin = Vector4.zero;
+        }
+        FitHudRect(value.rectTransform, Vector2.zero, Vector2.one, new Vector2(295, 0), new Vector2(-24, 0));
+        value.alignment = TextAlignmentOptions.MidlineRight;
+        value.fontStyle = FontStyles.Bold;
+        value.enableAutoSizing = true;
+        value.fontSizeMin = 18;
+        value.fontSizeMax = size;
+        value.overflowMode = TextOverflowModes.Ellipsis;
+        value.margin = Vector4.zero;
+        value.color = new Color(.18f, .88f, .39f);
+
+        var divider = new GameObject("Separador de valor", typeof(Image)).GetComponent<Image>();
+        divider.transform.SetParent(row, false);
+        divider.color = new Color(.64f, .88f, .72f, .38f);
+        divider.raycastTarget = false;
+        FitHudRect(divider.rectTransform, Vector2.right, Vector2.one,
+            new Vector2(-153, 11), new Vector2(-151, -11));
+    }
+
     private void Start()
     {
         BuscarRoundManager();
@@ -981,8 +1181,9 @@ public partial class HUDController : MonoBehaviour
 
         bool mostrar = !string.IsNullOrEmpty(texto);
 
-        if (avisoMunicionText.gameObject.activeSelf != mostrar)
-            avisoMunicionText.gameObject.SetActive(mostrar);
+        var panel = ammoNoticePanel ? ammoNoticePanel : avisoMunicionText.gameObject;
+        if (panel.activeSelf != mostrar)
+            panel.SetActive(mostrar);
 
         if (!mostrar)
             return;
@@ -996,6 +1197,8 @@ public partial class HUDController : MonoBehaviour
     }
 
     // Crea el cartel en el centro del Canvas cuando no se asignó uno en el Inspector.
+    private GameObject ammoNoticePanel;
+
     private void CrearAvisoMunicion()
     {
         Canvas canvas = ammoText != null ? ammoText.canvas : GetComponentInParent<Canvas>();
@@ -1033,7 +1236,28 @@ public partial class HUDController : MonoBehaviour
             texto.outlineColor = colorContornoAviso;
         }
 
-        go.SetActive(false);
+        if (PlayerStatusBackground)
+        {
+            var panel = new GameObject("PanelAvisoMunicion", typeof(RectTransform));
+            panel.transform.SetParent(canvas.rootCanvas.transform, false);
+            var panelRect = (RectTransform)panel.transform;
+            panelRect.sizeDelta = new Vector2(405f, 52f);
+            panelRect.anchoredPosition = rt.anchoredPosition;
+            StyleHudBackground(panelRect, "Fondo de estado");
+            UIEffects.EnsureHudSway(panelRect, transform);
+            rt.SetParent(panelRect, false);
+            FitHudRect(rt, Vector2.zero, Vector2.one, new Vector2(12, 0), new Vector2(-12, 0));
+            texto.enableAutoSizing = true;
+            texto.fontSizeMax = tamanoTextoAviso;
+            texto.fontSizeMin = tamanoTextoAviso * .7f;
+            texto.textWrappingMode = TextWrappingModes.NoWrap;
+            ammoNoticePanel = panel;
+            panel.SetActive(false);
+        }
+        else
+        {
+            go.SetActive(false);
+        }
         avisoMunicionText = texto;
     }
 

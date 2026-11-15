@@ -1,5 +1,4 @@
 using DeadQuarantine.PvPvE.Networking;
-using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -8,7 +7,7 @@ using UnityEngine.UI;
 
 namespace DeadQuarantine.PvPvE.UI {
  public sealed class PvPvEDeploymentView:MonoBehaviour {
-  PvPvETeamDeployment deployment;GameObject root,input;TMP_Text heading,message;RectTransform choices;bool started;float startUntil;Button pauseClassButton;PauseController pauseOwner;TMP_Text pauseClassLabel;Image backdrop;string classProfile="local";
+  PvPvETeamDeployment deployment;GameObject root,input;TMP_Text heading,message;RectTransform choices;bool started;float startUntil;Image backdrop;string classProfile="local";
   public GameObject Panel=>root;
   public bool Choosing{get;private set;}
   public string Feedback{get;private set;}="";
@@ -20,30 +19,17 @@ namespace DeadQuarantine.PvPvE.UI {
    if(active&&!started){started=true;startUntil=Time.unscaledTime+1;}
    bool start=active&&Time.unscaledTime<startUntil;
    bool dead=active&&deployment.TryGet(deployment.NetworkManager.LocalClientId,out var row)&&row.Life==PvPvELifeStage.Dead;
-   var player=active?deployment.NetworkManager.LocalClient?.PlayerObject:null;
-   var pauseController=player?player.GetComponentInChildren<PauseController>(true):null;
-   if(active&&pauseController&&pauseOwner!=pauseController)InstallPauseAction(pauseController);
-   bool pause=active&&PauseController.LocalPlayerPaused&&pauseController&&pauseController.IsPauseHomeVisible;
-   if(!pause)Choosing=false;
-   if(pauseClassLabel)pauseClassLabel.text=Choosing?"VOLVER A PAUSA":"CREAR CLASE"+(string.IsNullOrEmpty(Feedback)?"":"\nSe aplicará en el próximo respawn");
-   bool show=active&&(!PauseController.LocalPlayerPaused||pause)&&(dead||pause&&Choosing||start||PvPvETeamDeployment.LocalBlocked);if(show&&!root)Build();if(root)root.SetActive(show);if(!show)return;
-   if(backdrop){PvPvEUIFactory.Place(backdrop.rectTransform,dead?new(.28f,.35f):new(.50f,.18f),dead?new(.72f,.69f):new(.98f,.88f));backdrop.gameObject.SetActive(dead||pause);}
+   bool show=active&&!PauseController.LocalPlayerPaused&&(dead||start||PvPvETeamDeployment.LocalBlocked);
+   if(show&&!root)Build();if(root)root.SetActive(show);if(!show)return;
+   if(backdrop){PvPvEUIFactory.Place(backdrop.rectTransform,dead?new(.28f,.35f):new(.50f,.18f),dead?new(.72f,.69f):new(.98f,.88f));backdrop.gameObject.SetActive(dead);}
    PvPvEUIFactory.Place(heading.rectTransform,dead?new(.32f,.53f):new(.54f,.76f),dead?new(.68f,.64f):new(.94f,.85f));
    PvPvEUIFactory.Place(message.rectTransform,dead?new(.32f,.39f):new(.54f,.65f),dead?new(.68f,.53f):new(.94f,.75f));
    heading.font=PvPvEUIFactory.HeadingFont;heading.fontSize=dead?44:28;message.font=PvPvEUIFactory.BodyFont;
    heading.alignment=dead?TextAlignmentOptions.Center:TextAlignmentOptions.MidlineLeft;message.alignment=heading.alignment;
-   if(start&&!dead&&!pause){PvPvEUIFactory.Place(heading.rectTransform,new(.35f,.41f),new(.65f,.59f));heading.alignment=TextAlignmentOptions.Center;heading.fontSize=96;heading.color=Color.white;if(backdrop){PvPvEUIFactory.Place(backdrop.rectTransform,new(.35f,.41f),new(.65f,.59f));backdrop.color=new Color(0,0,0,.65f);backdrop.gameObject.SetActive(true);}}
-   heading.text=dead?"HAS MUERTO":pause?"CLASE PARA LA PRÓXIMA VIDA":start?"START":"PREPARANDO EQUIPAMIENTO";
+   if(start&&!dead){PvPvEUIFactory.Place(heading.rectTransform,new(.35f,.41f),new(.65f,.59f));heading.alignment=TextAlignmentOptions.Center;heading.fontSize=96;heading.color=Color.white;if(backdrop){PvPvEUIFactory.Place(backdrop.rectTransform,new(.35f,.41f),new(.65f,.59f));backdrop.color=new Color(0,0,0,.65f);backdrop.gameObject.SetActive(true);}}
+   heading.text=dead?"HAS MUERTO":start?"START":"PREPARANDO EQUIPAMIENTO";
    message.text=dead&&deployment.TryGet(deployment.NetworkManager.LocalClientId,out row)?"REAPARECIENDO EN "+Mathf.Max(0,Mathf.CeilToInt((float)(row.Due-deployment.NetworkManager.ServerTime.Time)))+"\n"+Feedback:Feedback;
-   choices.gameObject.SetActive(pause);foreach(Transform child in choices)if(child.name.StartsWith("Class "))child.gameObject.SetActive(Choosing);
-   if(pause){Cursor.lockState=CursorLockMode.None;Cursor.visible=true;}
-  }
-  void InstallPauseAction(PauseController owner){
-   if(pauseClassButton)Destroy(pauseClassButton.gameObject);pauseOwner=owner;if(!owner.PauseHomePanel)return;
-   var sample=owner.PauseHomePanel.GetComponentsInChildren<Button>(true).FirstOrDefault(b=>b.gameObject.activeSelf&&b.GetComponentInChildren<TMP_Text>(true));if(!sample)return;
-   var clone=Instantiate(sample.gameObject,sample.transform.parent);clone.name="PvPvE_ChangeClass";pauseClassButton=clone.GetComponent<Button>();pauseClassButton.onClick=new Button.ButtonClickedEvent();pauseClassButton.onClick.AddListener(()=>GetComponent<PvPvEInitialClassView>()?.OpenClassEditor());pauseClassLabel=clone.GetComponentInChildren<TMP_Text>(true);pauseClassLabel.text="CREAR CLASE";
-   owner.RefreshPausePresentation(pauseClassButton);
-
+   choices.gameObject.SetActive(false);
   }
   #if UNITY_EDITOR || DEVELOPMENT_BUILD
   public void UseValidationProfile(string profile)=>classProfile=profile;
@@ -67,7 +53,7 @@ namespace DeadQuarantine.PvPvE.UI {
    var t=new GameObject("Label",typeof(RectTransform)).AddComponent<TextMeshProUGUI>();t.transform.SetParent(go.transform,false);t.rectTransform.anchorMin=Vector2.zero;t.rectTransform.anchorMax=Vector2.one;t.rectTransform.offsetMin=new(10,0);t.rectTransform.offsetMax=new(-10,0);t.font=PvPvEUIFactory.BodyFont;t.fontSize=18;t.text=text;t.richText=false;t.alignment=TextAlignmentOptions.MidlineLeft;
   }
   TMP_Text Label(string name,Vector2 min,Vector2 max,int size){var go=new GameObject(name,typeof(RectTransform));go.transform.SetParent(root.transform,false);var t=go.AddComponent<TextMeshProUGUI>();t.rectTransform.anchorMin=min;t.rectTransform.anchorMax=max;t.rectTransform.offsetMin=t.rectTransform.offsetMax=Vector2.zero;t.fontSize=size;t.color=PvPvEUIFactory.Accent;t.richText=false;return t;}
-  public void DisposeView(){if(pauseClassButton)Destroy(pauseClassButton.gameObject);if(root){root.SetActive(false);Destroy(root);}if(input)Destroy(input);if(deployment)deployment.ClassReply-=Reply;}
+  public void DisposeView(){if(root){root.SetActive(false);Destroy(root);}if(input)Destroy(input);if(deployment)deployment.ClassReply-=Reply;}
   void OnDestroy()=>DisposeView();
  }
 }

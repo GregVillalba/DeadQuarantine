@@ -54,7 +54,11 @@ public class UIEffects : MonoBehaviour
              "se multiplican por esto (1000 = 0.02 -> 20 px). En World Space / Screen Space - Camera no se usa.")]
     [SerializeField] private float overlayUnitsScale = 1000f;
 
+    private RectTransform rect;
+    private bool boundedHudSway;
+    private bool hasBaseline;
     private Vector3 initialPosition;
+    internal Vector2 HudLayoutOffset { get; set; }
     private Quaternion initialRotation;
 
     private float inputX;
@@ -72,8 +76,21 @@ public class UIEffects : MonoBehaviour
     private bool jumped;
     private float unitsScale = 1f;
 
+    internal static void EnsureHudSway(RectTransform panel, Transform playerContext)
+    {
+        if (!panel || panel.GetComponent<UIEffects>()) return;
+        var effects = panel.gameObject.AddComponent<UIEffects>();
+        effects.playerMovement = playerContext.GetComponentInParent<PlayerMovement>();
+        effects.characterController = playerContext.GetComponentInParent<CharacterController>();
+        effects.boundedHudSway = true;
+        effects.tiltAmount = .6f;
+        effects.maxTiltAmount = 1f;
+        effects.rotationAmount = 0f;
+    }
+
     private void Awake()
     {
+        rect = transform as RectTransform;
         if (playerMovement == null)
             playerMovement = GetComponentInParent<PlayerMovement>();
 
@@ -88,8 +105,9 @@ public class UIEffects : MonoBehaviour
 
     private void Start()
     {
-        initialPosition = transform.localPosition;
+        initialPosition = rect ? rect.anchoredPosition3D : transform.localPosition;
         initialRotation = transform.localRotation;
+        hasBaseline = true;
     }
 
     private void OnDisable()
@@ -98,6 +116,9 @@ public class UIEffects : MonoBehaviour
         jumpMotionCoroutine = null;
         jumpPositionOffset = Vector3.zero;
         jumpRotationOffset = Quaternion.identity;
+        swayPositionOffset = Vector3.zero;
+        swayRotationOffset = Quaternion.identity;
+        if (hasBaseline) ApplyCombinedTransform();
     }
 
     private void Update()
@@ -105,11 +126,9 @@ public class UIEffects : MonoBehaviour
         DetectJumpAndLand();
 
         // Igual que el original: el sway solo se actualiza si el jugador es controlable.
-        if (IsControllable())
-        {
-            CalculateSway();
-            CalculateSwayOffsets();
-        }
+        if (IsControllable()) CalculateSway();
+        else inputX = inputY = 0f;
+        CalculateSwayOffsets();
 
         ApplyCombinedTransform();
     }
@@ -165,7 +184,10 @@ public class UIEffects : MonoBehaviour
 
     private void ApplyCombinedTransform()
     {
-        transform.localPosition = initialPosition + swayPositionOffset + jumpPositionOffset;
+        var offset = swayPositionOffset + jumpPositionOffset;
+        if (boundedHudSway) offset = Vector3.ClampMagnitude(offset, 10f);
+        if (rect) rect.anchoredPosition3D = initialPosition + offset + (Vector3)HudLayoutOffset;
+        else transform.localPosition = initialPosition + offset;
         transform.localRotation = initialRotation * swayRotationOffset * jumpRotationOffset;
     }
 

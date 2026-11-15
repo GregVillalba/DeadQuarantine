@@ -22,7 +22,7 @@ namespace DeadQuarantine.PvPvE {
    canvasRoot=new GameObject("PvPvE minimap",typeof(RectTransform),typeof(Canvas),typeof(CanvasScaler));canvasRoot.transform.SetParent(transform,false);
    var canvas=canvasRoot.GetComponent<Canvas>();canvas.renderMode=RenderMode.ScreenSpaceOverlay;canvas.sortingOrder=150;canvas.pixelPerfect=true;
    var scale=canvasRoot.GetComponent<CanvasScaler>();scale.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize;scale.referenceResolution=new(1600,900);scale.matchWidthOrHeight=.5f;
-   panel=Rect(canvasRoot.transform,"Minimap",new(.025f,1),new(0,-24),new(360,216)).gameObject;
+   panel=Rect(canvasRoot.transform,"Minimap",new(0,1),new(40,-36),new(360,216)).gameObject;
    Image(panel.transform,"Frame",new(360,216),new(0,0),new(.05f,.09f,.105f,.97f));
    Image(panel.transform,"Accent",new(360,2),new(0,0),PvPvEUIFactory.Accent);
    title=Text(panel.transform,"Map",new(240,22),new(10,-192),16);title.alignment=TextAlignmentOptions.MidlineLeft;
@@ -54,6 +54,7 @@ namespace DeadQuarantine.PvPvE {
    var obj=combat.NetworkManager.LocalClient?.PlayerObject;var local=obj?obj.GetComponent<PlayerHealth>():null;
    var flow=combat.GetComponent<PvPvEPreparationFlow>();var map=System.Array.Find(combat.Settings.Maps,m=>m.Id==flow.Map.Value);
    bool show=!PauseController.LocalPlayerPaused&&combat.IsPlaying&&combat.Alive(local)&&map!=null&&map.Minimap&&roster.TryGetMember(local.OwnerClientId,out _);panel.SetActive(show);if(!show){foreach(var marker in markers.Values)marker.gameObject.SetActive(false);return;}
+   UIEffects.EnsureHudSway((RectTransform)panel.transform, obj.transform);
    roster.TryGetMember(local.OwnerClientId,out var owner);terrain.texture=map.Minimap;title.text=map.Name.ToUpperInvariant();float range=Mathf.Max(10,combat.Settings.MinimapRange);var center=new Vector2(local.transform.position.x,local.transform.position.z);terrain.uvRect=MapUV(center,map.MinimapMin,map.MinimapMax,range,size);
    foreach(var marker in markers.Values)marker.gameObject.SetActive(false);
    foreach(var player in combat.NetworkManager.SpawnManager.SpawnedObjectsList){

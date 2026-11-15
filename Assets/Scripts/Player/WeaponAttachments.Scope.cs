@@ -8,6 +8,7 @@ public partial class WeaponAttachments
     Material scopeLens;
     Weapon scopeWeapon;
     bool scopeRendering;
+    internal bool HasMagnifiedLens => scopeCamera != null;
     public bool ScopeRendering => scopeRendering;
     public RenderTexture ScopeTexture => scopeTexture;
 
@@ -31,7 +32,7 @@ public partial class WeaponAttachments
         var go=new GameObject("Scope lens camera");go.transform.SetParent(transform,false);scopeCamera=go.AddComponent<Camera>();
         scopeCamera.enabled=false;scopeCamera.fieldOfView=entry.lensFieldOfView;scopeCamera.aspect=1;
         scopeCamera.nearClipPlane=.03f;scopeCamera.farClipPlane=1000;scopeCamera.depth=-20;
-        scopeCamera.targetTexture=scopeTexture;scopeCamera.allowHDR=false;scopeCamera.allowMSAA=false;
+        scopeCamera.targetTexture=scopeTexture;scopeCamera.aspect=1;scopeCamera.allowHDR=false;scopeCamera.allowMSAA=false;
         var data=go.AddComponent<UniversalAdditionalCameraData>();data.renderPostProcessing=false;data.volumeLayerMask=0;
         return scopeLens;
     }
@@ -44,8 +45,9 @@ public partial class WeaponAttachments
         scopeLens.SetTexture("_BaseMap",active?scopeTexture:Texture2D.blackTexture);
         if(!active)return;
         var optic=catalog.Find(ApprovedChoice.scope);if(optic!=null)scopeCamera.fieldOfView=optic.LensFieldOfView(scopeWeapon.HipFieldOfView);
-        scopeCamera.transform.SetPositionAndRotation(view.transform.position,view.transform.rotation);
-        scopeCamera.cullingMask=view.cullingMask&~(1<<30)&~(1<<31);
+        var aim = scopeWeapon.GetShotAimRay();
+        scopeCamera.transform.SetPositionAndRotation(view.transform.position, Quaternion.LookRotation(aim.direction, view.transform.up));
+        scopeCamera.cullingMask = view.cullingMask & ~(1 << gameObject.layer);
         scopeCamera.clearFlags=view.clearFlags;scopeCamera.backgroundColor=view.backgroundColor;
         scopeCamera.farClipPlane=view.farClipPlane;
         UnityEngine.Rendering.RenderPipeline.SubmitRenderRequest(scopeCamera,new UnityEngine.Rendering.RenderPipeline.StandardRequest{destination=scopeTexture});

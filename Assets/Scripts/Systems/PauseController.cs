@@ -310,6 +310,8 @@ public class PauseController : NetworkBehaviour
                 return;
             }
 
+            if (estaPausado && DeadQuarantine.PvPvE.UI.PvPvEInitialClassView.Active is { } classView &&
+                classView && classView.CloseClassChange()) return;
             if (estaPausado)
                 ReanudarJuego();
             else
@@ -347,6 +349,7 @@ public class PauseController : NetworkBehaviour
         ResolverMenuConfiguracion();
 
         if (menuConfiguracion != null) menuConfiguracion.SetActive(false);
+        RefreshPausePresentation();
         if (popupMenuHome != null) popupMenuHome.SetActive(true);
 
         BloquearJugador();
@@ -447,7 +450,13 @@ public class PauseController : NetworkBehaviour
 
     public void ReiniciarJuego()
     {
-        if (!IsOwner || !EsSinglePlayer()) return;
+        if (!IsOwner) return;
+        if (CanChangePvPvEClass && IsPauseHomeVisible)
+        {
+            DeadQuarantine.PvPvE.UI.PvPvEInitialClassView.Active?.OpenClassChange();
+            return;
+        }
+        if (!EsSinglePlayer()) return;
 
         Time.timeScale = 1f;
         AudioListener.pause = false;
@@ -458,29 +467,25 @@ public class PauseController : NetworkBehaviour
         SceneManager.LoadScene("MainSceneSinglePlayer");
     }
 
-    // Shared home presentation for singleplayer, cooperative and PvPvE; original actions remain on this controller.
-    public void RefreshPausePresentation(Button classButton=null)
+    private bool CanChangePvPvEClass =>
+        DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.Active is { } flow &&
+        flow && flow.Stage.Value == DeadQuarantine.PvPvE.Networking.PvPvEPrepareStage.Playing;
+
+    private void RefreshPausePresentation()
     {
         ActualizarBotonReiniciar();
-        if(!popupMenuHome)return;var home=popupMenuHome.transform;
-        // Older player variants do not always reference the visible Restart button in botonReiniciar.
-        // Apply the same singleplayer restriction to the actual home actions as well.
-        if(!EsSinglePlayer())foreach(var action in home.GetComponentsInChildren<Button>(true)){
-            var caption=action.GetComponentInChildren<TMP_Text>(true);
-            if(caption&&caption.text.Trim().StartsWith("Reiniciar",System.StringComparison.OrdinalIgnoreCase))action.gameObject.SetActive(false);
+        if (!popupMenuHome) return;
+        foreach (var action in popupMenuHome.GetComponentsInChildren<Button>(true))
+        {
+            var caption = action.GetComponentInChildren<TMP_Text>(true);
+            if (!caption || action.onClick.GetPersistentEventCount() == 0 ||
+                action.onClick.GetPersistentTarget(0) != this ||
+                action.onClick.GetPersistentMethodName(0) != nameof(ReiniciarJuego)) continue;
+
+            caption.text = CanChangePvPvEClass ? "CAMBIAR CLASE" : "Reiniciar";
+            action.gameObject.SetActive(CanChangePvPvEClass || EsSinglePlayer());
+            break;
         }
-        if(!classButton)return;
-        var parent=classButton.transform.parent;
-        var buttons=parent.GetComponentsInChildren<Button>(true).Where(b=>b.transform.parent==parent&&b!=classButton&&b.gameObject.activeSelf).OrderByDescending(b=>((RectTransform)b.transform).anchoredPosition.y).ToList();
-        if(buttons.Count==0)return;classButton.transform.SetSiblingIndex(buttons[0].transform.GetSiblingIndex()+1);
-        var layout=parent.GetComponent<LayoutGroup>();if(layout&&layout.enabled){LayoutRebuilder.MarkLayoutForRebuild((RectTransform)parent);return;}
-        float top=((RectTransform)buttons[0].transform).anchoredPosition.y;
-        float bottom=((RectTransform)buttons[buttons.Count-1].transform).anchoredPosition.y;
-        if(buttons.Count==1)bottom=top-((RectTransform)buttons[0].transform).rect.height*1.2f;
-        float step=buttons.Count>1?Mathf.Abs(top-((RectTransform)buttons[1].transform).anchoredPosition.y):Mathf.Abs(top-bottom);
-        if(step<1)step=((RectTransform)buttons[0].transform).rect.height*1.2f;
-        buttons.Insert(1,classButton);
-        for(int i=0;i<buttons.Count;i++){var rect=(RectTransform)buttons[i].transform;var pos=rect.anchoredPosition;pos.y=top-i*step;rect.anchoredPosition=pos;}
     }
 
     public void Salir()
