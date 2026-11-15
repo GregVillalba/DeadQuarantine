@@ -29,6 +29,11 @@ public class PlayerDamageEffects : MonoBehaviour
     private Quaternion originalRotation;
 
     private Coroutine shakeCoroutine;
+    private Image damageArc;
+    private Texture2D arcTexture;
+    private Sprite arcSprite;
+    private float arcStarted;
+    private Vector3 arcSource;
 
     private void Awake()
     {
@@ -66,6 +71,7 @@ public class PlayerDamageEffects : MonoBehaviour
 
         if (playerHealth != null)
         {
+            playerHealth.OnDirectionalDamage += ShowDamageArc;
             playerHealth.OnHealthChanged +=
                 OnHealthChanged;
 
@@ -88,14 +94,77 @@ public class PlayerDamageEffects : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (damageArc) Destroy(damageArc.gameObject);
+        if (arcSprite) Destroy(arcSprite);
+        if (arcTexture) Destroy(arcTexture);
         if (playerHealth != null)
         {
+            playerHealth.OnDirectionalDamage -= ShowDamageArc;
             playerHealth.OnHealthChanged -=
                 OnHealthChanged;
 
             playerHealth.OnEscudoDanado -=
                 StartDamageShake;
         }
+    }
+
+    private void ShowDamageArc(Vector3 source)
+    {
+        if (!damageVignette || !cameraShakeTransform) return;
+        if (!damageArc) CreateDamageArc();
+        arcSource = source;
+        arcStarted = Time.unscaledTime;
+        damageArc.enabled = true;
+        UpdateDamageArc();
+    }
+
+    private void LateUpdate()
+    {
+        if (damageArc && damageArc.enabled) UpdateDamageArc();
+    }
+
+    private void UpdateDamageArc()
+    {
+        float alpha = 1f - (Time.unscaledTime - arcStarted);
+        if (alpha <= 0)
+        {
+            damageArc.enabled = false;
+            return;
+        }
+
+        Vector3 delta = Vector3.ProjectOnPlane(arcSource - playerHealth.transform.position, Vector3.up);
+        Vector3 forward = Vector3.Cross(cameraShakeTransform.right, Vector3.up).normalized;
+        Vector3 right = Vector3.Cross(Vector3.up, forward);
+        float bearing = Mathf.Atan2(Vector3.Dot(delta, right), Vector3.Dot(delta, forward)) * Mathf.Rad2Deg;
+        damageArc.rectTransform.localRotation = Quaternion.Euler(0, 0, -bearing);
+        damageArc.color = new Color(1f, .22f, .18f, alpha * .9f);
+    }
+
+    private void CreateDamageArc()
+    {
+        const int size = 192;
+        arcTexture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        arcTexture.wrapMode = TextureWrapMode.Clamp;
+        var pixels = new Color32[size * size];
+        for (int y = 0; y < size; y++)
+        for (int x = 0; x < size; x++)
+        {
+            var point = new Vector2(x + .5f - size / 2f, y + .5f - size / 2f);
+            float radius = point.magnitude;
+            float angle = Mathf.Abs(Mathf.Atan2(point.x, point.y) * Mathf.Rad2Deg);
+            float edge = Mathf.Clamp01(3.8f - Mathf.Abs(radius - 79f));
+            float taper = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(18f, 34f, angle));
+            pixels[y * size + x] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(255 * edge * taper));
+        }
+        arcTexture.SetPixels32(pixels);
+        arcTexture.Apply(false, true);
+        arcSprite = Sprite.Create(arcTexture, new Rect(0, 0, size, size), new Vector2(.5f, .5f));
+        damageArc = new GameObject("Dirección de daño", typeof(Image)).GetComponent<Image>();
+        damageArc.transform.SetParent(damageVignette.transform.parent, false);
+        damageArc.transform.SetSiblingIndex(damageVignette.transform.GetSiblingIndex() + 1);
+        damageArc.sprite = arcSprite;
+        damageArc.raycastTarget = false;
+        damageArc.rectTransform.sizeDelta = new Vector2(264, 264);
     }
 
     private void OnHealthChanged(

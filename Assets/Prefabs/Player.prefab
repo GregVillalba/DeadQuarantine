@@ -5970,7 +5970,7 @@ Transform:
   m_GameObject: {fileID: 126379995605302482}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.0000008735806, y: -0.4070187, z: 0.15748845}
+  m_LocalPosition: {x: 0.0000008735806, y: -0.40286, z: 0.14309}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -122296,15 +122296,15 @@ MonoBehaviour:
   burstShotInterval: 0.07
   burstCooldown: 0.085
   enforceReloadDuration: 0
-  reloadClipSpeedMultiplier: 0.6666667
-  reloadEmptyClipSpeedMultiplier: 0.995984
-  partsReloadClipSpeedMultiplier: 0.6666667
-  partsReloadEmptyClipSpeedMultiplier: 0.995984
-  tpReloadClipSpeedMultiplier: 0.6666667
-  tpReloadEmptyClipSpeedMultiplier: 0.995984
-  tpPartsReloadClipSpeedMultiplier: 0.6666667
-  tpPartsReloadEmptyClipSpeedMultiplier: 0.995984
-  reloadTime: 4.15
+  reloadClipSpeedMultiplier: 1.0641026
+  reloadEmptyClipSpeedMultiplier: 1.3333334
+  partsReloadClipSpeedMultiplier: 1.0641026
+  partsReloadEmptyClipSpeedMultiplier: 1.3333334
+  tpReloadClipSpeedMultiplier: 1.0641026
+  tpReloadEmptyClipSpeedMultiplier: 1.3333334
+  tpPartsReloadClipSpeedMultiplier: 1.0641026
+  tpPartsReloadEmptyClipSpeedMultiplier: 1.3333334
+  reloadTime: 2.6
   range: 80
   damage: 21
   maxAmmo: 30
@@ -122431,6 +122431,80 @@ MonoBehaviour:
   firstPersonRestStates: f98db15e9717a4bed57b29367275af88554ddf0528431e5112299e9d
   supportPoseEnabled: 1
   bareSupportPoseEnabled: 0
+  authoredSprintSupportGrip:
+    position: {x: -0.0247613732, y: -0.143422604, z: -0.0493540689}
+    elbow: {x: -0.169688374, y: -0.0017819599, z: -0.222954676}
+    rotation: {x: -0.421987563, y: -0.699674904, z: -0.443304956, w: -0.368595302}
+    fingers:
+    - bone: index_01_l
+      rotation: {x: -0.0637463778, y: 0.097197473, z: -0.511291862, w: 0.851510286}
+    - bone: index_02_l
+      rotation: {x: 0.0101000704, y: 0.0235588215, z: -0.386802644, w: 0.921806276}
+    - bone: index_03_l
+      rotation: {x: 0.0219923873, y: -0.023933515, z: -0.354417771, w: 0.934522092}
+    - bone: middle_01_l
+      rotation: {x: -0.0783429146, y: 0.109092601, z: -0.609061599, w: 0.781668246}
+    - bone: middle_02_l
+      rotation: {x: -0.0288800653, y: -0.0231404677, z: -0.503895521, w: 0.862971485}
+    - bone: middle_03_l
+      rotation: {x: 0.00602584844, y: 0.0135181528, z: -0.136236623, w: 0.990565777}
+    - bone: pinky_01_l
+      rotation: {x: -0.212029889, y: 0.212142736, z: -0.700070083, w: 0.648028255}
+    - bone: pinky_02_l
+      rotation: {x: -0.0548565835, y: -0.0667069629, z: -0.598282158, w: 0.796617508}
+    - bone: pinky_03_l
+      rotation: {x: 0.00350530841, y: 0.0280398037, z: -0.829292893, w: 0.558099329}
+    - bone: ring_01_l
+      rotation: {x: -0.152951568, y: 0.193038985, z: -0.610994458, w: 0.752348006}
+    - bone: ring_02_l
+      rotation: {x: 0.0143661154, y: -0.0200496316, z: -0.615086257, w: 0.788073957}
+    - bone: ring_03_l
+      rotation: {x: 0.138663992, y: -0.235461935, z: -0.306304425, w: 0.91187036}
+    - bone: thumb_01_l
+      rotation: {x: 0.617024004, y: -0.553092003, z: -0.0073061185, w: 0.559747517}
+    - bone: thumb_02_l
+      rotation: {x: 0.163174406, y: -0.0603121519, z: -0.16436781, w: 0.970937669}
+    - bone: thumb_03_l
+      rotation: {x: 0.000617047248, y: -0.0451990739, z: 0.0631591827, w: 0.996979237}
+    - bone: hand_l_holder
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+    - bone: SM_Knife_01
+      rotation: {x: -0.516092777, y: -0.364640534, z: 0.451944262, w: 0.629628479}
+  authoredSprintTriggerGrip:
+    position: {x: 0.0380450077, y: 0.111037493, z: -0.0115272757}
+    elbow: {x: 0.0880926177, y: 0.337962508, z: -0.148518369}
+    rotation: {x: 0.0479322337, y: 0.0275813546, z: -0.670217097, w: 0.740102112}
+    fingers:
+    - bone: index_01_r
+      rotation: {x: -0.0106628817, y: -0.0386678167, z: -0.178539768, w: 0.983114839}
+    - bone: index_02_r
+      rotation: {x: 0.00627098046, y: 0.00146680896, z: -0.609406948, w: 0.792831481}
+    - bone: index_03_r
+      rotation: {x: 0.0123337815, y: -0.0115533583, z: -0.367748797, w: 0.929771662}
+    - bone: middle_01_r
+      rotation: {x: -0.0125732319, y: 0.0844298676, z: -0.723817945, w: 0.684690595}
+    - bone: middle_02_r
+      rotation: {x: 0.0265721492, y: -0.00296415971, z: -0.557008684, w: 0.830076218}
+    - bone: middle_03_r
+      rotation: {x: 0.11133375, y: 0.0115079172, z: -0.338118702, w: 0.934423983}
+    - bone: pinky_01_r
+      rotation: {x: -0.0802852735, y: 0.13994509, z: -0.665363193, w: 0.728876889}
+    - bone: pinky_02_r
+      rotation: {x: -0.000776880188, y: -0.00118169992, z: -0.585597932, w: 0.810600519}
+    - bone: pinky_03_r
+      rotation: {x: -0.0170853455, y: -0.0330507271, z: -0.463893324, w: 0.885109425}
+    - bone: ring_01_r
+      rotation: {x: -0.054437343, y: 0.106232554, z: -0.695178866, w: 0.708856523}
+    - bone: ring_02_r
+      rotation: {x: 5.6829922e-05, y: -1.10059818e-05, z: -0.601224065, w: 0.799080551}
+    - bone: ring_03_r
+      rotation: {x: 0.0325025953, y: 0.00309730368, z: -0.294201076, w: 0.955185711}
+    - bone: thumb_01_r
+      rotation: {x: 0.696288824, y: -0.41645363, z: -0.412781268, w: 0.413956463}
+    - bone: thumb_02_r
+      rotation: {x: 0.0106084859, y: -0.0192465018, z: -0.34461686, w: 0.938486218}
+    - bone: thumb_03_r
+      rotation: {x: 0.0485103354, y: -0.0239189453, z: -0.0895863175, w: 0.994509459}
   bareFirstPerson:
     position: {x: 0, y: 0, z: 0}
     elbow: {x: 0, y: 0, z: 0}
@@ -127473,15 +127547,15 @@ MonoBehaviour:
   burstShotInterval: 0.07
   burstCooldown: 0.1
   enforceReloadDuration: 0
-  reloadClipSpeedMultiplier: 0.6594204
-  reloadEmptyClipSpeedMultiplier: 0.99275374
-  partsReloadClipSpeedMultiplier: 0.6594204
-  partsReloadEmptyClipSpeedMultiplier: 0.99275374
-  tpReloadClipSpeedMultiplier: 0.6594204
-  tpReloadEmptyClipSpeedMultiplier: 0.99275374
-  tpPartsReloadClipSpeedMultiplier: 0.6594204
-  tpPartsReloadEmptyClipSpeedMultiplier: 0.99275374
-  reloadTime: 4.6
+  reloadClipSpeedMultiplier: 1.0833335
+  reloadEmptyClipSpeedMultiplier: 1.3838385
+  partsReloadClipSpeedMultiplier: 1.0833335
+  partsReloadEmptyClipSpeedMultiplier: 1.3838385
+  tpReloadClipSpeedMultiplier: 1.0833335
+  tpReloadEmptyClipSpeedMultiplier: 1.3838385
+  tpPartsReloadClipSpeedMultiplier: 1.0833335
+  tpPartsReloadEmptyClipSpeedMultiplier: 1.3838385
+  reloadTime: 2.8
   range: 95
   damage: 24
   maxAmmo: 30

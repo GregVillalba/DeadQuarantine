@@ -1006,7 +1006,7 @@ public class ZombieAI : NetworkBehaviour
                     int damage = DanoDeAtaque();
 
                     if(InPvPvE){if(Vector3.Distance(transform.position,playerHealth.transform.position)<=attackRange)DeadQuarantine.PvPvE.Networking.PvPvECombat.Active?.ApplyZombieDamageServer(this,playerHealth,damage);}
-                    else playerHealth.TakeDamage(damage);
+                    else playerHealth.TakeDamage(damage, source: transform.position);
 
                     Debug.Log(
                         "[ZombieAI] Zombie atacó a Player " +

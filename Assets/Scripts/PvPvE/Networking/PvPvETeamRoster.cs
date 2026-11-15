@@ -13,8 +13,9 @@ namespace DeadQuarantine.PvPvE.Networking
         public FixedString64Bytes Name;
         public PvPvETeam Team;
         public int CharacterIndex;
-        public void NetworkSerialize<T>(BufferSerializer<T> s) where T:IReaderWriter {s.SerializeValue(ref ClientId);s.SerializeValue(ref Name);s.SerializeValue(ref Team);s.SerializeValue(ref CharacterIndex);}
-        public bool Equals(PvPvEMember other)=>ClientId==other.ClientId && Name.Equals(other.Name) && Team==other.Team && CharacterIndex==other.CharacterIndex;
+        public int LobbySlot;
+        public void NetworkSerialize<T>(BufferSerializer<T> s) where T:IReaderWriter {s.SerializeValue(ref ClientId);s.SerializeValue(ref Name);s.SerializeValue(ref Team);s.SerializeValue(ref CharacterIndex);s.SerializeValue(ref LobbySlot);}
+        public bool Equals(PvPvEMember other)=>ClientId==other.ClientId && Name.Equals(other.Name) && Team==other.Team && CharacterIndex==other.CharacterIndex && LobbySlot==other.LobbySlot;
     }
     public static class PvPvETeamRules
     {
@@ -62,8 +63,18 @@ namespace DeadQuarantine.PvPvE.Networking
             if(!IsServer || Contains(client))return;
             var team=PvPvETeamRules.Choose(Count(PvPvETeam.Alpha),Count(PvPvETeam.Bravo),settings.TeamCapacity);
             if(team==PvPvETeam.None){if(client!=NetworkManager.LocalClientId)NetworkManager.DisconnectClient(client,"La sala está llena.");return;}
-            Members.Add(new PvPvEMember{ClientId=client,Name=new FixedString64Bytes(PvPvEHello.CleanName(approvedName?.Invoke(client))),Team=team,CharacterIndex=approvedCharacter?.Invoke(client)??0});
+            Members.Add(new PvPvEMember{ClientId=client,Name=new FixedString64Bytes(PvPvEHello.CleanName(approvedName?.Invoke(client))),Team=team,CharacterIndex=approvedCharacter?.Invoke(client)??0,LobbySlot=PickLobbySlot(team)});
         }
+        int PickLobbySlot(PvPvETeam team)
+        {
+            int used = 0;
+            foreach (var member in Members)
+                if (member.Team == team) used |= 1 << member.LobbySlot;
+            var free = Enumerable.Range(0, settings.TeamCapacity)
+                .Where(slot => (used & (1 << slot)) == 0).ToArray();
+            return free[UnityEngine.Random.Range(0, free.Length)];
+        }
+
         void Remove(ulong client)
         {
             if(!IsServer)return;
@@ -73,7 +84,7 @@ namespace DeadQuarantine.PvPvE.Networking
         }
         public void RebalanceLobbyServer(){
             if(!IsServer||!RebalanceWhileWaiting)return;
-            while(Math.Abs(Count(PvPvETeam.Alpha)-Count(PvPvETeam.Bravo))>1){var from=Count(PvPvETeam.Alpha)>Count(PvPvETeam.Bravo)?PvPvETeam.Alpha:PvPvETeam.Bravo;for(int i=Members.Count-1;i>=0;i--)if(Members[i].Team==from){var member=Members[i];member.Team=from==PvPvETeam.Alpha?PvPvETeam.Bravo:PvPvETeam.Alpha;Members[i]=member;break;}}
+            while(Math.Abs(Count(PvPvETeam.Alpha)-Count(PvPvETeam.Bravo))>1){var from=Count(PvPvETeam.Alpha)>Count(PvPvETeam.Bravo)?PvPvETeam.Alpha:PvPvETeam.Bravo;for(int i=Members.Count-1;i>=0;i--)if(Members[i].Team==from){var member=Members[i];member.Team=from==PvPvETeam.Alpha?PvPvETeam.Bravo:PvPvETeam.Alpha;member.LobbySlot=PickLobbySlot(member.Team);Members[i]=member;break;}}
         }
         public override void OnNetworkDespawn()
         {

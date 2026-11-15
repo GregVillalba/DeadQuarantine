@@ -33,7 +33,8 @@ namespace DeadQuarantine.PvPvE.Networking
         [Min(0)] public float SpawnProtectionSeconds=2;
         [Min(1)] public float SafeSpawnDistance=12;
         [Min(.5f)] public float SpawnSpacing=2;
-        [Min(1)] public int KillLimit=50,KillScore=100;
+        public const int DefaultKillLimit = 25;
+        [Min(1)] public int KillLimit=DefaultKillLimit,KillScore=100;
         [Min(1)] public float HeadshotMultiplier=2,LongshotDistance=30;
         [Range(0,1)] public float HeadshotScoreBonus=.5f,PlayerLongshotScoreBonus=.25f,ZombieLongshotScoreBonus=.2f;
         [Min(1)] public float PistolLongshotDistance=20,ShotgunLongshotDistance=15,SmgLongshotDistance=25,RifleLongshotDistance=30,SniperLongshotDistance=50;

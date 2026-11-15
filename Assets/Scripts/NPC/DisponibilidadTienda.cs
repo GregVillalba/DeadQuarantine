@@ -58,9 +58,12 @@ public static class DisponibilidadTienda
         return esPvP ? ModosTienda.PvP : AFlag(modo);
     }
 
+    public static bool UsaLinternaGratuita =>
+        !EsPvP && (EsTutorial || (FlagModoActual() & TodosLosModos) != 0);
+
     public static bool SeMuestraEnPartidaActual(WeaponOffer oferta)
     {
-        if (oferta == null)
+        if (oferta == null || (oferta.esLinterna && UsaLinternaGratuita))
             return false;
 
         DifficultyLevel? dificultad = DificultadActual();

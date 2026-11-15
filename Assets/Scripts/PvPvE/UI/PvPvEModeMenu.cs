@@ -33,6 +33,8 @@ namespace DeadQuarantine.PvPvE.UI
             if(page==modeSelectionPanel.transform)return;
             Move(page,"Title",new(.06f,.70f),new(.55f,.84f));Move(page,"Description",new(.06f,.57f),new(.53f,.69f));
             var names=new[]{"Teams","Kills","Time"};for(int i=0;i<3;i++){var card=page.Find(names[i]);if(card){PvPvEUIFactory.Place((RectTransform)card,new(.06f+i*.16f,.40f),new(.21f+i*.16f,.55f));var text=card.Find("Title")?.GetComponent<TMPro.TMP_Text>();if(text){text.fontSize=24;text.fontSizeMax=24;text.color=PvPvEUIFactory.Accent;}}}
+            var killTitle=page.Find("Kills/Title")?.GetComponent<TMPro.TMP_Text>();
+            if(killTitle)killTitle.text=$"{matchmaking.Settings.KillLimit} BAJAS PvP";
             Move(page,"SearchButton",new(.06f,.23f),new(.53f,.32f));Move(page,"Availability",new(.06f,.33f),new(.53f,.38f));Move(page,"SearchStatus",new(.06f,.14f),new(.53f,.22f));
         }
         static void Move(Transform root,string name,Vector2 min,Vector2 max){var t=root.Find(name) as RectTransform;if(t)PvPvEUIFactory.Place(t,min,max);}

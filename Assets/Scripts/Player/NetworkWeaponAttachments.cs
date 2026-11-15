@@ -22,6 +22,7 @@ public sealed class NetworkWeaponAttachments : NetworkBehaviour
     NetworkWeaponPresentation presentation;
     GameObject lastVisible;
     Row lastRow;
+    bool freeFlashlight;
     [Min(16)] public int requestsPerSecond=64;
     double requestWindow;int requestCount;
     public int RejectedRequests {get;private set;}
@@ -30,6 +31,7 @@ public sealed class NetworkWeaponAttachments : NetworkBehaviour
     void Awake(){approved=new NetworkList<Row>();presentation=GetComponent<NetworkWeaponPresentation>();}
     public override void OnNetworkSpawn(){
         approved.OnListChanged+=ListChanged;
+        freeFlashlight=DisponibilidadTienda.UsaLinternaGratuita;
         ResetVisuals();
         if(IsServer){approved.Clear();for(int i=0;i<presentation.Weapons.Length;i++)if(catalog.Eligible(presentation.Weapons[i].Id))approved.Add(new Row(i,default));}
         ApplyAll();
@@ -65,7 +67,7 @@ public sealed class NetworkWeaponAttachments : NetworkBehaviour
     // The existing merchant charges its server-side offer; clients only send the offer ID.
     public bool BuyFlashlightServer(string offerId){
         var health=GetComponent<PlayerHealth>();var light=GetComponent<Flashlight>();var resources=GetComponent<PlayerRecursos>();
-        if(!IsServer||!IsSpawned||!health||!health.IsAlive||!light||!resources||DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(NetworkObject))return false;
+        if(!IsServer||!IsSpawned||!health||!health.IsAlive||!light||!resources||DisponibilidadTienda.UsaLinternaGratuita||DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(NetworkObject))return false;
         int index=IsOwner&&presentation.Switcher?presentation.Switcher.CurrentWeaponIndex:presentation.EquippedIndex;
         if(index<0||index>=presentation.Weapons.Length)return false;
         var choice=GetChoice(index);var current=catalog.Find(choice.utility);if(light.Purchased&&current?.flashlight==true)return false;
@@ -78,18 +80,45 @@ public sealed class NetworkWeaponAttachments : NetworkBehaviour
         if(!light.Purchased&&!resources.GastarRecursos(offer.Precio))return false;
         light.GrantPurchaseServer();choice.utility=utility;approved[row]=new Row(index,choice);return true;
     }
-    public WeaponAttachmentChoice GetChoice(int weapon){foreach(var r in approved)if(r.weapon==weapon)return r.Choice;return default;}
+    public WeaponAttachmentChoice GetChoice(int weapon)
+    {
+        foreach(var row in approved)
+            if(row.weapon==weapon)return EffectiveChoice(row);
+        return default;
+    }
+
+    WeaponAttachmentChoice EffectiveChoice(Row row)
+    {
+        var choice=row.Choice;
+        if(!DisponibilidadTienda.UsaLinternaGratuita || catalog.Find(choice.utility)?.flashlight==true)
+            return choice;
+
+        string id=presentation.Weapons[row.weapon].Id;
+        string utility=catalog.Find(choice.utility)?.laser==true ? "Laser_Flashlight_01" : "Flashlight_01";
+        if(catalog.Allows(id,WeaponAttachmentKind.Utility,utility)) choice.utility=utility;
+        return choice;
+    }
     void ApplyAll(){
         if(!presentation||!catalog)return;
         foreach(var row in approved){
             if(row.weapon<0||row.weapon>=presentation.Weapons.Length)continue;
             var d=presentation.Weapons[row.weapon];var attachments=d.Source.GetComponent<WeaponAttachments>();
-            if(attachments){attachments.ApplyApproved(row.Choice);Changed?.Invoke(d.Id,row.Choice);}
+            if(attachments){var choice=EffectiveChoice(row);attachments.ApplyApproved(choice);Changed?.Invoke(d.Id,choice);}
 
         }
         RefreshVisibleWeapon();
     }
-    void LateUpdate(){if(IsSpawned)RefreshVisibleWeapon();}
+    void LateUpdate()
+    {
+        if(!IsSpawned)return;
+        var free=DisponibilidadTienda.UsaLinternaGratuita;
+        if(free!=freeFlashlight)
+        {
+            freeFlashlight=free;
+            ApplyAll();
+        }
+        else RefreshVisibleWeapon();
+    }
     public void RefreshVisibleWeapon(){
         if(!presentation||!presentation.VisibleWeapon)return;
         int index=presentation.EquippedIndex;

@@ -370,7 +370,15 @@ public partial class PlayerHealth : NetworkBehaviour
     // DAÑO
     // =========================================================
 
-    public void TakeDamage(int amount, bool ignorarEscudo = false)
+    public event System.Action<Vector3> OnDirectionalDamage;
+
+    [ClientRpc]
+    private void DirectionalDamageClientRpc(Vector3 source, ClientRpcParams recipients = default)
+    {
+        if (IsOwner) OnDirectionalDamage?.Invoke(source);
+    }
+
+    public void TakeDamage(int amount, bool ignorarEscudo = false, Vector3? source = null)
     {
         if (DeadQuarantine.PvPvE.Networking.PvPvETeamDeployment.BlocksDamage(this)) return;
         if (!IsServer)
@@ -385,6 +393,12 @@ public partial class PlayerHealth : NetworkBehaviour
 
         if (CurrentHealth.Value <= 0)
             return;
+
+        if (amount > 0 && source.HasValue && IsSpawned)
+            DirectionalDamageClientRpc(source.Value, new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams { TargetClientIds = new[] { OwnerClientId } }
+            });
 
         if (!ignorarEscudo)
             amount = AbsorberConEscudo(amount);

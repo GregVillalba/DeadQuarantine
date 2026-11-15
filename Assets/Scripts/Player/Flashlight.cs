@@ -58,7 +58,8 @@ public class Flashlight : NetworkBehaviour
         }
     }
     public bool UtilityEnabled=>IsSpawned&&isOn.Value;
-    public bool FlashlightAvailable=>EquippedAttachment&&EquippedAttachment.HasFlashlight&&(ClassUtility||Purchased);
+    public bool FlashlightAvailable => DisponibilidadTienda.UsaLinternaGratuita ||
+        EquippedAttachment && EquippedAttachment.HasFlashlight && (ClassUtility || Purchased);
     public bool CompatibleWithEquippedWeapon=>EquippedAttachment&&EquippedAttachment.HasRuntimeCatalog&&EquippedAttachment.Catalog.Allows(EquippedAttachment.StableWeaponId,WeaponAttachmentKind.Utility,"Flashlight_01");
     public bool LaserAvailable=>EquippedAttachment&&EquippedAttachment.HasLaser;
     public bool BeamVisible=>flashlightLight&&flashlightLight.enabled&&flashlightLight.gameObject.activeInHierarchy;
@@ -127,8 +128,11 @@ public class Flashlight : NetworkBehaviour
         if(owned!=observedPurchase||beam!=observedAvailability){observedPurchase=owned;observedAvailability=beam;AvailabilityChanged?.Invoke();}
         if(IsSpawned&&IsOwner&&isOn.Value&&!available)isOn.Value=false;
         Apply(IsSpawned&&isOn.Value);
-        if(!IsOwner && attachment && flashlightLight && flashlightLight.enabled){
-            flashlightLight.transform.SetPositionAndRotation(attachment.UtilityOrigin,Quaternion.LookRotation(attachment.UtilityDirection));
+        if(!IsOwner && flashlightLight && flashlightLight.enabled)
+        {
+            var origin=attachment ? attachment.UtilityOrigin : transform.position+Vector3.up*1.5f;
+            var direction=attachment ? attachment.UtilityDirection : transform.forward;
+            flashlightLight.transform.SetPositionAndRotation(origin,Quaternion.LookRotation(direction));
             return;
         }
         if (!sway || lightPivot == null || lightPivot.parent == null)

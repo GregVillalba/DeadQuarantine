@@ -169,7 +169,9 @@ namespace DeadQuarantine.PvPvE.Networking {
    var record=new PvPvEDamageRecord(source,victim,amount,kind,head,distance,weapon);var previous=applying;bool previousApplying=applyingDamage;applying=record;applyingDamage=true;
    long before=(long)victim.CurrentHealth.Value+victim.Armor.Value;
    try{
-    ValidatedDamageServer?.Invoke(record);victim.TakeDamage(amount);
+    ValidatedDamageServer?.Invoke(record);
+    var attacker=Health(source);
+    victim.TakeDamage(amount,source:attacker&&attacker!=victim?(Vector3?)attacker.transform.position:null);
     int actual=(int)Math.Clamp(before-victim.CurrentHealth.Value-victim.Armor.Value,0,int.MaxValue);
     if(actual>0){var dealt=new PvPvEDamageRecord(source,victim,actual,kind,head,distance,weapon);applying=dealt;
      if(source!=victim.OwnerClientId&&roster.TryGetMember(source,out var from)&&roster.TryGetMember(victim.OwnerClientId,out var to)&&from.Team!=to.Team&&deployment.TryGet(victim.OwnerClientId,out var life))contributions.Record(victim.OwnerClientId,life.Revision,source,ContributionType.Damage,actual,Now,Settings.DamageAssistWindow);
@@ -210,7 +212,7 @@ namespace DeadQuarantine.PvPvE.Networking {
   public void ApplyZombieDamageServer(ZombieAI attacker,PlayerHealth victim,int amount){
    if(IsServer)TickMatchServer();
    if(!IsServer||!IsPlaying||!attacker||!zombies.Owns(attacker.GetComponent<ZombieHealth>())||!Alive(victim)||PvPvETeamDeployment.BlocksDamage(victim)||amount<=0||PvPvEZombieDirector.Blocked(attacker.transform.position+Vector3.up*.8f,victim.transform.position+Vector3.up))return;
-   var previous=applying;applying=new PvPvEDamageRecord(ulong.MaxValue,victim,amount,PvPvEDamageKind.Zombie,false,0,"Zombie");try{victim.TakeDamage(amount);}finally{applying=previous;}
+   var previous=applying;applying=new PvPvEDamageRecord(ulong.MaxValue,victim,amount,PvPvEDamageKind.Zombie,false,0,"Zombie");try{victim.TakeDamage(amount,source:attacker.transform.position);}finally{applying=previous;}
   }
   PvPvETeam TeamOf(ulong id)=>roster.TryGetMember(id,out var member)?member.Team:PvPvETeam.None;
   // Trusted server integration point, adapted from the former ScoreService.Utility.

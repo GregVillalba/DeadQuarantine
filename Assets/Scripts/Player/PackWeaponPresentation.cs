@@ -11,6 +11,10 @@ public sealed class PackWeaponPresentation:MonoBehaviour {
  private WeaponSupportPose.Binding triggerArm;
  private readonly SupportHandPoseData sprintTriggerGrip = new();
  private readonly SupportHandPoseData sprintSupportGrip = new();
+ [SerializeField] private SupportHandPoseData authoredSprintSupportGrip;
+ [SerializeField] private SupportHandPoseData authoredSprintTriggerGrip;
+ private bool HasAuthoredSprintGrip => attachments.StableWeaponId == "SMG02" &&
+  authoredSprintSupportGrip?.fingers.Length > 0 && authoredSprintTriggerGrip?.fingers.Length > 0;
  private bool sprintGripsReady;
  private float sprintGripWeight;
  private string sprintGripAttachment;
@@ -73,18 +77,20 @@ public sealed class PackWeaponPresentation:MonoBehaviour {
   if (running || sprintGripWeight > 0)
   {
    sprintGripWeight = Mathf.MoveTowards(sprintGripWeight, running ? 1f : 0f, deltaTime * 14f);
-   if (!sprintGripsReady || sprintGripWeight <= 0) return false;
-   triggerArm.Apply(weaponFrame, sprintTriggerGrip, sprintGripWeight);
+   bool authored=HasAuthoredSprintGrip;
+   if ((!sprintGripsReady && !authored) || sprintGripWeight <= 0) return false;
+   triggerArm ??= new WeaponSupportPose.Binding(animator, right:true);
+   triggerArm.Apply(weaponFrame, authored ? authoredSprintTriggerGrip : sprintTriggerGrip, sprintGripWeight);
    var equippedPose = SupportPose(attachments, false);
    if (equippedPose != null)
     arm.Apply(SupportFrame(attachments, socket), equippedPose, sprintGripWeight);
    else
-    arm.Apply(weaponFrame, sprintSupportGrip, sprintGripWeight);
+    arm.Apply(weaponFrame, authored ? authoredSprintSupportGrip : sprintSupportGrip, sprintGripWeight);
    return true;
   }
 
   int fire = animator.GetLayerIndex("Fire");
-  if (sprintGripsReady || transition || weapon.IsAiming || movement && movement.IsSprinting ||
+  if (HasAuthoredSprintGrip || sprintGripsReady || transition || weapon.IsAiming || movement && movement.IsSprinting ||
       fire >= 0 && (animator.IsInTransition(fire) || !animator.GetCurrentAnimatorStateInfo(fire).IsName("Default")))
    return false;
   int holster = animator.GetLayerIndex("Holster");

@@ -97,7 +97,7 @@ namespace DeadQuarantine.Development
             if(mode=="map"){yield return Sync("map-visual");yield return ExitAndVerify();Complete(true,"");yield break;}
             yield return Until(()=>Hud&&Hud.MatchText.Contains("ALPHA")&&Combat.MatchDeadline.Value>0,"HUD initialized with server clock");
             Check(!Hud.ScoreboardVisible,"Scoreboard closed by default");double remaining=Combat.RemainingSeconds;yield return new WaitForSecondsRealtime(1.1f);Check(Combat.RemainingSeconds<remaining&&Combat.RemainingSeconds>0,"Header clock counts synchronized time without client timer");
-            Check(Hud.MatchText.Contains("OBJETIVO 50"),"HUD displays actual configured PvP objective");ValidateExistingHud();CaptureAllHud("hud-live-map.png");
+            Check(Hud.MatchText.Contains("OBJETIVO "+Combat.Settings.KillLimit),"HUD displays actual configured PvP objective");ValidateExistingHud();CaptureAllHud("hud-live-map.png");
             yield return Do(0,"spawn-npc",()=>{var c=service.Settings;c.MaxZombiesAlive=1;c.WalkerChance=0;c.RunnerChance=0;c.DogChance=1;});
             yield return Until(()=>FindObjectsByType<ZombieHealth>(FindObjectsSortMode.None).Any(z=>z.IsSpawned&&!z.IsDead),"Existing authoritative NPC for cause-of-death test",40);
             var npc=FindObjectsByType<ZombieHealth>(FindObjectsSortMode.None).First(z=>z.IsSpawned&&!z.IsDead);

@@ -45,7 +45,8 @@ namespace DeadQuarantine.PvPvE {
    foreach(var label in new[]{alpha,bravo,alphaScore,bravoScore,matchClock,matchObjective})
     label.alignment=TextAlignmentOptions.Center;
    alphaScore.fontStyle=bravoScore.fontStyle=matchClock.fontStyle=FontStyles.Bold;
-   alphaScore.color=bravoScore.color=new Color(.62f,1f,.76f);
+   alphaScore.color=TeamColor(PvPvETeam.Alpha);
+   bravoScore.color=TeamColor(PvPvETeam.Bravo);
    matchObjective.color=new Color(.75f,.88f,.80f);
    Line(header,30,34,98,new Color(.46f,.89f,.64f,.45f));
    Line(header,304,34,98,new Color(.46f,.89f,.64f,.45f));

@@ -27,6 +27,8 @@ namespace DeadQuarantine.PvPvE.UI
         readonly Dictionary<Canvas,bool> pausedCanvases=new();
         readonly Dictionary<GraphicRaycaster,bool> pausedRaycasters=new();
         Canvas lobbyCanvas;
+        TMP_Text localName;
+        GameObject[] teamPanels;
         Transform uiRoot, originalUIParent, popupParent;
         int popupSibling;
         public Canvas LobbyCanvas=>lobbyCanvas;
@@ -42,7 +44,9 @@ namespace DeadQuarantine.PvPvE.UI
         public LobbyCinematicPlayerDisplay LocalActor {
             get {
                 if((!matchmaking.Network||!matchmaking.Network.IsConnectedClient)&&actors!=null&&actors.Length>0)return actors[0];
-                int index=members.FindIndex(m=>matchmaking.Network&&m.ClientId==matchmaking.Network.LocalClientId);
+                int index=-1;
+                foreach(var member in members)
+                    if(matchmaking.Network&&member.ClientId==matchmaking.Network.LocalClientId){index=ActorIndex(member);break;}
                 return actors!=null&&index>=0&&index<actors.Length?actors[index]:null;
             }
         }
@@ -53,6 +57,10 @@ namespace DeadQuarantine.PvPvE.UI
             var selector=characterPopup.GetComponentInChildren<Canvas>(true);if(selector){var backdrop=selector.GetComponent<Image>();if(!backdrop)backdrop=selector.gameObject.AddComponent<Image>();backdrop.color=PvPvEUIFactory.PanelColor;backdrop.raycastTarget=true;}
             var title=panel.transform.Find("Title")?.GetComponent<TMP_Text>();if(title){title.fontSize=42;title.fontSizeMax=42;}
             var a=panel.transform.Find("AlphaPanel") as RectTransform;var b=panel.transform.Find("BravoPanel") as RectTransform;
+            teamPanels=new[]{a?.gameObject,b?.gameObject};
+            localName=PvPvEUIFactory.Text(panel.transform,"LocalName","",0,0,300,40,null,25);
+            PvPvEUIFactory.Place(localName.rectTransform,new(.59f,.14f),new(.95f,.205f));
+            localName.alignment=TextAlignmentOptions.Center;
             if(a)PvPvEUIFactory.Place(a,new(.70f,.50f),new(.98f,.88f));if(b)PvPvEUIFactory.Place(b,new(.70f,.10f),new(.98f,.48f));
             foreach(var frame in new[]{a,b})if(frame){var bg=frame.GetComponent<Image>();if(!bg)bg=frame.gameObject.AddComponent<Image>();bg.color=PvPvEUIFactory.PanelColor;bg.raycastTarget=false;}
             var entry=panel.transform.Find("CreateClassButton") as RectTransform;if(entry)PvPvEUIFactory.Place(entry,new(.035f,.70f),new(.30f,.78f));
@@ -150,40 +158,53 @@ namespace DeadQuarantine.PvPvE.UI
             if(!retry){retry=Instantiate(leaveButton,leaveButton.transform.parent);retry.name="RetrySearch";PvPvEUIFactory.Place((RectTransform)retry.transform,new(.035f,.80f),new(.30f,.88f));retry.onClick=new Button.ButtonClickedEvent();retry.onClick.AddListener(()=>{if(matchmaking.State is PvPvEConnectionState.Idle or PvPvEConnectionState.Failed){_ = matchmaking.SearchAsync();}else{_ = matchmaking.CancelAndLeaveAsync();}});retry.GetComponentInChildren<TMP_Text>().text="BUSCAR PARTIDA";}
             retry.gameObject.SetActive(waiting);retry.interactable=matchmaking.State!=PvPvEConnectionState.Leaving;retry.GetComponentInChildren<TMP_Text>().text=matchmaking.State is PvPvEConnectionState.Idle or PvPvEConnectionState.Failed?"BUSCAR PARTIDA":"CANCELAR BÚSQUEDA";
             leaveButton.GetComponentInChildren<TMP_Text>().text="SALIR DE LA SALA";
-            if(!roster){members.Clear();members.Add(new PvPvEMember{ClientId=0,Team=PvPvETeam.Alpha,Name=PvPvEHello.CleanName(PlayerIdentity.GetUsername()),CharacterIndex=CharacterSelection.SelectedIndex});status.text=matchmaking.State==PvPvEConnectionState.Failed?matchmaking.Error:matchmaking.State==PvPvEConnectionState.Idle?"LOBBY PvPvE · PREPARÁ TU CLASE":"BUSCANDO SALA COMPATIBLE"+Dots();
-                for(int i=0;i<actors.Length;i++){actors[i].SetPlayer(i==0,CharacterSelection.SelectedIndex);if(i==0)actors[i].SetPose(stage.transform.TransformPoint(new Vector3(-1.6f,-1.26f,-65.6f)),180);}
-                alpha.text=TeamText(PvPvETeam.Alpha);bravo.text=TeamText(PvPvETeam.Bravo);return;}
+            bool searchingForPlayers = matchmaking.State is PvPvEConnectionState.Searching
+                or PvPvEConnectionState.Connecting or PvPvEConnectionState.Waiting;
+            foreach (var teamPanel in teamPanels) if (teamPanel) teamPanel.SetActive(searchingForPlayers);
+            localName.gameObject.SetActive(!searchingForPlayers);
+            localName.text=PvPvEHello.CleanName(PlayerIdentity.GetUsername());
+            members.Clear();
+            if (!roster || !roster.IsSpawned)
+            {
+                status.text=matchmaking.State==PvPvEConnectionState.Failed?matchmaking.Error:
+                    searchingForPlayers?"BUSCANDO SALA COMPATIBLE"+Dots():"LOBBY PvPvE · PREPARÁ TU CLASE";
+                for(int i=0;i<actors.Length;i++)
+                {
+                    actors[i].SetPlayer(i==0,CharacterSelection.SelectedIndex);
+                    if(i==0)actors[i].SetPose(stage.transform.TransformPoint(new Vector3(1.6f,-1.26f,-65.6f)),180);
+                }
+                alpha.text=TeamText(PvPvETeam.Alpha);bravo.text=TeamText(PvPvETeam.Bravo);
+                return;
+            }
 
-            members.Clear();foreach(var member in roster.Members)members.Add(member);
-            members.Sort((a,b)=>{int team=a.Team.CompareTo(b.Team);return team!=0?team:a.ClientId.CompareTo(b.ClientId);});
+            foreach(var member in roster.Members)members.Add(member);
             alpha.text=TeamText(PvPvETeam.Alpha);bravo.text=TeamText(PvPvETeam.Bravo);
             status.text=$"SALA PvPvE  ·  {members.Count}/{matchmaking.Settings.Capacity} JUGADORES";
-            int countA=members.Count(m=>m.Team==PvPvETeam.Alpha),countB=members.Count-countA;
-            for(int i=0;i<actors.Length;i++){
-                if(i>=members.Count){actors[i].SetPlayer(false,0);continue;}
-                var m=members[i];int count=m.Team==PvPvETeam.Alpha?countA:countB;
-                int index=m.Team==PvPvETeam.Alpha?i:i-countA;
-                float center=m.Team==PvPvETeam.Alpha?-1.6f:1.6f;
-                float x,z;
-                if(count<=3){x=center+(index-(count-1)*.5f)*.9f;z=-65.6f;}
-                else{
-                    bool back=index>=2;int col=back?index-2:index;int rowSize=back?count-2:2;
-                    float spacing=back && rowSize==2?1.9f:.95f;
-                    x=center+(col-(rowSize-1)*.5f)*spacing;z=back?-63.9f:-65.6f;
-                    // Compensate perspective so rear heads appear between the front players.
-                    if(back)x*=(-63.9f-cameraOrigin.z)/(-65.6f-cameraOrigin.z);
-                }
-                actors[i].SetPose(stage.transform.TransformPoint(new Vector3(x,-1.26f,z)),180f);
-                actors[i].SetPlayer(true,m.CharacterIndex);
+            var activeSlots = new bool[actors.Length];
+            foreach(var member in members)
+            {
+                int index=ActorIndex(member);
+                if(index<0||index>=actors.Length)continue;
+                activeSlots[index]=true;
+                bool back=member.LobbySlot>=3;
+                int column=back?member.LobbySlot-3:member.LobbySlot;
+                float center=member.Team==PvPvETeam.Alpha?-1.6f:1.6f;
+                float x=center+(column-(back?.5f:1f))*.9f;
+                float z=back?-63.9f:-65.6f;
+                if(back)x*=(-63.9f-cameraOrigin.z)/(-65.6f-cameraOrigin.z);
+                actors[index].SetPose(stage.transform.TransformPoint(new Vector3(x,-1.26f,z)),180f);
+                actors[index].SetPlayer(true,member.CharacterIndex);
             }
+            for(int i=0;i<actors.Length;i++)if(!activeSlots[i])actors[i].SetPlayer(false,0);
             stageCamera.transform.localPosition=cameraOrigin;
             stageCamera.fieldOfView=members.Count>6?Mathf.Max(cameraFov,56):cameraFov;
         }
+        static int ActorIndex(PvPvEMember member) => member.LobbySlot+(member.Team==PvPvETeam.Bravo?5:0);
         static string Dots()=>new string('.',1+(int)(Time.unscaledTime/.35f)%3);
         string TeamText(PvPvETeam team)
         {
             int teamIndex=team==PvPvETeam.Alpha?0:1;var selected=members.Where(m=>m.Team==team).ToArray();
-            for(int i=0;i<5;i++){var icon=rosterIcons[teamIndex,i];var label=rosterNames[teamIndex,i];if(!icon||!label)continue;bool occupied=i<selected.Length;icon.gameObject.SetActive(occupied);if(occupied){var member=selected[i];var variant=matchmaking.Settings.Characters.GetVariant(member.CharacterIndex);icon.sprite=variant!=null?matchmaking.Settings.Characters.GetIcon(variant.type,variant.gender):null;icon.enabled=icon.sprite;bool local=!matchmaking.Network||!matchmaking.Network.IsConnectedClient||member.ClientId==matchmaking.Network.LocalClientId;label.text=member.Name.ToString()+(local?" (VOS)":"");label.color=local?Color.white:PvPvEUIFactory.Muted;}else{label.text="Buscando jugador"+Dots();label.color=PvPvEUIFactory.Muted;}}
+            for(int i=0;i<5;i++){var icon=rosterIcons[teamIndex,i];var label=rosterNames[teamIndex,i];if(!icon||!label)continue;int index=System.Array.FindIndex(selected,m=>m.LobbySlot==i);bool occupied=index>=0;icon.gameObject.SetActive(occupied);if(occupied){var member=selected[index];var variant=matchmaking.Settings.Characters.GetVariant(member.CharacterIndex);icon.sprite=variant!=null?matchmaking.Settings.Characters.GetIcon(variant.type,variant.gender):null;icon.enabled=icon.sprite;bool local=!matchmaking.Network||!matchmaking.Network.IsConnectedClient||member.ClientId==matchmaking.Network.LocalClientId;label.text=member.Name.ToString()+(local?" (VOS)":"");label.color=local?Color.white:PvPvEUIFactory.Muted;}else{label.text="BUSCAR JUGADOR"+Dots();label.color=PvPvEUIFactory.Muted;}}
             return (team==PvPvETeam.Alpha?"ALPHA":"BRAVO")+"  "+selected.Length+"/"+matchmaking.Settings.TeamCapacity;
         }
     }
