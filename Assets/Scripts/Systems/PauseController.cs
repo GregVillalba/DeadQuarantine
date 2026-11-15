@@ -739,7 +739,8 @@ public class PauseController : NetworkBehaviour
         if (string.IsNullOrWhiteSpace(nombreFinal))
             nombreFinal = PlayerPrefs.GetString("NOMBRE_PERSONAJE_OSCAR", "Oscar");
 
-        int puntajeFinal = playerScore != null ? playerScore.ScoreNetwork.Value : 0;
+        // Con las caídas ya descontadas, igual que en la pantalla de resultado.
+        int puntajeFinal = playerScore != null ? playerScore.PuntajeFinal : 0;
         string modoJuego = EsSinglePlayer() ? "Singleplayer" : "Multiplayer";
 
         cartelGuardarScore.AbrirCartel(nombreFinal, puntajeFinal, modoJuego, Salir, this);

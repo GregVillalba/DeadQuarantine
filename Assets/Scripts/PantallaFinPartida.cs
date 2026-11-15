@@ -33,6 +33,13 @@ public class PantallaFinPartida : MonoBehaviour
     [Header("Botón")]
     [SerializeField] private Button botonVolver;
 
+    // Aviso "DIFICULTAD DESBLOQUEADA: ...". Se crea en runtime debajo del texto
+    // "DESEMPEÑO GLOBAL DE COMBATE" (solo lo tienen las pantallas de victoria).
+    private const string InicioTextoDesempeno = "DESEMPE";
+    private const float SeparacionAvisoDesbloqueo = 8f;
+    private TMP_Text textoDesbloqueo;
+    private bool textoDesbloqueoBuscado;
+
     /// <summary>
     /// Botón "Volver al menú" de esta pantalla.
     /// Si no se asignó en el Inspector, usa el primer botón hijo.
@@ -48,12 +55,25 @@ public class PantallaFinPartida : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        AvisoDesbloqueoDificultad.AlRegistrar += ActualizarAvisoDesbloqueo;
+    }
+
+    private void OnDisable()
+    {
+        AvisoDesbloqueoDificultad.AlRegistrar -= ActualizarAvisoDesbloqueo;
+    }
+
     public void Mostrar(PlayerScore score)
     {
+        PrepararTextosDeEstadisticas();
+
         if (score != null)
         {
+            // Puntaje con las caídas ya descontadas (500 por cada una).
             if (textoPuntaje != null)
-                textoPuntaje.text = score.ScoreNetwork.Value.ToString();
+                textoPuntaje.text = score.PuntajeFinal.ToString();
 
             if (textoZombies != null)
                 textoZombies.text =
@@ -63,8 +83,15 @@ public class PantallaFinPartida : MonoBehaviour
                 textoPrecision.text =
                     score.PrecisionPorcentaje.ToString() + "%";
 
+            // Al lado de las caídas, lo que restaron del puntaje. Ej: "2  (-1000)".
             if (textoCaidas != null)
-                textoCaidas.text = score.CaidasNetwork.Value.ToString();
+            {
+                int caidas = score.CaidasNetwork.Value;
+
+                textoCaidas.text = caidas > 0
+                    ? caidas + "  (-" + score.PenalizacionCaidas + ")"
+                    : "0";
+            }
 
             if (textoReapariciones != null)
                 textoReapariciones.text =
@@ -73,6 +100,118 @@ public class PantallaFinPartida : MonoBehaviour
 
         ActualizarComponentes();
         ActualizarRonda();
+        ActualizarAvisoDesbloqueo();
+    }
+
+    // Los valores vienen del diseño con un ancho fijo muy chico: con más de un par de caracteres
+    // ("95%", "2  (-1000)") el texto bajaba al renglón siguiente. Se dejan en un solo renglón,
+    // y la precisión se alinea con la columna de los demás valores.
+    private void PrepararTextosDeEstadisticas()
+    {
+        EnUnRenglon(textoPuntaje);
+        EnUnRenglon(textoZombies);
+        EnUnRenglon(textoPrecision);
+        EnUnRenglon(textoCaidas);
+        EnUnRenglon(textoReapariciones);
+
+        AlinearEnColumna(textoPrecision, textoZombies != null ? textoZombies : textoPuntaje);
+    }
+
+    private static void EnUnRenglon(TMP_Text texto)
+    {
+        if (texto == null)
+            return;
+
+        texto.textWrappingMode = TextWrappingModes.NoWrap;
+        texto.overflowMode = TextOverflowModes.Overflow;
+    }
+
+    // Pone el texto en la misma X que la referencia (cada valor está en su propia fila, con el mismo armado).
+    private static void AlinearEnColumna(TMP_Text texto, TMP_Text referencia)
+    {
+        if (texto == null || referencia == null || texto == referencia)
+            return;
+
+        RectTransform rect = texto.rectTransform;
+        RectTransform rectReferencia = referencia.rectTransform;
+
+        // Solo si están armados igual; si no, comparar la X no significa nada.
+        if (rect.anchorMin != rectReferencia.anchorMin ||
+            rect.anchorMax != rectReferencia.anchorMax ||
+            !Mathf.Approximately(rect.pivot.x, rectReferencia.pivot.x))
+        {
+            return;
+        }
+
+        Vector2 posicion = rect.anchoredPosition;
+        posicion.x = rectReferencia.anchoredPosition.x;
+        rect.anchoredPosition = posicion;
+    }
+
+    // =========================================================
+    // AVISO DE DIFICULTAD DESBLOQUEADA
+    // =========================================================
+
+    private void ActualizarAvisoDesbloqueo()
+    {
+        string detalle = AvisoDesbloqueoDificultad.DetalleDePartida;
+
+        if (string.IsNullOrEmpty(detalle))
+        {
+            if (textoDesbloqueo != null)
+                textoDesbloqueo.gameObject.SetActive(false);
+
+            return;
+        }
+
+        if (textoDesbloqueo == null && !textoDesbloqueoBuscado)
+        {
+            textoDesbloqueoBuscado = true;
+            textoDesbloqueo = CrearTextoDesbloqueo();
+        }
+
+        if (textoDesbloqueo == null)
+            return;
+
+        textoDesbloqueo.text = "DIFICULTAD DESBLOQUEADA: " + detalle;
+        textoDesbloqueo.gameObject.SetActive(true);
+    }
+
+    // Copia el texto "DESEMPEÑO GLOBAL DE COMBATE..." (misma fuente, tamaño y color) y la pone justo debajo.
+    private TMP_Text CrearTextoDesbloqueo()
+    {
+        TMP_Text referencia = null;
+        TMP_Text[] textos = GetComponentsInChildren<TMP_Text>(true);
+
+        for (int i = 0; i < textos.Length; i++)
+        {
+            if (textos[i] != null &&
+                textos[i].text != null &&
+                textos[i].text.TrimStart().StartsWith(InicioTextoDesempeno, System.StringComparison.OrdinalIgnoreCase))
+            {
+                referencia = textos[i];
+                break;
+            }
+        }
+
+        if (referencia == null)
+            return null;
+
+        GameObject copia = Instantiate(referencia.gameObject, referencia.transform.parent);
+        copia.name = "AvisoDesbloqueoDificultad";
+
+        RectTransform rect = (RectTransform)copia.transform;
+        RectTransform rectReferencia = referencia.rectTransform;
+
+        rect.anchoredPosition =
+            rectReferencia.anchoredPosition +
+            new Vector2(0f, -(rectReferencia.rect.height + SeparacionAvisoDesbloqueo));
+
+        TMP_Text texto = copia.GetComponent<TMP_Text>();
+        EnUnRenglon(texto);
+        texto.raycastTarget = false;
+
+        return texto;
     }
 
     private void ActualizarComponentes()

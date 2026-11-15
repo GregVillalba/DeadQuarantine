@@ -42,6 +42,10 @@ public class SupervivenciaSaveData
     public int rondaActual;
     public bool partidaPerdida;
 
+    // Desbloqueo de dificultades (condición especial): si esta partida empezó sin ninguna
+    // dificultad de Supervivencia desbloqueada. 0 = sin dato (guardado viejo), 1 = sí, 2 = no.
+    public int empezoSinDesbloqueos;
+
     public DatosJugadorSaveData jugador = new DatosJugadorSaveData();
 
     public string fechaGuardado;

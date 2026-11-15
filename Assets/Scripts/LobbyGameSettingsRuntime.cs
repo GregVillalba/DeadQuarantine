@@ -11,13 +11,29 @@ using UnityEngine.UI;
 ///
 /// SINGLEPLAYER: el jugador puede editar todo.
 /// MULTIPLAYER: solamente el Host puede editar. Los clientes ven la configuración sincronizada.
+///
+/// DIFICULTADES BLOQUEADAS (ver DesbloqueoDificultades): el que edita puede dejar seleccionada una
+/// dificultad bloqueada. Se muestra en rojo con su requisito debajo y, mientras siga elegida,
+/// el lobby no deja comenzar (ver DificultadSeleccionadaBloqueada).
+/// Los invitados no se validan: juegan lo que eligió el host.
 /// </summary>
 public class LobbyGameSettingsRuntime : MonoBehaviour
 {
+    // Alto reservado, dentro del recuadro de dificultad, para el texto del requisito.
+    private const float AltoRequisito = 26f;
+
+    // Color de los valores elegidos (el mismo verde de los títulos "MODO DE JUEGO", "MAPA"...).
+    private static readonly Color ColorValor = new Color(0f, 1f, 0.4f, 1f);
+
+    // Color de una dificultad bloqueada, en el popup y en el cartel "SELECCIÓN ACTUAL".
+    private static readonly Color ColorBloqueada = new Color(1f, 0f, 0.038f, 1f);
+    private const string ColorBloqueadaHex = "#FF000A";
+
     private GameObject popup;
     private TMP_Text textoModo;
     private TMP_Text textoMapa;
     private TMP_Text textoDificultad;
+    private TMP_Text textoRequisito;
     private TMP_Text subtitulo;
 
     private Button botonModo;
@@ -73,6 +89,7 @@ public class LobbyGameSettingsRuntime : MonoBehaviour
         botonModo = PrepararBoton("Seccion_Modo", SiguienteModo);
         botonMapa = PrepararBoton("Seccion_Mapa", SiguienteMapa);
         botonDificultad = PrepararBoton("Seccion_Dificultad", SiguienteDificultad);
+        textoRequisito = PrepararTextoRequisito();
 
         inicializado = true;
         SetEditable(puedeEditar);
@@ -145,7 +162,10 @@ public class LobbyGameSettingsRuntime : MonoBehaviour
         string dificultad = NombreDificultad(cfg.dificultadSeleccionada);
 
         if (textoModo != null)
+        {
             textoModo.text = DecorarValor(modo, editable);
+            PonerColor(textoModo, ColorValor);
+        }
 
         if (textoMapa != null)
         {
@@ -153,10 +173,11 @@ public class LobbyGameSettingsRuntime : MonoBehaviour
                 textoMapa.text = "LABORATORIO  [ FIJO EN HISTORIA ]";
             else
                 textoMapa.text = DecorarValor(mapa, editable);
+
+            PonerColor(textoMapa, ColorValor);
         }
 
-        if (textoDificultad != null)
-            textoDificultad.text = DecorarValor(dificultad, editable);
+        ActualizarDificultadVisual(cfg, dificultad);
 
         // También actualiza el resumen superior del lobby si existe.
         ActualizarTodosLosTextosPorNombre("ModoValor", modo);
@@ -173,8 +194,13 @@ public class LobbyGameSettingsRuntime : MonoBehaviour
     // y el controlador del lobby la sincroniza a los clientes. No se leen textos de la UI.
     // =========================================================
 
-    /// <summary>"MODO  -  DIFICULTAD" con los valores reales. Solo incluye lo que ya está elegido.</summary>
-    public static string ObtenerResumenModoDificultad()
+    /// <summary>
+    /// "MODO  -  DIFICULTAD" con los valores reales. Solo incluye lo que ya está elegido.
+    /// Con marcarBloqueada, si la dificultad está bloqueada para el jugador de esta máquina
+    /// se escribe en rojo (rich text de TMP). Pasarlo en true solo para el que decide la
+    /// configuración (singleplayer o anfitrión): a los invitados no se les bloquea nada.
+    /// </summary>
+    public static string ObtenerResumenModoDificultad(bool marcarBloqueada = false)
     {
         ConfiguracionPartidaSeleccionada cfg = EnsureConfigurationInstance();
 
@@ -186,6 +212,9 @@ public class LobbyGameSettingsRuntime : MonoBehaviour
 
         bool hayModo = modo != "-";
         bool hayDificultad = dificultad != "-";
+
+        if (marcarBloqueada && hayDificultad && DificultadSeleccionadaBloqueada())
+            dificultad = "<color=" + ColorBloqueadaHex + ">" + dificultad + "</color>";
 
         if (hayModo && hayDificultad)
             return modo + "  -  " + dificultad;
@@ -211,6 +240,21 @@ public class LobbyGameSettingsRuntime : MonoBehaviour
             return NombreEscenario(ConfiguracionPartidaSeleccionada.Escenario.Laboratorio);
 
         return NombreEscenario(cfg.escenarioSeleccionado);
+    }
+
+    /// <summary>
+    /// ¿La dificultad seleccionada está bloqueada para el jugador de ESTA máquina en el modo elegido?
+    /// Mientras lo esté, el que decide la configuración (singleplayer o anfitrión) no puede comenzar.
+    /// Los invitados no deben consultarlo: juegan lo que eligió el anfitrión.
+    /// </summary>
+    public static bool DificultadSeleccionadaBloqueada()
+    {
+        ConfiguracionPartidaSeleccionada cfg = EnsureConfigurationInstance();
+
+        return cfg != null &&
+               !DesbloqueoDificultades.EstaDesbloqueada(
+                   cfg.modoSeleccionado,
+                   cfg.dificultadSeleccionada);
     }
 
     public static bool ConfiguracionValida()
@@ -307,7 +351,104 @@ public class LobbyGameSettingsRuntime : MonoBehaviour
                 break;
         }
 
+        // Una dificultad bloqueada también queda seleccionada: se muestra en rojo con su
+        // requisito y el lobby no deja comenzar mientras siga elegida.
         CambioRealizado();
+    }
+
+    private void ActualizarDificultadVisual(ConfiguracionPartidaSeleccionada cfg, string nombreSeleccionada)
+    {
+        // Solo se le bloquea al que decide la configuración (singleplayer o anfitrión).
+        bool bloqueada = editable && DificultadSeleccionadaBloqueada();
+
+        if (textoDificultad != null)
+        {
+            textoDificultad.text = bloqueada
+                ? nombreSeleccionada + "  [ BLOQUEADA ]  >"
+                : DecorarValor(nombreSeleccionada, editable);
+
+            PonerColor(textoDificultad, bloqueada ? ColorBloqueada : ColorValor);
+
+            // Deja lugar abajo para el requisito.
+            Vector4 margen = new Vector4(0f, 0f, 0f, bloqueada ? AltoRequisito : 0f);
+
+            if (textoDificultad.margin != margen)
+                textoDificultad.margin = margen;
+        }
+
+        if (textoRequisito == null)
+            return;
+
+        if (textoRequisito.gameObject.activeSelf != bloqueada)
+            textoRequisito.gameObject.SetActive(bloqueada);
+
+        if (!bloqueada)
+            return;
+
+        string requisito =
+            "DESBLOQUEAR: " +
+            DesbloqueoDificultades.TextoRequisito(cfg.modoSeleccionado, cfg.dificultadSeleccionada);
+
+        if (textoRequisito.text != requisito)
+            textoRequisito.text = requisito;
+    }
+
+    private static void PonerColor(TMP_Text texto, Color color)
+    {
+        if (texto != null && texto.color != color)
+            texto.color = color;
+    }
+
+    // Texto del requisito, debajo del valor de la dificultad (dentro del mismo recuadro).
+    // Se crea en runtime para no tener que reconstruir la UI de los lobbies.
+    private TMP_Text PrepararTextoRequisito()
+    {
+        Transform seccion = BuscarEnHijos(popup.transform, "Seccion_Dificultad");
+        if (seccion == null)
+            return null;
+
+        Transform contenido = BuscarEnHijos(seccion, "Contenido");
+        if (contenido == null)
+            contenido = seccion;
+
+        const string nombre = "RequisitoDesbloqueo";
+
+        Transform existente = contenido.Find(nombre);
+        if (existente != null)
+            return existente.GetComponent<TMP_Text>();
+
+        GameObject go = new GameObject(nombre, typeof(RectTransform));
+        go.layer = contenido.gameObject.layer;
+        go.transform.SetParent(contenido, false);
+
+        RectTransform rect = (RectTransform)go.transform;
+        rect.anchorMin = new Vector2(0f, 0f);
+        rect.anchorMax = new Vector2(1f, 0f);
+        rect.pivot = new Vector2(0.5f, 0f);
+        rect.anchoredPosition = new Vector2(0f, 4f);
+        rect.sizeDelta = new Vector2(-12f, AltoRequisito);
+
+        TextMeshProUGUI texto = go.AddComponent<TextMeshProUGUI>();
+
+        if (textoDificultad != null && textoDificultad.font != null)
+        {
+            texto.font = textoDificultad.font;
+            texto.fontSharedMaterial = textoDificultad.fontSharedMaterial;
+        }
+
+        texto.alignment = TextAlignmentOptions.Center;
+        texto.color = new Color(1f, 0.78f, 0.25f, 1f);
+        // Siempre en un solo renglón: si el requisito es largo, se achica la letra en vez de cortarse.
+        texto.textWrappingMode = TextWrappingModes.NoWrap;
+        texto.overflowMode = TextOverflowModes.Overflow;
+        texto.enableAutoSizing = true;
+        texto.fontSizeMin = 9f;
+        texto.fontSizeMax = 15f;
+        texto.raycastTarget = false;
+        texto.text = string.Empty;
+
+        go.SetActive(false);
+        return texto;
     }
 
     private void CambioRealizado()

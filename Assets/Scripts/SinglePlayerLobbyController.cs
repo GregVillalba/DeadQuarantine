@@ -154,6 +154,10 @@ public class SinglePlayerLobbyController : MonoBehaviour
             return;
         }
 
+        // Dificultad bloqueada seleccionada: el botón no hace nada hasta que elija una desbloqueada.
+        if (LobbyGameSettingsRuntime.DificultadSeleccionadaBloqueada())
+            return;
+
         StartCoroutine(CargarPartida());
     }
 
