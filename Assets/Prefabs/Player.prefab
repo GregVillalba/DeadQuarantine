@@ -34493,7 +34493,6 @@ GameObject:
   - component: {fileID: 592224825234516171}
   - component: {fileID: 6818159412142624145}
   - component: {fileID: 4487213230482189467}
-  - component: {fileID: 1971020452796888060}
   - component: {fileID: 8759692890773157113}
   m_Layer: 3
   m_Name: Panel_ObjetosHistoria
@@ -34567,7 +34566,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2551370955625371830}
+  m_GameObject: {fileID: 8673627603344465800}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 15b0d8a603fbcc64bbd0db164c97d872, type: 3}
@@ -34578,7 +34577,7 @@ MonoBehaviour:
   indicadorRadio: {fileID: 5779957424597614352}
   iconoRadioAnimado: {fileID: 8072623184360946280}
   ondaRadio1: {fileID: 6683500789113417861}
-  ondaRadio2: {fileID: 6683500789113417861}
+  ondaRadio2: {fileID: 0}
   transparenciaOnda1: {fileID: 0}
   transparenciaOnda2: {fileID: 0}
   duracionLlamada: 6
@@ -34586,6 +34585,13 @@ MonoBehaviour:
   duracionOnda: 1
   escalaMinimaOnda: 1
   escalaMaximaOnda: 2
+  fuenteDialogo: {fileID: 11400000, guid: 0161d805a3764c089bef00bfe00793f5, type: 2}
+  modeloSobreviviente: {fileID: 1245639020409412, guid: 96e947df06e21f948a8c6ad8fc919f5d, type: 3}
+  animadorSobreviviente: {fileID: 9100000, guid: e1e1f7b3cff1ee3408163f3417fcda70, type: 2}
+  paginasAudio:
+  - {fileID: 8300000, guid: a65448a0db614bed87454dce69617e0c, type: 3}
+  - {fileID: 8300000, guid: 0344089b5916478d9bf89b62bc86ab6b, type: 3}
+  - {fileID: 8300000, guid: 572a5482011144b59e1e8d353ad93c59, type: 3}
 --- !u!114 &8759692890773157113
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -106787,6 +106793,7 @@ GameObject:
   - component: {fileID: 5818571935544604676}
   - component: {fileID: 7580203284180708040}
   - component: {fileID: 254235894387278622}
+  - component: {fileID: 1971020452796888060}
   m_Layer: 5
   m_Name: HistoriaHUD
   m_TagString: Untagged
