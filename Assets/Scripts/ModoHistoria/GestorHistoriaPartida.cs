@@ -78,10 +78,31 @@ public class GestorHistoriaPartida : NetworkBehaviour
         ? estadoObjetivoRecibido
         : EstadoMisionNetwork.Value;
 
-    internal bool ContactoRadioPendienteLocal =>
-        IsSpawned && IsClient &&
-        EstadoMisionNetwork.Value == ContactarSobrevivientes &&
+    internal bool TransmisionRadioActiva =>
+        IsSpawned && IsClient && EstadoMisionNetwork.Value == ContactarSobrevivientes;
+
+    internal bool PuedeControlarRadioLocal =>
+        TransmisionRadioActiva &&
         ClienteConRadioNetwork.Value == NetworkManager.LocalClientId;
+
+    internal double TiempoRadio => NetworkManager.ServerTime.Time;
+
+    internal struct EstadoDialogoRadio : INetworkSerializable
+    {
+        public int Pagina;
+        public double Inicio;
+        public bool TextoRevelado;
+
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        {
+            serializer.SerializeValue(ref Pagina);
+            serializer.SerializeValue(ref Inicio);
+            serializer.SerializeValue(ref TextoRevelado);
+        }
+    }
+
+    internal readonly NetworkVariable<EstadoDialogoRadio> DialogoRadioNetwork =
+        new NetworkVariable<EstadoDialogoRadio>(new EstadoDialogoRadio { Pagina = -1 });
 
     public static GestorHistoriaPartida Instance { get; private set; }
 
@@ -1594,6 +1615,7 @@ private void RegistrarSenalEncontradaRpc(
         $"Jugador={clientId}, altura={altura:F2} m."
     );
 
+    DialogoRadioNetwork.Value = new EstadoDialogoRadio { Pagina = 0, Inicio = TiempoRadio };
     EstadoMisionNetwork.Value = ContactarSobrevivientes;
 
     Debug.Log(
@@ -1789,21 +1811,19 @@ private void RegistrarSenalEncontradaRpc(
         detector.ActivarBusquedaDeSenal();
     }
 
-    public void ConfirmarContactoSobrevivientes()
+    internal void SolicitarAvanceRadio(int pagina, bool revelar)
     {
-        if (!ContactoRadioPendienteLocal)
+        if (!PuedeControlarRadioLocal)
             return;
 
-        ConfirmarContactoSobrevivientesRpc();
+        AvanzarDialogoRadioRpc(pagina, revelar);
     }
 
     [Rpc(
         SendTo.Server,
         InvokePermission = RpcInvokePermission.Everyone
     )]
-    private void ConfirmarContactoSobrevivientesRpc(
-        RpcParams rpcParams = default
-    )
+    private void AvanzarDialogoRadioRpc(int pagina, bool revelar, RpcParams rpcParams = default)
     {
         if (!IsServer || !EsHistoriaCiudad())
             return;
@@ -1815,6 +1835,23 @@ private void RegistrarSenalEncontradaRpc(
 
         if (ClienteConRadioNetwork.Value != clientId)
             return;
+
+        EstadoDialogoRadio dialogo = DialogoRadioNetwork.Value;
+        if (pagina < 0 || pagina != dialogo.Pagina)
+            return;
+
+        if (revelar)
+        {
+            dialogo.TextoRevelado = true;
+            DialogoRadioNetwork.Value = dialogo;
+            return;
+        }
+
+        if (pagina < DialogoRadioHistoria.UltimaPagina)
+        {
+            DialogoRadioNetwork.Value = new EstadoDialogoRadio { Pagina = pagina + 1, Inicio = TiempoRadio };
+            return;
+        }
 
         EstadoMisionNetwork.Value = IrAlCaminoSalida;
 

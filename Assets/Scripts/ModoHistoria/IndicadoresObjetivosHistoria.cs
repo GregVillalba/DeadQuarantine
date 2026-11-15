@@ -2,6 +2,7 @@ using System.Collections;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class IndicadoresObjetivosHistoria : MonoBehaviour
 {
@@ -24,6 +25,8 @@ public class IndicadoresObjetivosHistoria : MonoBehaviour
 
     [Header("Transmisión de radio")]
     [SerializeField] private TMP_FontAsset fuenteDialogo;
+    [SerializeField] private TMP_FontAsset fuenteTitulo;
+    [SerializeField] private Sprite fondoBoton;
     [SerializeField] private GameObject modeloSobreviviente;
     [SerializeField] private RuntimeAnimatorController animadorSobreviviente;
     [SerializeField] private AudioClip[] paginasAudio;
@@ -38,7 +41,6 @@ public class IndicadoresObjetivosHistoria : MonoBehaviour
     private DialogoRadioHistoria dialogo;
     private Coroutine rutinaLlamada;
     private Vector2 posicionOriginal;
-    private bool confirmacionEnviada;
 
     private void Awake()
     {
@@ -73,12 +75,16 @@ public class IndicadoresObjetivosHistoria : MonoBehaviour
         gestor.EstadoMisionNetwork.OnValueChanged += AlCambiarEstado;
         gestor.ClienteConTarjetaNetwork.OnValueChanged += AlCambiarPropietario;
         gestor.ClienteConRadioNetwork.OnValueChanged += AlCambiarPropietario;
+        gestor.DialogoRadioNetwork.OnValueChanged += AlCambiarDialogo;
         ActualizarIndicadores();
     }
 
     private void AlCambiarEstado(int anterior, int nuevo) => ActualizarIndicadores();
 
     private void AlCambiarPropietario(ulong anterior, ulong nuevo) => ActualizarIndicadores();
+
+    private void AlCambiarDialogo(GestorHistoriaPartida.EstadoDialogoRadio anterior,
+        GestorHistoriaPartida.EstadoDialogoRadio nuevo) => ActualizarTransmision();
 
     private void ActualizarIndicadores()
     {
@@ -92,32 +98,33 @@ public class IndicadoresObjetivosHistoria : MonoBehaviour
         indicadorTarjeta.SetActive(tieneTarjeta);
         indicadorRadio.SetActive(tieneRadio);
         panelObjetosHistoria.SetActive(tieneTarjeta || tieneRadio);
+        ActualizarTransmision();
+    }
 
-        if (!gestorVinculado.ContactoRadioPendienteLocal)
+    private void ActualizarTransmision()
+    {
+        if (!gestorVinculado.TransmisionRadioActiva)
         {
-            confirmacionEnviada = false;
             CerrarTransmision();
             return;
         }
 
-        if (dialogo != null || confirmacionEnviada)
+        var estado = gestorVinculado.DialogoRadioNetwork.Value;
+        if (estado.Pagina < 0)
             return;
 
-        dialogo = DialogoRadioHistoria.Crear(
-            hud, fuenteDialogo, modeloSobreviviente, animadorSobreviviente,
-            paginasAudio, ConfirmarContacto);
-        if (iconoRadioAnimado != null)
-            rutinaLlamada = StartCoroutine(AnimarLlamada());
-    }
+        bool controlaRadio = gestorVinculado.PuedeControlarRadioLocal;
+        if (dialogo == null)
+        {
+            bool unJugador = SceneManager.GetActiveScene().name == "MainSceneSinglePlayer";
+            dialogo = DialogoRadioHistoria.Crear(
+                hud, fuenteDialogo, fuenteTitulo, fondoBoton, modeloSobreviviente, animadorSobreviviente,
+                paginasAudio, unJugador, gestorVinculado.SolicitarAvanceRadio);
+            if (controlaRadio && iconoRadioAnimado != null)
+                rutinaLlamada = StartCoroutine(AnimarLlamada());
+        }
 
-    private void ConfirmarContacto()
-    {
-        if (gestorVinculado == null || !gestorVinculado.ContactoRadioPendienteLocal)
-            return;
-
-        confirmacionEnviada = true;
-        CerrarTransmision();
-        gestorVinculado.ConfirmarContactoSobrevivientes();
+        dialogo.Sincronizar(estado, (float)(gestorVinculado.TiempoRadio - estado.Inicio), controlaRadio);
     }
 
     private void PrepararOnda(RectTransform onda, ref CanvasGroup transparencia)
@@ -192,13 +199,12 @@ public class IndicadoresObjetivosHistoria : MonoBehaviour
     private void DesvincularGestor()
     {
         CerrarTransmision();
-        confirmacionEnviada = false;
-
         if (!ReferenceEquals(gestorVinculado, null))
         {
             gestorVinculado.EstadoMisionNetwork.OnValueChanged -= AlCambiarEstado;
             gestorVinculado.ClienteConTarjetaNetwork.OnValueChanged -= AlCambiarPropietario;
             gestorVinculado.ClienteConRadioNetwork.OnValueChanged -= AlCambiarPropietario;
+            gestorVinculado.DialogoRadioNetwork.OnValueChanged -= AlCambiarDialogo;
         }
 
         gestorVinculado = null;
