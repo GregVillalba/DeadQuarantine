@@ -37,7 +37,7 @@ namespace DeadQuarantine.PvPvE
   public bool HasWildcard(PvPvEClassDefinition c,PvPvEWildcard kind)=>c!=null&&wildcards&&wildcards.TryMask(c.wildcard1,c.wildcard2,out var mask)&&(mask&PvPvEWildcardCatalog.Bit(kind))!=0;
   public int HealingCapacity(PvPvEClassDefinition c)=>string.IsNullOrEmpty(c?.healing)?0:Mathf.Clamp((FindHealing(c.healing)?.carryCount??0)+(HasWildcard(c,PvPvEWildcard.ExtraHealing)?wildcards.extraHealingUnits:0),1,99);
   public int GrenadeCapacity(PvPvEClassDefinition c)=>string.IsNullOrEmpty(c?.grenade)?0:Mathf.Clamp((Array.Find(grenades,g=>g.id==c.grenade)?.carryCount??0)+(HasWildcard(c,PvPvEWildcard.ExtraGrenades)?wildcards.extraGrenadeUnits:0),1,99);
-  public bool AllowsSecondary(PvPvEClassDefinition c,Gun gun)=>gun!=null&&(gun.secondary||HasWildcard(c,PvPvEWildcard.Overkill))&&gun.id!=c.primary;
+  public bool AllowsSecondary(PvPvEClassDefinition c,Gun gun)=>gun!=null&&(gun.secondary!=HasWildcard(c,PvPvEWildcard.Overkill))&&gun.id!=c.primary;
   public Gun Find(string id)=>Array.Find(weapons,w=>w.id==id);
   public Utility FindHealing(string id)=>Array.Find(healings,h=>h.id==id);
   public string HealingSummary(Utility healing)=>$"{healing.name}\n{healing.carryCount} UN. · {healing.healing} PV / UN.";
@@ -58,7 +58,7 @@ namespace DeadQuarantine.PvPvE
    if(c==null){error="La clase no existe.";return false;}
    if(string.IsNullOrWhiteSpace(c.name)||c.name.Length>32){error="Usá un nombre de 1 a 32 caracteres.";return false;}
    if(!wildcards||!wildcards.TryMask(c.wildcard1,c.wildcard2,out _)){error="Elegí hasta dos Wildcards distintas y existentes.";return false;}
-   if(Find(c.primary) is not {secondary:false} || !AllowsSecondary(c,Find(c.secondary))){error="Elegí armas distintas. Dos primarias requieren Overkill.";return false;}
+   if(Find(c.primary) is not {secondary:false} || !AllowsSecondary(c,Find(c.secondary))){error="Elegí armas distintas y compatibles con el slot secundario.";return false;}
    if(!ValidAttachments(c.primary,c.primaryAttachments)||!ValidAttachments(c.secondary,c.secondaryAttachments)){error="Accesorio incompatible con el arma.";return false;}
    if(!string.IsNullOrEmpty(c.grenade)&&!grenades.Any(g=>g.id==c.grenade)||!string.IsNullOrEmpty(c.healing)&&!healings.Any(h=>h.id==c.healing)){error="Elegí utilidades existentes del juego.";return false;}
    var healing=FindHealing(c.healing);if(healing!=null&&(healing.healing<=0||healing.carryCount<1||healing.carryCount>99)){error="La curación no tiene una capacidad válida configurada.";return false;}
@@ -69,6 +69,28 @@ namespace DeadQuarantine.PvPvE
    if(grenades.Any(g=>g.id==c.grenade&&(g.carryCount<1||g.carryCount>99))){error="Capacidad de granadas inválida.";return false;}
    return true;
   }
+  internal void NormalizeSecondary(PvPvEClassDefinition c)
+  {
+   if (AllowsSecondary(c, Find(c.secondary))) return;
+   var compatible = weapons.FirstOrDefault(gun => AllowsSecondary(c, gun));
+   c.secondary = compatible?.id ?? "";
+   c.secondaryAttachments = default;
+  }
+
+  internal void RemoveWildcardDependencies(PvPvEClassDefinition c, PvPvEWildcard removed)
+  {
+   switch (removed)
+   {
+    case PvPvEWildcard.Overkill: NormalizeSecondary(c); break;
+    case PvPvEWildcard.Perk1Greed: c.perk1Extra = ""; break;
+    case PvPvEWildcard.Perk2Greed: c.perk2Extra = ""; break;
+    case PvPvEWildcard.PrimaryGunfighter:
+     c.primaryAttachments = TrimAttachments(c.primaryAttachments, AttachmentLimit(c, false)); break;
+    case PvPvEWildcard.SecondaryGunfighter:
+     c.secondaryAttachments = TrimAttachments(c.secondaryAttachments, AttachmentLimit(c, true)); break;
+   }
+  }
+
   public static int AttachmentCount(WeaponAttachmentChoice c)=>Enum.GetValues(typeof(WeaponAttachmentKind)).Cast<WeaponAttachmentKind>().Count(k=>!string.IsNullOrEmpty(c.Get(k)));
   public int AttachmentLimit(PvPvEClassDefinition c,bool secondary)=>HasWildcard(c,secondary?PvPvEWildcard.SecondaryGunfighter:PvPvEWildcard.PrimaryGunfighter)?3:2;
   static WeaponAttachmentChoice TrimAttachments(WeaponAttachmentChoice c,int limit){foreach(WeaponAttachmentKind k in Enum.GetValues(typeof(WeaponAttachmentKind)))if(!string.IsNullOrEmpty(c.Get(k))&&--limit<0)c.Set(k,"");return c;}
@@ -90,7 +112,7 @@ namespace DeadQuarantine.PvPvE
    if(!wildcards||wildcards.Find(c.wildcard1)==null)c.wildcard1="";
    if(!wildcards||!wildcards.TryMask(c.wildcard1,c.wildcard2,out _))c.wildcard2="";
    if(Find(c.primary) is not {secondary:false})c.primary=fallback.primary;
-   if(!AllowsSecondary(c,Find(c.secondary)))c.secondary=fallback.secondary;
+   NormalizeSecondary(c);
    c.primaryAttachments=RepairAttachments(c.primary,c.primaryAttachments);c.secondaryAttachments=RepairAttachments(c.secondary,c.secondaryAttachments);
    if(!string.IsNullOrEmpty(c.grenade)&&!grenades.Any(g=>g.id==c.grenade))c.grenade=fallback.grenade;
    if(!string.IsNullOrEmpty(c.healing)&&!healings.Any(h=>h.id==c.healing))c.healing=fallback.healing;

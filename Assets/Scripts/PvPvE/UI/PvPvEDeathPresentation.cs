@@ -21,6 +21,11 @@ namespace DeadQuarantine.PvPvE.UI {
      var presentation=player.GetComponent<NetworkWeaponPresentation>();if(presentation&&presentation.Body&&presentation.BodyAnimator&&presentation.BodyAnimator.isHuman){var corpse=CreateCorpse(presentation);seen.Add((row.ClientId,row.Revision));corpses.Add(corpse);Destroy(corpse,Mathf.Clamp(deployment.Settings.CorpseSeconds,0,deployment.Settings.RespawnSeconds));presentation.Body.gameObject.SetActive(false);}
     }
     if(!player.IsOwner)continue;
+    if(player.TryGetComponent(out PlayerSpectator spectator) && spectator.IsViewingLivingPlayer)
+    {
+     if(floating){floating.gameObject.SetActive(false);Destroy(floating.gameObject);floating=null;}
+     continue;
+    }
     player.GetComponent<PlayerMovement>().enabled=false;var cc=player.GetComponent<CharacterController>();if(cc)cc.enabled=false;
     foreach(var camera in player.GetComponentsInChildren<Camera>(true))camera.enabled=false;
     foreach(var listener in player.GetComponentsInChildren<AudioListener>(true))listener.enabled=false;

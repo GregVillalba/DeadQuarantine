@@ -1727,8 +1727,8 @@ private bool SpawnZombieAtPosition(
 
     private void MostrarDerrota()
     {
-        PlayerHealth.FinPartidaPerksServidor();
-        MostrarDerrotaClientRpc();
+        if (IsServer) PlayerHealth.FinPartidaPerksServidor();
+        if (IsClient) MostrarDerrotaLocal();
     }
    
 
@@ -1955,10 +1955,9 @@ private void DesbloquearLogroModoClientRpc(
         );
     }
 
-    [ClientRpc]
-    private void MostrarDerrotaClientRpc()
+    private void MostrarDerrotaLocal()
     {
-        var local = NetworkManager.Singleton.LocalClient?.PlayerObject;
+        var local = NetworkManager.LocalClient?.PlayerObject;
 
         if (local == null)
             return;

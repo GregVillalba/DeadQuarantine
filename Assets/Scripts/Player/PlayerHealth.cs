@@ -380,7 +380,7 @@ public partial class PlayerHealth : NetworkBehaviour
 
     public void TakeDamage(int amount, bool ignorarEscudo = false, Vector3? source = null)
     {
-        if (DeadQuarantine.PvPvE.Networking.PvPvETeamDeployment.BlocksDamage(this)) return;
+        if (PlayerInputGate.MatchLost || DeadQuarantine.PvPvE.Networking.PvPvETeamDeployment.BlocksDamage(this)) return;
         if (!IsServer)
             return;
 

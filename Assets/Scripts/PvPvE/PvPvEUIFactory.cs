@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 namespace DeadQuarantine.PvPvE {
  public static class PvPvEUIFactory {
-  public static readonly Color PanelColor=new(.035f,.044f,.052f,.97f),Accent=new(.96f,.68f,.28f);
+  public static readonly Color PanelColor=new(.035f,.044f,.052f,.97f),Accent=new(.18f,.88f,.39f);
   static TMP_FontAsset bodyFont,headingFont;
   public static TMP_FontAsset BodyFont=>bodyFont?bodyFont:(bodyFont=Resources.Load<TMP_FontAsset>("PvPvE/BodyFont"));
   public static TMP_FontAsset HeadingFont=>headingFont?headingFont:(headingFont=Resources.Load<TMP_FontAsset>("PvPvE/HeadingFont"));

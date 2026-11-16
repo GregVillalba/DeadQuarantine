@@ -46,6 +46,19 @@ public class IndicadoresObjetivosHistoria : MonoBehaviour
     {
         jugador = GetComponentInParent<NetworkObject>();
         hud = (RectTransform)GetComponentInParent<Canvas>().transform;
+        if (panelObjetosHistoria.transform is RectTransform items &&
+            HUDController.FindPlayerStatusBackground(transform)?.transform.parent is RectTransform playerStatus)
+        {
+            // Preserve the authored UIEffects on the item panel without inheriting the status panel's sway.
+            items.SetParent(playerStatus.parent, false);
+            items.anchorMin = playerStatus.anchorMin;
+            items.anchorMax = playerStatus.anchorMax;
+            items.pivot = new Vector2(0f, 0f);
+            items.localScale = Vector3.one;
+            Vector2 statusTopLeft = new(-playerStatus.pivot.x * playerStatus.sizeDelta.x,
+                (1f - playerStatus.pivot.y) * playerStatus.sizeDelta.y);
+            items.anchoredPosition = playerStatus.anchoredPosition + statusTopLeft + new Vector2(103f, 12f);
+        }
 
         if (iconoRadioAnimado != null)
             posicionOriginal = iconoRadioAnimado.anchoredPosition;

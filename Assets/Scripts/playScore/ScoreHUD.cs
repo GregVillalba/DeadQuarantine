@@ -8,8 +8,6 @@ public class ScoreHUD : NetworkBehaviour
 
     private PlayerScore playerScore;
     CanvasGroup modePanel;
-    UIEffects scoreSway;
-    Canvas scoreCanvas;
     private const float ScoreTop = 231f;
     DeadQuarantine.PvPvE.Networking.PvPvECombat matchScore;
     void ModeScoreChanged(Unity.Netcode.NetworkListEvent<DeadQuarantine.PvPvE.Networking.PvPvECombatStats> change)=>ActualizarTexto(0,0);
@@ -55,8 +53,6 @@ public class ScoreHUD : NetworkBehaviour
         {
             HUDController.PlaceHudPanel(panel, true, 460, 92, ScoreTop);
             UIEffects.EnsureHudSway(panel, transform);
-            scoreSway = panel.GetComponent<UIEffects>();
-            scoreCanvas = panel.GetComponentInParent<Canvas>()?.rootCanvas;
             HUDController.ClearLegacyFrame(panel.GetComponent<UnityEngine.UI.Image>());
             HUDController.ClearLegacyFrame(frame);
             var backdrop = new GameObject("Fondo de estado", typeof(UnityEngine.UI.Image))
@@ -86,14 +82,6 @@ public class ScoreHUD : NetworkBehaviour
         if(!IsOwner||!IsSpawned)return;
         BindModeScore();
         if(matchScore && modePanel)modePanel.alpha=PauseController.LocalPlayerPaused||matchScore.ScoreLocked.Value?0:1;
-        if (scoreSway && scoreCanvas)
-        {
-            var matchView = DeadQuarantine.PvPvE.PvPvEView.Active;
-            float feedEnd = matchScore && matchView
-                ? matchView.KillFeedBottom * matchView.HudScale / Mathf.Max(.01f, scoreCanvas.scaleFactor)
-                : 0;
-            scoreSway.HudLayoutOffset = Vector2.down * Mathf.Max(0, feedEnd - ScoreTop);
-        }
     }
     public string DisplayedScore=>textoPuntaje?textoPuntaje.text:"";
 

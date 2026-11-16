@@ -174,7 +174,7 @@ public partial class Weapon : MonoBehaviour
     public bool ShotIsSuppressed => RuntimeAttachments != null && RuntimeAttachments.Suppressed;
     public AudioClip PresentationShotSound => RuntimeAttachments != null && RuntimeAttachments.ShotSound ? RuntimeAttachments.ShotSound : shootSound;
     public float AttachmentAimFov => RuntimeAttachments != null
-        ? RuntimeAttachments.HasMagnifiedLens ? HipFieldOfView : RuntimeAttachments.AimFov(aimFOV)
+        ? RuntimeAttachments.HasMagnifiedLens ? HipFieldOfView * .88f : RuntimeAttachments.AimFov(aimFOV)
         : aimFOV;
     public void SetAttachmentSight(Transform sight) { if(RuntimeAttachments!=null&&RuntimeAttachments.HasRuntimeCatalog)SetPackAttachmentSight(sight); }
     public UnityEngine.Audio.AudioMixerGroup PresentationMixer => audioSource ? audioSource.outputAudioMixerGroup : null;
@@ -200,6 +200,7 @@ public partial class Weapon : MonoBehaviour
     // Keep the empty-reload clip and its speed until the animation completes.
     public bool PresentationEmpty => isReloading ? reloadStartedEmpty : currentAmmo == 0;
     public Camera AimCamera => playerCamera;
+    internal Camera ViewModelCamera => weaponCamera;
     public float HipFieldOfView=>defaultWorldFOV>0?defaultWorldFOV:playerCamera?playerCamera.fieldOfView:60;
     public Vector3 AimOrigin => playerCamera ? playerCamera.transform.position : transform.position;
     public AudioClip PresentationReloadSound(bool empty) => empty ? reloadEmptySound : reloadSound;
@@ -731,18 +732,17 @@ public partial class Weapon : MonoBehaviour
 
     internal Ray GetShotAimRay()
     {
-        // ADS: la direccion fisica de la bala es el CENTRO de la camara
-        // jugable. WeaponCamera solo dibuja el arma; sus SOCKET_Default
-        // NO son la posicion real del alza/reticula y provocaban tiros bajos.
-        //
-        // Este metodo se invoca desde FlushPendingAdsShots() en LateUpdate,
-        // DESPUES de CameraRecoil. Asi el raycast utiliza la misma orientacion
-        // de PlayerCamera que se representa en pantalla durante el full auto.
-        if (IsAiming)
-            return playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        Vector3 origin = playerCamera.transform.position;
+        if (!IsAiming) return new Ray(origin, playerCamera.transform.forward);
 
-        // Fuera de ADS se conserva la direccion y dispersion del hipfire.
-        return new Ray(playerCamera.transform.position, playerCamera.transform.forward);
+        Vector3 viewport = new(.5f, .5f, 0);
+        if (adsFireAlongVisualSight && adsSightReference && adsSightReference.name == "DQ_OpticalSight" &&
+            weaponCamera && weaponCamera.enabled)
+        {
+            Vector3 sight = weaponCamera.WorldToViewportPoint(adsSightReference.position);
+            if (IsValidSightViewport(sight)) viewport = sight;
+        }
+        return new Ray(origin, playerCamera.ViewportPointToRay(viewport).direction);
     }
 
     private void FlushPendingAdsShots()
@@ -750,6 +750,7 @@ public partial class Weapon : MonoBehaviour
         int toFire = pendingAdsRounds;
         if (toFire <= 0) return;
         pendingAdsRounds = 0;
+        if (InputLocked || PlayerInputGate.ActionsBlocked) return;
         for (int i = 0; i < toFire; i++)
         {
             // Primero sale la bala siguiendo la mira visible; DESPUES
@@ -765,6 +766,7 @@ public partial class Weapon : MonoBehaviour
 
     private void ShootAndPublish()
     {
+        if (InputLocked || PlayerInputGate.ActionsBlocked) return;
         presentationTargets.Clear();
         Shoot();
         if (!presentation)
@@ -1569,7 +1571,7 @@ public partial class Weapon : MonoBehaviour
 
         for (int i = 0; i < burstCount; i++)
         {
-            if (!isActiveAndEnabled || currentAmmo <= 0 || SwitchBlocked || InputLocked)
+            if (!isActiveAndEnabled || currentAmmo <= 0 || SwitchBlocked || InputLocked || PlayerInputGate.ActionsBlocked)
                 break;
 
             FireOneRound();
@@ -1612,9 +1614,7 @@ public partial class Weapon : MonoBehaviour
             );
         }
 
-        // Solo para armas nuevas con ADS visual: recoil DESPUES del impacto.
-        // Las armas originales y el hipfire mantienen su orden sin cambios.
-        if (!IsAiming || !adsFireAlongVisualSight)
+        if (!IsAiming)
         {
             if (cameraRecoil != null)
                 cameraRecoil.Fire(recoilPreset, false, recoilIntensityMultiplier * AttachmentRecoilMultiplier, UseAuthoredRecoil, AttachmentRecoilAxes);
@@ -1637,7 +1637,7 @@ public partial class Weapon : MonoBehaviour
         // (con el recoil de las balas ANTERIORES), pero antes de iniciar la
         // patada de ESTA bala. Asi el disparo sigue la mira que se ve,
         // y el retroceso mueve la mira para la bala siguiente.
-        if (IsAiming && adsFireAlongVisualSight)
+        if (IsAiming)
             pendingAdsRounds++;
         else
             ShootAndPublish();

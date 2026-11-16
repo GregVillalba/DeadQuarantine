@@ -73,6 +73,7 @@ public class CameraRecoil : MonoBehaviour
     private Quaternion lastRootWritten = Quaternion.identity;
 
     private int shotsFired;
+    private float visiblePitchKick;
     private float lastFireTime = -999f;
     private bool lastAiming;
     private bool sourceProfile;
@@ -155,6 +156,7 @@ public class CameraRecoil : MonoBehaviour
             transform.localRotation = transform.localRotation * Quaternion.Inverse(emergencyLastOffset);
 
         emergencyApplied = false;
+        visiblePitchKick = 0;
     }
 
     /// <summary>Lo llama Weapon.cs en cada disparo.</summary>
@@ -164,6 +166,9 @@ public class CameraRecoil : MonoBehaviour
             shotsFired = 0;
 
         shotsFired++;
+        float pitchKick = preset == RecoilPreset.Handgun ? 1.05f : 1.35f;
+        visiblePitchKick = Mathf.Min(4f, visiblePitchKick +
+            pitchKick * Mathf.Clamp01(intensityMultiplier) * Mathf.Clamp((attachmentAxes ?? Vector2.one).x, .25f, 1.5f));
         lastFireTime = Time.time;
         lastAiming = aiming;sourceProfile=authoredProfile;
         lastIntensity = intensityMultiplier;recoilAxes=attachmentAxes??Vector2.one;
@@ -235,6 +240,8 @@ public class CameraRecoil : MonoBehaviour
         locationSpring.SetTarget(locationNow * (recoil.locationMultiplier * stateMultiplier));
 
         Vector3 rotation = rotationSpring.Evaluate(dt);
+        rotation.x -= visiblePitchKick;
+        visiblePitchKick *= Mathf.Exp(-14f * dt);
         Vector3 position = locationSpring.Evaluate(dt);
 
         // ---------------- SALTO / CAÍDA / ATERRIZAJE ----------------

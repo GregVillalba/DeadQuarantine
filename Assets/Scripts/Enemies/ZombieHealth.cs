@@ -458,7 +458,7 @@ private void TakeDamageServerRpc(
     ServerRpcParams rpcParams = default
 )
     {
-        if(IsPvPvEZombie)return; // PvPvE shots are resolved by the existing server combat raycast.
+        if (IsPvPvEZombie) return; // PvPvE uses its authoritative combat raycast.
         AplicarDano(
             amount,
             hitPoint,
@@ -523,7 +523,7 @@ private void TakeDamageServerRpc(
         bool esDisparo = false
     )
     {
-        if (IsDead || amount<=0)
+        if (IsDead || amount <= 0 || PlayerInputGate.MatchLost)
             return;
         if(IsPvPvEZombie){var combat=DeadQuarantine.PvPvE.Networking.PvPvECombat.Active;if(!combat||!combat.IsPlaying||!combat.GetComponent<DeadQuarantine.PvPvE.Networking.PvPvETeamRoster>().Contains(shooterClientId))return;}
 

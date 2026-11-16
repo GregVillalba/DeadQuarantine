@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Unity.Netcode;
+using Unity.Services.Multiplayer;
 using UnityEngine;
 
 namespace DeadQuarantine.PvPvE.Networking
@@ -43,18 +44,18 @@ namespace DeadQuarantine.PvPvE.Networking
             cancellation?.Dispose();cancellation=new CancellationTokenSource();networkFailed=false;Error="";
             GetComponent<DeadQuarantine.PvPvE.UI.PvPvELobbyView>()?.BeginSearching();
             SetState(PvPvEConnectionState.Searching);
-            searchTask=SearchCoreAsync(cancellation.Token);_ = NotifyAfterAsync(searchTask);return searchTask;
+            searchTask=SearchCoreAsync(cancellation.Token, canRetry: true);_ = NotifyAfterAsync(searchTask);return searchTask;
         }
-        async Task SearchCoreAsync(CancellationToken token)
+        async Task SearchCoreAsync(CancellationToken token, bool canRetry)
         {
             try {
                 await directory.InitializeAsync();token.ThrowIfCancellationRequested();
                 scope=new PvPvENetworkScope(settings,PlayerIdentity.GetUsername());
-                scope.LocalDisconnected+=LostConnection;scope.TransportFailed+=LostConnection;
+                scope.LocalDisconnected+=TransportDisconnected;scope.TransportFailed+=TransportFailed;
                 // SDK quick-join has no cancellation-token overload. Keep this operation owned
                 // until its response arrives, then leave any late result before accepting another search.
                 session=await directory.FindOrCreateAsync(settings);
-                session.Closed+=LostConnection;token.ThrowIfCancellationRequested();
+                session.Closed+=SessionClosed;token.ThrowIfCancellationRequested();
                 SetState(PvPvEConnectionState.Connecting);
                 float end=Time.realtimeSinceStartup+settings.ConnectionSeconds;
                 RosterChanged();
@@ -64,9 +65,21 @@ namespace DeadQuarantine.PvPvE.Networking
                     if(Time.realtimeSinceStartup>end)throw new TimeoutException("La sala no respondió a tiempo. Intentá buscar nuevamente.");
                     await Task.Delay(50);
                 }
-                token.ThrowIfCancellationRequested();if(Roster.Closing.Value)throw new InvalidOperationException("La sala se está cerrando. Volvé a buscar una partida.");SetState(PvPvEConnectionState.Waiting);
+                token.ThrowIfCancellationRequested();
+                if(networkFailed)throw new InvalidOperationException("La conexión con la sala se interrumpió.");
+                if(Roster.Closing.Value)throw new InvalidOperationException("La sala se está cerrando. Volvé a buscar una partida.");SetState(PvPvEConnectionState.Waiting);
             }
             catch(OperationCanceledException){if(await TryCleanupAsync())SetState(PvPvEConnectionState.Idle);}
+            catch(Exception e) when(canRetry && !token.IsCancellationRequested &&
+                (e is TimeoutException || e is SessionException { Error: SessionError.NetworkManagerStartFailed }))
+            {
+                if (!await TryCleanupAsync()) return;
+                if (token.IsCancellationRequested) { SetState(PvPvEConnectionState.Idle); return; }
+                Debug.LogWarning("[PvPvE] Reintentando el inicio de la conexión: "+e.Message);
+                networkFailed=false;
+                SetState(PvPvEConnectionState.Searching);
+                await SearchCoreAsync(token, canRetry: false);
+            }
             catch(Exception e){
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.LogException(e);
@@ -95,9 +108,9 @@ namespace DeadQuarantine.PvPvE.Networking
         async Task<bool> TryCleanupAsync()
         {
             try {
-                if(scope!=null){scope.StopAccepting();scope.LocalDisconnected-=LostConnection;scope.TransportFailed-=LostConnection;}
+                if(scope!=null){scope.StopAccepting();scope.LocalDisconnected-=TransportDisconnected;scope.TransportFailed-=TransportFailed;}
                 if(session!=null) {
-                    session.Closed-=LostConnection;
+                    session.Closed-=SessionClosed;
                     if(session.IsHost && Roster && scope!=null && scope.Network && scope.Network.IsServer) {
                         await session.CloseAdmissionAsync();Roster.BeginClose();float closeDeadline=Time.realtimeSinceStartup+settings.ShutdownSeconds;
                         while(scope.Network && scope.Network.IsListening && (scope.Network.ConnectedClients.Count>1 || session.ParticipantCount>1) && Time.realtimeSinceStartup<closeDeadline)await Task.Delay(50);
@@ -114,9 +127,15 @@ namespace DeadQuarantine.PvPvE.Networking
             }
             catch(Exception e){if(closingSession?.IsFaulted==true)closingSession=null;Error="No se pudo cerrar la conexión. "+e.Message;SetState(PvPvEConnectionState.Failed);return false;}
         }
-        void LostConnection()
+        void TransportDisconnected() => LostConnection(Network ? Network.DisconnectReason : "Transporte desconectado");
+        void TransportFailed() => LostConnection("Falló el transporte de red");
+        void SessionClosed() => LostConnection("Unity Services cerró la sesión");
+        void LostConnection(string cause)
         {
+            if (networkFailed || State == PvPvEConnectionState.Leaving) return;
             networkFailed=true;
+            var flow=Roster?Roster.GetComponent<PvPvEPreparationFlow>():null;
+            Debug.LogWarning($"[PvPvE] Sala interrumpida en {State} / {(flow ? flow.Stage.Value.ToString() : "sin partida")}: {cause}");
             if(State==PvPvEConnectionState.Waiting)_=HandleDisconnectAsync();
         }
         async Task HandleDisconnectAsync(){bool completed=Roster&&Roster.GetComponent<PvPvECombat>()&&Roster.GetComponent<PvPvECombat>().ScoreLocked.Value;await CancelAndLeaveAsync();if(CanNavigateAway){Error=completed?"Partida finalizada. Estás en el lobby; podés volver a buscar.":"Se perdió la conexión con la sala. Podés volver a buscar.";GetComponent<DeadQuarantine.PvPvE.UI.PvPvELobbyView>()?.BeginSearching();}SetState(PvPvEConnectionState.Failed);}
@@ -126,7 +145,7 @@ namespace DeadQuarantine.PvPvE.Networking
             if(active && scope!=null && active.NetworkManager==scope.Network){Roster=active;Roster.Changed+=RosterUpdated;var flow=Roster.GetComponent<PvPvEPreparationFlow>();if(flow)flow.Changed+=Notify;}
             Notify();
         }
-        void RosterUpdated(){if(Roster && Roster.Closing.Value && Network && !Network.IsServer && State==PvPvEConnectionState.Waiting)LostConnection();Notify();}
+        void RosterUpdated(){if(Roster && Roster.Closing.Value && Network && !Network.IsServer && State==PvPvEConnectionState.Waiting)LostConnection("El anfitrión cerró la sala");Notify();}
         void DetachRoster(){if(Roster){Roster.Changed-=RosterUpdated;var flow=Roster.GetComponent<PvPvEPreparationFlow>();if(flow)flow.Changed-=Notify;}Roster=null;}
         async Task NotifyAfterAsync(Task task){await task;await Task.Yield();Notify();}
         void Notify()=>Changed?.Invoke();

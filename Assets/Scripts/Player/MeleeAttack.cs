@@ -154,7 +154,7 @@ public class MeleeAttack : MonoBehaviour
     public void OnMeleeHit()
     {
         var view=attackWeapon&&attackWeapon.AimCamera?attackWeapon.AimCamera:playerCamera;
-        if(!isAttacking||hitDelivered||!Salud||!Salud.IsOwner||!Salud.IsAlive||!view)return;
+        if(!isAttacking||hitDelivered||!Salud||!Salud.IsOwner||!Salud.IsAlive||!view||PlayerInputGate.ActionsBlocked)return;
         hitDelivered=true;
         var combat=DeadQuarantine.PvPvE.Networking.PvPvECombat.Active;
         if(combat){combat.MeleeServerRpc(Salud.NetworkObjectId,view.transform.position,view.transform.forward);return;}

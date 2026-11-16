@@ -332,7 +332,7 @@ public partial class HUDController : MonoBehaviour
         FollowFrameSlope(row, true);
         if (row.Find(labelName)?.GetComponent<TMP_Text>() is TMP_Text label)
         {
-            FitHudRect(label.rectTransform, Vector2.zero, Vector2.one, new Vector2(24, 0), new Vector2(-145, 0));
+            FitHudRect(label.rectTransform, Vector2.zero, Vector2.one, new Vector2(24, 0), new Vector2(-199, 0));
             label.alignment = TextAlignmentOptions.MidlineLeft;
             label.enableAutoSizing = true;
             label.fontSizeMin = 20;
@@ -342,11 +342,11 @@ public partial class HUDController : MonoBehaviour
             label.characterSpacing = .8f;
             label.margin = Vector4.zero;
         }
-        FitHudRect(value.rectTransform, Vector2.zero, Vector2.one, new Vector2(295, 0), new Vector2(-24, 0));
+        FitHudRect(value.rectTransform, Vector2.right, Vector2.one, new Vector2(-173, 0), new Vector2(-24, 0));
         value.alignment = TextAlignmentOptions.MidlineRight;
         value.fontStyle = FontStyles.Bold;
         value.enableAutoSizing = true;
-        value.fontSizeMin = 18;
+        value.fontSizeMin = 12;
         value.fontSizeMax = size;
         value.overflowMode = TextOverflowModes.Ellipsis;
         value.margin = Vector4.zero;
@@ -357,7 +357,7 @@ public partial class HUDController : MonoBehaviour
         divider.color = new Color(.64f, .88f, .72f, .38f);
         divider.raycastTarget = false;
         FitHudRect(divider.rectTransform, Vector2.right, Vector2.one,
-            new Vector2(-153, 11), new Vector2(-151, -11));
+            new Vector2(-188, 11), new Vector2(-186, -11));
     }
 
     private void Start()
@@ -459,9 +459,19 @@ public partial class HUDController : MonoBehaviour
 
     private void UpdateLivesUI()
     {
-        if(PvPvEPresentationActive)return;
         if (playerHealth == null)
             return;
+
+        string scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        bool singleplayer = scene is "MainSceneSinglePlayer" or "MainSceneSinglePlayer2" or "TutorialScene";
+        if (!singleplayer || PvPvEPresentationActive)
+        {
+            if (vidas1) vidas1.SetActive(false);
+            if (vidas0) vidas0.SetActive(false);
+            return;
+        }
+        AnchorLivesIcon(vidas1);
+        AnchorLivesIcon(vidas0);
 
         bool mostrarVidaLlena =
             playerHealth.Lives.Value > 0 &&
@@ -472,6 +482,19 @@ public partial class HUDController : MonoBehaviour
 
         if (vidas0 != null)
             vidas0.SetActive(!mostrarVidaLlena);
+    }
+
+    void AnchorLivesIcon(GameObject icon)
+    {
+        if (!icon || !playerLabelText || icon.transform is not RectTransform rect) return;
+        var label = playerLabelText.rectTransform;
+        if (rect.parent != label)
+        {
+            rect.SetParent(label, false);
+            rect.anchorMin = rect.anchorMax = new Vector2(0, .5f);
+        }
+        float textWidth = Mathf.Min(playerLabelText.preferredWidth, label.rect.width - 29);
+        rect.anchoredPosition = new Vector2(Mathf.Max(0, textWidth) + 17, 0);
     }
 
     public void SetWeapon(Weapon newWeapon, Sprite newIcon)

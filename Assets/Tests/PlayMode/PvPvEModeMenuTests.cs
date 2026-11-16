@@ -67,15 +67,15 @@ public class PvPvEModeMenuTests
         Assert.That(menu.ModeSelectionPanel.activeInHierarchy,Is.True);
         Assert.That(entry.gameObject.activeInHierarchy,Is.False);
         menu.ModeSelectionPanel.transform.Find("PvPvEButton").GetComponent<Button>().onClick.Invoke();yield return null;
-        Assert.That(menu.PvPvEPanel.activeInHierarchy,Is.True);
-        Assert.That(menu.ModeSelectionPanel.activeSelf,Is.False);
-        var search=menu.PvPvEPanel.transform.Find("SearchButton").GetComponent<Button>();
-        Assert.That(search.interactable,Is.True);
-        Assert.That(search.onClick.GetPersistentEventCount(),Is.EqualTo(1));
-        Assert.That(search.onClick.GetPersistentTarget(0),Is.InstanceOf<PvPvEConnectionPanel>());
-        Assert.That(EventSystem.current.currentSelectedGameObject,Is.EqualTo(menu.PvPvEPanel.transform.Find("BackButton").gameObject));
+        var lobby = menu.GetComponent<PvPvELobbyView>();
+        Assert.That(lobby.IsShowing, Is.True);
+        Assert.That(menu.ModeSelectionPanel.activeSelf, Is.False);
+        var search = lobby.LobbyCanvas.GetComponentsInChildren<Button>().Single(b => b.name == "RetrySearch");
+        Assert.That(search.interactable, Is.True);
+        Assert.That(lobby.LobbyCanvas.GetComponentsInChildren<TMPro.TMP_Text>()
+            .Any(label => label.text == "JUGADORES 1/1"), Is.True);
         Assert.That(NetworkManager.Singleton==null || !NetworkManager.Singleton.IsListening,Is.True,"Menu navigation must not create a network session");
-        menu.PvPvEPanel.transform.Find("BackButton").GetComponent<Button>().onClick.Invoke();yield return null;
+        lobby.Leave();yield return null;
         Assert.That(menu.ModeSelectionPanel.activeInHierarchy,Is.True);
         menu.ModeSelectionPanel.transform.Find("BackButton").GetComponent<Button>().onClick.Invoke();yield return null;
         Assert.That(entry.gameObject.activeInHierarchy,Is.True);
@@ -166,8 +166,14 @@ public class PvPvEModeMenuTests
     sealed class LocalSessions : DeadQuarantine.PvPvE.Networking.IPvPvESessions
     {
         readonly DeadQuarantine.PvPvE.Networking.PvPvEMatchmaking owner;
-        public LocalSessions(DeadQuarantine.PvPvE.Networking.PvPvEMatchmaking owner)=>this.owner=owner;
-        public System.Threading.Tasks.Task InitializeAsync()=>System.Threading.Tasks.Task.CompletedTask;
+        readonly System.Threading.Tasks.Task initialization;
+        public LocalSessions(DeadQuarantine.PvPvE.Networking.PvPvEMatchmaking owner,
+            System.Threading.Tasks.Task initialization = null)
+        {
+            this.owner=owner;
+            this.initialization=initialization ?? System.Threading.Tasks.Task.CompletedTask;
+        }
+        public System.Threading.Tasks.Task InitializeAsync()=>initialization;
         public System.Threading.Tasks.Task<DeadQuarantine.PvPvE.Networking.IPvPvESession> FindOrCreateAsync(DeadQuarantine.PvPvE.Networking.PvPvENetworkSettings settings)
         { Assert.That(owner.Network.StartHost(),Is.True);return System.Threading.Tasks.Task.FromResult<DeadQuarantine.PvPvE.Networking.IPvPvESession>(new LocalSession(owner.Network)); }
     }
@@ -180,19 +186,29 @@ public class PvPvEModeMenuTests
     [UnityTest] public IEnumerator SearchingInTheRealMenuAndLeavingRestoresCooperativeNetworkConfiguration()
     {
         var service=menu.GetComponent<DeadQuarantine.PvPvE.Networking.PvPvEMatchmaking>();
-        var config=Object.Instantiate(service.Settings);service.ConfigureForTest(config,new LocalSessions(service));
+        var config=Object.Instantiate(service.Settings);
+        var initialization=new System.Threading.Tasks.TaskCompletionSource<bool>();
+        service.ConfigureForTest(config,new LocalSessions(service,initialization.Task));
         var legacy=new GameObject("Existing cooperative network manager");legacy.AddComponent<Unity.Netcode.Transports.UTP.UnityTransport>();var network=legacy.AddComponent<NetworkManager>();var originalConfig=network.NetworkConfig;
-        entry.onClick.Invoke();menu.ModeSelectionPanel.transform.Find("PvPvEButton").GetComponent<Button>().onClick.Invoke();
+        var legacyObjects=Object.FindObjectsByType<NetworkObject>(FindObjectsInactive.Include).ToDictionary(o=>o.gameObject,o=>o.gameObject.activeSelf);
+        entry.onClick.Invoke();
         var canvasEnabled=Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include).ToDictionary(c=>c,c=>c.enabled);
         var originalUI=Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include).ToDictionary(c=>c.gameObject,c=>c.gameObject.activeSelf);
-        var legacyObjects=Object.FindObjectsByType<NetworkObject>(FindObjectsInactive.Include).ToDictionary(o=>o.gameObject,o=>o.gameObject.activeSelf);
-        var task=service.SearchAsync();float end=Time.realtimeSinceStartup+10;while(!task.IsCompleted){Assert.That(Time.realtimeSinceStartup,Is.LessThan(end));yield return null;}
+        menu.ModeSelectionPanel.transform.Find("PvPvEButton").GetComponent<Button>().onClick.Invoke();
+        var lobby=menu.GetComponent<PvPvELobbyView>();
+        var task=service.SearchAsync();
+        yield return new WaitForSecondsRealtime(.5f);
+        var localRow=lobby.LobbyCanvas.GetComponentsInChildren<TMPro.TMP_Text>()
+            .Where(text=>text.name=="PlayerName_0" && text.text.EndsWith("(VOS)"));
+        Assert.That(localRow.Count(),Is.EqualTo(1),"Search shows the local player before the roster arrives and while placeholders animate");
+        initialization.SetResult(true);
+        float end=Time.realtimeSinceStartup+10;while(!task.IsCompleted){Assert.That(Time.realtimeSinceStartup,Is.LessThan(end));yield return null;}
         Assert.That(service.State,Is.EqualTo(DeadQuarantine.PvPvE.Networking.PvPvEConnectionState.Waiting),service.Error);
         Assert.That(service.Roster.Members.Count,Is.EqualTo(1));Assert.That(service.Roster.CanStart,Is.False);
+        Assert.That(service.Roster.Members[0].LobbySlot,Is.Zero,"The first team member takes the first slot");
         Assert.That(network.SpawnManager.SpawnedObjects.Count,Is.EqualTo(1),"Only the PvPvE roster is spawned in the menu");
         foreach(var pair in legacyObjects)Assert.That(pair.Key.activeSelf,Is.False);
         Assert.That(network.NetworkConfig.PlayerPrefab,Is.Null,"Menu connection must not create a gameplay Player");
-        var lobby=menu.GetComponent<PvPvELobbyView>();
         Assert.That(lobby.IsShowing,Is.True);Assert.That(menu.PvPvEPanel.activeSelf,Is.False);
         var actors=lobby.Stage.GetComponents<LobbyCinematicPlayerDisplay>();
         Assert.That(actors.Length,Is.EqualTo(10));
@@ -202,14 +218,14 @@ public class PvPvEModeMenuTests
             selector.SelectClass(variant.type);selector.SelectGender(variant.gender);lobby.CharacterPopup.GetComponentInChildren<CharacterSelectScreen>(true).Confirm();
             Assert.That(lobby.CharacterPopup.activeSelf,Is.False);
             end=Time.realtimeSinceStartup+10;
-            while(!service.Roster.TryGetMember(network.LocalClientId,out var member) || member.CharacterIndex!=index || actors[0].BuiltCharacterIndex!=index || !actors[0].TryGetHeadWorldPosition(out _)){Assert.That(Time.realtimeSinceStartup,Is.LessThan(end),"Variant "+index);yield return null;}
+            while(!service.Roster.TryGetMember(network.LocalClientId,out var member) || member.CharacterIndex!=index || !lobby.LocalActor || lobby.LocalActor.BuiltCharacterIndex!=index || !lobby.LocalActor.TryGetHeadWorldPosition(out _)){Assert.That(Time.realtimeSinceStartup,Is.LessThan(end),"Variant "+index);yield return null;}
             Assert.That(actors.Count(a=>a.IsVisible),Is.EqualTo(1),"No disconnected placeholder actors");
         }
         CharacterSelection.SelectedIndex=saved;
         lobby.Leave();end=Time.realtimeSinceStartup+10;while(!service.CanNavigateAway){Assert.That(Time.realtimeSinceStartup,Is.LessThan(end));yield return null;}yield return null;
         foreach(var pair in legacyObjects)Assert.That(pair.Key.activeSelf,Is.EqualTo(pair.Value),"Original scene object state is restored");
-        foreach(var pair in canvasEnabled)if(pair.Key)Assert.That(pair.Key.enabled,Is.EqualTo(pair.Value),"Original canvas enable state is restored");
-        foreach(var pair in originalUI)if(pair.Key)Assert.That(pair.Key.activeSelf,Is.EqualTo(pair.Value),"Original menu canvas state is restored");
+        foreach(var pair in canvasEnabled)if(pair.Key)Assert.That(pair.Key.enabled,Is.EqualTo(pair.Value),$"Original canvas enable state is restored on {pair.Key.name}");
+        foreach(var pair in originalUI)if(pair.Key)Assert.That(pair.Key.activeSelf,Is.EqualTo(pair.Value),$"Original menu canvas state is restored on {pair.Key.name}");
         Assert.That(!lobby.IsShowing,Is.True);
         Assert.That(menu.ModeSelectionPanel.activeInHierarchy,Is.True);Assert.That(network.IsListening,Is.False);Assert.That(network.NetworkConfig,Is.SameAs(originalConfig));
         Assert.That(menu.ModeSelectionPanel.transform.Find("CooperativeButton").GetComponent<Button>().interactable,Is.True);

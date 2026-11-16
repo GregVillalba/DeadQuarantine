@@ -25,14 +25,18 @@ namespace DeadQuarantine.PvPvE.UI
         float cameraFov;
         readonly Dictionary<Camera,bool> cameras=new();
         readonly Dictionary<Canvas,bool> pausedCanvases=new();
+        readonly Dictionary<Canvas,(bool enabled, bool overrideSorting, int sortingOrder)> popupCanvases=new();
         readonly Dictionary<GraphicRaycaster,bool> pausedRaycasters=new();
         Canvas lobbyCanvas;
-        TMP_Text localName;
+        RectTransform soloCard;
+        TMP_Text soloName;
+        Image soloIcon;
         GameObject[] teamPanels;
         Transform uiRoot, originalUIParent, popupParent;
         int popupSibling;
         public Canvas LobbyCanvas=>lobbyCanvas;
         readonly List<PvPvEMember> members=new();
+        PvPvETeam provisionalTeam;
         readonly Image[,] rosterIcons=new Image[2,5];readonly TMP_Text[,] rosterNames=new TMP_Text[2,5];
         int pendingCharacter=-1, sentCharacter=-1;
         float sendAt,nextSearchingText;bool lobbyRequested;Button retry;
@@ -58,9 +62,7 @@ namespace DeadQuarantine.PvPvE.UI
             var title=panel.transform.Find("Title")?.GetComponent<TMP_Text>();if(title){title.fontSize=42;title.fontSizeMax=42;}
             var a=panel.transform.Find("AlphaPanel") as RectTransform;var b=panel.transform.Find("BravoPanel") as RectTransform;
             teamPanels=new[]{a?.gameObject,b?.gameObject};
-            localName=PvPvEUIFactory.Text(panel.transform,"LocalName","",0,0,300,40,null,25);
-            PvPvEUIFactory.Place(localName.rectTransform,new(.59f,.14f),new(.95f,.205f));
-            localName.alignment=TextAlignmentOptions.Center;
+            ConfigureSoloCard();
             if(a)PvPvEUIFactory.Place(a,new(.70f,.50f),new(.98f,.88f));if(b)PvPvEUIFactory.Place(b,new(.70f,.10f),new(.98f,.48f));
             foreach(var frame in new[]{a,b})if(frame){var bg=frame.GetComponent<Image>();if(!bg)bg=frame.gameObject.AddComponent<Image>();bg.color=PvPvEUIFactory.PanelColor;bg.raycastTarget=false;}
             var entry=panel.transform.Find("CreateClassButton") as RectTransform;if(entry)PvPvEUIFactory.Place(entry,new(.035f,.70f),new(.30f,.78f));
@@ -69,14 +71,54 @@ namespace DeadQuarantine.PvPvE.UI
              for(int slot=0;slot<5;slot++){float top=.84f-slot*.164f;var icon=new GameObject("CharacterIcon_"+slot,typeof(RectTransform),typeof(Image)).GetComponent<Image>();icon.transform.SetParent(frame,false);PvPvEUIFactory.Place(icon.rectTransform,new(.035f,top-.13f),new(.18f,top));icon.preserveAspect=true;icon.raycastTarget=false;rosterIcons[team,slot]=icon;
               var text=new GameObject("PlayerName_"+slot,typeof(RectTransform)).AddComponent<TextMeshProUGUI>();text.transform.SetParent(frame,false);PvPvEUIFactory.Place(text.rectTransform,new(.21f,top-.13f),new(.97f,top));text.font=PvPvEUIFactory.BodyFont;text.fontSize=20;text.enableAutoSizing=true;text.fontSizeMin=14;text.fontSizeMax=20;text.alignment=TextAlignmentOptions.MidlineLeft;text.raycastTarget=false;text.richText=false;rosterNames[team,slot]=text;}}
         }
+        void ConfigureSoloCard()
+        {
+            var source = gameObject.scene.GetRootGameObjects()
+                .SelectMany(root => root.GetComponentsInChildren<RectTransform>(true))
+                .FirstOrDefault(card => card.name == "PartyCard" && card.Find("Row_1/Text"));
+            if (!source) return;
+            soloCard = Instantiate(source, panel.transform, false);
+            soloCard.name = "SoloPartyCard";
+            soloCard.sizeDelta = new Vector2(source.sizeDelta.x, 106);
+            soloCard.Find("Header").GetComponent<TMP_Text>().text = "JUGADORES 1/1";
+            var first = soloCard.Find("Row_1");
+            first.gameObject.SetActive(true);
+            for (int i = 2; i <= 4; i++)
+                soloCard.Find("Row_" + i)?.gameObject.SetActive(false);
+            soloName = first.Find("Text").GetComponent<TMP_Text>();
+            soloName.richText = false;
+            soloIcon = first.Find("Icon").GetComponent<Image>();
+            foreach (var graphic in soloCard.GetComponentsInChildren<Graphic>(true))
+                graphic.enabled = true;
+        }
+
         void LateUpdate(){if(IsShowing){Cursor.lockState=CursorLockMode.None;Cursor.visible=true;}}
         void OnEnable(){matchmaking.Changed+=Refresh;CharacterSelection.Changed+=CharacterChanged;Refresh();}
-        void OnDisable(){matchmaking.Changed-=Refresh;CharacterSelection.Changed-=CharacterChanged;Hide();}
+        void OnDisable()
+        {
+            matchmaking.Changed -= Refresh;
+            CharacterSelection.Changed -= CharacterChanged;
+            HideAfterDisable();
+        }
+
+        async void HideAfterDisable()
+        {
+            // A parent may still be deactivating its children during OnDisable.
+            await System.Threading.Tasks.Task.Yield();
+            if (this && !isActiveAndEnabled) Hide();
+        }
+
+        void OnDestroy()
+        {
+            if (stage) Destroy(stage);
+            RestoreCameras();
+            RestoreUI(false);
+        }
         void CharacterChanged(int index){pendingCharacter=index;sendAt=Time.unscaledTime+.12f;if(IsShowing&&(!matchmaking.Network||!matchmaking.Network.IsConnectedClient))Refresh();}
         void Update()
         {
             if(!IsShowing)return;
-            if(Time.unscaledTime>=nextSearchingText){nextSearchingText=Time.unscaledTime+.35f;alpha.text=TeamText(PvPvETeam.Alpha);bravo.text=TeamText(PvPvETeam.Bravo);}
+            if (Time.unscaledTime >= nextSearchingText) RefreshTeamLabels();
             var classes=GetComponent<PvPvEClassEditor>();if(classes&&(classes.IsOpen||classes.ConsumedEscapeThisFrame))return;
             if(Keyboard.current!=null && Keyboard.current.escapeKey.wasPressedThisFrame){if(characterPopup.activeSelf)CloseCharacters();else Leave();}
             var roster=matchmaking.Roster;
@@ -98,7 +140,13 @@ namespace DeadQuarantine.PvPvE.UI
             // nested under the lobby leaves its authored zero-sized Canvas undriven.
             popupParent=characterPopup.transform.parent;popupSibling=characterPopup.transform.GetSiblingIndex();
             characterPopup.transform.SetParent(null,false);
-            foreach(var canvas in characterPopup.GetComponentsInChildren<Canvas>(true)){canvas.enabled=true;canvas.overrideSorting=true;canvas.sortingOrder=100;}
+            foreach(var canvas in characterPopup.GetComponentsInChildren<Canvas>(true))
+            {
+                popupCanvases[canvas]=(canvas.enabled,canvas.overrideSorting,canvas.sortingOrder);
+                canvas.enabled=true;
+                canvas.overrideSorting=true;
+                canvas.sortingOrder=100;
+            }
             foreach(var canvas in FindObjectsByType<Canvas>(FindObjectsInactive.Include)){
                 if(canvas.transform.IsChildOf(lobbyCanvas.transform)||canvas.transform.IsChildOf(characterPopup.transform))continue;
                 pausedCanvases[canvas]=canvas.enabled;canvas.enabled=false;
@@ -108,10 +156,37 @@ namespace DeadQuarantine.PvPvE.UI
                 pausedRaycasters[raycaster]=raycaster.enabled;raycaster.enabled=false;
             }
         }
-        void RestoreUI()
+        void RestoreUI(bool reparent = true)
         {
-            if(popupParent&&characterPopup){characterPopup.transform.SetParent(popupParent,false);characterPopup.transform.SetSiblingIndex(popupSibling);popupParent=null;}
-            if(lobbyCanvas){lobbyCanvas.gameObject.SetActive(false);if(uiRoot && originalUIParent)uiRoot.SetParent(originalUIParent,false);Destroy(lobbyCanvas.gameObject);lobbyCanvas=null;}
+            var previousPopupParent = popupParent;
+            popupParent = null;
+            if (previousPopupParent && characterPopup)
+            {
+                if (reparent)
+                {
+                    characterPopup.transform.SetParent(previousPopupParent, false);
+                    characterPopup.transform.SetSiblingIndex(popupSibling);
+                }
+                else Destroy(characterPopup);
+            }
+
+            foreach (var pair in popupCanvases)
+            {
+                if (!pair.Key) continue;
+                pair.Key.enabled=pair.Value.enabled;
+                pair.Key.overrideSorting=pair.Value.overrideSorting;
+                pair.Key.sortingOrder=pair.Value.sortingOrder;
+            }
+            popupCanvases.Clear();
+
+            var previousCanvas = lobbyCanvas;
+            lobbyCanvas = null;
+            if (previousCanvas)
+            {
+                if (reparent && uiRoot && originalUIParent)
+                    uiRoot.SetParent(originalUIParent, false);
+                Destroy(previousCanvas.gameObject);
+            }
             foreach(var pair in pausedCanvases)if(pair.Key)pair.Key.enabled=pair.Value;
             foreach(var pair in pausedRaycasters)if(pair.Key)pair.Key.enabled=pair.Value;
             pausedCanvases.Clear();pausedRaycasters.Clear();
@@ -137,10 +212,17 @@ namespace DeadQuarantine.PvPvE.UI
             if(characterPopup)characterPopup.SetActive(false);if(panel)panel.SetActive(false);
             if(stage){stage.SetActive(false);Destroy(stage);stage=null;}
             actors=null;members.Clear();pendingCharacter=sentCharacter=-1;
-            foreach(var pair in cameras)if(pair.Key)pair.Key.enabled=pair.Value;
-            cameras.Clear();
+            RestoreCameras();
             RestoreUI();
         }
+
+        void RestoreCameras()
+        {
+            foreach (var pair in cameras)
+                if (pair.Key) pair.Key.enabled = pair.Value;
+            cameras.Clear();
+        }
+
         void Refresh()
         {
             var flow=matchmaking.Roster?matchmaking.Roster.GetComponent<PvPvEPreparationFlow>():null;
@@ -161,25 +243,42 @@ namespace DeadQuarantine.PvPvE.UI
             bool searchingForPlayers = matchmaking.State is PvPvEConnectionState.Searching
                 or PvPvEConnectionState.Connecting or PvPvEConnectionState.Waiting;
             foreach (var teamPanel in teamPanels) if (teamPanel) teamPanel.SetActive(searchingForPlayers);
-            localName.gameObject.SetActive(!searchingForPlayers);
-            localName.text=PvPvEHello.CleanName(PlayerIdentity.GetUsername());
+            if (soloCard)
+            {
+                soloCard.gameObject.SetActive(!searchingForPlayers);
+                int index = CharacterSelection.SelectedIndex;
+                var catalog = matchmaking.Settings.Characters;
+                var variant = catalog.GetVariant(index);
+                soloName.text = PvPvEHello.CleanName(PlayerIdentity.GetUsername()) + " - " +
+                    catalog.GetCharacterNameForVariant(index).ToUpperInvariant();
+                soloIcon.sprite = variant == null ? null : catalog.GetIcon(variant.type, variant.gender);
+                soloIcon.enabled = soloIcon.sprite;
+            }
             members.Clear();
-            if (!roster || !roster.IsSpawned)
+            if (!searchingForPlayers || !roster || !roster.IsSpawned)
             {
                 status.text=matchmaking.State==PvPvEConnectionState.Failed?matchmaking.Error:
                     searchingForPlayers?"BUSCANDO SALA COMPATIBLE"+Dots():"LOBBY PvPvE · PREPARÁ TU CLASE";
                 for(int i=0;i<actors.Length;i++)
                 {
-                    actors[i].SetPlayer(i==0,CharacterSelection.SelectedIndex);
                     if(i==0)actors[i].SetPose(stage.transform.TransformPoint(new Vector3(1.6f,-1.26f,-65.6f)),180);
+                    actors[i].SetPlayer(i==0,CharacterSelection.SelectedIndex);
                 }
-                alpha.text=TeamText(PvPvETeam.Alpha);bravo.text=TeamText(PvPvETeam.Bravo);
+                stageCamera.transform.localPosition=cameraOrigin;
+                stageCamera.fieldOfView=cameraFov;
+                provisionalTeam=searchingForPlayers ? PvPvETeam.Alpha : PvPvETeam.None;
+                RefreshTeamLabels();
                 return;
             }
 
             foreach(var member in roster.Members)members.Add(member);
-            alpha.text=TeamText(PvPvETeam.Alpha);bravo.text=TeamText(PvPvETeam.Bravo);
-            status.text=$"SALA PvPvE  ·  {members.Count}/{matchmaking.Settings.Capacity} JUGADORES";
+            bool localPending = !matchmaking.Network || !matchmaking.Network.IsConnectedClient ||
+                !roster.Contains(matchmaking.Network.LocalClientId);
+            provisionalTeam = localPending ? PvPvETeamRules.Choose(roster.Count(PvPvETeam.Alpha),
+                roster.Count(PvPvETeam.Bravo), matchmaking.Settings.TeamCapacity) : PvPvETeam.None;
+            RefreshTeamLabels();
+            status.text=localPending ? "BUSCANDO SALA COMPATIBLE"+Dots() :
+                $"SALA PvPvE  ·  {members.Count}/{matchmaking.Settings.Capacity} JUGADORES";
             var activeSlots = new bool[actors.Length];
             foreach(var member in members)
             {
@@ -201,11 +300,44 @@ namespace DeadQuarantine.PvPvE.UI
         }
         static int ActorIndex(PvPvEMember member) => member.LobbySlot+(member.Team==PvPvETeam.Bravo?5:0);
         static string Dots()=>new string('.',1+(int)(Time.unscaledTime/.35f)%3);
-        string TeamText(PvPvETeam team)
+        void RefreshTeamLabels()
         {
-            int teamIndex=team==PvPvETeam.Alpha?0:1;var selected=members.Where(m=>m.Team==team).ToArray();
-            for(int i=0;i<5;i++){var icon=rosterIcons[teamIndex,i];var label=rosterNames[teamIndex,i];if(!icon||!label)continue;int index=System.Array.FindIndex(selected,m=>m.LobbySlot==i);bool occupied=index>=0;icon.gameObject.SetActive(occupied);if(occupied){var member=selected[index];var variant=matchmaking.Settings.Characters.GetVariant(member.CharacterIndex);icon.sprite=variant!=null?matchmaking.Settings.Characters.GetIcon(variant.type,variant.gender):null;icon.enabled=icon.sprite;bool local=!matchmaking.Network||!matchmaking.Network.IsConnectedClient||member.ClientId==matchmaking.Network.LocalClientId;label.text=member.Name.ToString()+(local?" (VOS)":"");label.color=local?Color.white:PvPvEUIFactory.Muted;}else{label.text="BUSCAR JUGADOR"+Dots();label.color=PvPvEUIFactory.Muted;}}
-            return (team==PvPvETeam.Alpha?"ALPHA":"BRAVO")+"  "+selected.Length+"/"+matchmaking.Settings.TeamCapacity;
+            nextSearchingText=Time.unscaledTime+.35f;
+            alpha.text=TeamText(PvPvETeam.Alpha, provisionalTeam == PvPvETeam.Alpha);
+            bravo.text=TeamText(PvPvETeam.Bravo, provisionalTeam == PvPvETeam.Bravo);
+        }
+        string TeamText(PvPvETeam team, bool showLocalWhileConnecting)
+        {
+            int teamIndex = team == PvPvETeam.Alpha ? 0 : 1;
+            var selected = members.Where(m => m.Team == team).OrderBy(m => m.LobbySlot).ToArray();
+            var catalog = matchmaking.Settings.Characters;
+            for (int i = 0; i < 5; i++)
+            {
+                var icon = rosterIcons[teamIndex, i];
+                var label = rosterNames[teamIndex, i];
+                if (!icon || !label) continue;
+
+                bool provisional = showLocalWhileConnecting && i == selected.Length;
+                if (i >= selected.Length && !provisional)
+                {
+                    icon.gameObject.SetActive(false);
+                    label.text = "BUSCAR JUGADOR" + Dots();
+                    label.color = PvPvEUIFactory.Muted;
+                    continue;
+                }
+
+                var member = provisional ? default : selected[i];
+                int index = provisional ? CharacterSelection.SelectedIndex : member.CharacterIndex;
+                string name = provisional ? PvPvEHello.CleanName(PlayerIdentity.GetUsername()) : member.Name.ToString();
+                bool local = provisional || (matchmaking.Network && matchmaking.Network.IsConnectedClient && member.ClientId == matchmaking.Network.LocalClientId);
+                var variant = catalog.GetVariant(index);
+                icon.sprite = variant != null ? catalog.GetIcon(variant.type, variant.gender) : null;
+                icon.gameObject.SetActive(icon.sprite != null);
+                label.text = name + " - " + catalog.GetCharacterNameForVariant(index).ToUpperInvariant() +
+                    (local ? " (VOS)" : "");
+                label.color = local ? Color.white : PvPvEUIFactory.Muted;
+            }
+            return $"{team.ToString().ToUpperInvariant()}  {selected.Length + (showLocalWhileConnecting ? 1 : 0)}/{matchmaking.Settings.TeamCapacity}";
         }
     }
 }

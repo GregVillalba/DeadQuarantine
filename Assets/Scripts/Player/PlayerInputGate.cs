@@ -12,6 +12,18 @@ public static class PlayerInputGate
     /// <summary>
     /// Pausa o tienda abierta.
     /// </summary>
+    public static bool MatchLost => RoundManager.Instance && RoundManager.Instance.GameLostNetwork.Value;
+
+    static bool LocalPlayerEliminated
+    {
+        get
+        {
+            var network = Unity.Netcode.NetworkManager.Singleton;
+            var player = network && network.IsClient ? network.LocalClient?.PlayerObject : null;
+            return player && player.TryGetComponent(out PlayerHealth health) && (health.IsSpectating || health.IsDead);
+        }
+    }
+
     public static bool MenuOpen =>
         DeadQuarantine.PvPvE.UI.PvPvEInitialClassView.BlocksLocalGameplay ||
         PauseController.LocalPlayerPaused ||
@@ -23,7 +35,8 @@ public static class PlayerInputGate
     /// También mientras se coloca una torreta o un barril: el clic izquierdo lo coloca y el derecho cancela.
     /// </summary>
     public static bool ActionsBlocked =>
-        MenuOpen ||
+        MenuOpen || MatchLost || LocalPlayerEliminated ||
+        DeadQuarantine.PvPvE.Networking.PvPvECombat.LocalBlocked ||
         ColocadorObjetos.ColocandoLocal;
 
     /// <summary>
@@ -33,5 +46,5 @@ public static class PlayerInputGate
     public static bool MouseBlocked =>
         DeadQuarantine.PvPvE.UI.PvPvEInitialClassView.BlocksLocalGameplay ||
         PauseController.MouseInputBlocked ||
-        NPCShopUI.MouseInputBlocked;
+        NPCShopUI.MouseInputBlocked || MatchLost || LocalPlayerEliminated;
 }

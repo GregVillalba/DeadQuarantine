@@ -71,6 +71,11 @@ public class GrenadeProjectile : NetworkBehaviour
             return;
 
         hasExploded = true;
+        if (PlayerInputGate.MatchLost)
+        {
+            DespawnGranada();
+            return;
+        }
         Detonar();
     }
 

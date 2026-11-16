@@ -58,7 +58,11 @@ public partial class WeaponAttachments
                     var mesh=renderer.GetComponent<MeshFilter>().sharedMesh;var materials=renderer.sharedMaterials;
                     for(int m=0;m<materials.Length;m++){
                         string name=materials[m]?materials[m].name.ToLowerInvariant():"";
-                        if(entry.magnifiedLens&&catalog.scopeLensMaterial&&(name=="render"||name.Contains("sight_render"))){materials[m]=BuildScopeLens(entry);}
+                        if(entry.magnifiedLens&&catalog.scopeLensMaterial&&(name=="render"||name.Contains("sight_render")))
+                        {
+                            materials[m]=BuildScopeLens(entry);
+                            if (mesh && m < mesh.subMeshCount) SetScopeAperture(renderer.transform, mesh.GetSubMesh(m).bounds);
+                        }
                         else if(name.StartsWith("sight")||name.Contains("sight_unlit")){
                             var sb=mesh.GetSubMesh(m).bounds;
                             optical=physical.InverseTransformPoint(renderer.transform.TransformPoint(sb.center));

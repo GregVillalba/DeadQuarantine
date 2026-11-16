@@ -76,16 +76,20 @@ public class UIEffects : MonoBehaviour
     private bool jumped;
     private float unitsScale = 1f;
 
-    internal static void EnsureHudSway(RectTransform panel, Transform playerContext)
+    internal static UIEffects EnsureHudSway(RectTransform panel, Transform playerContext)
     {
-        if (!panel || panel.GetComponent<UIEffects>()) return;
-        var effects = panel.gameObject.AddComponent<UIEffects>();
+        if (!panel) return null;
+        if (!panel.TryGetComponent(out UIEffects effects))
+        {
+            effects = panel.gameObject.AddComponent<UIEffects>();
+            effects.boundedHudSway = true;
+            effects.tiltAmount = .6f;
+            effects.maxTiltAmount = 1f;
+            effects.rotationAmount = 0f;
+        }
         effects.playerMovement = playerContext.GetComponentInParent<PlayerMovement>();
         effects.characterController = playerContext.GetComponentInParent<CharacterController>();
-        effects.boundedHudSway = true;
-        effects.tiltAmount = .6f;
-        effects.maxTiltAmount = 1f;
-        effects.rotationAmount = 0f;
+        return effects;
     }
 
     private void Awake()

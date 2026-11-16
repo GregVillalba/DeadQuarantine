@@ -1,11 +1,17 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine.InputSystem;
 using UnityEngine;
 using Unity.Netcode;
+using DeadQuarantine.PvPvE;
+using DeadQuarantine.PvPvE.Networking;
+using TMPro;
 
 public class PlayerSpectator : NetworkBehaviour
 {
     [Header("Referencias")]
     [SerializeField] private PlayerHealth playerHealth;
+    private readonly List<PlayerHealth> targets = new();
     [SerializeField] private Transform spectatorCamera;
 
     [Header("Objetos que se desactivan al espectar (solo dueño)")]
@@ -33,7 +39,12 @@ public class PlayerSpectator : NetworkBehaviour
     private float orbitYaw;
     private float orbitPitch = 15f;
 
-    private PlayerControls controls;
+    private GameObject spectatorHud;
+    private TextMeshProUGUI spectatorLabel;
+    private bool snapToTarget;
+
+    public bool IsViewingLivingPlayer => isSpectating && spectatorCamera &&
+        targetPlayer && targetPlayer.TryGetComponent(out PlayerHealth target) && target.IsAlive;
 
     [SerializeField] private float cameraFollowSpeed = 8f;
 
@@ -62,11 +73,24 @@ public class PlayerSpectator : NetworkBehaviour
     private Quaternion normalCameraLocalRotation;
 
     private Transform originalCameraParent;
+    private readonly List<Behaviour> suspendedCameraEffects = new(2);
+
+    private void SuspendCameraEffect<T>() where T : Behaviour
+    {
+        if (!spectatorCamera.TryGetComponent(out T effect) || !effect.enabled) return;
+        effect.enabled = false;
+        suspendedCameraEffects.Add(effect);
+    }
+
+    private void RestoreCameraEffects()
+    {
+        foreach (var effect in suspendedCameraEffects)
+            if (effect) effect.enabled = true;
+        suspendedCameraEffects.Clear();
+    }
 
     private void Awake()
     {
-        controls = new PlayerControls();
-        ConfiguracionesJuego.CargarRebinds(controls.asset);
         if (playerHealth == null)
         {
             playerHealth =
@@ -122,12 +146,11 @@ public class PlayerSpectator : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        if (DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(NetworkObject)) return;
         if (playerHealth == null)
             return;
 
-        playerHealth.OnStateChanged +=
-            OnStateChanged;
+        playerHealth.OnStateChanged += OnStateChanged;
+        if (DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(NetworkObject)) return;
 
         if (spectatorCamera != null)
         {
@@ -170,6 +193,16 @@ public class PlayerSpectator : NetworkBehaviour
             StopCoroutine(restoreCoroutine);
             restoreCoroutine = null;
         }
+        if (spectatorCamera && spectatorCamera.parent == null)
+        {
+            if (originalCameraParent && originalCameraParent.gameObject.activeInHierarchy)
+                spectatorCamera.SetParent(originalCameraParent, false);
+            else Destroy(spectatorCamera.gameObject);
+        }
+        isSpectating = false;
+        targetPlayer = null;
+        RestoreCameraEffects();
+        if (spectatorHud) Destroy(spectatorHud);
     }
 
     private void OnStateChanged(
@@ -177,7 +210,9 @@ public class PlayerSpectator : NetworkBehaviour
         PlayerHealth.PlayerState newState
     )
     {
-        ApplyBodyVisibility(newState);
+        if (DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(NetworkObject)) return;
+        if (!PvPvECombat.Active || newState != PlayerHealth.PlayerState.Dead)
+            ApplyBodyVisibility(newState);
 
         if (!IsOwner)
             return;
@@ -229,8 +264,10 @@ public class PlayerSpectator : NetworkBehaviour
     )
     {
         if (
-            newState ==
-            PlayerHealth.PlayerState.Spectating
+            newState == PlayerHealth.PlayerState.Spectating ||
+            (newState == PlayerHealth.PlayerState.Dead &&
+             DeadQuarantine.PvPvE.Networking.PvPvECombat.Active &&
+             DeadQuarantine.PvPvE.Networking.PvPvECombat.Active.IsPlaying)
         )
         {
             StartSpectating();
@@ -245,8 +282,8 @@ public class PlayerSpectator : NetworkBehaviour
         else if (
             newState ==
                 PlayerHealth.PlayerState.Alive &&
-            previousState ==
-                PlayerHealth.PlayerState.Spectating
+            (previousState == PlayerHealth.PlayerState.Spectating ||
+             previousState == PlayerHealth.PlayerState.Dead)
         )
         {
             StartRestoringFromRespawn();
@@ -304,6 +341,9 @@ public class PlayerSpectator : NetworkBehaviour
         // Sacamos la cámara de la jerarquía del player.
         if (spectatorCamera != null)
         {
+            // CameraBobbing writes local Y every frame. Once detached, that is world height.
+            SuspendCameraEffect<CameraBobbing>();
+            SuspendCameraEffect<CameraRecoil>();
             spectatorCamera.SetParent(
                 null,
                 true
@@ -496,6 +536,8 @@ public class PlayerSpectator : NetworkBehaviour
                 normalCameraLocalRotation;
         }
 
+        RestoreCameraEffects();
+
         // -----------------------------------------------------
         // CHARACTER CONTROLLER
         // -----------------------------------------------------
@@ -559,93 +601,31 @@ public class PlayerSpectator : NetworkBehaviour
     // BUSCAR JUGADOR VIVO
     // =========================================================
 
-    private void FindTargetPlayer()
+    private void FindTargetPlayer(int direction = 0)
     {
-        if (NetworkManager.Singleton == null)
+        targets.Clear();
+        if (NetworkManager && NetworkManager.SpawnManager != null)
+            foreach (var obj in NetworkManager.SpawnManager.SpawnedObjectsList)
+                if (obj && obj != NetworkObject && obj.IsPlayerObject &&
+                    obj.TryGetComponent(out PlayerHealth candidate) && candidate.IsAlive)
+                    targets.Add(candidate);
+
+        if (targets.Count == 0)
+        {
+            targetPlayer = null;
             return;
-
-        float closestDistance =
-            Mathf.Infinity;
-
-        Transform closestPlayer = null;
-
-        foreach (
-            NetworkClient client
-            in NetworkManager.Singleton
-                .ConnectedClientsList
-        )
-        {
-            if (client.PlayerObject == null)
-                continue;
-
-            if (
-                client.PlayerObject ==
-                NetworkObject
-            )
-            {
-                continue;
-            }
-
-            PlayerHealth otherHealth =
-                client.PlayerObject
-                    .GetComponent<PlayerHealth>();
-
-            if (otherHealth == null)
-                continue;
-
-            if (!otherHealth.IsAlive)
-                continue;
-
-            Transform otherPlayer =
-                client.PlayerObject.transform;
-
-            float distance =
-                Vector3.Distance(
-                    transform.position,
-                    otherPlayer.position
-                );
-
-            if (
-                distance <
-                closestDistance
-            )
-            {
-                closestDistance =
-                    distance;
-
-                closestPlayer =
-                    otherPlayer;
-            }
         }
 
-        bool cambioObjetivo = targetPlayer != closestPlayer;
-        targetPlayer = closestPlayer;
-
-        if (targetPlayer != null && cambioObjetivo)
-        {
-            orbitYaw = targetPlayer.eulerAngles.y;
-            orbitPitch = 15f;
-            if (spectatorCamera != null)
-            {
-                Vector3 pivote = targetPlayer.position + Vector3.up * orbitHeight;
-                Vector3 posicion = pivote +
-                    Quaternion.Euler(orbitPitch, orbitYaw, 0f) * Vector3.back * orbitDistance;
-                spectatorCamera.SetPositionAndRotation(
-                    posicion, Quaternion.LookRotation(pivote - posicion));
-            }
-            Debug.Log(
-                "[PlayerSpectator] " +
-                "Espectando a: " +
-                targetPlayer.name
-            );
-        }
-        else if (cambioObjetivo)
-        {
-            Debug.LogWarning(
-                "[PlayerSpectator] " +
-                "No hay jugadores vivos para espectar."
-            );
-        }
+        targets.Sort((a,b) => a.OwnerClientId.CompareTo(b.OwnerClientId));
+        int current = targets.FindIndex(player => player.transform == targetPlayer);
+        int index = current < 0 ? (direction < 0 ? targets.Count - 1 : 0) :
+            (current + direction + targets.Count) % targets.Count;
+        var next = targets[index].transform;
+        if (next == targetPlayer) return;
+        targetPlayer = next;
+        snapToTarget = true;
+        orbitYaw = next.eulerAngles.y;
+        orbitPitch = 15f;
     }
 
     // =========================================================
@@ -654,38 +634,53 @@ public class PlayerSpectator : NetworkBehaviour
 
     private void Update()
     {
-        if (!IsOwner)
-            return;
-
-        if (!isSpectating)
-            return;
-
-        // Mientras el menú de pausa está abierto no actualizamos el
-        // espectador ni consumimos input de cámara. Esto evita que el
-        // mouse cambie la órbita mientras Time.timeScale está en 0
-        // (Singleplayer) y evita inconsistencias al pausar/reanudar
-        // (Multiplayer).
-        if (pauseController != null && pauseController.EstaPausado)
-            return;
-
-        if (targetPlayer == null)
+        if (!IsSpawned || !IsOwner) return;
+        bool show = isSpectating && !PlayerInputGate.MatchLost &&
+            !PauseController.LocalPlayerPaused && !(PvPvECombat.Active && PvPvECombat.Active.ScoreLocked.Value);
+        if (!show)
         {
-            FindTargetPlayer();
+            if (spectatorHud) spectatorHud.SetActive(false);
             return;
         }
 
-        PlayerHealth targetHealth =
-            targetPlayer.GetComponent<PlayerHealth>();
-
-        if (
-            targetHealth == null ||
-            !targetHealth.IsAlive
-        )
+        var mouse = Mouse.current;
+        int direction = mouse != null && mouse.leftButton.wasPressedThisFrame ? -1 :
+                        mouse != null && mouse.rightButton.wasPressedThisFrame ? 1 : 0;
+        if (!IsViewingLivingPlayer || direction != 0) FindTargetPlayer(direction);
+        if (PvPvECombat.Active && spectatorCamera)
         {
-            targetPlayer = null;
-
-            FindTargetPlayer();
+            bool hasTarget = IsViewingLivingPlayer;
+            if (spectatorCamera.TryGetComponent(out Camera camera)) camera.enabled = hasTarget;
+            if (spectatorCamera.TryGetComponent(out AudioListener listener)) listener.enabled = hasTarget;
         }
+        if (IsViewingLivingPlayer && Application.isFocused)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+        UpdateSpectatorHud();
+    }
+
+    private void UpdateSpectatorHud()
+    {
+        if (!spectatorHud)
+        {
+            var canvas = PvPvEUIFactory.Canvas(gameObject, "HUD Espectador", 510);
+            spectatorHud = canvas.gameObject;
+            var panel = PvPvEUIFactory.Panel(canvas.transform, "Controles", 0, 0, 650, 64, .85f);
+            panel.anchorMin = panel.anchorMax = new Vector2(.5f, 0);
+            panel.pivot = new Vector2(.5f, 0);
+            panel.anchoredPosition = new Vector2(0, 62);
+            spectatorLabel = PvPvEUIFactory.Text(panel, "Objetivo", "", 12, 4, 626, 27, null, 19);
+            spectatorLabel.alignment = TextAlignmentOptions.Center;
+            var hint = PvPvEUIFactory.Text(panel, "Navegación",
+                "CLIC IZQUIERDO  ANTERIOR    /    CLIC DERECHO  SIGUIENTE    /    MOUSE  GIRAR",
+                12, 33, 626, 25, null, 14);
+            hint.alignment = TextAlignmentOptions.Center;
+        }
+        spectatorHud.SetActive(true);
+        string name = targetPlayer ? PlayerNameplate.GetNombreCliente(targetPlayer.GetComponent<PlayerHealth>().OwnerClientId) : null;
+        spectatorLabel.text = targetPlayer ? "ESPECTANDO · "+name : "NO HAY JUGADORES VIVOS";
     }
 
     // =========================================================
@@ -694,7 +689,8 @@ public class PlayerSpectator : NetworkBehaviour
 
     private void LateUpdate()
     {
-        if (!IsOwner)
+        if (!IsOwner || PlayerInputGate.MatchLost ||
+            (PvPvECombat.Active && PvPvECombat.Active.ScoreLocked.Value))
             return;
 
         // No mover ni rotar la cámara mientras está pausado.
@@ -742,7 +738,7 @@ public class PlayerSpectator : NetworkBehaviour
             return;
 
         // Input de mouse para orbitar alrededor del jugador espectado.
-        Vector2 lookInput = controls.Player.Look.ReadValue<Vector2>();
+        Vector2 lookInput = Mouse.current != null ? Mouse.current.delta.ReadValue() : Vector2.zero;
 
         orbitYaw += lookInput.x * orbitSensitivity;
         orbitPitch -= lookInput.y * orbitSensitivity;
@@ -777,27 +773,15 @@ public class PlayerSpectator : NetworkBehaviour
 
         Vector3 finalPosition = pivot + desiredDirection * finalDistance;
 
-        spectatorCamera.position = Vector3.Lerp(
-            spectatorCamera.position,
-            finalPosition,
-            cameraFollowSpeed * Time.deltaTime
-        );
-
-        spectatorCamera.rotation = Quaternion.Lerp(
-            spectatorCamera.rotation,
-            Quaternion.LookRotation(pivot - finalPosition),
-            cameraFollowSpeed * Time.deltaTime
-        );
-    }
-
-    private void OnEnable()
-    {
-        controls.Player.Enable();
+        float blend = snapToTarget ? 1f : 1f - Mathf.Exp(-cameraFollowSpeed * Time.unscaledDeltaTime);
+        snapToTarget = false;
+        spectatorCamera.position = Vector3.Lerp(spectatorCamera.position, finalPosition, blend);
+        spectatorCamera.rotation = Quaternion.LookRotation(pivot - spectatorCamera.position);
     }
 
     private void OnDisable()
     {
-        controls.Player.Disable();
+        if (spectatorHud) spectatorHud.SetActive(false);
     }
 
 }

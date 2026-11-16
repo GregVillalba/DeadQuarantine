@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -70,9 +69,9 @@ namespace DeadQuarantine.PvPvE.Networking
             int used = 0;
             foreach (var member in Members)
                 if (member.Team == team) used |= 1 << member.LobbySlot;
-            var free = Enumerable.Range(0, settings.TeamCapacity)
-                .Where(slot => (used & (1 << slot)) == 0).ToArray();
-            return free[UnityEngine.Random.Range(0, free.Length)];
+            int slot = 0;
+            while ((used & (1 << slot)) != 0) slot++;
+            return slot;
         }
 
         void Remove(ulong client)
@@ -82,9 +81,28 @@ namespace DeadQuarantine.PvPvE.Networking
             if(!RebalanceWhileWaiting)return;
             RebalanceLobbyServer();
         }
+        void CompactLobbySlots(PvPvETeam team)
+        {
+            int next = 0;
+            for (int slot = 0; slot < settings.TeamCapacity; slot++)
+                for (int i = 0; i < Members.Count; i++)
+                {
+                    var member = Members[i];
+                    if (member.Team != team || member.LobbySlot != slot) continue;
+                    if (member.LobbySlot != next)
+                    {
+                        member.LobbySlot = next;
+                        Members[i] = member;
+                    }
+                    next++;
+                    break;
+                }
+        }
         public void RebalanceLobbyServer(){
             if(!IsServer||!RebalanceWhileWaiting)return;
             while(Math.Abs(Count(PvPvETeam.Alpha)-Count(PvPvETeam.Bravo))>1){var from=Count(PvPvETeam.Alpha)>Count(PvPvETeam.Bravo)?PvPvETeam.Alpha:PvPvETeam.Bravo;for(int i=Members.Count-1;i>=0;i--)if(Members[i].Team==from){var member=Members[i];member.Team=from==PvPvETeam.Alpha?PvPvETeam.Bravo:PvPvETeam.Alpha;member.LobbySlot=PickLobbySlot(member.Team);Members[i]=member;break;}}
+            CompactLobbySlots(PvPvETeam.Alpha);
+            CompactLobbySlots(PvPvETeam.Bravo);
         }
         public override void OnNetworkDespawn()
         {

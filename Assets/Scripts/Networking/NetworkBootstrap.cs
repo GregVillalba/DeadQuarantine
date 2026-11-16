@@ -763,6 +763,9 @@ private void OnClienteSincronizado(ulong clientId)
 
     private void AlIniciarCliente()
     {
+        if (DeadQuarantine.PvPvE.Networking.PvPvEMatchmaking.Owns(NetworkManager.Singleton))
+            return;
+
         RegistrarEventosDeCarga();
         if (isIntentionalLeave)
         {
@@ -888,7 +891,7 @@ private void OnClienteSincronizado(ulong clientId)
 
         returningToMenu = true;
         NotifyIntentionalLeave();
-        GameStartCurtain.MostrarSalidaAlMenu(aviso);
+        if (!salidaVoluntaria) GameStartCurtain.MostrarSalidaAlMenu(aviso);
         Task tiempoDeLectura = conservarAviso ? Task.Delay(2500) : Task.CompletedTask;
         Time.timeScale = 1f;
         AudioListener.pause = false;
@@ -900,7 +903,7 @@ private void OnClienteSincronizado(ulong clientId)
             red.OnServerStopped -= OnServidorDetenido;
             if (red.IsListening && !red.ShutdownInProgress)
             {
-                if (salidaVoluntaria && red.IsServer)
+                if (salidaVoluntaria && red.IsServer && red.CustomMessagingManager != null)
                 {
                     using var mensaje = new FastBufferWriter(1, Allocator.Temp);
                     mensaje.WriteByteSafe(0);
@@ -909,7 +912,7 @@ private void OnClienteSincronizado(ulong clientId)
                             red.CustomMessagingManager.SendNamedMessage(
                                 CierreDelHostMensaje, clientId, mensaje);
                 }
-                else if (salidaVoluntaria && red.IsConnectedClient)
+                else if (salidaVoluntaria && red.IsConnectedClient && red.CustomMessagingManager != null)
                 {
                     using var mensaje = new FastBufferWriter(1, Allocator.Temp);
                     mensaje.WriteByteSafe(0);

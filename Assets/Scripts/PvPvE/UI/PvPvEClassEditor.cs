@@ -69,7 +69,21 @@ namespace DeadQuarantine.PvPvE.UI
   }
   public bool ChooseUtility(bool healing,string id){var c=Current;if(healing)c.healing=id;else c.grenade=id;return Commit(c);}
   public bool ChoosePerk(int slot,string id){if(slot<0||slot>3)return false;var c=Current;PvPvELoadoutCatalog.SetPerk(c,slot,id);return Commit(c);}
-  public bool ChooseWildcard(int slot,string id){if(slot<0||slot>1)return false;var c=Current;if(slot==0)c.wildcard1=id;else c.wildcard2=id;return Commit(c);}
+  PvPvEClassDefinition WildcardCandidate(int slot, string id)
+  {
+   var c = Current;
+   var before = catalog.wildcards.Find(slot == 0 ? c.wildcard1 : c.wildcard2);
+   var after = catalog.wildcards.Find(id);
+   if (slot == 0) c.wildcard1 = id;
+   else c.wildcard2 = id;
+   if (before != null && !catalog.HasWildcard(c, before.kind))
+    catalog.RemoveWildcardDependencies(c, before.kind);
+   if (after?.kind == PvPvEWildcard.Overkill)
+    catalog.NormalizeSecondary(c);
+   return c;
+  }
+  public bool ChooseWildcard(int slot,string id) =>
+   slot >= 0 && slot <= 1 && Commit(WildcardCandidate(slot, id));
   bool CanChoose(PvPvEClassDefinition value)=>catalog.ValidateEquipment(value,out _)&&(catalog.Pick10Cost(value)<=PvPvELoadoutCatalog.Pick10Limit||(PointsUsed>PvPvELoadoutCatalog.Pick10Limit&&catalog.Pick10Cost(value)<=PointsUsed));
   bool Commit(PvPvEClassDefinition value){
    if(!catalog.ValidateEquipment(value,out var error))return Fail(error);
@@ -83,7 +97,7 @@ namespace DeadQuarantine.PvPvE.UI
   bool Fail(string error){status.text=error;status.color=new Color(1,.55f,.4f);return false;}
   void Refresh(){
    var c=Current;int points=catalog.Pick10Cost(c);
-   pick10Counter.text=$"PICK 10   {points}/{PvPvELoadoutCatalog.Pick10Limit}";pick10Counter.color=points>10?new Color(1,.55f,.4f):points==10?new Color(1,.8f,.35f):accent;
+   pick10Counter.text=$"PICK 10   {points}/{PvPvELoadoutCatalog.Pick10Limit}";pick10Counter.color=points>10?new Color(1,.55f,.4f):accent;
    for(int i=0;i<pick10Pips.Length;i++)pick10Pips[i].color=i<points?pick10Counter.color:tile;
    nameInput.SetTextWithoutNotify(c.name);heading.text="CREAR UNA CLASE  /  "+(selected+1).ToString("00");
    for(int i=0;i<5;i++){var label=classButtons[i].GetComponentInChildren<TMP_Text>();label.text="Clase personalizada "+(i+1);classButtons[i].targetGraphic.color=i==selected?new Color(.29f,.21f,.10f):tile;}
@@ -117,9 +131,9 @@ namespace DeadQuarantine.PvPvE.UI
   }
   void Wildcards(int slot){
    OpenPicker("WILDCARD "+(slot+1)+"  /  MÁXIMO DOS DISTINTAS");options.GetComponent<GridLayoutGroup>().cellSize=new Vector2(220,220);
-   var empty=Current;if(slot==0)empty.wildcard1="";else empty.wildcard2="";Option("wildcard_none","NINGUNA",null,()=>ChooseWildcard(slot,""),empty);
+   Option("wildcard_none","NINGUNA",null,()=>ChooseWildcard(slot,""),WildcardCandidate(slot,""));
    var c=Current;var other=catalog.wildcards.Find(slot==0?c.wildcard2:c.wildcard1);
-   foreach(var entry in catalog.wildcards.entries){var capture=entry;var candidate=Current;if(slot==0)candidate.wildcard1=entry.id;else candidate.wildcard2=entry.id;Option(entry.id,entry.name+"\n"+entry.description,entry.icon,()=>ChooseWildcard(slot,capture.id),candidate);
+   foreach(var entry in catalog.wildcards.entries){var capture=entry;var candidate=WildcardCandidate(slot,entry.id);Option(entry.id,entry.name+"\n"+entry.description,entry.icon,()=>ChooseWildcard(slot,capture.id),candidate);
     var b=options.GetChild(options.childCount-1).GetComponent<Button>();b.interactable&=other==null||other.kind!=entry.kind;
     var label=b.transform.Find("Name").GetComponent<TMP_Text>();label.fontSize=14;label.rectTransform.anchorMax=new Vector2(.96f,.58f);((RectTransform)b.transform.Find("Icon")).anchorMin=new Vector2(.06f,.6f);
    }

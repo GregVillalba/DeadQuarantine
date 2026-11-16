@@ -101,6 +101,8 @@ public class PauseController : NetworkBehaviour
     private PlayerHealth.PlayerState stateAtPause;
 
     private bool finDeRondaActivo;
+    private bool hudOcultoPorResultadoPvPvE;
+    private bool hudVisibleAntesDelResultado;
     private Coroutine ocultarPanelRondaCoroutine;
     private Coroutine ocultarPanelFaseComprasCoroutine;
     private Coroutine ocultarPanelCompaneroCoroutine;
@@ -160,6 +162,11 @@ public class PauseController : NetworkBehaviour
 
         ActualizarBotonReiniciar();
         RefreshPausePresentation();
+        if (PlayerInputGate.MatchLost)
+        {
+            MostrarDerrota();
+            return;
+        }
 
         if (EsSinglePlayer())
             return;
@@ -622,7 +629,21 @@ public class PauseController : NetworkBehaviour
 
     public void MostrarHUD()
     {
-        if (hud != null) hud.SetActive(true);
+        if (hud != null && !finDeRondaActivo && !hudOcultoPorResultadoPvPvE && !PlayerInputGate.MatchLost)
+            hud.SetActive(true);
+    }
+
+    internal void OcultarHudPorDerrotaPvPvE(bool ocultar)
+    {
+        if (!IsSpawned || !IsOwner || !hud || hudOcultoPorResultadoPvPvE == ocultar) return;
+        hudOcultoPorResultadoPvPvE = ocultar;
+        if (ocultar)
+        {
+            hudVisibleAntesDelResultado = hud.activeSelf;
+            hud.SetActive(false);
+        }
+        else if (hudVisibleAntesDelResultado && !finDeRondaActivo && !PlayerInputGate.MatchLost)
+            hud.SetActive(true);
     }
 
     private void ConectarBotonVolverAlMenuDerrota()

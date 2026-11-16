@@ -5,6 +5,7 @@ using DeadQuarantine.PvPvE.Networking;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Unity.Netcode;
 using UnityEngine.UI;
 using static DeadQuarantine.PvPvE.PvPvEUIFactory;
 namespace DeadQuarantine.PvPvE {
@@ -17,6 +18,9 @@ namespace DeadQuarantine.PvPvE {
   readonly TextMeshProUGUI[] teamTitles=new TextMeshProUGUI[2];
   readonly TextMeshProUGUI[,,] scoreCells=new TextMeshProUGUI[2,5,5];readonly Image[,] scoreRows=new Image[2,5];
   ImageWeapon[] feedWeapons;Image[] headshots;
+  PauseController localResultHud;
+  UIEffects headerSway;
+  NetworkObject headerOwner;
   TextMeshProUGUI[,] feedCells;PlayerControls controls;InputAction scoreboardAction;bool ownsAction,headerSkinned;float refreshAt;
   public GameObject CanvasRoot=>canvas?canvas.gameObject:null;
   public bool ScoreboardVisible=>scoreboard&&scoreboard.gameObject.activeSelf;
@@ -24,9 +28,7 @@ namespace DeadQuarantine.PvPvE {
    ? $"ALPHA {alphaScore.text}  —  {bravoScore.text} BRAVO\n" +
       (matchClock.text == "OVERTIME" ? "OVERTIME · MUERTE SÚBITA" : matchObjective.text+"  ·  "+matchClock.text)
    : "";public string LocalSummary=>localStats?localStats.text:"";
-  private const int FeedTop=28, FeedPitch=27;
-  internal float KillFeedBottom => VisibleFeedCount>0 ? FeedTop+VisibleFeedCount*FeedPitch+18 : 0;
-  internal float HudScale => canvas ? canvas.scaleFactor : 1f;
+  private const int FeedTop=28, FeedPitch=34, FeedWidth=430;
   public int VisibleFeedCount{get;private set;}
   public void Initialize(PvPvECombat source){
    Active=this;combat=source;roster=source.GetComponent<PvPvETeamRoster>();flow=source.GetComponent<PvPvEPreparationFlow>();
@@ -51,25 +53,30 @@ namespace DeadQuarantine.PvPvE {
    Line(header,30,34,98,new Color(.46f,.89f,.64f,.45f));
    Line(header,304,34,98,new Color(.46f,.89f,.64f,.45f));
 
-   feedRoot=Rect(parent,"KillFeed",0,0,348,0);
-   feedRoot.anchorMin=feedRoot.anchorMax=new(1,1);
-   feedRoot.pivot=new(1,1);
+   feedRoot=Rect(parent,"KillFeed",0,0,FeedWidth,0);
+   feedRoot.anchorMin=feedRoot.anchorMax=feedRoot.pivot=Vector2.one;
    feedRoot.anchoredPosition=new(-48,-FeedTop);
    feedCells=new TextMeshProUGUI[Mathf.Clamp(combat.Settings.KillFeedRows,1,10),3];
    feedWeapons=new ImageWeapon[feedCells.GetLength(0)];
    headshots=new Image[feedWeapons.Length];
    for(int row=0;row<feedCells.GetLength(0);row++)
    {
-    var line=Panel(feedRoot,"Death "+row,0,row*FeedPitch,348,24,.62f);
-    var killer=feedCells[row,0]=Text(line,"Killer","",10,1,112,22,null,17);
-    var cause=feedCells[row,1]=Text(line,"Cause","",128,1,78,22,null,14);
-    var victim=feedCells[row,2]=Text(line,"Victim","",224,1,114,22,null,17);
+    var line=Panel(feedRoot,"Death "+row,0,row*FeedPitch,FeedWidth,32,.62f);
+    var killer=feedCells[row,0]=Text(line,"Killer","",10,0,148,32,null,17);
+    var cause=feedCells[row,1]=Text(line,"Cause","",164,0,102,32,null,14);
+    var victim=feedCells[row,2]=Text(line,"Victim","",290,0,130,32,null,17);
     killer.alignment=TextAlignmentOptions.MidlineRight;
     cause.alignment=TextAlignmentOptions.Center;
     victim.alignment=TextAlignmentOptions.MidlineLeft;
-    foreach(var cell in new[]{killer,cause,victim}) cell.textWrappingMode=TextWrappingModes.NoWrap;
-    feedWeapons[row]=Rect(line,"WeaponIcon",132,2,70,20).gameObject.AddComponent<ImageWeapon>();
-    var image=Rect(line,"Headshot",207,4,16,16).gameObject.AddComponent<Image>();
+    foreach(var cell in new[]{killer,cause,victim})
+    {
+     cell.textWrappingMode=TextWrappingModes.NoWrap;
+     cell.enableAutoSizing=true;
+     cell.fontSizeMin=11;
+     cell.fontSizeMax=cell.fontSize;
+    }
+    feedWeapons[row]=Rect(line,"WeaponIcon",176,3,78,26).gameObject.AddComponent<ImageWeapon>();
+    var image=Rect(line,"Headshot",268,8,16,16).gameObject.AddComponent<Image>();
     image.sprite=Resources.Load<Sprite>("PvPvE/Headshot");
     image.preserveAspect=true;
     image.raycastTarget=false;
@@ -101,28 +108,48 @@ namespace DeadQuarantine.PvPvE {
   public string FeedLine(int row)=>string.Join(" ",Enumerable.Range(0,3).Select(c=>feedCells[row,c].text));
   void Update(){
    if(!canvas||!combat||!combat.IsSpawned||!combat.NetworkManager)return;
+   UpdateResultHud();
    bool active=(flow.Stage.Value is PvPvEPrepareStage.Playing or PvPvEPrepareStage.ReturningToLobby)&&!roster.Closing.Value&&!PauseController.LocalPlayerPaused;canvas.gameObject.SetActive(active);if(!active){scoreboard.gameObject.SetActive(false);return;}
    bool show=(combat.ScoreLocked.Value||scoreboardAction!=null&&scoreboardAction.IsPressed())&&!PauseController.LocalPlayerPaused&&!NPCShopUI.LocalShopOpen&&!(UI.PvPvEInitialClassView.Active&&UI.PvPvEInitialClassView.Active.IsShowing);scoreboard.gameObject.SetActive(show);header.gameObject.SetActive(!show);canvas.sortingOrder=show?30000:500;
    var screen=(RectTransform)canvas.transform;float fit=Mathf.Min(1,screen.rect.width*.96f/1850,screen.rect.height*.84f/850);scoreboard.localScale=Vector3.one*fit;
+   var player = combat.NetworkManager.LocalClient?.PlayerObject;
+   var health = player ? player.GetComponent<PlayerHealth>() : null;
+   bool moveHeader = !show && combat.IsPlaying && combat.Alive(health);
+   if (moveHeader && player != headerOwner)
+   {
+    headerSway = UIEffects.EnsureHudSway(header, player.transform);
+    headerOwner = player;
+   }
+   if (headerSway) headerSway.enabled = moveHeader;
    if (!headerSkinned)
    {
-    var player = combat.NetworkManager.LocalClient?.PlayerObject;
     var hud = player ? player.GetComponentInChildren<HUDController>(true) : null;
     if (hud && hud.PlayerStatusBackground)
     {
      var source = hud.PlayerStatusBackground;
      StyleMatchFrame(header, source, false);
 
-     UIEffects.EnsureHudSway(header, player.transform);
-     UIEffects.EnsureHudSway(feedRoot, player.transform);
      var ammoFrame = HUDController.FindAmmoBackground(hud.transform);
      foreach (RectTransform line in feedRoot)
-      StyleMatchFrame(line, ammoFrame ? ammoFrame : source, true);
+      StyleMatchFrame(line, ammoFrame ? ammoFrame : source, false);
      headerSkinned = true;
     }
    }
    if(Time.unscaledTime<refreshAt)return;refreshAt=Time.unscaledTime+.1f;RefreshMatch();
   }
+  void UpdateResultHud()
+  {
+   bool defeat = combat.ScoreLocked.Value && combat.Winner.Value != PvPvETeam.None &&
+    roster.TryGetMember(combat.NetworkManager.LocalClientId, out var local) &&
+    local.Team != combat.Winner.Value;
+   var player = combat.NetworkManager.LocalClient?.PlayerObject;
+   var owner = defeat && player ? player.GetComponentInChildren<PauseController>(true) : null;
+   if (owner == localResultHud) return;
+   if (localResultHud) localResultHud.OcultarHudPorDerrotaPvPvE(false);
+   localResultHud = owner;
+   if (localResultHud) localResultHud.OcultarHudPorDerrotaPvPvE(true);
+  }
+
   private static void StyleMatchFrame(RectTransform panel, Image source, bool right)
   {
    var frame = new GameObject("Fondo de estado", typeof(Image)).GetComponent<Image>();
@@ -143,14 +170,20 @@ namespace DeadQuarantine.PvPvE {
    UpdateScoreboard();double now=combat.NetworkManager.ServerTime.Time;var feed=Enumerable.Range(0,combat.KillFeed.Count).Select(i=>combat.KillFeed[i]).Where(e=>e.Expires>now).OrderByDescending(e=>e.Sequence).Take(feedCells.GetLength(0)).ToArray();VisibleFeedCount=feed.Length;
    for(int row=0;row<feedCells.GetLength(0);row++){
     feedCells[row,0].transform.parent.gameObject.SetActive(row<feed.Length);if(row>=feed.Length)continue;var e=feed[row];
-    feedCells[row,0].text=e.KillerName.ToString();feedCells[row,0].color=TeamColor(e.KillerTeam);var gun=combat.Settings.Loadouts.weapons.FirstOrDefault(g=>g.id==e.Weapon.ToString()||g.name==e.Weapon.ToString());
+    feedCells[row,0].text=DisplayName(e.KillerName.ToString(),e.Killer);feedCells[row,0].color=TeamColor(e.KillerTeam);var gun=combat.Settings.Loadouts.weapons.FirstOrDefault(g=>g.id==e.Weapon.ToString()||g.name==e.Weapon.ToString());
     feedWeapons[row].gameObject.SetActive(gun!=null);if(gun!=null)feedWeapons[row].BindCatalog(gun,combat.Settings.Loadouts.attachments,default);
     headshots[row].gameObject.SetActive(e.Headshot);
     var victimRect=feedCells[row,2].rectTransform;
-    victimRect.anchoredPosition=new Vector2(e.Headshot?227:210,-1);
-    victimRect.sizeDelta=new Vector2(e.Headshot?111:128,22);
-    feedCells[row,1].text=gun==null?e.Weapon.ToString():"";feedCells[row,2].text=e.VictimName.ToString();feedCells[row,2].color=TeamColor(e.VictimTeam);
+    victimRect.anchoredPosition=new Vector2(e.Headshot?290:269,0);
+    victimRect.sizeDelta=new Vector2(e.Headshot?130:151,32);
+    feedCells[row,1].text=gun==null?e.Weapon.ToString():"";feedCells[row,2].text=DisplayName(e.VictimName.ToString(),e.Victim);feedCells[row,2].color=TeamColor(e.VictimTeam);
    }
+  }
+  string DisplayName(string name, ulong clientId)
+  {
+   if (!string.IsNullOrWhiteSpace(name)) return name;
+   return roster.TryGetMember(clientId,out var member)
+    ? PvPvEHello.CleanName(member.Name.ToString()) : "SUPERVIVIENTE";
   }
   void UpdateScoreboard(){
    if(!ScoreboardVisible)return;
@@ -164,7 +197,11 @@ namespace DeadQuarantine.PvPvE {
    if(combat.TryStats(combat.NetworkManager.LocalClientId,out var local)){roster.TryGetMember(local.ClientId,out var member);localStats.text=member.Name+"    PUNTOS "+local.Points+"    KILLS "+local.Kills+"    MUERTES "+local.Deaths+"    ASISTENCIAS "+local.Assists;}
   }
   void OnEnable(){scoreboardAction?.Enable();}
-  void OnDisable(){scoreboardAction?.Disable();if(scoreboard)scoreboard.gameObject.SetActive(false);}
+  void OnDisable(){
+   scoreboardAction?.Disable();if(scoreboard)scoreboard.gameObject.SetActive(false);
+   if (localResultHud) localResultHud.OcultarHudPorDerrotaPvPvE(false);
+   localResultHud = null;
+  }
   void OnDestroy(){scoreboardAction?.Disable();if(ownsAction)scoreboardAction?.Dispose();controls?.Dispose();if(canvas)Destroy(canvas.gameObject);if(Active==this)Active=null;}
  }
 }

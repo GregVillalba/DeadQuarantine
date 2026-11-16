@@ -9,7 +9,6 @@ using static DeadQuarantine.PvPvE.PvPvEUIFactory;
 public class GameStartCurtain : MonoBehaviour
 {
     private static GameObject cortinaPersistenteLobby;
-    private static Sprite spriteCargaAsignado;
     private static Image fondoPersistente;
     private static Button botonSalir;
     private static TextMeshProUGUI etiquetaSalir;
@@ -17,8 +16,6 @@ public class GameStartCurtain : MonoBehaviour
     private static bool saliendoAlMenu;
     private static double? inicioCortinaPersistente;
     public static bool CargaEnCurso => cortinaPersistenteLobby != null && !saliendoAlMenu;
-
-    [SerializeField] private Sprite imagenCargaLobby;
 
     public static void MostrarCortinaDesdeLobby()
     {
@@ -50,8 +47,9 @@ public class GameStartCurtain : MonoBehaviour
             NetworkBootstrap.Instance != null ? NetworkBootstrap.Instance.CooperativeLoadingSettings : null, destino);
         if (cortinaPersistenteLobby != null)
         {
-            if (pantallaCooperativa) fondoPersistente.color = Color.clear;
-            else AsignarImagenCarga(fondoPersistente);
+            fondoPersistente.color = pantallaCooperativa ? Color.clear : Color.black;
+            if (pantallaCooperativa && avisoCarga.text == "CARGANDO ESCENARIO")
+                avisoCarga.transform.parent.gameObject.SetActive(false);
             cortinaPersistenteLobby.SetActive(true);
             return;
         }
@@ -87,8 +85,8 @@ public class GameStartCurtain : MonoBehaviour
         rect.offsetMax = Vector2.zero;
 
         fondoPersistente = fondo.AddComponent<Image>();
-        if (pantallaCooperativa) fondoPersistente.color = Color.clear;
-        else AsignarImagenCarga(fondoPersistente);
+        fondoPersistente.color = pantallaCooperativa ? Color.clear : Color.black;
+        fondoPersistente.raycastTarget = false;
 
         RectTransform boton = Panel(raiz.transform, "Salir de la partida", 0, 0, 1, 1, 1f);
         Place(boton, new Vector2(.76f, .89f), new Vector2(.97f, .96f));
@@ -107,7 +105,8 @@ public class GameStartCurtain : MonoBehaviour
         avisoCarga = Text(aviso, "Mensaje", "", 0, 0, 1, 1, null, 30);
         Place(avisoCarga.rectTransform, new Vector2(.03f, .06f), new Vector2(.97f, .94f));
         avisoCarga.alignment = TextAlignmentOptions.Center;
-        aviso.gameObject.SetActive(false);
+        if (!pantallaCooperativa) avisoCarga.text = "CARGANDO ESCENARIO";
+        aviso.gameObject.SetActive(!pantallaCooperativa);
 
     }
 
@@ -177,52 +176,6 @@ public class GameStartCurtain : MonoBehaviour
         _ = network.SalirDePartidaCooperativa();
     }
 
-    private static void AsignarImagenCarga(UnityEngine.UI.Image imagen)
-    {
-        if (spriteCargaAsignado == null)
-            spriteCargaAsignado = Resources.Load<Sprite>("ImagenCargaSoldado");
-
-        imagen.sprite = spriteCargaAsignado;
-        if (imagen.sprite == null)
-        {
-            UnityEngine.UI.Image imagenOriginal = BuscarImagenCargaOriginal();
-            if (imagenOriginal != null)
-                imagen.sprite = imagenOriginal.sprite;
-        }
-        if (imagen.sprite != null)
-        {
-            imagen.type = UnityEngine.UI.Image.Type.Simple;
-            imagen.preserveAspect = false;
-            imagen.color = Color.white;
-        }
-        else
-        {
-            Debug.LogError("[GameStartCurtain] Falta asignar Imagen Carga Lobby en el Inspector.");
-            imagen.color = Color.black;
-        }
-
-    }
-
-    private static UnityEngine.UI.Image BuscarImagenCargaOriginal()
-    {
-        UnityEngine.UI.Image[] imagenes =
-            Object.FindObjectsByType<UnityEngine.UI.Image>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None
-            );
-
-        foreach (UnityEngine.UI.Image imagen in imagenes)
-        {
-            if (imagen != null && imagen.gameObject.name == "LoadingScreen" &&
-                imagen.sprite != null)
-            {
-                return imagen;
-            }
-        }
-
-        return null;
-    }
-
     public static void CancelarCortinaDesdeLobby()
     {
         if (!saliendoAlMenu)
@@ -267,15 +220,20 @@ public class GameStartCurtain : MonoBehaviour
             return;
         }
 
-        if (imagenCargaLobby != null)
-            spriteCargaAsignado = imagenCargaLobby;
+        if (DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.Active)
+        {
+            if (curtainCanvas != null) curtainCanvas.SetActive(false);
+            curtainHidden = true;
+            return;
+        }
         Debug.Log("[GameStartCurtain] Awake");
 
         OcultarRestosDelLobby();
 
         if (curtainCanvas != null)
-            curtainCanvas.SetActive(!DeadQuarantine.PvPvE.PvPvELoadingScreen.CooperativeActive);
+            curtainCanvas.SetActive(false);
 
+        if (!CargaEnCurso) MostrarCortinaPersistente();
         BloquearJugadorLocalInmediatamente();
 
     }

@@ -7,6 +7,8 @@ public partial class WeaponAttachments
     RenderTexture scopeTexture;
     Material scopeLens;
     Weapon scopeWeapon;
+    Transform aperture;
+    Bounds apertureBounds;
     bool scopeRendering;
     internal bool HasMagnifiedLens => scopeCamera != null;
     public bool ScopeRendering => scopeRendering;
@@ -18,6 +20,7 @@ public partial class WeaponAttachments
         if(scopeTexture){scopeTexture.Release();Destroy(scopeTexture);}
         if(scopeLens)Destroy(scopeLens);
         scopeCamera=null;scopeTexture=null;scopeLens=null;scopeRendering=false;
+        aperture=null;apertureBounds=default;
     }
     Material BuildScopeLens(WeaponAttachmentCatalog.Entry entry)
     {
@@ -36,6 +39,28 @@ public partial class WeaponAttachments
         var data=go.AddComponent<UniversalAdditionalCameraData>();data.renderPostProcessing=false;data.volumeLayerMask=0;
         return scopeLens;
     }
+    void SetScopeAperture(Transform surface, Bounds bounds)
+    {
+        aperture=surface;
+        apertureBounds=bounds;
+    }
+    float ScreenHeightOfAperture()
+    {
+        Camera camera=scopeWeapon.ViewModelCamera;
+        if (!camera || !aperture) return 1f;
+
+        float minY=float.PositiveInfinity, maxY=float.NegativeInfinity;
+        Vector3 min=apertureBounds.min, max=apertureBounds.max;
+        for (int i=0; i<8; i++)
+        {
+            var corner=new Vector3((i&1)==0?min.x:max.x,(i&2)==0?min.y:max.y,(i&4)==0?min.z:max.z);
+            Vector3 viewport=camera.WorldToViewportPoint(aperture.TransformPoint(corner));
+            if (viewport.z<=camera.nearClipPlane) continue;
+            minY=Mathf.Min(minY,viewport.y);
+            maxY=Mathf.Max(maxY,viewport.y);
+        }
+        return maxY>minY ? Mathf.Clamp(maxY-minY,.1f,1f) : 1f;
+    }
     void UpdateScope()
     {
         if(!scopeCamera||!scopeWeapon)return;
@@ -44,7 +69,13 @@ public partial class WeaponAttachments
         scopeRendering=active;scopeCamera.enabled=false;
         scopeLens.SetTexture("_BaseMap",active?scopeTexture:Texture2D.blackTexture);
         if(!active)return;
-        var optic=catalog.Find(ApprovedChoice.scope);if(optic!=null)scopeCamera.fieldOfView=optic.LensFieldOfView(scopeWeapon.HipFieldOfView);
+        var optic=catalog.Find(ApprovedChoice.scope);
+        if(optic!=null)
+        {
+            // Preserve the catalog magnification after projecting the square render onto a smaller lens.
+            float halfAngle=optic.LensFieldOfView(scopeWeapon.HipFieldOfView)*.5f*Mathf.Deg2Rad;
+            scopeCamera.fieldOfView=Mathf.Max(1f,2f*Mathf.Atan(Mathf.Tan(halfAngle)*ScreenHeightOfAperture())*Mathf.Rad2Deg);
+        }
         var aim = scopeWeapon.GetShotAimRay();
         scopeCamera.transform.SetPositionAndRotation(view.transform.position, Quaternion.LookRotation(aim.direction, view.transform.up));
         scopeCamera.cullingMask = view.cullingMask & ~(1 << gameObject.layer);

@@ -15,6 +15,7 @@ namespace DeadQuarantine.PvPvE {
   public static bool BeginCooperative(PvPvENetworkSettings settings,string destination=null){
    var cfg=ConfiguracionPartidaSeleccionada.Instancia;
    if(PvPvETeamRoster.Active)return false;
+   if(!settings)settings=originalSettings;
    string resource = destination switch
    {
     "MP_ZonaSegura1" => "PreviewZonaSegura",
