@@ -1,6 +1,5 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using TMPro;
 
@@ -20,7 +19,7 @@ public class MenuPrincipalAcciones : MonoBehaviour
     [SerializeField] private GameObject sensibilidadMousePanel;
 
     // Nombre exacto de tu escena de un jugador
-    private const string EscenaSinglePlayer = "mainSceneSinglePlayer";
+    private const string EscenaSinglePlayer = "MainSceneSinglePlayer";
     private const string EscenaTutorial = "TutorialScene";
 
     [Header("Transferir Datos (Copiar ID)")]
@@ -71,20 +70,20 @@ public class MenuPrincipalAcciones : MonoBehaviour
     public void IniciarJuegoSinglePlayer()
     {
         Time.timeScale = 1f;
-        SceneManager.LoadScene(EscenaSinglePlayer);
+        SceneTransition.TryLoad(EscenaSinglePlayer, showMap: true);
     }
 
     public void IniciarTutorial()
     {
         Time.timeScale = 1f;
-        SceneManager.LoadScene(EscenaTutorial);
+        SceneTransition.TryLoad(EscenaTutorial);
     }
 
     // Opci�n 2: Carga cualquier escena escribiendo su nombre en el recuadro del bot�n (como lo ten�as antes)
     public void IniciarJuego(string nombreEscena)
     {
         Time.timeScale = 1f;
-        SceneManager.LoadScene(nombreEscena);
+        SceneTransition.TryLoad(nombreEscena);
     }
 
     // ==========================================

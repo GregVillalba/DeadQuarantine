@@ -1,4 +1,3 @@
-using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -143,7 +142,7 @@ public class SinglePlayerLobbyController : MonoBehaviour
 
     public void OnClick_Comenzar()
     {
-        if (cargando)
+        if (cargando || SceneTransition.IsLoading)
             return;
 
         if (!ConfiguracionValida())
@@ -158,7 +157,7 @@ public class SinglePlayerLobbyController : MonoBehaviour
         if (LobbyGameSettingsRuntime.DificultadSeleccionadaBloqueada())
             return;
 
-        StartCoroutine(CargarPartida());
+        CargarPartida();
     }
 
     public void OnClick_Personaje()
@@ -199,14 +198,14 @@ public class SinglePlayerLobbyController : MonoBehaviour
         string escena = string.IsNullOrEmpty(escenaOrigen) ? escenaMenuPorDefecto : escenaOrigen;
 
         Time.timeScale = 1f;
-        SceneManager.LoadScene(escena);
+        SceneTransition.TryLoad(escena);
     }
 
     // =========================================================
     // CARGA DE LA PARTIDA
     // =========================================================
 
-    private IEnumerator CargarPartida()
+    private void CargarPartida()
     {
         cargando = true;
         SetBotonesInteractables(false);
@@ -218,13 +217,10 @@ public class SinglePlayerLobbyController : MonoBehaviour
             label.text = "CARGANDO...";
 
         Time.timeScale = 1f;
-        DeadQuarantine.PvPvE.PvPvELoadingScreen.BeginOriginal(escenaJuegoSingleplayer);
-        AsyncOperation operacion = SceneManager.LoadSceneAsync(escenaJuegoSingleplayer);
-
-        if (operacion == null)
+        void MostrarErrorCarga()
         {
-            DeadQuarantine.PvPvE.PvPvELoadingScreen.CancelOriginal();
-            Debug.LogError("[SinglePlayerLobby] No se pudo cargar la escena '" + escenaJuegoSingleplayer + "'. Revisa el nombre y que este en Build Settings.");
+            if (this == null)
+                return;
 
             if (label != null)
                 label.text = textoOriginal;
@@ -232,11 +228,11 @@ public class SinglePlayerLobbyController : MonoBehaviour
             SetBotonesInteractables(true);
             cargando = false;
 
-            MostrarMensaje("NO SE PUDO CARGAR", "No encuentro la escena '" + escenaJuegoSingleplayer + "'. Revisa que este en Build Settings.");
-            yield break;
+            MostrarMensaje("NO SE PUDO CARGAR", "No se pudo abrir la escena '" + escenaJuegoSingleplayer + "'.");
         }
 
-        while (!operacion.isDone){DeadQuarantine.PvPvE.PvPvELoadingScreen.OriginalProgress(operacion.progress);yield return null;}
+        if (!SceneTransition.TryLoad(escenaJuegoSingleplayer, showMap: true, onFailure: MostrarErrorCarga))
+            MostrarErrorCarga();
     }
 
     private void SetBotonesInteractables(bool value)
@@ -295,9 +291,9 @@ public class SinglePlayerLobbyController : MonoBehaviour
 
         if (cfg != null)
         {
-            modo = NombreModo(cfg.modoSeleccionado);
-            mapa = NombreEscenario(cfg.escenarioSeleccionado);
-            dificultad = NombreDificultad(cfg.dificultadSeleccionada);
+            modo = LobbyGameSettingsRuntime.NombreModo(cfg.modoSeleccionado);
+            mapa = LobbyGameSettingsRuntime.NombreEscenario(cfg.escenarioSeleccionado);
+            dificultad = LobbyGameSettingsRuntime.NombreDificultad(cfg.dificultadSeleccionada);
         }
 
         if (resumenModo != null) resumenModo.text = modo;
@@ -306,39 +302,6 @@ public class SinglePlayerLobbyController : MonoBehaviour
 
         // Los textos del popup los maneja LobbyGameSettingsRuntime porque además
         // indica si la opción es editable o está bloqueada (por ejemplo Historia/Laboratorio).
-    }
-
-    private static string NombreModo(ConfiguracionPartidaSeleccionada.ModoJuego modo)
-    {
-        switch (modo)
-        {
-            case ConfiguracionPartidaSeleccionada.ModoJuego.Historia: return "HISTORIA";
-            case ConfiguracionPartidaSeleccionada.ModoJuego.Ronda5: return "RONDA 5";
-            case ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia: return "RONDAS INFINITAS";
-            default: return "-";
-        }
-    }
-
-    private static string NombreEscenario(ConfiguracionPartidaSeleccionada.Escenario escenario)
-    {
-        switch (escenario)
-        {
-            case ConfiguracionPartidaSeleccionada.Escenario.Laboratorio: return "LABORATORIO";
-            case ConfiguracionPartidaSeleccionada.Escenario.Ciudad: return "CIUDAD";
-            case ConfiguracionPartidaSeleccionada.Escenario.Cabana: return "MANSION DEL BOSQUE";
-            default: return "-";
-        }
-    }
-
-    private static string NombreDificultad(ConfiguracionPartidaSeleccionada.Dificultad dificultad)
-    {
-        switch (dificultad)
-        {
-            case ConfiguracionPartidaSeleccionada.Dificultad.Normal: return "NORMAL";
-            case ConfiguracionPartidaSeleccionada.Dificultad.Dificil: return "DIFICIL";
-            case ConfiguracionPartidaSeleccionada.Dificultad.Pesadilla: return "PESADILLA";
-            default: return "-";
-        }
     }
 
     // =========================================================

@@ -385,7 +385,7 @@ public static class DesbloqueoDificultades
         {
             case Modo.Historia: return "HISTORIA";
             case Modo.Ronda5: return "RONDA 5";
-            case Modo.Supervivencia: return "RONDAS INFINITAS";
+            case Modo.Supervivencia: return "SUPERVIVENCIA";
             default: return "-";
         }
     }

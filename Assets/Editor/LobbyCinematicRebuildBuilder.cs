@@ -390,8 +390,6 @@ public class LobbyCinematicRebuildBuilder : EditorWindow
 
     private void BuildUI(Transform panel, LobbyPlayerSlot[] slots, WorldRefs world)
     {
-        RectTransform panelRect = panel as RectTransform;
-
         // Fondo 2D anterior apagado: la mansión queda como protagonista.
         Image panelBg = panel.GetComponent<Image>();
 
@@ -638,11 +636,7 @@ public class LobbyCinematicRebuildBuilder : EditorWindow
         // ------------------------------------------------
         // Conectar el presentador con los datos reales.
         // ------------------------------------------------
-        world.presenter.ConfigureUI(panelRect, slots, plates, partyRect, partyHeader, rows, modeDifficulty, map);
-
-        // LISTO y visibilidad de CONFIGURAR PARTIDA se refrescan desde
-        // LobbyCinematicPartyPresenter. No se agregan responsabilidades al
-        // LobbyCinematicPlayerDisplay original.
+        world.presenter.ConfigureUI(slots, plates, partyRect, partyHeader, rows, modeDifficulty, map);
 
         EditorUtility.SetDirty(world.presenter);
     }

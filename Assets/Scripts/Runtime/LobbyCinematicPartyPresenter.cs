@@ -46,7 +46,6 @@ public class LobbyCinematicPartyPresenter : MonoBehaviour
     [SerializeField] private LobbyPlayerSlot[] slots;
 
     [Header("Nombres sobre la cabeza")]
-    [SerializeField] private RectTransform panelRect;
     [SerializeField] private NameplateView[] nameplates;
     [SerializeField] private float plateHorizontalPadding = 22f;
     [SerializeField] private float plateGapAboveHead = 4f;
@@ -64,15 +63,7 @@ public class LobbyCinematicPartyPresenter : MonoBehaviour
     [SerializeField] private TMP_Text modeDifficultyText;
     [SerializeField] private TMP_Text mapText;
 
-    [Header("Permisos del anfitrión")]
-    [SerializeField] private Transform configureMatchButton;
-
-    // El botón cinematográfico es el botón REAL del lobby. En runtime lo conectamos
-    // también al flujo real del MultiplayerLobbyController para garantizar que el
-    // LobbyGameSettingsRuntime se inicialice antes de abrir el popup.
-    private Button configureMatchButtonComponent;
-    private MultiplayerLobbyController multiplayerLobbyController;
-    private bool configureRuntimeListenerBound;
+    [SerializeField] private MultiplayerLobbyController multiplayerLobbyController;
 
     // Caché para no reescribir textos todos los frames.
     private string lastModeDifficulty;
@@ -90,7 +81,6 @@ public class LobbyCinematicPartyPresenter : MonoBehaviour
     }
 
     public void ConfigureUI(
-        RectTransform newPanelRect,
         LobbyPlayerSlot[] newSlots,
         NameplateView[] newNameplates,
         RectTransform newPartyCard,
@@ -99,7 +89,6 @@ public class LobbyCinematicPartyPresenter : MonoBehaviour
         TMP_Text newModeDifficultyText,
         TMP_Text newMapText)
     {
-        panelRect = newPanelRect;
         slots = newSlots;
         nameplates = newNameplates;
         partyCard = newPartyCard;
@@ -107,14 +96,6 @@ public class LobbyCinematicPartyPresenter : MonoBehaviour
         rows = newRows;
         modeDifficultyText = newModeDifficultyText;
         mapText = newMapText;
-
-        // El builder reubica el botón REAL dentro de salaEsperaPanel. No se crea
-        // ningún botón nuevo y sus listeners originales permanecen intactos.
-        configureMatchButton = FindDeep(panelRect, "Btn_ConfigurarPartida");
-        configureMatchButtonComponent = configureMatchButton != null
-            ? configureMatchButton.GetComponent<Button>()
-            : null;
-        configureRuntimeListenerBound = false;
     }
 
     /// <summary>
@@ -154,6 +135,9 @@ public class LobbyCinematicPartyPresenter : MonoBehaviour
 
     private void OnEnable()
     {
+        if (multiplayerLobbyController == null)
+            multiplayerLobbyController = FindFirstObjectByType<MultiplayerLobbyController>(FindObjectsInactive.Include);
+
         lastModeDifficulty = null;
         lastMap = null;
         lastHeader = null;
@@ -161,18 +145,9 @@ public class LobbyCinematicPartyPresenter : MonoBehaviour
         lastRowTexts = null;
     }
 
-    private void OnDisable()
-    {
-        if (configureRuntimeListenerBound && configureMatchButtonComponent != null)
-            configureMatchButtonComponent.onClick.RemoveListener(OpenMatchConfiguration);
-
-        configureRuntimeListenerBound = false;
-    }
-
     private void LateUpdate()
     {
         UpdateParty();
-        UpdateConfigureButtonVisibility();
         UpdateSelection();
     }
 
@@ -446,86 +421,6 @@ public class LobbyCinematicPartyPresenter : MonoBehaviour
             if (!Mathf.Approximately(partyCard.sizeDelta.y, height))
                 partyCard.sizeDelta = new Vector2(partyCard.sizeDelta.x, height);
         }
-    }
-
-    // =========================================================
-    // CONFIGURAR PARTIDA: SOLO HOST
-    // =========================================================
-
-    private void UpdateConfigureButtonVisibility()
-    {
-        if (configureMatchButton == null)
-        {
-            configureMatchButton = FindDeep(panelRect, "Btn_ConfigurarPartida");
-            configureMatchButtonComponent = configureMatchButton != null
-                ? configureMatchButton.GetComponent<Button>()
-                : null;
-        }
-
-        if (configureMatchButton == null)
-            return;
-
-        EnsureConfigureButtonRuntimeBinding();
-
-        bool isHost = multiplayerLobbyController != null && multiplayerLobbyController.EsAnfitrion;
-
-        if (configureMatchButton.gameObject.activeSelf != isHost)
-            configureMatchButton.gameObject.SetActive(isHost);
-    }
-
-    private void EnsureConfigureButtonRuntimeBinding()
-    {
-        if (configureRuntimeListenerBound)
-            return;
-
-        if (configureMatchButtonComponent == null && configureMatchButton != null)
-            configureMatchButtonComponent = configureMatchButton.GetComponent<Button>();
-
-        if (configureMatchButtonComponent == null)
-            return;
-
-        if (multiplayerLobbyController == null)
-        {
-            MultiplayerLobbyController[] controllers =
-                FindObjectsByType<MultiplayerLobbyController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-
-            if (controllers != null && controllers.Length > 0)
-                multiplayerLobbyController = controllers[0];
-        }
-
-        if (multiplayerLobbyController == null)
-            return;
-
-        // No reemplaza los listeners originales del botón: agrega únicamente la llamada
-        // al flujo real que inicializa LobbyGameSettingsRuntime y abre el popup.
-        configureMatchButtonComponent.onClick.AddListener(OpenMatchConfiguration);
-        configureRuntimeListenerBound = true;
-    }
-
-    private void OpenMatchConfiguration()
-    {
-        if (multiplayerLobbyController == null)
-            return;
-
-        multiplayerLobbyController.OnClick_IrAConfigurarPartida();
-    }
-
-    private static Transform FindDeep(Transform root, string name)
-    {
-        if (root == null)
-            return null;
-
-        if (root.name == name)
-            return root;
-
-        foreach (Transform child in root)
-        {
-            Transform found = FindDeep(child, name);
-            if (found != null)
-                return found;
-        }
-
-        return null;
     }
 
     // =========================================================

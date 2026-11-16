@@ -41,14 +41,15 @@ namespace DeadQuarantine.PvPvE {
   }
   public static void CancelCooperative(){if(originalScreen&&originalScreen.cooperative)CancelOriginal();}
   public static bool CooperativeActive=>originalScreen&&originalScreen.cooperative;
-  public static void BeginOriginal(string scene){
-   if(PvPvETeamRoster.Active)return;
-   if(originalScreen){if(!originalScreen.cooperative)originalScreen.originalTarget=scene;return;}
+  public static bool BeginOriginal(string scene){
+   if(PvPvETeamRoster.Active)return false;
+   if(originalScreen){if(originalScreen.cooperative)return false;originalScreen.originalTarget=scene;return true;}
    var settings=originalSettings;var matchmaking=PvPvEMatchmaking.Active;if(matchmaking)settings=matchmaking.Settings;
-   var cfg=ConfiguracionPartidaSeleccionada.Instancia;if(!settings||cfg==null)return;
+   var cfg=ConfiguracionPartidaSeleccionada.Instancia;if(!settings||cfg==null)return false;
    var go=new GameObject("Original mode loading");DontDestroyOnLoad(go);var screen=go.AddComponent<PvPvELoadingScreen>();screen.original=true;screen.originalTarget=scene;screen.originalOrigin=UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-   screen.originalMap=System.Array.Find(settings.Maps,m=>m.Id==cfg.escenarioSeleccionado);if(screen.originalMap==null){Destroy(go);return;}
+   screen.originalMap=System.Array.Find(settings.Maps,m=>m.Id==cfg.escenarioSeleccionado);if(screen.originalMap==null){Destroy(go);return false;}
    originalScreen=screen;screen.Build();screen.modeLabel.text=cfg.modoSeleccionado switch{ConfiguracionPartidaSeleccionada.ModoJuego.Historia=>"HISTORIA",ConfiguracionPartidaSeleccionada.ModoJuego.Ronda5=>"RONDA 5",_=>"SUPERVIVENCIA"};screen.mapName.text=screen.originalMap.Name;
+   return true;
   }
   public static void OriginalProgress(float progress){if(originalScreen)originalScreen.originalProgress=Mathf.Clamp01(progress);}
   public static void CancelOriginal(){if(originalScreen){Destroy(originalScreen.gameObject);originalScreen=null;}}

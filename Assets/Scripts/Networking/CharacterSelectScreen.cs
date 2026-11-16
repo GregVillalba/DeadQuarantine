@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Pantalla de selección de personaje (sirve para singleplayer y multiplayer).
@@ -50,10 +49,13 @@ public class CharacterSelectScreen : MonoBehaviour
     // La elección ya está guardada (CharacterSelectMenu la guarda al instante); confirmar solo avanza.
     public void Confirm()
     {
+        if (SceneTransition.IsLoading)
+            return;
+
         onConfirm.Invoke();
 
         if (!string.IsNullOrEmpty(sceneOnConfirm))
-            SceneManager.LoadScene(sceneOnConfirm);
+            SceneTransition.TryLoad(sceneOnConfirm);
     }
 
     public void Back()

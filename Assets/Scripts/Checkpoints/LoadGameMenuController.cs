@@ -292,7 +292,7 @@ private void ComprobarPartidaGuardada()
 
     private void CargarPartida()
     {
-        if (CargandoPartidaDesdeMenu)
+        if (CargandoPartidaDesdeMenu || SceneTransition.IsLoading)
             return;
 
         if (historiaSeleccionada)
@@ -506,23 +506,39 @@ private void ComprobarPartidaGuardada()
     {
         NetworkManager networkManager = NetworkManager.Singleton;
 
-        DeadQuarantine.PvPvE.PvPvELoadingScreen.BeginOriginal(escenaJuego);
-
         if (networkManager != null &&
             networkManager.IsListening)
         {
-            networkManager.SceneManager.LoadScene(
-                escenaJuego,
-                LoadSceneMode.Single
-            );
+            DeadQuarantine.PvPvE.PvPvELoadingScreen.BeginOriginal(escenaJuego);
+            var resultado = networkManager.SceneManager.LoadScene(escenaJuego, LoadSceneMode.Single);
+            if (resultado != SceneEventProgressStatus.Started)
+            {
+                DeadQuarantine.PvPvE.PvPvELoadingScreen.CancelOriginal();
+                Debug.LogError($"[Cargar partida] No se pudo cargar {escenaJuego}: {resultado}.");
+                MostrarErrorCarga();
+            }
         }
-        else
+        else if (!SceneTransition.TryLoad(escenaJuego, showMap: true, onFailure: MostrarErrorCarga))
         {
-            SceneManager.LoadScene(
-                escenaJuego,
-                LoadSceneMode.Single
-            );
+            MostrarErrorCarga();
         }
+    }
+
+    private void MostrarErrorCarga()
+    {
+        if (CheckpointManager.Instance != null && !CargandoSupervivenciaDesdeMenu)
+            CheckpointManager.Instance.FinalizarCarga();
+        else
+            FinalizarCargaDesdeMenu();
+
+        if (this == null)
+            return;
+
+        if (botonHistoria != null) botonHistoria.interactable = true;
+        if (botonSupervivencia != null) botonSupervivencia.interactable = true;
+        if (botonCargar != null) botonCargar.interactable = true;
+        if (botonVolver != null) botonVolver.interactable = true;
+        if (informacion != null) informacion.text = "No se pudo abrir la partida guardada.";
     }
 
     // =====================================================

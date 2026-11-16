@@ -19,7 +19,7 @@ public static class PvPvEPhase5Tools
   config.Maps=new[]{
    Map(ConfiguracionPartidaSeleccionada.Escenario.Laboratorio,"LABORATORIO","Laboratorio_juego.jpg"),
    Map(ConfiguracionPartidaSeleccionada.Escenario.Ciudad,"CIUDAD","Ciudad_juego.jpg"),
-   Map(ConfiguracionPartidaSeleccionada.Escenario.Cabana,"MANSIÓN DEL BOSQUE","Assets/Easter/fondoMansion.jpg")};
+   Map(ConfiguracionPartidaSeleccionada.Escenario.Cabana,"MANSIÓN ABANDONADA","Assets/Easter/fondoMansion.jpg")};
   if(!config.HasValidMaps)throw new Exception("Missing map IDs/previews");EditorUtility.SetDirty(config);
   string path=AssetDatabase.GetAssetPath(config.RosterPrefab);var root=PrefabUtility.LoadPrefabContents(path);
   try{var vote=root.GetComponent<PvPvEMapVoting>()??root.AddComponent<PvPvEMapVoting>();var so=new SerializedObject(vote);so.FindProperty("settings").objectReferenceValue=config;so.ApplyModifiedPropertiesWithoutUndo();PrefabUtility.SaveAsPrefabAsset(root,path);}finally{PrefabUtility.UnloadPrefabContents(root);}

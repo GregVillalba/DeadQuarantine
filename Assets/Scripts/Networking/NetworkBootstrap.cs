@@ -212,7 +212,9 @@ public class NetworkBootstrap : MonoBehaviour
     // CREAR SALA
     // ============================================================
 
-    public async Task<string> StartHost()
+    public Task<string> StartHost() => StartHost(new SessionOptions());
+
+    internal async Task<string> StartHost(SessionOptions options)
     {
         multiplayerGameStartInProgress = false;
         isIntentionalLeave = false;
@@ -222,11 +224,7 @@ public class NetworkBootstrap : MonoBehaviour
 
         try
         {
-            SessionOptions options =
-                new SessionOptions
-                {
-                    MaxPlayers = MaxPlayersPerRoom
-                };
+            options.MaxPlayers = MaxPlayersPerRoom;
 
             currentSession =
                 await MultiplayerService.Instance

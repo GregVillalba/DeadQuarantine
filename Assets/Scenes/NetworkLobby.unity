@@ -6020,7 +6020,6 @@ MonoBehaviour:
   - {fileID: 898086397}
   - {fileID: 1427097478}
   - {fileID: 1301329654}
-  panelRect: {fileID: 1604234856}
   nameplates:
   - root: {fileID: 118464304}
     nameText: {fileID: 1744507945}
@@ -6053,7 +6052,7 @@ MonoBehaviour:
   uppercaseCharacterNames: 1
   modeDifficultyText: {fileID: 1526829520}
   mapText: {fileID: 1899491267}
-  configureMatchButton: {fileID: 1963165391}
+  multiplayerLobbyController: {fileID: 1053037435}
 --- !u!114 &227248901
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -30456,7 +30455,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: CONFIGURAR PARTIDA
+  m_text: CONFIGURAR SALA
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 0d82eaf50c142fa4ba34beb1fc9a12e4, type: 2}
   m_sharedMaterial: {fileID: 4402957646418736295, guid: 0d82eaf50c142fa4ba34beb1fc9a12e4, type: 2}
@@ -71800,6 +71799,10 @@ PrefabInstance:
       propertyPath: accionesSalaPanel
       value: 
       objectReference: {fileID: 2108310000}
+    - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
+      propertyPath: botonConfigurarSala
+      value:
+      objectReference: {fileID: 1963165394}
     - target: {fileID: 3172225619664844787, guid: ab248d1b9830c0144941eea7c6bb7222, type: 3}
       propertyPath: botonCopiarCodigo
       value: 

@@ -46,12 +46,12 @@ public class SceneLoader : MonoBehaviour
 
     public void LoadNetworkLobby()
     {
-        SceneManager.LoadScene("NetworkLobby");
+        SceneTransition.TryLoad("NetworkLobby");
     }
 
     public void LoadPantallasUI()
     {
-        SceneManager.LoadScene("PantallasUI");
+        SceneTransition.TryLoad("PantallasUI");
     }
 
     // --- MÉTODOS PARA LLAMAR DESDE NETWORK LOBBY ---
@@ -73,8 +73,11 @@ public class SceneLoader : MonoBehaviour
         if (!lobbyController.VerificarInternet())
             return;
 
-        pantallaSolicitada = PantallaApertura.Modalidad;
-        SceneManager.LoadScene("PantallasUI");
+        if (SceneTransition.TryLoad("PantallasUI",
+            onFailure: () => pantallaSolicitada = PantallaApertura.Ninguna))
+        {
+            pantallaSolicitada = PantallaApertura.Modalidad;
+        }
     }
 
     // Botón UNIRSE de NetworkLobby: va DIRECTO a poner el código (sin selección de personaje).

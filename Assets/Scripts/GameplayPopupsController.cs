@@ -1,6 +1,5 @@
 
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
 using Unity.Netcode;
@@ -46,7 +45,7 @@ public class GameplayPopupsController : MonoBehaviour
     {
         Time.timeScale = 1f;
         AudioListener.pause = false;
-        SceneManager.LoadScene(nombreEscenaMenu);
+        SceneTransition.TryLoad(nombreEscenaMenu);
     }
 
     public void MostrarPanelRonda()

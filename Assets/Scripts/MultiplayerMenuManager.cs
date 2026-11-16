@@ -128,7 +128,7 @@ public class MultiplayerMenuManager : MonoBehaviour
     public void SeleccionarModoSupervivencia()
     {
         modoActual = ModoSeleccionado.Infinitas;
-        textoNombreModo = "MODALIDAD RONDAS INFINITAS";
+        textoNombreModo = "MODALIDAD SUPERVIVENCIA";
 
         ApagarSelectoresModos();
 

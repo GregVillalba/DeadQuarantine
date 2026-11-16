@@ -506,29 +506,29 @@ public class LobbyGameSettingsRuntime : MonoBehaviour
         return valor + "  >";
     }
 
-    private static string NombreModo(ConfiguracionPartidaSeleccionada.ModoJuego modo)
+    internal static string NombreModo(ConfiguracionPartidaSeleccionada.ModoJuego modo)
     {
         switch (modo)
         {
             case ConfiguracionPartidaSeleccionada.ModoJuego.Historia: return "HISTORIA";
             case ConfiguracionPartidaSeleccionada.ModoJuego.Ronda5: return "RONDA 5";
-            case ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia: return "RONDAS INFINITAS";
+            case ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia: return "SUPERVIVENCIA";
             default: return "-";
         }
     }
 
-    private static string NombreEscenario(ConfiguracionPartidaSeleccionada.Escenario escenario)
+    internal static string NombreEscenario(ConfiguracionPartidaSeleccionada.Escenario escenario)
     {
         switch (escenario)
         {
             case ConfiguracionPartidaSeleccionada.Escenario.Laboratorio: return "LABORATORIO";
             case ConfiguracionPartidaSeleccionada.Escenario.Ciudad: return "CIUDAD";
-            case ConfiguracionPartidaSeleccionada.Escenario.Cabana: return "MANSION DEL BOSQUE";
+            case ConfiguracionPartidaSeleccionada.Escenario.Cabana: return "MANSIÓN ABANDONADA";
             default: return "-";
         }
     }
 
-    private static string NombreDificultad(ConfiguracionPartidaSeleccionada.Dificultad dificultad)
+    internal static string NombreDificultad(ConfiguracionPartidaSeleccionada.Dificultad dificultad)
     {
         switch (dificultad)
         {

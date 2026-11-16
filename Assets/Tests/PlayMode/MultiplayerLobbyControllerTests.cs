@@ -526,8 +526,11 @@ public class MultiplayerLobbyControllerTests
     public IEnumerator OnClickAtrasAlMenuPrincipal_MuestraMenuPrincipalEnPantallasUI()
     {
         controller.OnClick_AtrasAlMenuPrincipal();
-        yield return null;
+        float limite = Time.realtimeSinceStartup + 60f;
+        while (SceneTransition.IsLoading && Time.realtimeSinceStartup < limite)
+            yield return null;
 
+        Assert.IsFalse(SceneTransition.IsLoading);
         Assert.IsNotNull(GameObject.Find("menuPrincipalPanel"));
         Assert.AreEqual(
             "PantallasUI",
@@ -546,6 +549,30 @@ public class MultiplayerLobbyControllerTests
         Assert.IsFalse(modoMultiplayerPanel.activeSelf);
         Assert.IsFalse(ingresarCodPanel.activeSelf);
         Assert.IsTrue(salaEsperaPanel.activeSelf);
+    }
+
+    [Test]
+    public void AccionesSala_SeOcultanDuranteLaCreacionYVuelvenSiFalla()
+    {
+        var acciones = new GameObject("AccionesSala");
+        acciones.transform.SetParent(controllerGO.transform);
+        var configurar = CrearUI<Button>("ConfigurarSala");
+        configurar.transform.SetParent(controllerGO.transform);
+        SetField("accionesSalaPanel", acciones);
+        SetField("botonConfigurarSala", configurar);
+        Invoke("MostrarPanel", modoMultiplayerPanel);
+        Assert.IsTrue(acciones.activeSelf);
+        Assert.IsFalse(configurar.gameObject.activeSelf);
+
+        SetField("operacionSalaEnCurso", true);
+        Invoke("ActualizarAccionesSala");
+        Assert.IsFalse(acciones.activeSelf);
+        Assert.IsFalse(configurar.gameObject.activeSelf);
+
+        SetField("operacionSalaEnCurso", false);
+        Invoke("ActualizarAccionesSala");
+        Assert.IsTrue(acciones.activeSelf);
+        Assert.IsFalse(configurar.gameObject.activeSelf);
     }
 
     // ---------------------------------------------------------------

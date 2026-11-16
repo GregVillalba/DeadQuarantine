@@ -59,6 +59,27 @@ public class PvPvEModeMenuTests
     }
 
 
+    [UnityTest]
+    public IEnumerator LobbyTransitionKeepsTheMenuAliveUntilTheAsyncLoad()
+    {
+        var loader = new GameObject("Scene loader").AddComponent<SceneLoader>();
+        var previousPriority = Application.backgroundLoadingPriority;
+
+        loader.LoadNetworkLobby();
+
+        Assert.That(SceneTransition.IsLoading, Is.True);
+        Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("PantallasUI"));
+        Assert.That(SceneTransition.TryLoad("TutorialScene"), Is.False);
+
+        float deadline = Time.realtimeSinceStartup + 60f;
+        while (SceneTransition.IsLoading && Time.realtimeSinceStartup < deadline)
+            yield return null;
+
+        Assert.That(SceneTransition.IsLoading, Is.False);
+        Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("NetworkLobby"));
+        Assert.That(Application.backgroundLoadingPriority, Is.EqualTo(previousPriority));
+    }
+
     [UnityTest] public IEnumerator EntryPvPvEAndBothBackButtonsUseRealSceneBindings()
     {
         Assert.That(menu.ModeSelectionPanel.activeSelf,Is.False);

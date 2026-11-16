@@ -479,7 +479,7 @@ public class PauseController : NetworkBehaviour
 
     public void ReiniciarJuego()
     {
-        if (!IsOwner) return;
+        if (!IsOwner || SceneTransition.IsLoading) return;
         if (CanChangePvPvEClass && IsPauseHomeVisible)
         {
             DeadQuarantine.PvPvE.UI.PvPvEInitialClassView.Active?.OpenClassChange();
@@ -493,7 +493,7 @@ public class PauseController : NetworkBehaviour
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             NetworkManager.Singleton.Shutdown();
 
-        SceneManager.LoadScene("MainSceneSinglePlayer");
+        SceneTransition.TryLoad("MainSceneSinglePlayer", showMap: true);
     }
 
     private bool CanChangePvPvEClass =>
@@ -519,7 +519,7 @@ public class PauseController : NetworkBehaviour
 
     public void Salir()
     {
-        if (!IsOwner) return;
+        if (!IsOwner || SceneTransition.IsLoading) return;
         if (DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.Active) { _ = DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.ExitToMenuAsync(); return; }
 
         if (!EsSinglePlayer() && NetworkBootstrap.Instance != null)
@@ -534,7 +534,7 @@ public class PauseController : NetworkBehaviour
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             NetworkManager.Singleton.Shutdown();
 
-        SceneManager.LoadScene("PantallasUI");
+        SceneTransition.TryLoad("PantallasUI");
     }
 
     private void ActualizarCursor()
