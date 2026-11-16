@@ -64,6 +64,7 @@ public class PlayerCharacter : NetworkBehaviour
     private readonly List<GameObject> spawnedParts = new List<GameObject>();
     private bool baseHidden;
     private int appliedIndex = -1;
+    private bool hiddenForArcade;
 
     // =========================================================
     // UNITY / NETCODE
@@ -119,6 +120,27 @@ public class PlayerCharacter : NetworkBehaviour
         Apply(current);
     }
 
+    /// <summary>Oculta solo el modelo de tercera persona durante el minijuego arcade.</summary>
+    public void SetHiddenForArcade(bool hidden)
+    {
+        hiddenForArcade = hidden;
+        ApplyArcadeVisibility();
+    }
+
+    private void ApplyArcadeVisibility()
+    {
+        if (modelRoot == null)
+            modelRoot = FindModelRoot();
+        if (modelRoot == null)
+            return;
+
+        foreach (Renderer visual in modelRoot.GetComponentsInChildren<Renderer>(true))
+        {
+            if (visual is MeshRenderer || visual is SkinnedMeshRenderer)
+                visual.forceRenderingOff = hiddenForArcade;
+        }
+    }
+
     // =========================================================
     // APLICAR PERSONAJE
     // =========================================================
@@ -150,6 +172,7 @@ public class PlayerCharacter : NetworkBehaviour
         ApplyStats(index);
 
         appliedIndex = index;
+        ApplyArcadeVisibility();
     }
 
     private void ApplyStats(int index)

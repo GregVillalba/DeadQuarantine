@@ -154,6 +154,9 @@ public class PauseController : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        EnMinijuegoNet.OnValueChanged += AlCambiarEstadoMinijuego;
+        AplicarVisibilidadMinijuego(EnMinijuegoNet.Value);
+
         if (!IsOwner)
         {
             enabled = false;
@@ -178,6 +181,25 @@ public class PauseController : NetworkBehaviour
 
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        EnMinijuegoNet.OnValueChanged -= AlCambiarEstadoMinijuego;
+        AplicarVisibilidadMinijuego(false);
+        base.OnNetworkDespawn();
+    }
+
+    private void AlCambiarEstadoMinijuego(bool anterior, bool activo)
+    {
+        AplicarVisibilidadMinijuego(activo);
+    }
+
+    private void AplicarVisibilidadMinijuego(bool ocultar)
+    {
+        PlayerCharacter apariencia = GetComponentInChildren<PlayerCharacter>(true);
+        if (apariencia != null)
+            apariencia.SetHiddenForArcade(ocultar);
     }
 
     public override void OnDestroy()
