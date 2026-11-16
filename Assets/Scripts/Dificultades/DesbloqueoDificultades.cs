@@ -44,12 +44,12 @@ public static class DesbloqueoDificultades
     // Historia: completar las misiones con un puntaje mínimo.
     private static readonly Requisito HistoriaDificil = new Requisito(10000, 0, -1);   // jugando en Normal
     private static readonly Requisito HistoriaPesadilla = new Requisito(50000, 0, -1); // jugando en Dificil
-    private static readonly Requisito HistoriaEspecial = new Requisito(50000, 0, -1);  // jugando en Normal, sin nada desbloqueado
+    private static readonly Requisito HistoriaEspecial = new Requisito(100000, 0, -1);  // jugando en Normal, sin nada desbloqueado
 
     // 5 Rondas: completar las 5 rondas con un puntaje mínimo y pocas caídas.
     private static readonly Requisito Ronda5Dificil = new Requisito(40000, 0, 2);
     private static readonly Requisito Ronda5Pesadilla = new Requisito(70000, 0, 1);
-    private static readonly Requisito Ronda5Especial = new Requisito(70000, 0, 1);
+    private static readonly Requisito Ronda5Especial = new Requisito(100000, 0, 1);
 
     // Supervivencia: superar una ronda con pocas caídas.
     private static readonly Requisito SupervivenciaDificil = new Requisito(0, 10, 5);
@@ -391,7 +391,7 @@ public static class DesbloqueoDificultades
     }
 
     // 5000 -> "5.000"
-    private static string FormatearPuntaje(int puntaje)
+    public static string FormatearPuntaje(int puntaje)
     {
         return puntaje.ToString("#,0", CultureInfo.InvariantCulture).Replace(',', '.');
     }
