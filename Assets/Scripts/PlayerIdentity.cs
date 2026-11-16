@@ -162,16 +162,18 @@ public static class PlayerIdentity
     /// <summary>
     /// Guarda la vinculación con Google de manera permanente en disco.
     /// </summary>
-    public static void SetGoogleSession(string googleId, string email)
+    public static void SetGoogleSession(string googleId, string email, string userId = null)
     {
         PlayerPrefs.SetInt(PREF_KEY_GOOGLE_LINKED, 1);
         PlayerPrefs.SetString(PREF_KEY_GOOGLE_ID, googleId ?? string.Empty);
         PlayerPrefs.SetString(PREF_KEY_GOOGLE_EMAIL, email ?? string.Empty);
 
-        // Si se vincula por Google, sincronizamos el User ID con su Google ID
-        if (!string.IsNullOrEmpty(googleId))
+        // Prioriza el ID canónico de la cuenta entregado por el backend. Así ranking,
+        // logros y perfil usan la misma identidad aunque se inicie sesión en otro equipo.
+        string idCanonico = !string.IsNullOrWhiteSpace(userId) ? userId.Trim() : googleId;
+        if (!string.IsNullOrEmpty(idCanonico))
         {
-            PlayerPrefs.SetString(PREF_KEY_USER_ID, googleId);
+            PlayerPrefs.SetString(PREF_KEY_USER_ID, idCanonico);
         }
 
         PlayerPrefs.Save();

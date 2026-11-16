@@ -22,8 +22,11 @@ public class PerfilUsuarioData
     public string google_id;
     public string email;
     public string nombre;
+    public string username;
     public int nivel;
     public int record;
+
+    public string NombreGuardado => !string.IsNullOrWhiteSpace(username) ? username : nombre;
 }
 
 [Serializable]
@@ -257,12 +260,25 @@ public class GoogleLoginUI : MonoBehaviour
                 JugadorActivo = respuesta.usuario;
 
                 // Guardado persistente a través de PlayerIdentity
-                PlayerIdentity.SetGoogleSession(JugadorActivo.google_id, JugadorActivo.email);
+                PlayerIdentity.SetGoogleSession(
+                    JugadorActivo.google_id,
+                    JugadorActivo.email,
+                    JugadorActivo.id_local);
+
+                string nombreGuardado = JugadorActivo.NombreGuardado;
+                if (PlayerIdentity.IsValidUsername(nombreGuardado))
+                {
+                    PlayerIdentity.TryUpdateUsername(nombreGuardado, out _);
+                    if (CharacterRenameManager.Instance != null)
+                        CharacterRenameManager.Instance.AplicarNombreDeCuenta(nombreGuardado);
+                    if (AchievementsManager.Instance != null)
+                        AchievementsManager.Instance.UsernameJugador = nombreGuardado;
+                }
 
                 // Bloquea el botón de inmediato
                 DeshabilitarBotonLogin();
 
-                Debug.Log($"<color=green>[AUTH API] Login persistido con éxito:</color> {JugadorActivo.email}");
+                Debug.Log($"<color=green>[AUTH API] Login persistido con éxito:</color> {JugadorActivo.email} | ID: {PlayerIdentity.GetUserId()} | Nombre: {nombreGuardado}");
             }
             else
             {

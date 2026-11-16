@@ -566,7 +566,7 @@ private void ReanudarTiempoSiSinglePlayer()
                 return new DatosHistoria(
                     "PUNTO DE PARTIDA",
                     "HISTORIA: ¿Cómo empezó todo?",
-                    "Nos encontramos en el complejo donde ocurrió la brecha biológica: un patógeno experimental que muta violentamente a cualquiera que entre en contacto con él. Intentamos avanzar hacia la salida sin llamar la atención, pero el sistema de contención selló las instalaciones. Tu misión consiste en localizar la tarjeta de acceso principal para desbloquear la salida.\n\nOBJETIVO: Encontrar la tarjeta magnética y escapar del laboratorio."
+                    "Nos encontramos en el complejo donde ocurrió la brecha biológica: un patógeno experimental que muta violentamente a cualquiera que entre en contacto con él. Intentamos avanzar hacia la salida sin llamar la atención, pero el sistema de contención selló las instalaciones. Tu misión consiste en localizar la tarjeta de acceso principal para desbloquear la salida.\n"
                 );
             }
             if (esc == ConfiguracionPartidaSeleccionada.Escenario.Ciudad)
@@ -574,7 +574,7 @@ private void ReanudarTiempoSiSinglePlayer()
                 return new DatosHistoria(
                     "CHECKPOINT",
                     "HISTORIA: La superficie",
-                    "Tras lograr salir del laboratorio, el escenario exterior es desolador: las calles están tomadas y el perímetro urbano colapsó por completo. La única ruta de escape factible es aérea. Debemos cruzar el distrito hasta la torre de comunicaciones para emitir una señal de auxilio militar y coordinar la extracción con otros supervivientes.\n\nOBJETIVO: Alcanzar la antena de radio y solicitar apoyo de evacuación."
+                    "Tras lograr salir del laboratorio, el escenario exterior es desolador: las calles están tomadas y el perímetro urbano colapsó por completo. La única ruta de escape factible es aérea. Debemos cruzar el distrito hasta la torre de comunicaciones para emitir una señal de auxilio militar y coordinar la extracción con otros supervivientes.\n"
                 );
             }
             if (esc == ConfiguracionPartidaSeleccionada.Escenario.Cabana)
@@ -582,7 +582,7 @@ private void ReanudarTiempoSiSinglePlayer()
                 return new DatosHistoria(
                     "ENCLAVE FINAL",
                     "HISTORIA: Punto de reunión",
-                    "El convoy de evacuación se dispersó en los bosques periféricos. Mientras nos reagrupamos en una cabaña táctica, el mando informa de una amenaza crítica: un espécimen mutante alfa capaz de coordinar los ataques de la horda. Para asegurar el aterrizaje del rescate y frenar la propagación, el mutante debe ser neutralizado a toda costa.\n\nOBJETIVO: Proteger el perímetro y eliminar al infectado mutante."
+                    "El convoy de evacuación se dispersó en los bosques periféricos. Mientras nos reagrupamos en una cabaña táctica, el mando informa de una amenaza crítica: un espécimen mutante alfa capaz de coordinar los ataques de la horda. Para asegurar el aterrizaje del rescate y frenar la propagación, el mutante debe ser neutralizado a toda costa.\n"
                 );
             }
         }

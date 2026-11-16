@@ -218,6 +218,33 @@ public class CharacterRenameManager : MonoBehaviour
         Debug.Log("<color=yellow>[UI]</color> Cerrando interfaz.");
         ForzarCierreUI();
     }
+
+    /// <summary>
+    /// Refleja en el formulario el nombre que devolvió el backend al iniciar sesión.
+    /// No hace un POST: ese valor ya pertenece al perfil remoto.
+    /// </summary>
+    public void AplicarNombreDeCuenta(string nombre)
+    {
+        if (!PlayerIdentity.IsValidUsername(nombre))
+        {
+            Debug.LogWarning("[PERFIL] El backend devolvió un nombre que no cumple el formato permitido.");
+            return;
+        }
+
+        PlayerIdentity.TryUpdateUsername(nombre, out _);
+        if (inputNombre != null)
+        {
+            inputNombre.SetTextWithoutNotify(nombre.Trim());
+            ValidarNombre(nombre);
+        }
+
+        if (AchievementsManager.Instance != null)
+            AchievementsManager.Instance.UsernameJugador = nombre.Trim();
+
+        ActualizarTextos();
+        if (esPrimerInicioActual)
+            BotonCancelar();
+    }
     /*
     public void BotonIrAClave()
     {
