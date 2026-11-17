@@ -9,10 +9,12 @@ public class Muzzle : MonoBehaviour
     [Header("Partículas")]
     [SerializeField] private GameObject flashParticlesPrefab;
     [SerializeField] private int flashParticlesCount = 5;
+    [SerializeField, Min(0.01f)] private float flashParticlesScale = 1f;
 
     [Header("Flash de luz")]
     [SerializeField] private GameObject flashLightPrefab;
     [SerializeField] private float flashLightDuration = 0.05f;
+    [SerializeField, Min(0f)] private float flashLightIntensityScale = 1f;
     [SerializeField] private Vector3 flashLightOffset;
 
     
@@ -26,6 +28,8 @@ public class Muzzle : MonoBehaviour
     public void CopySettingsFrom(Muzzle source)
     {
         flashParticlesPrefab=source.flashParticlesPrefab;flashParticlesCount=source.flashParticlesCount;
+        flashParticlesScale = source.flashParticlesScale;
+        flashLightIntensityScale = source.flashLightIntensityScale;
         flashLightPrefab=source.flashLightPrefab;flashLightDuration=source.flashLightDuration;flashLightOffset=source.flashLightOffset;
     }
     private void Awake()
@@ -47,6 +51,12 @@ public class Muzzle : MonoBehaviour
         particles =
             particlesObject.GetComponentInChildren<ParticleSystem>();
         if(particles){var main=particles.main;main.playOnAwake=false;particles.Stop(true,ParticleSystemStopBehavior.StopEmittingAndClear);
+            if (!Mathf.Approximately(flashParticlesScale, 1f))
+            {
+                main.startSizeMultiplier *= flashParticlesScale;
+                var shape = particles.shape;
+                shape.scale *= flashParticlesScale;
+            }
             var owner=GetComponentInParent<Weapon>();var profile=owner?owner.GetComponent<PackWeaponPresentation>():null;
             if(profile&&!profile.preserveLegacyAnimation){manualSimulation=true;var emission=particles.emission;emission.enabled=false;particles.Play(true);}
         }
@@ -65,7 +75,10 @@ public class Muzzle : MonoBehaviour
                 lightObject.GetComponent<Light>();
 
             if (flashLight != null)
+            {
+                flashLight.intensity *= flashLightIntensityScale;
                 flashLight.enabled = false;
+            }
         }
     }
 

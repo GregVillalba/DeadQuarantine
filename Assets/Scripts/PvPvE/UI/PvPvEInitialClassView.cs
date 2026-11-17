@@ -29,7 +29,23 @@ namespace DeadQuarantine.PvPvE.UI
    if(desired&&root==null)Build();
    if(desired!=shown){shown=desired;if(desired){oldLock=Cursor.lockState;oldVisible=Cursor.visible;store.Load();Refresh();}else RestoreCursor();}
    if(root&&root.activeSelf!=(desired&&(changingLife||!PauseController.LocalPlayerPaused))){root.SetActive(desired&&(changingLife||!PauseController.LocalPlayerPaused));renderedSignature=null;if(root.activeSelf)Refresh();}
+   UpdateInput(IsShowing);
    if(pending&&Time.unscaledTime-pendingSince>8){pending=false;notice="No llegó la confirmación. Podés reintentar.";Refresh();}
+  }
+  void UpdateInput(bool visible)
+  {
+   if(!visible){if(ownedEventSystem)ownedEventSystem.SetActive(false);return;}
+
+   // Loading may still own EventSystem.current when this panel first opens.
+   // Recheck while visible because hiding the loading canvas disables its input.
+   var current=EventSystem.current;
+   if(current&&current.isActiveAndEnabled)return;
+   if(!ownedEventSystem){
+    ownedEventSystem=new GameObject("Initial class input",typeof(EventSystem),typeof(InputSystemUIInputModule));
+    ownedEventSystem.transform.SetParent(transform,false);
+    ownedEventSystem.GetComponent<InputSystemUIInputModule>().AssignDefaultActions();
+   }
+   ownedEventSystem.SetActive(true);
   }
   void LateUpdate(){if(IsShowing){Cursor.lockState=CursorLockMode.None;Cursor.visible=true;}}
   void OnChanged(){if(!root)return;if(observedEpoch!=selector.Epoch.Value){observedEpoch=selector.Epoch.Value;pending=false;notice="";store.Load();}Refresh();}
@@ -86,7 +102,6 @@ namespace DeadQuarantine.PvPvE.UI
    canvas=root.GetComponent<Canvas>();canvas.renderMode=RenderMode.ScreenSpaceOverlay;canvas.sortingOrder=30000;
    var scaler=root.GetComponent<CanvasScaler>();scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize;scaler.referenceResolution=new Vector2(1600,900);scaler.matchWidthOrHeight=.5f;
    root.AddComponent<Image>().color=new Color(.008f,.018f,.022f,.98f);
-   if(!EventSystem.current){ownedEventSystem=new GameObject("Initial class input",typeof(EventSystem),typeof(InputSystemUIInputModule));ownedEventSystem.transform.SetParent(transform,false);ownedEventSystem.GetComponent<InputSystemUIInputModule>().AssignDefaultActions();}
    title=Text("Title",root.transform,"SELECCIONAR CLASE",new(.03f,.89f),new(.96f,.97f),32,Color.white);
    Text("Hint",root.transform,"EQUIPAMIENTO INICIAL",new(.03f,.825f),new(.23f,.87f),17,accent);
    points=Text("Pick10",root.transform,"",new(.27f,.8f),new(.65f,.88f),26,accent);

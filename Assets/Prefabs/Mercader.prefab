@@ -5646,25 +5646,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: Scripts::NPCWeaponVendor
   offers:
   - weaponId: Revolver
-    weaponName: Revolver
+    weaponName: "Rev\u00f3lver"
     cost: 5000
-    weaponIcon: {fileID: 0}
-    imagenTarjeta: {fileID: 21300000, guid: b7df9d66b732fcf4784802357ad58254, type: 3}
-    iconoHud: {fileID: 0}
+    weaponIcon: {fileID: 21300000, guid: 1de1fe71d97d01e499488757f1c6cad4, type: 3}
+    imagenTarjeta: {fileID: 21300000, guid: 1de1fe71d97d01e499488757f1c6cad4, type: 3}
+    iconoHud: {fileID: 21300000, guid: 2c2f8b61c4f418e46bbc0385c3e252e7, type: 3}
     iconoHudRoto: {fileID: 0}
     categoria: 0
-    disponible: 0
-    precioPilaDeLatas: 0
-    precioCantimplora: 0
-    precioBidon: 0
+    disponible: 1
+    precioPilaDeLatas: 3
+    precioCantimplora: 2
+    precioBidon: 1
     dificultades: 7
     modos: 7
-    descripcion: 'Arma de mayor potencia pero con menos carencia que la pistola inicial.  '
-    dano: 50
-    alcance: 150
+    descripcion: "Rev\xF3lver de seis tiros con recarga de tambor."
+    dano: 56
+    alcance: 100
     esArrojadiza: 0
-    capacidadCargador: 7
-    cadencia: 0.5
+    capacidadCargador: 6
+    cadencia: 0.56
     esConsumible: 0
     puntosDeSalud: 0
     esMunicion: 0
@@ -5678,10 +5678,10 @@ MonoBehaviour:
     esBarril: 0
     esTorreta: 0
   - weaponId: Rifle
-    weaponName: Rifle
+    weaponName: "AK-12"
     cost: 15000
-    weaponIcon: {fileID: 21300000, guid: e52152a6a49388b4c9fb41bb241410d9, type: 3}
-    imagenTarjeta: {fileID: 21300000, guid: e52152a6a49388b4c9fb41bb241410d9, type: 3}
+    weaponIcon: {fileID: 21300000, guid: 08790bb9eb8727f49b4c60d3e1d68fd8, type: 3}
+    imagenTarjeta: {fileID: 21300000, guid: 08790bb9eb8727f49b4c60d3e1d68fd8, type: 3}
     iconoHud: {fileID: 21300000, guid: e52152a6a49388b4c9fb41bb241410d9, type: 3}
     iconoHudRoto: {fileID: 0}
     categoria: 0
@@ -5693,11 +5693,11 @@ MonoBehaviour:
     modos: 7
     descripcion: "Con este rifle de asalto puedes mantener alejados a tus enemigos
       por su mayor da\xF1o y su amplio alcance."
-    dano: 50
-    alcance: 120
+    dano: 27
+    alcance: 135
     esArrojadiza: 0
     capacidadCargador: 30
-    cadencia: 600
+    cadencia: 0.105
     esConsumible: 0
     puntosDeSalud: 0
     esMunicion: 0
@@ -5711,10 +5711,10 @@ MonoBehaviour:
     esBarril: 0
     esTorreta: 0
   - weaponId: Escopeta
-    weaponName: Escopeta
+    weaponName: "Escopeta"
     cost: 15000
-    weaponIcon: {fileID: 21300000, guid: f542ce96f9a2a034c9ee4a3e0347df80, type: 3}
-    imagenTarjeta: {fileID: 21300000, guid: f542ce96f9a2a034c9ee4a3e0347df80, type: 3}
+    weaponIcon: {fileID: 21300000, guid: dfe504abb9ea09c428b5c44fa38cdadf, type: 3}
+    imagenTarjeta: {fileID: 21300000, guid: dfe504abb9ea09c428b5c44fa38cdadf, type: 3}
     iconoHud: {fileID: 21300000, guid: f542ce96f9a2a034c9ee4a3e0347df80, type: 3}
     iconoHudRoto: {fileID: 0}
     categoria: 0
@@ -5729,8 +5729,8 @@ MonoBehaviour:
     dano: 200
     alcance: 25
     esArrojadiza: 0
-    capacidadCargador: 10
-    cadencia: 42.25
+    capacidadCargador: 8
+    cadencia: 1
     esConsumible: 0
     puntosDeSalud: 0
     esMunicion: 0
@@ -6140,7 +6140,7 @@ MonoBehaviour:
     esBarril: 0
     esTorreta: 1
   - weaponId: AutoPistol
-    weaponName: "Pistola autom\xE1tica"
+    weaponName: "USP a r\u00e1fagas"
     cost: 8000
     weaponIcon: {fileID: 21300000, guid: 7139559e586d43649b56a2c5a73ac8ba, type: 3}
     imagenTarjeta: {fileID: 21300000, guid: 7139559e586d43649b56a2c5a73ac8ba, type: 3}
@@ -6153,13 +6153,12 @@ MonoBehaviour:
     precioBidon: 0
     dificultades: 7
     modos: 7
-    descripcion: "Pistola autom\xE1tica compacta. Alta cadencia y buena movilidad
-      a corta distancia."
+    descripcion: "Pistola compacta que dispara hasta tres proyectiles por pulsaci\xF3n."
     dano: 18
-    alcance: 55
+    alcance: 70
     esArrojadiza: 0
-    capacidadCargador: 20
-    cadencia: 666.67
+    capacidadCargador: 18
+    cadencia: 0.18666667
     esConsumible: 0
     puntosDeSalud: 0
     esMunicion: 0
@@ -6173,7 +6172,7 @@ MonoBehaviour:
     esBarril: 0
     esTorreta: 0
   - weaponId: SemiRifle
-    weaponName: "Rifle semiautom\xE1tico"
+    weaponName: "ACR"
     cost: 15000
     weaponIcon: {fileID: 21300000, guid: 2360cb7f865f0ef49af605d2fcdc3c4c, type: 3}
     imagenTarjeta: {fileID: 21300000, guid: 2360cb7f865f0ef49af605d2fcdc3c4c, type: 3}
@@ -6191,8 +6190,8 @@ MonoBehaviour:
     dano: 70
     alcance: 180
     esArrojadiza: 0
-    capacidadCargador: 10
-    cadencia: 214.29
+    capacidadCargador: 12
+    cadencia: 0.33
     esConsumible: 0
     puntosDeSalud: 0
     esMunicion: 0
@@ -6206,7 +6205,7 @@ MonoBehaviour:
     esBarril: 0
     esTorreta: 0
   - weaponId: BurstRifle
-    weaponName: "Rifle de r\xE1fagas"
+    weaponName: "M4 (r\u00e1fagas)"
     cost: 16000
     weaponIcon: {fileID: 21300000, guid: 0655de25e00f19c4fad97fd156d4ef8d, type: 3}
     imagenTarjeta: {fileID: 21300000, guid: 0655de25e00f19c4fad97fd156d4ef8d, type: 3}
@@ -6221,11 +6220,11 @@ MonoBehaviour:
     modos: 7
     descripcion: "Rifle de tres disparos por pulsaci\xF3n. Cada r\xE1faga combina
       control y da\xF1o sostenido."
-    dano: 30
-    alcance: 140
+    dano: 28
+    alcance: 145
     esArrojadiza: 0
     capacidadCargador: 30
-    cadencia: 857.14
+    cadencia: 0.16333333
     esConsumible: 0
     puntosDeSalud: 0
     esMunicion: 0
@@ -6239,7 +6238,7 @@ MonoBehaviour:
     esBarril: 0
     esTorreta: 0
   - weaponId: P90
-    weaponName: P90
+    weaponName: "P90"
     cost: 17000
     weaponIcon: {fileID: 21300000, guid: 6fa41a61429010b4c872624c5f7da992, type: 3}
     imagenTarjeta: {fileID: 21300000, guid: 6fa41a61429010b4c872624c5f7da992, type: 3}
@@ -6255,10 +6254,10 @@ MonoBehaviour:
     descripcion: "Subfusil P90 con cargador de 50 balas y cadencia muy alta. Ideal
       para mantener presi\xF3n."
     dano: 20
-    alcance: 85
+    alcance: 90
     esArrojadiza: 0
     capacidadCargador: 50
-    cadencia: 937.5
+    cadencia: 0.075
     esConsumible: 0
     puntosDeSalud: 0
     esMunicion: 0
@@ -6272,7 +6271,7 @@ MonoBehaviour:
     esBarril: 0
     esTorreta: 0
   - weaponId: Vector
-    weaponName: Vector
+    weaponName: "Vector"
     cost: 17000
     weaponIcon: {fileID: 21300000, guid: 66b35cca2aeca6d418e20182c9c38864, type: 3}
     imagenTarjeta: {fileID: 21300000, guid: 66b35cca2aeca6d418e20182c9c38864, type: 3}
@@ -6287,11 +6286,11 @@ MonoBehaviour:
     modos: 7
     descripcion: "Vector de alt\xEDsima cadencia para combate cercano. Vac\xEDa el
       cargador con rapidez."
-    dano: 18
-    alcance: 55
+    dano: 17
+    alcance: 60
     esArrojadiza: 0
     capacidadCargador: 25
-    cadencia: 1090.91
+    cadencia: 0.055
     esConsumible: 0
     puntosDeSalud: 0
     esMunicion: 0
@@ -6305,7 +6304,7 @@ MonoBehaviour:
     esBarril: 0
     esTorreta: 0
   - weaponId: MAC10
-    weaponName: MAC-10
+    weaponName: "MAC-10"
     cost: 12000
     weaponIcon: {fileID: 21300000, guid: 23d7abdd964095c41b5349d5f164288e, type: 3}
     imagenTarjeta: {fileID: 21300000, guid: 23d7abdd964095c41b5349d5f164288e, type: 3}
@@ -6320,11 +6319,11 @@ MonoBehaviour:
     modos: 7
     descripcion: Subfusil compacto de corto alcance y elevada cadencia. El modelo
       SMG_03 es el equivalente visual disponible en el pack.
-    dano: 17
-    alcance: 45
+    dano: 18
+    alcance: 50
     esArrojadiza: 0
     capacidadCargador: 30
-    cadencia: 1000
+    cadencia: 0.065
     esConsumible: 0
     puntosDeSalud: 0
     esMunicion: 0
@@ -6531,7 +6530,7 @@ MonoBehaviour:
     esBarril: 0
     esTorreta: 0
   - weaponId: Handgun
-    weaponName: Handgun
+    weaponName: "Pistola inicial"
     cost: 15000
     weaponIcon: {fileID: 21300000, guid: 00d94a123b126984dac4f20634e44b0d, type: 3}
     imagenTarjeta: {fileID: 21300000, guid: 00d94a123b126984dac4f20634e44b0d, type: 3}
@@ -6544,12 +6543,12 @@ MonoBehaviour:
     precioBidon: 1
     dificultades: 7
     modos: 7
-    descripcion: Handgun
-    dano: 25
-    alcance: 100
+    descripcion: "Pistola inicial"
+    dano: 26
+    alcance: 75
     esArrojadiza: 0
     capacidadCargador: 12
-    cadencia: 600
+    cadencia: 0.23
     esConsumible: 0
     puntosDeSalud: 0
     esMunicion: 0
@@ -6563,7 +6562,7 @@ MonoBehaviour:
     esBarril: 0
     esTorreta: 0
   - weaponId: Handgun01
-    weaponName: Pistola 01
+    weaponName: "Glock autom\u00e1tica"
     cost: 15000
     weaponIcon: {fileID: 21300000, guid: 74f976e87d790ce49abd3c2ca03e0074, type: 3}
     imagenTarjeta: {fileID: 21300000, guid: 74f976e87d790ce49abd3c2ca03e0074, type: 3}
@@ -6576,12 +6575,12 @@ MonoBehaviour:
     precioBidon: 1
     dificultades: 7
     modos: 7
-    descripcion: Pistola 01
-    dano: 32
+    descripcion: "Pistola autom\u00e1tica compacta de disparo continuo."
+    dano: 20
     alcance: 70
     esArrojadiza: 0
-    capacidadCargador: 12
-    cadencia: 222.22
+    capacidadCargador: 18
+    cadencia: 0.075
     esConsumible: 0
     puntosDeSalud: 0
     esMunicion: 0
@@ -6595,7 +6594,7 @@ MonoBehaviour:
     esBarril: 0
     esTorreta: 0
   - weaponId: Handgun02
-    weaponName: Pistola 02
+    weaponName: "Five-Seven"
     cost: 15000
     weaponIcon: {fileID: 21300000, guid: 6e1440920e7b0ed4098b1e05bd2ec1d2, type: 3}
     imagenTarjeta: {fileID: 21300000, guid: 6e1440920e7b0ed4098b1e05bd2ec1d2, type: 3}
@@ -6608,12 +6607,12 @@ MonoBehaviour:
     precioBidon: 1
     dificultades: 7
     modos: 7
-    descripcion: Pistola 02
-    dano: 40
-    alcance: 80
+    descripcion: "Five-Seven"
+    dano: 34
+    alcance: 100
     esArrojadiza: 0
-    capacidadCargador: 8
-    cadencia: 171.43
+    capacidadCargador: 15
+    cadencia: 0.26
     esConsumible: 0
     puntosDeSalud: 0
     esMunicion: 0
@@ -6627,7 +6626,7 @@ MonoBehaviour:
     esBarril: 0
     esTorreta: 0
   - weaponId: SMG02
-    weaponName: Subfusil 02
+    weaponName: "UMP"
     cost: 15000
     weaponIcon: {fileID: 21300000, guid: 21f6f9d634fb03d45b1f05e3eb6a8b66, type: 3}
     imagenTarjeta: {fileID: 21300000, guid: 21f6f9d634fb03d45b1f05e3eb6a8b66, type: 3}
@@ -6640,12 +6639,12 @@ MonoBehaviour:
     precioBidon: 1
     dificultades: 7
     modos: 7
-    descripcion: Subfusil 02
-    dano: 21
-    alcance: 80
+    descripcion: "UMP"
+    dano: 26
+    alcance: 90
     esArrojadiza: 0
-    capacidadCargador: 30
-    cadencia: 705.88
+    capacidadCargador: 25
+    cadencia: 0.105
     esConsumible: 0
     puntosDeSalud: 0
     esMunicion: 0
@@ -6659,7 +6658,7 @@ MonoBehaviour:
     esBarril: 0
     esTorreta: 0
   - weaponId: SMG05
-    weaponName: Subfusil 05
+    weaponName: "MP5"
     cost: 15000
     weaponIcon: {fileID: 21300000, guid: 1b61341f4cc0c5b43baf22b88060dc9e, type: 3}
     imagenTarjeta: {fileID: 21300000, guid: 1b61341f4cc0c5b43baf22b88060dc9e, type: 3}
@@ -6672,12 +6671,12 @@ MonoBehaviour:
     precioBidon: 1
     dificultades: 7
     modos: 7
-    descripcion: Subfusil 05
-    dano: 24
-    alcance: 95
+    descripcion: "MP5"
+    dano: 22
+    alcance: 85
     esArrojadiza: 0
     capacidadCargador: 30
-    cadencia: 600
+    cadencia: 0.08
     esConsumible: 0
     puntosDeSalud: 0
     esMunicion: 0
@@ -6691,10 +6690,10 @@ MonoBehaviour:
     esBarril: 0
     esTorreta: 0
   - weaponId: Sniper01
-    weaponName: Rifle de cerrojo 01
+    weaponName: "M24"
     cost: 15000
-    weaponIcon: {fileID: 21300000, guid: 24e2153d5df023e43a5794f8c15da557, type: 3}
-    imagenTarjeta: {fileID: 21300000, guid: 24e2153d5df023e43a5794f8c15da557, type: 3}
+    weaponIcon: {fileID: 21300000, guid: af7fbb2781391d747a0171c03541ed4b, type: 3}
+    imagenTarjeta: {fileID: 21300000, guid: af7fbb2781391d747a0171c03541ed4b, type: 3}
     iconoHud: {fileID: 21300000, guid: 24e2153d5df023e43a5794f8c15da557, type: 3}
     iconoHudRoto: {fileID: 0}
     categoria: 0
@@ -6704,12 +6703,12 @@ MonoBehaviour:
     precioBidon: 1
     dificultades: 7
     modos: 7
-    descripcion: Rifle de cerrojo 01
-    dano: 95
-    alcance: 250
+    descripcion: "M24"
+    dano: 150
+    alcance: 260
     esArrojadiza: 0
     capacidadCargador: 5
-    cadencia: 29.27
+    cadencia: 1.85
     esConsumible: 0
     puntosDeSalud: 0
     esMunicion: 0
@@ -6723,10 +6722,10 @@ MonoBehaviour:
     esBarril: 0
     esTorreta: 0
   - weaponId: Sniper02
-    weaponName: "Rifle de precisi\xF3n 02"
+    weaponName: "M107"
     cost: 15000
-    weaponIcon: {fileID: 21300000, guid: 3f9e01a142b2d394bb86462b8d4110ee, type: 3}
-    imagenTarjeta: {fileID: 21300000, guid: 3f9e01a142b2d394bb86462b8d4110ee, type: 3}
+    weaponIcon: {fileID: 21300000, guid: 756fc2a7433d1a84fbee052e680eaf2b, type: 3}
+    imagenTarjeta: {fileID: 21300000, guid: 756fc2a7433d1a84fbee052e680eaf2b, type: 3}
     iconoHud: {fileID: 21300000, guid: 3f9e01a142b2d394bb86462b8d4110ee, type: 3}
     iconoHudRoto: {fileID: 0}
     categoria: 0
@@ -6736,12 +6735,12 @@ MonoBehaviour:
     precioBidon: 1
     dificultades: 7
     modos: 7
-    descripcion: "Rifle de precisi\xF3n 02"
-    dano: 65
-    alcance: 220
+    descripcion: "M107"
+    dano: 200
+    alcance: 260
     esArrojadiza: 0
-    capacidadCargador: 10
-    cadencia: 125
+    capacidadCargador: 5
+    cadencia: 2.25
     esConsumible: 0
     puntosDeSalud: 0
     esMunicion: 0
@@ -6755,10 +6754,10 @@ MonoBehaviour:
     esBarril: 0
     esTorreta: 0
   - weaponId: Sniper03
-    weaponName: "Rifle de precisi\xF3n 03"
+    weaponName: "SVD"
     cost: 15000
-    weaponIcon: {fileID: 21300000, guid: 81f864ce69a89c340874f373a226e140, type: 3}
-    imagenTarjeta: {fileID: 21300000, guid: 81f864ce69a89c340874f373a226e140, type: 3}
+    weaponIcon: {fileID: 21300000, guid: dd060e0d9e218064c9491c8674a636e0, type: 3}
+    imagenTarjeta: {fileID: 21300000, guid: dd060e0d9e218064c9491c8674a636e0, type: 3}
     iconoHud: {fileID: 21300000, guid: 81f864ce69a89c340874f373a226e140, type: 3}
     iconoHudRoto: {fileID: 0}
     categoria: 0
@@ -6768,12 +6767,12 @@ MonoBehaviour:
     precioBidon: 1
     dificultades: 7
     modos: 7
-    descripcion: "Rifle de precisi\xF3n 03"
-    dano: 60
-    alcance: 200
+    descripcion: "SVD"
+    dano: 100
+    alcance: 230
     esArrojadiza: 0
     capacidadCargador: 10
-    cadencia: 142.86
+    cadencia: 0.85
     esConsumible: 0
     puntosDeSalud: 0
     esMunicion: 0

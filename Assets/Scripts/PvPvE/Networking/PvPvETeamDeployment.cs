@@ -80,9 +80,21 @@ namespace DeadQuarantine.PvPvE.Networking
   }
   bool Deploy(ulong id,int classIndex,FixedString4096Bytes json){
    var definition=JsonUtility.FromJson<PvPvEClassDefinition>(json.ToString());
-   if(!Settings.Loadouts.Validate(definition,out _)||!TryChooseSpawn(id,out var position,out var rotation))return false;
+   if(!Settings.Loadouts.Validate(definition,out _))return false;
    var obj=Player(id);
-   if(!obj){var go=Instantiate(Settings.PlayerPrefab,position,rotation);SceneManager.MoveGameObjectToScene(go,PvPvEMapContext.Active.gameObject.scene);obj=go.GetComponent<NetworkObject>();obj.SpawnAsPlayerObject(id,true);}
+   Vector3 position;
+   Quaternion rotation;
+   if(obj&&obj.IsSpawned){
+    // The initial player is already at a team spawn while choosing their class.
+    position=obj.transform.position;
+    rotation=obj.transform.rotation;
+   }else{
+    if(!TryChooseSpawn(id,out position,out rotation))return false;
+    var go=Instantiate(Settings.PlayerPrefab,position,rotation);
+    SceneManager.MoveGameObjectToScene(go,PvPvEMapContext.Active.gameObject.scene);
+    obj=go.GetComponent<NetworkObject>();
+    obj.SpawnAsPlayerObject(id,true);
+   }
    var health=obj.GetComponent<PlayerHealth>();
    if(!health.AplicarWildcardsDeClaseServidor(definition,true)||!obj.GetComponent<NetworkWeaponAttachments>().ApplyClassServer(definition))return false;
    if(++sequence==0)sequence=1;

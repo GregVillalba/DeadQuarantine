@@ -35,7 +35,40 @@ public sealed class WeaponAttachmentCatalog : ScriptableObject
         public bool magnifiedLens;
         public float lensFieldOfView=4.25f;
         public float zoom;
-        public float LensFieldOfView(float hipFov)=>zoom>1?2*Mathf.Atan(Mathf.Tan(hipFov*.5f*Mathf.Deg2Rad)/zoom)*Mathf.Rad2Deg:lensFieldOfView;
+        public float traditionalZoom;
+        public float LensFieldOfView(float hipFov, bool pvpve = true) {
+            float magnification = !pvpve && traditionalZoom > 1 ? traditionalZoom : zoom;
+            return magnification > 1 ? 2 * Mathf.Atan(Mathf.Tan(hipFov * .5f * Mathf.Deg2Rad) /
+                magnification) * Mathf.Rad2Deg : lensFieldOfView;
+        }
+        public string StatDescription {
+            get {
+                var lines = new System.Collections.Generic.List<string>();
+                void Percent(string label, float value, bool lowerIsBetter, bool conditional = false) {
+                    if (Mathf.Abs(value - 1) < .0001f) return;
+                    bool good = lowerIsBetter ? value < 1 : value > 1;
+                    float change = label == "Estabilidad al apuntar" ? (1 - value) * 100 : (value - 1) * 100;
+                    string sign = change > 0 ? "+" : "";
+                    string color = good ? "#48EB7A" : "#FF6452";
+                    lines.Add($"<color={color}>{sign}{change:0.#}% {label}</color>" +
+                        (conditional && requiresBracing ? " · agachado, ADS e inmóvil" : ""));
+                }
+                if (zoom > 1) lines.Add($"<color=#48EB7A>Zoom {zoom:0.#}×</color>");
+                Percent("Tiempo ADS", adsDuration, true);
+                Percent("Estabilidad al apuntar", adsSway, true, true);
+                Percent("Retroceso", recoil, true, true);
+                Percent("Retroceso vertical", verticalRecoil, true, true);
+                Percent("Retroceso horizontal", horizontalRecoil, true, true);
+                Percent("Dispersión desde cadera", spread, true);
+                Percent("Alcance de daño", range, false);
+                Percent("Movilidad", mobility, false);
+                Percent("Movimiento apuntando", adsMovement, false);
+                if (suppressed) lines.Add("<color=#48EB7A>El disparo no revela en el minimapa</color>");
+                if (laser) lines.Add("<color=#FF6452>Láser visible para enemigos</color>");
+                if (flashlight) lines.Add("<color=#48EB7A>Ilumina zonas oscuras</color>\n<color=#FF6452>Luz visible para enemigos</color>");
+                return string.Join("\n", lines);
+            }
+        }
         public float damage=1, spread=1, recoil=1, aimFov=50;
         public float range=1,adsDuration=1,mobility=1,adsMovement=1,adsSway=1,incomingShake=1;
         public float verticalRecoil=1,horizontalRecoil=1;
@@ -57,8 +90,13 @@ public sealed class WeaponAttachmentCatalog : ScriptableObject
     // Shared by server, presentation and statistics; bracing never removes permanent penalties.
     public float Modifier(WeaponAttachmentChoice choice,Func<Entry,float> select,bool braced=true,bool conditional=false){
         float result=1;
-        foreach(WeaponAttachmentKind kind in Enum.GetValues(typeof(WeaponAttachmentKind))){var e=Find(choice.Get(kind));if(e!=null&&(!conditional||!e.requiresBracing||braced))result*=select(e);}
-        return result;
+        foreach(WeaponAttachmentKind kind in Enum.GetValues(typeof(WeaponAttachmentKind))){
+            var e=Find(choice.Get(kind));
+            if(e==null || conditional && e.requiresBracing && !braced)continue;
+            float factor=select(e);
+            result*=float.IsFinite(factor)&&factor>=0 ? Mathf.Clamp(factor,0,5) : 1f;
+        }
+        return Mathf.Clamp(result,0,5);
     }
     public bool Eligible(string weapon)=>Array.IndexOf(eligibleWeapons,weapon)>=0;
     public bool Allows(string weapon,WeaponAttachmentKind kind,string id) {

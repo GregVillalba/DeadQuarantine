@@ -18,6 +18,7 @@ namespace DeadQuarantine.PvPvE
    public Sprite whiteBody,whiteMagazine,whiteDefaultSight;
    public string id,name;public bool secondary;public Sprite icon;public GameObject model;
    public int damage,magazine;public float range,fireInterval;
+   public Weapon statisticsSource;
    // Derived from the existing Weapon/override clips by the mode installer; no second weapon implementation.
    public int pellets=1,burstCount=1;public float burstCooldown,falloffStart,falloffEnd,minDamageMultiplier=1,maxSpread=45;
    public float reloadSeconds=1.5f,emptyReloadSeconds=1.5f,shellOpenSeconds=.5f,shellSeconds=.5f;

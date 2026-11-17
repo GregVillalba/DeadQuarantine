@@ -73,8 +73,8 @@ public partial class WeaponAttachments
         if(optic!=null)
         {
             // Preserve the catalog magnification after projecting the square render onto a smaller lens.
-            float halfAngle=optic.LensFieldOfView(scopeWeapon.HipFieldOfView)*.5f*Mathf.Deg2Rad;
-            scopeCamera.fieldOfView=Mathf.Max(1f,2f*Mathf.Atan(Mathf.Tan(halfAngle)*ScreenHeightOfAperture())*Mathf.Rad2Deg);
+            float halfAngle=optic.LensFieldOfView(scopeWeapon.HipFieldOfView, UsesPvPvEModifiers)*.5f*Mathf.Deg2Rad;
+            scopeCamera.fieldOfView=Mathf.Max(.1f,2f*Mathf.Atan(Mathf.Tan(halfAngle)*ScreenHeightOfAperture())*Mathf.Rad2Deg);
         }
         var aim = scopeWeapon.GetShotAimRay();
         scopeCamera.transform.SetPositionAndRotation(view.transform.position, Quaternion.LookRotation(aim.direction, view.transform.up));

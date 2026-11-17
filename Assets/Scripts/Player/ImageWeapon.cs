@@ -489,7 +489,7 @@ public class ImageWeapon : MonoBehaviour
         if (slotControlled)
         {
             // Icono de un casillero: diseño estándar (300 x 100, posición 50, 0, 0) o encuadre automático.
-            if (slotStandardLayout && !modeRenderedIcon && !pvpveWhiteComposition)
+            if (slotStandardLayout && !modeRenderedIcon && !pvpveWhiteComposition && !UsesSniperSlotFit)
             {
                 ApplyLayers(
                     new Vector2(StandardSize.x * frameScale.x, StandardSize.y * frameScale.y),
@@ -562,9 +562,15 @@ public class ImageWeapon : MonoBehaviour
             -(contentCenter.x - canvasCenter.x) * kx + (pvpveWhiteComposition ? 0 : frameOffset.x),
             -(contentCenter.y - canvasCenter.y) * ky + (pvpveWhiteComposition ? 0 : frameOffset.y));
 
+        if (UsesSniperSlotFit)
+            position -= frameOffset;
         if (modeRenderedIcon) position = Vector2.zero;
         ApplyLayers(size, position, slotControlled || modeRenderedIcon);
     }
+
+    private bool UsesSniperSlotFit =>
+        slotControlled && !pvpveWhiteComposition &&
+        attachments && attachments.StableWeaponId is "Sniper01" or "Sniper02" or "Sniper03";
 
     Vector2 UtilityIconOffset(){
         var catalog=savedCatalog?savedCatalog:attachments?attachments.Catalog:null;var choice=savedCatalog?savedChoice:attachments?attachments.ApprovedChoice:default;string id=savedGun!=null?savedGun.id:attachments?attachments.StableWeaponId:"";

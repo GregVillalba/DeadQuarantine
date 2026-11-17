@@ -100,9 +100,9 @@ namespace DeadQuarantine.PvPvE.Networking
   void EnsurePlayer(PvPvEParticipant participant){
    if(!participant.Has(PvPvEReadyFlags.Loaded)||!NetworkManager.ConnectedClients.TryGetValue(participant.ClientId,out var client)||client.PlayerObject)return;
    var context=PvPvEMapContext.Active;if(!context||!context.Scenario||context.Scenario.TipoEscenario!=Map.Value)return;
-   var point=context.Scenario.SpawnJugador;if(!point){Fail("El escenario no tiene un punto de preparación válido.");return;}
-   // Temporary initialization position; phase16 owns team placement and safe respawn selection.
-   var player=Instantiate(Settings.PlayerPrefab,point.position+Vector3.up*.2f,point.rotation);
+   // Spawn directly at a free team point before opening the class picker.
+   if(!GetComponent<PvPvETeamDeployment>().TryChooseSpawn(participant.ClientId,out var position,out var rotation))return;
+   var player=Instantiate(Settings.PlayerPrefab,position,rotation);
    SceneManager.MoveGameObjectToScene(player,context.gameObject.scene);player.GetComponent<NetworkObject>().SpawnAsPlayerObject(participant.ClientId,true);
   }
   void Update(){

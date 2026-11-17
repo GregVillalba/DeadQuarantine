@@ -36,7 +36,7 @@ namespace DeadQuarantine.PvPvE.Networking {
   [System.Diagnostics.Conditional("UNITY_EDITOR"),System.Diagnostics.Conditional("DEVELOPMENT_BUILD")] void DebugShot(string message){LastShotDiagnostic=message;}
 
   PvPvETeamRoster roster;PvPvETeamDeployment deployment;PvPvEPreparationFlow flow;PvPvEKillFeedback feedback;
-  sealed class Life {public uint Revision,LastShot;public ulong ObjectId;public int Equipped=-1,Burst;public double NextShot,NextMelee;public readonly Dictionary<int,Reload> Reloads=new();}
+  sealed class Life {public uint Revision,LastShot;public ulong ObjectId;public int Equipped=-1,Burst;public double NextShot,NextMelee,SprintReady;public bool Sprinting;public readonly Dictionary<int,Reload> Reloads=new();}
   sealed class Reload {public double Next;public bool Active,Filled;}
   readonly Dictionary<ulong,Life> lives=new();readonly HashSet<(ulong,uint)> dead=new();
   PvPvEZombieDirector zombies;
@@ -83,6 +83,11 @@ namespace DeadQuarantine.PvPvE.Networking {
   public bool ObserveStateServer(PlayerHealth health,int weapon,byte flags){
    if(!IsServer||!health||!health.IsSpawned||!health.ArmaPermitidaPorClase(health.GetComponent<NetworkWeaponPresentation>().Weapons[weapon].Id))return false;
    EnsureLife(health);if(!lives.TryGetValue(health.OwnerClientId,out var life))return true;
+   bool sprinting = (flags & 128) != 0;
+   if (life.Sprinting && !sprinting)
+       // The client starts its timer on the last sprinting frame, before the stop-state RPC.
+       life.SprintReady = Now + Math.Max(0, health.GetComponent<NetworkWeaponPresentation>().Weapons[weapon].Source.SprintToFireSeconds - .03f);
+   life.Sprinting = sprinting;
    bool switched=life.Equipped!=weapon;if(switched){foreach(var r in life.Reloads.Values)r.Active=false;for(int i=0;i<Ammunition.Count;i++)if(Ammunition[i].ClientId==health.OwnerClientId){var oldAmmo=Ammunition[i];oldAmmo.Reloading=false;Ammunition[i]=oldAmmo;}life.Equipped=weapon;life.Burst=0;}
    if(!IsPlaying||!Alive(health))return true;
    if(!life.Reloads.TryGetValue(weapon,out var reload))life.Reloads[weapon]=reload=new Reload();
@@ -106,41 +111,104 @@ namespace DeadQuarantine.PvPvE.Networking {
    resolved=targets;
    if(!IsServer||!IsPlaying||!Alive(shooter)||LocalOrServerBlocked(shooter)){RejectedShots++;return false;}
    EnsureLife(shooter);var presentation=shooter.GetComponent<NetworkWeaponPresentation>();var spec=Spec(shooter,weapon);
-   if(spec==null||!lives.TryGetValue(shooter.OwnerClientId,out var life)||!shooter.ArmaPermitidaPorClase(spec.id)||!TryAmmo(shooter.OwnerClientId,weapon,out var ammo)||targets==null||targets.Length!=Mathf.Clamp(spec.pellets,1,16)||sequence<=life.LastShot||Now+.015<life.NextShot||ammo.Magazine<1||ammo.Reloading||!ValidOrigin(shooter,origin)){TryAmmo(shooter.OwnerClientId,weapon,out var rejectedAmmo);DebugShot("rejected: actor="+shooter.OwnerClientId+" seq="+sequence+" ammo="+rejectedAmmo.Magazine+" reloading="+rejectedAmmo.Reloading+" origin="+ValidOrigin(shooter,origin)+" time="+Now);RejectedShots++;return false;}
+   if(spec==null||!lives.TryGetValue(shooter.OwnerClientId,out var life)||!shooter.ArmaPermitidaPorClase(spec.id)||!TryAmmo(shooter.OwnerClientId,weapon,out var ammo)||targets==null||targets.Length!=Mathf.Clamp(spec.pellets,1,16)||sequence<=life.LastShot||life.Sprinting||Now<life.SprintReady||Now+.015<life.NextShot||ammo.Magazine<1||ammo.Reloading||!ValidOrigin(shooter,origin)){TryAmmo(shooter.OwnerClientId,weapon,out var rejectedAmmo);DebugShot("rejected: actor="+shooter.OwnerClientId+" seq="+sequence+" ammo="+rejectedAmmo.Magazine+" reloading="+rejectedAmmo.Reloading+" origin="+ValidOrigin(shooter,origin)+" time="+Now);RejectedShots++;return false;}
    if(life.Equipped>=0&&life.Equipped!=weapon){RejectedShots++;return false;}
-   float rangeMultiplier=AttachmentRange(shooter,weapon);float effectiveRange=spec.range*rangeMultiplier;
+   float rangeMultiplier=AttachmentRange(shooter,weapon);float effectiveRange=spec.range;
    Vector3 average=Vector3.zero;foreach(var target in targets){var delta=target-origin;if(!Finite(target)||delta.sqrMagnitude<.001f||delta.magnitude>effectiveRange+5){RejectedShots++;return false;}average+=delta.normalized;}
    if(average.sqrMagnitude<.1f){RejectedShots++;return false;}
    foreach(var target in targets)if(Vector3.Angle(average,target-origin)>spec.maxSpread+5){RejectedShots++;return false;}
    life.LastShot=sequence;life.Equipped=weapon;life.NextShot=Now+Mathf.Max(.025f,spec.fireInterval);
-   if(spec.burstCount>1&&++life.Burst>=spec.burstCount){life.Burst=0;life.NextShot=Now+Mathf.Max(spec.fireInterval,spec.burstCooldown);}
+   if(spec.burstCount>1&&(++life.Burst>=spec.burstCount||ammo.Magazine==1)){life.Burst=0;life.NextShot=Now+Mathf.Max(spec.fireInterval,spec.burstCooldown);}
    ammo.Magazine--;Ammunition[AmmoIndex(shooter.OwnerClientId,weapon)]=ammo;deployment.CancelProtectionServer(shooter.OwnerClientId);AcceptedShots++;
    resolved=new Vector3[targets.Length];
    float multiplier=shooter.GetComponent<NetworkWeaponAttachments>()?.catalog is { } catalog?AttachmentDamage(shooter,weapon,catalog):1;
    for(int i=0;i<targets.Length;i++){
     Vector3 direction=(targets[i]-origin).normalized;resolved[i]=origin+direction*effectiveRange;
+    var source = presentation.Weapons[weapon].Source;
+    if (source && source.PenetrationTargets > 1)
+    {
+     resolved[i] = ApplyPenetratingShot(shooter, source, new Ray(origin, direction), spec, multiplier, rangeMultiplier);
+     continue;
+    }
     if(!Trace(shooter,origin,direction,effectiveRange,out var hit,out var victim)){DebugShot("accepted miss: actor="+shooter.OwnerClientId+" origin="+origin+" target="+targets[i]+" direction="+direction);continue;}DebugShot("accepted collision: actor="+shooter.OwnerClientId+" collider="+hit.collider.name+" target="+(victim?victim.OwnerClientId.ToString():"world")+" origin="+origin+" point="+hit.point);resolved[i]=hit.point;
-    if(!victim){ApplyZombieShot(shooter,hit,origin,direction,spec,multiplier,rangeMultiplier);continue;}var hurtbox=victim.GetComponent<PvPvEHurtbox>();bool head=hurtbox&&hit.point.y>hurtbox.HeadThreshold;
-    float falloff=Mathf.Lerp(1,spec.minDamageMultiplier,Mathf.InverseLerp(spec.falloffStart*rangeMultiplier,Mathf.Max(spec.falloffStart+.01f,spec.falloffEnd)*rangeMultiplier,hit.distance));
-    int damage=Mathf.Max(1,Mathf.RoundToInt(spec.damage/(float)Mathf.Max(1,spec.pellets)*multiplier*falloff*(head?Settings.HeadshotMultiplier:1)));
-    ApplyDamageServer(shooter.OwnerClientId,victim,damage,PvPvEDamageKind.Bullet,head,hit.distance,spec.id);
+    float baseDamage = spec.damage / (float)Mathf.Max(1, spec.pellets);
+    if (!victim)
+        ApplyZombieShot(shooter, hit, origin, direction, spec, multiplier, rangeMultiplier);
+    else
+        ApplyPlayerBullet(shooter, victim, hit, spec, baseDamage, multiplier, rangeMultiplier);
    }
    return true;
+  }
+  Vector3 ApplyPenetratingShot(PlayerHealth shooter, Weapon weapon, Ray ray, PvPvELoadoutCatalog.Gun spec, float multiplier, float rangeMultiplier)
+  {
+   var trace = weapon.TracePenetratingShot(ray, spec.range, hit =>
+   {
+    var (target, ignore) = ClassifyShotHit(shooter, hit);
+    if (ignore)
+        return (null, true);
+    if (target is PlayerHealth player && !CanDamage(shooter.OwnerClientId, player))
+        return (null, false);
+    if (target is ZombieHealth zombie && !zombies.Owns(zombie))
+        return (null, false);
+    return (target, false);
+   });
+   for (int i = 0; i < trace.Targets.Count; i++)
+   {
+    var (hit, target) = trace.Targets[i];
+    float baseDamage = weapon.PenetrationBaseDamage(spec.damage, i);
+    if (target is PlayerHealth player)
+        ApplyPlayerBullet(shooter, player, hit, spec, baseDamage, multiplier, rangeMultiplier);
+    else if (target is ZombieHealth zombie)
+    {
+     if (zombie.IsDead)
+         continue;
+     var (head, limb) = Weapon.PenetrationHitRegions(zombie, hit, trace.Hits, trace.BlockDistance);
+     ApplyZombieBullet(shooter, zombie, hit, spec, baseDamage, multiplier, rangeMultiplier, head, limb);
+     if (zombie.IsDead)
+         PublishPenetrationZombieFeed(shooter.OwnerClientId, zombie.NetworkObjectId, spec.name, head);
+    }
+   }
+   return trace.End;
+  }
+  static float BulletFalloff(PvPvELoadoutCatalog.Gun spec, float rangeMultiplier, float distance)
+  {
+   if (spec.statisticsSource)
+       return spec.statisticsSource.DamageMultiplierAt(distance, rangeMultiplier);
+   float actualDistance = distance / Mathf.Clamp(rangeMultiplier, .1f, 3f);
+   return actualDistance <= spec.falloffStart ? 1f :
+       actualDistance < spec.falloffEnd ? .75f : Mathf.Clamp01(spec.minDamageMultiplier);
+  }
+  void ApplyPlayerBullet(PlayerHealth shooter, PlayerHealth victim, RaycastHit hit,
+      PvPvELoadoutCatalog.Gun spec, float baseDamage, float multiplier, float rangeMultiplier)
+  {
+   var hurtbox = victim.GetComponent<PvPvEHurtbox>();
+   bool head = hurtbox && hit.point.y > hurtbox.HeadThreshold;
+   int damage = Mathf.Max(1, Mathf.RoundToInt(baseDamage * multiplier * BulletFalloff(spec, rangeMultiplier, hit.distance) *
+       (head ? Settings.HeadshotMultiplier : 1)));
+   ApplyDamageServer(shooter.OwnerClientId, victim, damage, PvPvEDamageKind.Bullet, head, hit.distance, spec.id);
   }
   // Same head/limb priority as Weapon's existing zombie hit resolution, using server physics.
   void ApplyZombieShot(PlayerHealth shooter,RaycastHit impact,Vector3 origin,Vector3 direction,PvPvELoadoutCatalog.Gun spec,float multiplier,float rangeMultiplier){
    var zombie=impact.collider.GetComponentInParent<ZombieHealth>();if(!zombie||!zombies.Owns(zombie))return;
    bool head=false;int variant=-1;float closest=float.PositiveInfinity;
-   foreach(var hit in Physics.RaycastAll(origin,direction,spec.range*rangeMultiplier,~0,QueryTriggerInteraction.Collide)){
+   foreach(var hit in Physics.RaycastAll(origin,direction,spec.range,~0,QueryTriggerInteraction.Collide)){
     var headbox=hit.collider.GetComponent<ZombieHeadHitbox>();if(headbox&&headbox.Owner==zombie)head=true;
     var limb=hit.collider.GetComponent<ZombieLimbHitbox>();if(limb&&limb.Owner==zombie&&hit.distance<=impact.distance+.45f&&hit.distance<closest){closest=hit.distance;variant=limb.HitVariant;}
    }
-   float falloff=Mathf.Lerp(1,spec.minDamageMultiplier,Mathf.InverseLerp(spec.falloffStart*rangeMultiplier,Mathf.Max(spec.falloffStart+.01f,spec.falloffEnd)*rangeMultiplier,impact.distance));
-   int amount=Mathf.Max(1,Mathf.RoundToInt(spec.damage/(float)Mathf.Max(1,spec.pellets)*multiplier*falloff));
+   ApplyZombieBullet(shooter, zombie, impact, spec, spec.damage / (float)Mathf.Max(1, spec.pellets),
+       multiplier, rangeMultiplier, head, variant);
+  }
+  void ApplyZombieBullet(PlayerHealth shooter, ZombieHealth zombie, RaycastHit impact, PvPvELoadoutCatalog.Gun spec,
+      float baseDamage, float multiplier, float rangeMultiplier, bool head, int variant)
+  {
+   int amount = Mathf.Max(1, Mathf.RoundToInt(baseDamage * multiplier * BulletFalloff(spec, rangeMultiplier, impact.distance)));
    var previous=zombieShot;zombieShot=(zombie,shooter.OwnerClientId,head,impact.distance,spec.id);try{zombie.RecibirDisparoPvPvEServidor(amount,impact.point,impact.normal,shooter.OwnerClientId,head,variant);}finally{zombieShot=previous;}
   }
   float AttachmentRange(PlayerHealth health,int index){var source=health.GetComponent<NetworkWeaponAttachments>();return source&&source.catalog?source.catalog.Modifier(source.GetChoice(index),e=>e.range):1;}
-  float AttachmentDamage(PlayerHealth health,int index,WeaponAttachmentCatalog catalog){float value=1;var choice=health.GetComponent<NetworkWeaponAttachments>().GetChoice(index);foreach(WeaponAttachmentKind kind in Enum.GetValues(typeof(WeaponAttachmentKind))){var e=catalog.Find(choice.Get(kind));if(e!=null&&!e.requiresBracing)value*=e.damage;}return value;}
+  float AttachmentDamage(PlayerHealth health,int index,WeaponAttachmentCatalog catalog){
+   var choice=health.GetComponent<NetworkWeaponAttachments>().GetChoice(index);
+   return catalog.Modifier(choice,e=>e.damage,false,true);
+  }
   bool ValidOrigin(PlayerHealth shooter,Vector3 origin){
    if(!Finite(origin))return false;Vector3 eye=shooter.transform.position+Vector3.up*1.5f;var presentation=shooter.GetComponent<NetworkWeaponPresentation>();if(presentation.Weapons.Length>0)eye=presentation.Weapons[0].Source.AimOrigin;
    if(Vector3.Distance(eye,origin)>Settings.ShotOriginTolerance)return false;
@@ -150,13 +218,28 @@ namespace DeadQuarantine.PvPvE.Networking {
   bool Trace(PlayerHealth shooter,Vector3 origin,Vector3 direction,float range,out RaycastHit impact,out PlayerHealth target){
    impact=default;target=null;
    foreach(var hit in Physics.RaycastAll(origin,direction,range,~0,QueryTriggerInteraction.Collide).OrderBy(h=>h.distance)){
-    var player=hit.collider.GetComponentInParent<PlayerHealth>();if(player==shooter)continue;
-    if(player){var hurtbox=player.GetComponent<PvPvEHurtbox>();if(!Alive(player)||hurtbox&&!hurtbox.Contains(hit.collider))continue;impact=hit;target=player;return true;}
-    var zombie=hit.collider.GetComponentInParent<ZombieHealth>();if(zombie){if(zombie.IsDead)continue;if(!hit.collider.isTrigger||hit.collider.GetComponent<ZombieHeadHitbox>()||hit.collider.GetComponent<ZombieLimbHitbox>()){impact=hit;return true;}continue;}
-    if(hit.collider.isTrigger||GetComponent<PvPvEDeathPresentation>()&&GetComponent<PvPvEDeathPresentation>().OwnsCollider(hit.collider))continue;
-    impact=hit;return true;
+    var (entity, ignore) = ClassifyShotHit(shooter, hit);
+    if (ignore) continue;
+    impact = hit;
+    target = entity as PlayerHealth;
+    return true;
    }
    return false;
+  }
+  (Component Target, bool Ignore) ClassifyShotHit(PlayerHealth shooter, RaycastHit hit)
+  {
+   var player = hit.collider.GetComponentInParent<PlayerHealth>();
+   if (player)
+   {
+    var hurtbox = player.GetComponent<PvPvEHurtbox>();
+    return (player, player == shooter || !Alive(player) || hurtbox && !hurtbox.Contains(hit.collider));
+   }
+   var zombie = hit.collider.GetComponentInParent<ZombieHealth>();
+   if (zombie)
+       return (zombie, zombie.IsDead || hit.collider.isTrigger &&
+           !hit.collider.GetComponent<ZombieHeadHitbox>() && !hit.collider.GetComponent<ZombieLimbHitbox>());
+   var deathPresentation = GetComponent<PvPvEDeathPresentation>();
+   return (null, hit.collider.isTrigger || deathPresentation && deathPresentation.OwnsCollider(hit.collider));
   }
   public bool CanDamage(ulong source,PlayerHealth victim,bool utility=false){
    if(IsServer)TickMatchServer();

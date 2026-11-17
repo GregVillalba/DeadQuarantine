@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -156,6 +156,7 @@ public class NPCShopUI : MonoBehaviour
     private GrenadeThrow grenadeThrow;
     private ColocadorObjetos colocadorObjetos;
 
+    private TMP_Text realWeaponStatistics;
     private bool estaAbierta;
     private bool movementWasLocked;
     private bool lookWasEnabled;
@@ -706,6 +707,34 @@ public class NPCShopUI : MonoBehaviour
     private void ActualizarFilasEstadisticas()
     {
         WeaponOffer oferta = ofertaSeleccionada;
+        var presentation = playerHealth ? playerHealth.GetComponent<NetworkWeaponPresentation>() : null;
+        var definition = presentation && oferta != null ?
+            System.Array.Find(presentation.Weapons, item => item.Id == oferta.weaponId) : null;
+        bool realWeapon = definition?.Source;
+        if(realWeaponStatistics)realWeaponStatistics.gameObject.SetActive(realWeapon);
+        if(realWeapon){
+            foreach(var row in new[]{filaDano,filaCadencia,filaAlcance,filaCargador,filaCuracion,filaArmadura})
+                if(row?.fila)row.fila.SetActive(false);
+            if(statsDetalleText)statsDetalleText.text="";
+            if(!realWeaponStatistics && filaDano?.fila){
+                var root = new GameObject("WeaponStatistics",typeof(RectTransform),typeof(LayoutElement));
+                root.transform.SetParent(filaDano.fila.transform.parent,false);
+                root.GetComponent<LayoutElement>().ignoreLayout=true;
+                var rect=(RectTransform)root.transform;
+                var first=(RectTransform)filaDano.fila.transform;
+                var last=filaCargador?.fila ? (RectTransform)filaCargador.fila.transform : first;
+                rect.anchorMin=new Vector2(0,1);rect.anchorMax=new Vector2(1,1);
+                rect.pivot=new Vector2(.5f,1);
+                rect.anchoredPosition=first.anchoredPosition;
+                rect.sizeDelta=new Vector2(first.sizeDelta.x,
+                    Mathf.Max(first.rect.height,first.anchoredPosition.y-last.anchoredPosition.y+last.rect.height));
+                realWeaponStatistics=root.AddComponent<TextMeshProUGUI>();
+                realWeaponStatistics.font=filaDano.valor ? filaDano.valor.font : TMP_Settings.defaultFontAsset;
+            }
+            if(realWeaponStatistics)
+                WeaponStatisticsView.Draw(realWeaponStatistics,definition.Source.BaseStatistics,null,false,"");
+            return;
+        }
         bool conStats = oferta != null && TieneStatsDeArma(oferta);
         bool conCadencia = conStats && !oferta.esArrojadiza && !oferta.esBarril;
         // La torreta tiene munición infinita: muestra cadencia pero no cargador.

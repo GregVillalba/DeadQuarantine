@@ -311,6 +311,7 @@ namespace DeadQuarantine.PvPvE.UI
             int teamIndex = team == PvPvETeam.Alpha ? 0 : 1;
             var selected = members.Where(m => m.Team == team).OrderBy(m => m.LobbySlot).ToArray();
             var catalog = matchmaking.Settings.Characters;
+            var voting=matchmaking.Roster?matchmaking.Roster.GetComponent<PvPvEMapVoting>():null;
             for (int i = 0; i < 5; i++)
             {
                 var icon = rosterIcons[teamIndex, i];
@@ -334,6 +335,7 @@ namespace DeadQuarantine.PvPvE.UI
                 icon.sprite = variant != null ? catalog.GetIcon(variant.type, variant.gender) : null;
                 icon.gameObject.SetActive(icon.sprite != null);
                 label.text = name + " - " + catalog.GetCharacterNameForVariant(index).ToUpperInvariant() +
+                    (voting && voting.IsSpawned && !provisional ? (voting.IsReady(member.ClientId) ? " · LISTO" : " · NO LISTO") : "") +
                     (local ? " (VOS)" : "");
                 label.color = local ? Color.white : PvPvEUIFactory.Muted;
             }

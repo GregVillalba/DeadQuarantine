@@ -17,7 +17,9 @@ public partial class PlayerHealth
  public bool GranadaPvPvEActiva=>GranadaPvPvE.Value.cantidad>0;
  public uint RevisionArmasAplicada {get;private set;}
  uint equipmentSequence;
- public bool ArmaPermitidaPorClase(string id)=>!EquipoDeClase.Value.Active||EquipoDeClase.Value.primary.ToString()==id||EquipoDeClase.Value.secondary.ToString()==id;
+ public bool ArmaPermitidaPorClase(string id)=>
+  (id!="Revolver"||!EsJugadorPvPvE)&&
+  (!EquipoDeClase.Value.Active||EquipoDeClase.Value.primary.ToString()==id||EquipoDeClase.Value.secondary.ToString()==id);
  // Trusted server entry point for later class selection/respawn. No client amount/mask RPC.
  public bool AplicarWildcardsDeClaseServidor(PvPvEClassDefinition c,bool refill=false)
  {

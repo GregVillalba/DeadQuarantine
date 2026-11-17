@@ -9,6 +9,14 @@ public partial class WeaponAttachments
     public string StableWeaponId=>stableWeaponId;
     public WeaponAttachmentChoice ApprovedChoice {get;private set;}
     public bool HasRuntimeCatalog=>catalog&&catalog.Eligible(stableWeaponId);
+    public bool UsesPvPvEModifiers {
+        get {
+            var health = GetComponentInParent<PlayerHealth>();
+            var roster = DeadQuarantine.PvPvE.Networking.PvPvETeamRoster.Active;
+            return HasRuntimeCatalog && health && health.IsSpawned && roster && roster.IsSpawned &&
+                roster.NetworkManager == health.NetworkManager && roster.Contains(health.OwnerClientId);
+        }
+    }
     Sprite RuntimeHudIcon(WeaponAttachmentKind kind){
         var entry=catalog.Find(ApprovedChoice.Get(kind));
         if(entry==null)return null;
@@ -90,15 +98,14 @@ public partial class WeaponAttachments
     public float AdsMovementMultiplier=>Permanent(e=>e.adsMovement);
     public float AdsSwayMultiplier=>Multiplier(e=>e.adsSway);
     public float IncomingShakeMultiplier=>Permanent(e=>e.incomingShake);
-    float Permanent(Func<WeaponAttachmentCatalog.Entry,float> get)=>HasRuntimeCatalog?catalog.Modifier(ApprovedChoice,get):1;
+    float Permanent(Func<WeaponAttachmentCatalog.Entry,float> get) =>
+        UsesPvPvEModifiers ? catalog.Modifier(ApprovedChoice, get) : 1f;
     public bool Suppressed=>catalog&&catalog.Find(ApprovedChoice.muzzle)?.suppressed==true;
     public AudioClip ShotSound=>Suppressed?catalog.Find(ApprovedChoice.muzzle).shotSound:null;
     public float AimFov(float fallback)=>catalog?.Find(ApprovedChoice.scope)?.aimFov??fallback;
     float Multiplier(Func<WeaponAttachmentCatalog.Entry,float> get){
-        if(!HasRuntimeCatalog)return 1;
-        float value=1;
-        foreach(var kind in kinds){var e=catalog.Find(ApprovedChoice.Get(kind));if(e!=null&&(!e.requiresBracing||IsBraced))value*=get(e);}
-        return value;
+        if(!UsesPvPvEModifiers)return 1;
+        return catalog.Modifier(ApprovedChoice,get,IsBraced,true);
     }
     public bool IsBraced {
         get {var movement=GetComponentInParent<PlayerMovement>();var cc=GetComponentInParent<CharacterController>();

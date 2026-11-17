@@ -314,6 +314,22 @@ public partial class WeaponSwitcher : MonoBehaviour
     public bool IsReady => inventory != null;
     public int SlotCount => slots != null ? slots.Length : 0;
 
+    internal float ReloadCycleSeconds(Weapon weapon, float fallback)
+    {
+        var slot = System.Array.Find(slots, entry => entry.weaponComponent == weapon);
+        var controller = slot?.overrideController;
+        if (!controller) return Mathf.Max(.05f, fallback);
+        float open = 0f, insert = 0f, close = 0f;
+        foreach (var clip in controller.animationClips)
+        {
+            string name = clip.name.Replace("_", "").Replace(" ", "").ToLowerInvariant();
+            if (name.Contains("reloadopen")) open = Mathf.Max(open, clip.length);
+            if (name.Contains("reloadinsert") || name.Contains("reloadloop")) insert = Mathf.Max(insert, clip.length);
+            if (name.Contains("reloadclose")) close = Mathf.Max(close, clip.length);
+        }
+        return insert > 0f ? open + weapon.CapacidadCargador * insert + close : Mathf.Max(.05f, fallback);
+    }
+
     public int SelectedIndex =>
         (isSwitching && pendingIndex >= 0) ? pendingIndex : currentIndex;
 
@@ -800,7 +816,7 @@ public partial class WeaponSwitcher : MonoBehaviour
         string id = slots[index].weaponId;
         return id == "AutoPistol" || id == "SemiRifle" || id == "BurstRifle" ||
                id == "P90" || id == "Vector" || id == "MAC10" ||
-               id == "Handgun01" || id == "Handgun02" || id == "SMG02" || id == "SMG05" ||
+               id == "Handgun01" || id == "Handgun02" || id == "Revolver" || id == "SMG02" || id == "SMG05" ||
                id == "Sniper01" || id == "Sniper02" || id == "Sniper03";
     }
 
@@ -1014,6 +1030,41 @@ public partial class WeaponSwitcher : MonoBehaviour
         }
 
         return slots[currentIndex].weaponId;
+    }
+
+    internal void ResetRoundLoadout()
+    {
+        const string starterId = "Handgun";
+        int starterIndex = FindSlotIndex(starterId);
+        if (!IsInitialized || starterIndex < 0 || !slots[starterIndex].weaponComponent) return;
+
+        StopAllCoroutines();
+        rutinaAbatido = null;
+        isSwitching = false;
+        unholsterPhase = false;
+        pendingIndex = -1;
+        foreach (int index in inventory)
+        {
+            if (index < 0) continue;
+            var weapon = slots[index].weaponComponent;
+            if (weapon) weapon.CancelReload();
+            GetAttachments(index)?.ResetRuntimeAttachments();
+        }
+
+        var starter = slots[starterIndex].weaponComponent;
+        starter.RestaurarMunicion();
+        RestaurarArmas(new List<ArmaSaveData>
+        {
+            new ArmaSaveData
+            {
+                identificador = starterId,
+                casillero = 0,
+                municionCargador = starter.CurrentAmmo,
+                municionReserva = starter.ReserveAmmo
+            }
+        }, starterId);
+        ResetBaseLayerToIdle();
+        ReleaseInput(starterIndex);
     }
 
     /// <summary>

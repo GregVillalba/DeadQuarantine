@@ -261,8 +261,15 @@ public class GestorEscenariosPartida : MonoBehaviour
             if (zona1 || zona2)
             {
                 Transform spawn = ObtenerSpawnZonaSegura(zona1, assigner.AssignedSpawnIndex.Value);
-                if (spawn != null)
-                    assigner.AplicarSpawnCheckpoint(spawn.position, spawn.rotation, sceneName);
+                if (spawn == null) continue;
+                assigner.AplicarSpawnCheckpoint(spawn.position, spawn.rotation, sceneName);
+
+                if (cliente.PlayerObject.TryGetComponent(out PlayerHealth health) &&
+                    (health.IsSpectating || health.IsDead))
+                {
+                    health.RecoverLifeAtNewRound();
+                    health.Respawn();
+                }
             }
             else if (escenarioActivo != null && assigner.AssignedSpawnIndex.Value >= 0)
             {

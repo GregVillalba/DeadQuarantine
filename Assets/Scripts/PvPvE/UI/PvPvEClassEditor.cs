@@ -14,6 +14,8 @@ namespace DeadQuarantine.PvPvE.UI
   public TMP_FontAsset font;
   public Button entryButton;
   GameObject panel,picker;RectTransform options;TMP_Text heading,status,pickerTitle,previewTitle,stats;
+  TMP_Text attachmentEffects;
+  bool pickingAttachments;
   TMP_InputField nameInput;Button[] classButtons;Button primaryCard,secondaryCard,grenadeCard,healingCard;Button[,] attachmentCards;
   Button[] perkCards,wildcardCards;
   TMP_Text pick10Counter;Image[] pick10Pips;
@@ -35,7 +37,15 @@ namespace DeadQuarantine.PvPvE.UI
   public bool CharacterPreviewReady=>false;
   public GameObject Panel=>panel;
   void Awake(){font=PvPvEUIFactory.BodyFont?PvPvEUIFactory.BodyFont:font;store=new PvPvEClassStore(catalog);Build();panel.SetActive(false);}
-  void Update()=>HandleEscape();
+  void Update(){
+   HandleEscape();
+   if(picker&&picker.activeInHierarchy){
+    var viewport=(RectTransform)options.parent;
+    var grid=options.GetComponent<GridLayoutGroup>();
+    int columns=Mathf.Clamp(Mathf.FloorToInt((viewport.rect.width-4)/232),1,6);
+    if(grid.constraintCount!=columns)grid.constraintCount=columns;
+   }
+  }
   public void HandleEscape(){if(!IsOpen||escapeFrame==Time.frameCount)return;if(Keyboard.current!=null&&Keyboard.current.escapeKey.wasPressedThisFrame){escapeFrame=Time.frameCount;if(picker.activeSelf)picker.SetActive(false);else Close();}}
   public void Open(){
    var lobby=GetComponent<PvPvELobbyView>();if(!lobby||!lobby.IsShowing)return;
@@ -148,55 +158,77 @@ namespace DeadQuarantine.PvPvE.UI
   public bool ChooseAttachmentSlot(bool secondary,int slot,string id){var c=SlotCandidate(secondary,slot,id);return c!=null?Commit(c):Fail("Ese montaje ya está ocupado por otro accesorio.");}
   void Attachments(bool secondary,int slot){
    secondaryFocus=secondary;var c=Current;string id=secondary?c.secondary:c.primary;OpenPicker("ACCESORIO "+(slot+1)+" / "+catalog.Find(id).name,true);
+   pickingAttachments=true;
    Option("none","NINGUNO",null,()=>ChooseAttachmentSlot(secondary,slot,""),SlotCandidate(secondary,slot,""));
    foreach(var entry in catalog.attachments.entries.Where(e=>catalog.attachments.Allows(id,e.kind,e.id))){var capture=entry;var candidate=SlotCandidate(secondary,slot,entry.id);Option(entry.id,entry.displayName,entry.icon,()=>ChooseAttachmentSlot(secondary,slot,capture.id),candidate);if(candidate==null)options.GetChild(options.childCount-1).GetComponent<Button>().interactable=false;}
   }
   void OpenPicker(string title,bool equipment=false){
+   pickingAttachments=false;
+   if(attachmentEffects)attachmentEffects.gameObject.SetActive(false);
    options.GetComponent<GridLayoutGroup>().cellSize=new Vector2(220,160);
    foreach(Transform child in options){child.gameObject.SetActive(false);Destroy(child.gameObject);}pickerTitle.text=title;pickerEquipment=equipment;ClearWeaponStats(pickerStats);picker.SetActive(true);pickerPreview.gameObject.SetActive(pickerEquipment);pickerDetailIcon.gameObject.SetActive(!pickerEquipment);pickerDetailIcon.sprite=null;pickerStats.text=title;ShowCandidate(Current);
    Canvas.ForceUpdateCanvases();var viewport=(RectTransform)options.parent;options.GetComponent<GridLayoutGroup>().constraintCount=Mathf.Clamp(Mathf.FloorToInt((viewport.rect.width-4)/232),1,6);
    viewport.GetComponent<ScrollRect>().verticalNormalizedPosition=1;
   }
   void Option(string id,string name,Sprite icon,Action action,PvPvEClassDefinition candidate=null){
-   var card=Card("Choose_"+id,options,Vector2.zero,Vector2.one,"",name,icon);card.onClick.AddListener(()=>{action();if(candidate!=null&&pickerEquipment){picker.SetActive(true);pickerPreview.gameObject.SetActive(true);ShowCandidate(Current);card.Select();}});
+   var card=Card("Choose_"+id,options,Vector2.zero,Vector2.one,"",name,icon);card.onClick.AddListener(()=>action());
    if(candidate!=null){card.interactable=CanChoose(candidate);card.transform.Find("Category").GetComponent<TMP_Text>().text=catalog.Find(id)?.Category??$"CLASE  {catalog.Pick10Cost(candidate)}/10";
     if(!card.interactable)card.transform.Find("Name").GetComponent<TMP_Text>().alpha=.45f;
    }
-   if(candidate!=null){var events=card.gameObject.AddComponent<EventTrigger>();foreach(var type in new[]{EventTriggerType.PointerEnter,EventTriggerType.Select}){var entry=new EventTrigger.Entry{eventID=type};entry.callback.AddListener(_=>{ShowCandidate(candidate);if(!pickerEquipment){pickerDetailIcon.sprite=icon;pickerDetailIcon.enabled=icon;ClearWeaponStats(pickerStats);pickerStats.text=name;}});events.triggers.Add(entry);}}
+   if(candidate!=null){
+    var events=card.gameObject.AddComponent<EventTrigger>();
+    foreach(var type in new[]{EventTriggerType.PointerEnter,EventTriggerType.Select}){
+     var entry=new EventTrigger.Entry{eventID=type};
+     entry.callback.AddListener(_=>{
+      ShowCandidate(candidate, id);
+      if(!pickerEquipment){pickerDetailIcon.sprite=icon;pickerDetailIcon.enabled=icon;ClearWeaponStats(pickerStats);pickerStats.text=name;}
+     });
+     events.triggers.Add(entry);
+    }
+    foreach(var type in new[]{EventTriggerType.PointerExit,EventTriggerType.Deselect}){
+     var entry=new EventTrigger.Entry{eventID=type};
+     entry.callback.AddListener(_=>ShowCandidate(Current));
+     events.triggers.Add(entry);
+    }
+   }
    if(!pickerEquipment&&pickerDetailIcon.sprite==null&&icon){pickerDetailIcon.sprite=icon;pickerDetailIcon.enabled=true;pickerStats.text=name;}
    if(name.Contains("\n"))ExpandHealingLabel(card);
    var layout=card.gameObject.AddComponent<LayoutElement>();layout.preferredWidth=220;layout.preferredHeight=160;
   }
   string AttachmentLabels(WeaponAttachmentChoice choice){var names=Enum.GetValues(typeof(WeaponAttachmentKind)).Cast<WeaponAttachmentKind>().Select(k=>catalog.attachments.Find(choice.Get(k))?.displayName).Where(n=>!string.IsNullOrEmpty(n));return names.Any()?string.Join(" · ",names):"SIN ACCESORIOS";}
-  void ShowCandidate(PvPvEClassDefinition candidate){
+  void ShowCandidate(PvPvEClassDefinition candidate, string hoveredId = null){
    if(!pickerEquipment)return;
    var gun=catalog.Find(secondaryFocus?candidate.secondary:candidate.primary);if(gun==null)return;
    pickerPreview.Show(gun,catalog.attachments,secondaryFocus?candidate.secondaryAttachments:candidate.primaryAttachments);
    DrawWeaponStats(pickerStats,gun,secondaryFocus?candidate.secondaryAttachments:candidate.primaryAttachments,true);
-
-  }
-  void ClearWeaponStats(TMP_Text target){var bars=target.transform.Find("WeaponStatBars");if(bars)bars.gameObject.SetActive(false);target.enabled=true;}
-  void DrawWeaponStats(TMP_Text target,PvPvELoadoutCatalog.Gun gun,WeaponAttachmentChoice choice,bool vertical){
-   target.enabled=vertical;target.text=vertical?gun.name.ToUpperInvariant():"";
-   var group=target.transform.Find("WeaponStatBars") as RectTransform;
-   if(!group)group=Rect("WeaponStatBars",target.transform,Vector2.zero,new(1,vertical?.82f:1));group.gameObject.SetActive(true);
-   float damage=1,spread=1,recoil=1;
-   foreach(WeaponAttachmentKind k in Enum.GetValues(typeof(WeaponAttachmentKind))){var a=catalog.attachments.Find(choice.Get(k));if(a!=null){damage*=a.damage;spread*=a.spread;recoil*=a.recoil;}}
-   float reach=catalog.attachments.Modifier(choice,a=>a.range);recoil*=catalog.attachments.Modifier(choice,a=>a.verticalRecoil);
-   string[] names={"DAÑO","ALCANCE","CADENCIA","CARGADOR","DISPERSIÓN REL.","RETROCESO REL."};
-   float[] values={gun.damage*damage,gun.range*reach,60/Mathf.Max(.01f,gun.fireInterval),gun.magazine,spread*100,recoil*100};
-   float[] maximum={catalog.weapons.Max(g=>g.damage)*1.25f,catalog.weapons.Max(g=>g.range),catalog.weapons.Max(g=>60/Mathf.Max(.01f,g.fireInterval)),catalog.weapons.Max(g=>g.magazine),150,150};
-   string[] units={""," m","/min","","%","%"};
-   for(int i=0;i<names.Length;i++){
-    var row=group.Find("Stat"+i) as RectTransform;float x=vertical?0:(i%2)*.51f;float top=1-(vertical?i*.165f:(i/2)*.333f);
-    if(!row){row=Rect("Stat"+i,group,new(x,top-(vertical?.16f:.32f)),new(x+(vertical?1:.48f),top));
-     var label=Text("Label",row,"",new(0,.32f),new(1,1),vertical?15:12,Color.white);
-     var track=Rect("Track",row,new(0,.08f),new(1,.24f));track.gameObject.AddComponent<Image>().color=new Color(.17f,.2f,.2f);
-     Rect("Fill",track,Vector2.zero,Vector2.one).gameObject.AddComponent<Image>().color=new Color(.2f,.86f,.43f);
+   attachmentEffects.gameObject.SetActive(pickingAttachments && hoveredId != null);
+   if(pickingAttachments && hoveredId != null){
+    var entry = catalog.attachments.Find(hoveredId);
+    if(entry != null)
+     attachmentEffects.text = entry.displayName.ToUpperInvariant() + "\n" + entry.StatDescription;
+    else {
+     var original = secondaryFocus ? Current.secondaryAttachments : Current.primaryAttachments;
+     var proposed = secondaryFocus ? candidate.secondaryAttachments : candidate.primaryAttachments;
+     var removed = Enum.GetValues(typeof(WeaponAttachmentKind)).Cast<WeaponAttachmentKind>()
+         .Select(kind => original.Get(kind) != proposed.Get(kind) ? catalog.attachments.Find(original.Get(kind)) : null)
+         .FirstOrDefault(value => value != null);
+     attachmentEffects.text = "NINGUNO\n" + (removed != null ? "Retirar " + removed.displayName + "\nSe eliminan sus ventajas y penalizaciones." : "Sin accesorio.");
     }
-    row.Find("Label").GetComponent<TMP_Text>().text=names[i]+"  "+values[i].ToString("0.#")+units[i];
-    var fill=(RectTransform)row.Find("Track/Fill");fill.anchorMax=new(Mathf.Clamp01(values[i]/Mathf.Max(.01f,maximum[i])),1);
    }
+  }
+  void ClearWeaponStats(TMP_Text target){
+   foreach(Transform child in target.transform)child.gameObject.SetActive(false);
+   target.enabled=true;
+  }
+  void DrawWeaponStats(TMP_Text target,PvPvELoadoutCatalog.Gun gun,WeaponAttachmentChoice choice,bool vertical){
+   if(!gun.statisticsSource){ClearWeaponStats(target);target.text=gun.name;return;}
+   var current=Current;
+   var originalGun=catalog.Find(secondaryFocus?current.secondary:current.primary);
+   var originalChoice=secondaryFocus?current.secondaryAttachments:current.primaryAttachments;
+   WeaponStatistics? baseline=vertical&&originalGun?.statisticsSource ?
+       originalGun.statisticsSource.Statistics(originalChoice,catalog.attachments,true,true) : null;
+   var effective=gun.statisticsSource.Statistics(choice,catalog.attachments,true,true);
+   WeaponStatisticsView.Draw(target,effective,baseline,!vertical,gun.name.ToUpperInvariant());
   }
   static string KindName(WeaponAttachmentKind kind)=>kind switch{WeaponAttachmentKind.Scope=>"MIRA",WeaponAttachmentKind.Support=>"SOPORTE",WeaponAttachmentKind.Utility=>"LÁSER / LINTERNA",_=>"BOCA"};
   void Build(){
@@ -225,8 +257,11 @@ namespace DeadQuarantine.PvPvE.UI
    var pick=Rect("ItemPicker",root,new(.2f,.005f),new(.98f,.815f));picker=pick.gameObject;pick.gameObject.AddComponent<Image>().color=new Color(.018f,.035f,.04f,1f);
    pickerTitle=Text("PickerTitle",pick,"",new(.025f,.87f),new(.8f,.99f),26,Color.white);
    Button("ClosePicker",pick,"VOLVER",new(.82f,.89f),new(.97f,.97f)).onClick.AddListener(()=>picker.SetActive(false));
-   var hero=Rect("PickerModelFrame",pick,new(.34f,.44f),new(.98f,.87f));var heroImage=Rect("PickerModel",hero,Vector2.zero,Vector2.one).gameObject.AddComponent<RawImage>();heroImage.raycastTarget=false;
+   var hero=Rect("PickerModelFrame",pick,new(.34f,.59f),new(.98f,.87f));var heroImage=Rect("PickerModel",hero,Vector2.zero,Vector2.one).gameObject.AddComponent<RawImage>();heroImage.raycastTarget=false;
    var heroFit=heroImage.gameObject.AddComponent<AspectRatioFitter>();heroFit.aspectMode=AspectRatioFitter.AspectMode.FitInParent;heroFit.aspectRatio=1000f/600;pickerPreview=heroImage.gameObject.AddComponent<PvPvEWeaponPreview>();
+   attachmentEffects=Text("AttachmentEffects",pick,"",new(.36f,.435f),new(.97f,.585f),16,Color.white);
+   attachmentEffects.richText=true;
+   attachmentEffects.gameObject.SetActive(false);
    pickerDetailIcon=Rect("PickerPerkIcon",pick,new(.43f,.48f),new(.87f,.85f)).gameObject.AddComponent<Image>();pickerDetailIcon.preserveAspect=true;pickerDetailIcon.raycastTarget=false;
    pickerStats=Text("SelectionDetails",pick,"",new(.03f,.46f),new(.33f,.83f),23,Color.white);
    var viewport=Rect("Viewport",pick,new(.02f,.025f),new(.965f,.42f));viewport.gameObject.AddComponent<Image>().color=Color.clear;viewport.gameObject.AddComponent<RectMask2D>();

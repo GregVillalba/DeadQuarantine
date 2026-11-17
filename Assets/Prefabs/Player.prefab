@@ -19069,6 +19069,240 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!1 &1189448104314349165
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3783259333957819265}
+  - component: {fileID: 5442065467759855334}
+  - component: {fileID: 1747255568586678203}
+  m_Layer: 3
+  m_Name: DQ_Weapon_Revolver
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &3783259333957819265
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1189448104314349165}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.0777892, z: 0, w: 0.9969699}
+  m_LocalPosition: {x: 0.007, y: 0, z: -0.001}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 6470363273737183512}
+  m_Father: {fileID: 8803743668522589255}
+  m_LocalEulerAnglesHint: {x: 0, y: 8.923, z: 0}
+--- !u!114 &5442065467759855334
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1189448104314349165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14155ad11385f944abf8a29d2113129e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Scripts::Weapon
+  firePoint: {fileID: 7180296536615239968}
+  playerCamera: {fileID: 8884011811728304703}
+  weaponCamera: {fileID: 4105371250691294993}
+  characterController: {fileID: 4434044238315664879}
+  playerMovement: {fileID: 7292988215955829792}
+  playerCharacter: {fileID: 0}
+  weaponAnimator: {fileID: 4557263371411451482}
+  muzzle: {fileID: 2238425971597690744}
+  bulletTrailPrefab: {fileID: 6461363660774602662, guid: 9358aaebdc0282a46b2034ab53719036, type: 3}
+  cameraRecoil: {fileID: 8607994785319131398}
+  weaponRecoil: {fileID: 7224311384367784829}
+  recoilIntensityMultiplier: 1
+  recoilPreset: 0
+  audioSource: {fileID: 1747255568586678203}
+  shootSound: {fileID: 8300000, guid: ad694c80fef44284ebf7396fb31d059c, type: 3}
+  emptySound: {fileID: 8300000, guid: 0c187ee2790c74c4e9985aa1ee1a12d5, type: 3}
+  reloadSound: {fileID: 8300000, guid: 64f2c936c4a2e31499ea708df2383b01, type: 3}
+  reloadEmptySound: {fileID: 8300000, guid: 64f2c936c4a2e31499ea708df2383b01, type: 3}
+  reloadOpenSound: {fileID: 0}
+  reloadInsertSound: {fileID: 0}
+  reloadCloseSound: {fileID: 0}
+  reloadBoltOpenSound: {fileID: 0}
+  reloadBoltCloseSound: {fileID: 0}
+  isAutomatic: 0
+  fireRate: 0.56
+  usesBurstFire: 0
+  burstCount: 3
+  burstShotInterval: 0.07
+  burstCooldown: 0.35
+  enforceReloadDuration: 1
+  reloadClipSpeedMultiplier: 0.60897438
+  reloadEmptyClipSpeedMultiplier: 0.60897438
+  partsReloadClipSpeedMultiplier: 0.60897438
+  partsReloadEmptyClipSpeedMultiplier: 0.60897438
+  tpReloadClipSpeedMultiplier: 0.60897438
+  tpReloadEmptyClipSpeedMultiplier: 0.60528367
+  tpPartsReloadClipSpeedMultiplier: 0.60897438
+  tpPartsReloadEmptyClipSpeedMultiplier: 0.60897438
+  reloadTime: 2.6
+  range: 100
+  damage: 56
+  maxAmmo: 6
+  reserveAmmoCapacity: 36
+  forceReserveLimit: 1
+  handling:
+    adsSeconds: 0.16
+    sprintToFireSeconds: 0.1
+    verticalRecoilDegrees: 1.15
+    horizontalRecoilDegrees: 0.25
+    recoilRecoverySeconds: 0.16
+    aimSwayDegrees: 0.09
+    movement: 1
+    adsMovement: 0.85
+  intermediateDamageMultiplier: 0.75
+  weaponName: "Rev\u00f3lver"
+  firesMultiplePellets: 0
+  pelletsPerShot: 8
+  pelletSpreadAngle: 6
+  pelletCenterBias: 0.4
+  requiresBoltActionAfterFire: 0
+  boltActionDuration: 1.3
+  boltActionDelay: 0.12
+  aimFOV: 50
+  aimTransitionSpeed: 10
+  adsFireAlongVisualSight: 1
+  adsCenterVisualSight: 1
+  adsSightReference: {fileID: 783537006318294501}
+  adsMaxViewportCorrection: 0.4
+  vectorAdsVerticalSightDown: 0.116
+  aimingBlendSpeed: 8
+  spreadIdle: 0.5
+  spreadMoving: 3
+  spreadCrouching: 0.2
+  spreadAiming: 0
+  spreadIncreasePerShot: 1
+  maxSpread: 8
+  spreadRecoverySpeed: 5
+  jumpSpread: 6
+  landingRecoverySpeed: 25
+  landingRecoveryDuration: 0.25
+  bulletIgnoredLayers:
+    serializedVersion: 2
+    m_Bits: 1024
+  usesMultiPartReload: 0
+  damageFalloffStart: 30
+  damageFalloffEnd: 65
+  minDamageMultiplier: 0.55
+  partsAnimator: {fileID: 0}
+  EffectiveMaxAmmo: 0
+  debugRunning: 0
+  debugSpread: 1
+--- !u!82 &1747255568586678203
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1189448104314349165}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 0.3
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 0
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1 &1194861960451823867
 GameObject:
   m_ObjectHideFlags: 0
@@ -23019,8 +23253,10 @@ MonoBehaviour:
   socket: {fileID: 5440738679926089058}
   flashParticlesPrefab: {fileID: 4834526503407549940, guid: 7ca62908b2cb6ca4a9cbafc0f4c28eca, type: 3}
   flashParticlesCount: 5
+  flashParticlesScale: 1
   flashLightPrefab: {fileID: 4171051858075953094, guid: 5b74dc70c965b6d42aaf1c66f5220a5d, type: 3}
   flashLightDuration: 0.05
+  flashLightIntensityScale: 1
   flashLightOffset: {x: 0, y: 0, z: 0}
 --- !u!1 &1602134382105627575
 GameObject:
@@ -31144,6 +31380,7 @@ Transform:
   - {fileID: 5167870682554868591}
   - {fileID: 976230759496917109}
   - {fileID: 3648126502442194779}
+  - {fileID: 3783259333957819265}
   m_Father: {fileID: 4343302684571913101}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2306147731750913767
@@ -34560,40 +34797,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &1971020452796888060
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8673627603344465800}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 15b0d8a603fbcc64bbd0db164c97d872, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Scripts::IndicadoresObjetivosHistoria
-  panelObjetosHistoria: {fileID: 2551370955625371830}
-  indicadorTarjeta: {fileID: 1763271112012989896}
-  indicadorRadio: {fileID: 5779957424597614352}
-  iconoRadioAnimado: {fileID: 8072623184360946280}
-  ondaRadio1: {fileID: 6683500789113417861}
-  ondaRadio2: {fileID: 0}
-  transparenciaOnda1: {fileID: 0}
-  transparenciaOnda2: {fileID: 0}
-  duracionLlamada: 6
-  movimientoVertical: 6
-  duracionOnda: 1
-  escalaMinimaOnda: 1
-  escalaMaximaOnda: 2
-  fuenteDialogo: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  fuenteTitulo: {fileID: 11400000, guid: 0d82eaf50c142fa4ba34beb1fc9a12e4, type: 2}
-  fondoBoton: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  modeloSobreviviente: {fileID: 1245639020409412, guid: 96e947df06e21f948a8c6ad8fc919f5d, type: 3}
-  animadorSobreviviente: {fileID: 9100000, guid: e1e1f7b3cff1ee3408163f3417fcda70, type: 2}
-  paginasAudio:
-  - {fileID: 8300000, guid: a65448a0db614bed87454dce69617e0c, type: 3}
-  - {fileID: 8300000, guid: 0344089b5916478d9bf89b62bc86ab6b, type: 3}
-  - {fileID: 8300000, guid: 572a5482011144b59e1e8d353ad93c59, type: 3}
 --- !u!114 &8759692890773157113
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -59134,6 +59337,37 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!1 &4629453473333196334
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3214607539429684684}
+  m_Layer: 3
+  m_Name: SOCKET_MuzzleFlash
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3214607539429684684
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4629453473333196334}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.6963639, y: -0, z: -0, w: 0.7176889}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7180296536615239968}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4630742704264581593
 GameObject:
   m_ObjectHideFlags: 0
@@ -67082,27 +67316,37 @@ MonoBehaviour:
   reloadBoltOpenSound: {fileID: 0}
   reloadBoltCloseSound: {fileID: 0}
   isAutomatic: 0
-  fireRate: 0.1
+  fireRate: 0.23
   usesBurstFire: 0
   burstCount: 3
   burstShotInterval: 0.07
   burstCooldown: 0.25
-  enforceReloadDuration: 0
-  reloadClipSpeedMultiplier: 1
-  reloadEmptyClipSpeedMultiplier: 1
-  partsReloadClipSpeedMultiplier: 1
-  partsReloadEmptyClipSpeedMultiplier: 1
-  tpReloadClipSpeedMultiplier: 1
-  tpReloadEmptyClipSpeedMultiplier: 1
-  tpPartsReloadClipSpeedMultiplier: 1
-  tpPartsReloadEmptyClipSpeedMultiplier: 1
+  enforceReloadDuration: 1
+  reloadClipSpeedMultiplier: 1.4888889
+  reloadEmptyClipSpeedMultiplier: 1.8222224
+  partsReloadClipSpeedMultiplier: 1.4888889
+  partsReloadEmptyClipSpeedMultiplier: 1.8222224
+  tpReloadClipSpeedMultiplier: 1.4888889
+  tpReloadEmptyClipSpeedMultiplier: 1.8222224
+  tpPartsReloadClipSpeedMultiplier: 1.4888889
+  tpPartsReloadEmptyClipSpeedMultiplier: 1.8222224
   reloadTime: 1.5
-  range: 100
-  damage: 25
+  range: 75
+  damage: 26
   maxAmmo: 12
-  reserveAmmoCapacity: 120
-  forceReserveLimit: 0
-  weaponName: Handgun
+  reserveAmmoCapacity: 60
+  forceReserveLimit: 1
+  handling:
+    adsSeconds: 0.16
+    sprintToFireSeconds: 0.1
+    verticalRecoilDegrees: 1.15
+    horizontalRecoilDegrees: 0.25
+    recoilRecoverySeconds: 0.16
+    aimSwayDegrees: 0.09
+    movement: 1
+    adsMovement: 0.85
+  intermediateDamageMultiplier: 0.75
+  weaponName: "Pistola inicial"
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -67132,9 +67376,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   usesMultiPartReload: 0
-  damageFalloffStart: 100
-  damageFalloffEnd: 25
-  minDamageMultiplier: 0.25
+  damageFalloffStart: 20
+  damageFalloffEnd: 45
+  minDamageMultiplier: 0.55
   partsAnimator: {fileID: 0}
   EffectiveMaxAmmo: 0
   debugRunning: 0
@@ -67223,6 +67467,16 @@ MonoBehaviour:
   firstPersonRestStates: f98db15e9717a4bed57b29367275af88d75e53f37b358267554ddf0528431e5112299e9d8becf28a14490eee9a8f56c2
   supportPoseEnabled: 0
   bareSupportPoseEnabled: 0
+  authoredSprintSupportGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
+  authoredSprintTriggerGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
   bareFirstPerson:
     position: {x: 0, y: 0, z: 0}
     elbow: {x: 0, y: 0, z: 0}
@@ -72662,6 +72916,14 @@ MonoBehaviour:
     Casing: {fileID: 1492315059354262, guid: 3ea52eaf9fe44654e880acb7e385dd7a, type: 3}
     GripPosition: {x: 0.1334, y: 0.0663, z: 0.010000001}
     GripRotation: {x: 347.63498, y: 98.50202, z: 274.64}
+  - Id: Revolver
+    Source: {fileID: 5442065467759855334}
+    Model: {fileID: 6398906882097002389, guid: 03de51182e43ae44e94aba4d5a4c42b3, type: 3}
+    Controller: {fileID: 22100000, guid: 9a4d230d83db89649b7466b282f7513e, type: 2}
+    AnimatorWeaponId: 1
+    Casing: {fileID: 0}
+    GripPosition: {x: 0.12115385, y: 0.04159635, z: -0.0101698525}
+    GripRotation: {x: 358.76874, y: 83.18085, z: 290.76337}
 --- !u!114 &1727452609831857897
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -77024,6 +77286,59 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!1 &5935305133436195849
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7180296536615239968}
+  - component: {fileID: 2238425971597690744}
+  m_Layer: 3
+  m_Name: SOCKET_Muzzle
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7180296536615239968
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5935305133436195849}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.19858494, y: 0.6675729, z: 0.09423776, w: 0.71135765}
+  m_LocalPosition: {x: 0.004925986, y: 0.003684701, z: 0.00015623664}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 3214607539429684684}
+  m_Father: {fileID: 3271187318099338164}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2238425971597690744
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5935305133436195849}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05661f0f187f88d48bd2bf9f1ebe71ad, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Scripts::Muzzle
+  socket: {fileID: 3214607539429684684}
+  flashParticlesPrefab: {fileID: 4834526503407549940, guid: 7ca62908b2cb6ca4a9cbafc0f4c28eca, type: 3}
+  flashParticlesCount: 5
+  flashParticlesScale: 0.12
+  flashLightPrefab: {fileID: 4171051858075953094, guid: 5b74dc70c965b6d42aaf1c66f5220a5d, type: 3}
+  flashLightDuration: 0.05
+  flashLightIntensityScale: 0.2
+  flashLightOffset: {x: 0, y: 0, z: 0}
 --- !u!1 &5961183620442791605
 GameObject:
   m_ObjectHideFlags: 0
@@ -91411,7 +91726,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 5501707589087169415}
   m_HandleRect: {fileID: 6321719336241033124}
   m_Direction: 2
-  m_Value: 1
+  m_Value: 0
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -101538,6 +101853,37 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!1 &8228623780024900764
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 783537006318294501}
+  m_Layer: 0
+  m_Name: DQ_OpticalSight
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &783537006318294501
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8228623780024900764}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.0000749155, y: 0.0019240812, z: -0.00002353428}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3271187318099338164}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8258890666626967311
 GameObject:
   m_ObjectHideFlags: 0
@@ -101681,7 +102027,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 07a70e0af646ae9498c6ef448486987f, type: 2}
+  - {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -106880,6 +107226,40 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &1971020452796888060
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8673627603344465800}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15b0d8a603fbcc64bbd0db164c97d872, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Scripts::IndicadoresObjetivosHistoria
+  panelObjetosHistoria: {fileID: 2551370955625371830}
+  indicadorTarjeta: {fileID: 1763271112012989896}
+  indicadorRadio: {fileID: 5779957424597614352}
+  iconoRadioAnimado: {fileID: 8072623184360946280}
+  ondaRadio1: {fileID: 6683500789113417861}
+  ondaRadio2: {fileID: 0}
+  transparenciaOnda1: {fileID: 0}
+  transparenciaOnda2: {fileID: 0}
+  duracionLlamada: 6
+  movimientoVertical: 6
+  duracionOnda: 1
+  escalaMinimaOnda: 1
+  escalaMaximaOnda: 2
+  fuenteDialogo: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  fuenteTitulo: {fileID: 11400000, guid: 0d82eaf50c142fa4ba34beb1fc9a12e4, type: 2}
+  fondoBoton: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+  modeloSobreviviente: {fileID: 1245639020409412, guid: 96e947df06e21f948a8c6ad8fc919f5d, type: 3}
+  animadorSobreviviente: {fileID: 9100000, guid: e1e1f7b3cff1ee3408163f3417fcda70, type: 2}
+  paginasAudio:
+  - {fileID: 8300000, guid: a65448a0db614bed87454dce69617e0c, type: 3}
+  - {fileID: 8300000, guid: 0344089b5916478d9bf89b62bc86ab6b, type: 3}
+  - {fileID: 8300000, guid: 572a5482011144b59e1e8d353ad93c59, type: 3}
 --- !u!1 &8690151349000155973
 GameObject:
   m_ObjectHideFlags: 0
@@ -114805,6 +115185,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2300000, guid: 9f4d52975d229e74fa27561b00052caa, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -114927,6 +115311,26 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 373.361
       objectReference: {fileID: 0}
+    - target: {fileID: 13700000, guid: f6d93d298c291ed488f806db88e98379, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value:
+      objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
+    - target: {fileID: 13700000, guid: f6d93d298c291ed488f806db88e98379, type: 3}
+      propertyPath: 'm_Materials.Array.data[2]'
+      value:
+      objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
+    - target: {fileID: 13700000, guid: f6d93d298c291ed488f806db88e98379, type: 3}
+      propertyPath: 'm_Materials.Array.data[3]'
+      value:
+      objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
+    - target: {fileID: 13700000, guid: f6d93d298c291ed488f806db88e98379, type: 3}
+      propertyPath: 'm_Materials.Array.data[4]'
+      value:
+      objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
+    - target: {fileID: 13700000, guid: f6d93d298c291ed488f806db88e98379, type: 3}
+      propertyPath: 'm_Materials.Array.data[5]'
+      value:
+      objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
@@ -114973,8 +115377,10 @@ MonoBehaviour:
   socket: {fileID: 460761052649140423}
   flashParticlesPrefab: {fileID: 4834526503407549940, guid: 7ca62908b2cb6ca4a9cbafc0f4c28eca, type: 3}
   flashParticlesCount: 5
+  flashParticlesScale: 1
   flashLightPrefab: {fileID: 4171051858075953094, guid: 5b74dc70c965b6d42aaf1c66f5220a5d, type: 3}
   flashLightDuration: 0.05
+  flashLightIntensityScale: 1
   flashLightOffset: {x: 0, y: 0, z: 0}
 --- !u!1 &460761052649041143 stripped
 GameObject:
@@ -115034,16 +115440,26 @@ MonoBehaviour:
   reloadTime: 2.5
   range: 25
   damage: 200
-  maxAmmo: 10
-  reserveAmmoCapacity: 50
-  forceReserveLimit: 0
-  weaponName: Escopeta
+  maxAmmo: 8
+  reserveAmmoCapacity: 32
+  forceReserveLimit: 1
+  handling:
+    adsSeconds: 0.3
+    sprintToFireSeconds: 0.2
+    verticalRecoilDegrees: 3.1
+    horizontalRecoilDegrees: 0.65
+    recoilRecoverySeconds: 0.35
+    aimSwayDegrees: 0.1
+    movement: 0.94
+    adsMovement: 0.55
+  intermediateDamageMultiplier: 0.45
+  weaponName: "Escopeta"
   firesMultiplePellets: 1
   pelletsPerShot: 8
   pelletSpreadAngle: 4
   pelletCenterBias: 0.4
   requiresBoltActionAfterFire: 1
-  boltActionDuration: 1.4200001
+  boltActionDuration: 1
   boltActionDelay: 0.12
   aimFOV: 50
   aimTransitionSpeed: 10
@@ -115068,8 +115484,8 @@ MonoBehaviour:
     m_Bits: 0
   usesMultiPartReload: 1
   damageFalloffStart: 8
-  damageFalloffEnd: 25
-  minDamageMultiplier: 0.5
+  damageFalloffEnd: 20
+  minDamageMultiplier: 0.2
   partsAnimator: {fileID: 0}
   EffectiveMaxAmmo: 0
   debugRunning: 0
@@ -115155,6 +115571,16 @@ MonoBehaviour:
   firstPersonRestStates: f98db15e9717a4bed57b29367275af88d75e53f37b358267554ddf0528431e5112299e9d8becf28a14490eee9a8f56c2
   supportPoseEnabled: 0
   bareSupportPoseEnabled: 0
+  authoredSprintSupportGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
+  authoredSprintTriggerGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
   bareFirstPerson:
     position: {x: 0, y: 0, z: 0}
     elbow: {x: 0, y: 0, z: 0}
@@ -115568,27 +115994,37 @@ MonoBehaviour:
   reloadBoltOpenSound: {fileID: 0}
   reloadBoltCloseSound: {fileID: 0}
   isAutomatic: 0
-  fireRate: 1.08
+  fireRate: 2.25
   usesBurstFire: 0
   burstCount: 3
   burstShotInterval: 0.07
   burstCooldown: 0.48
-  enforceReloadDuration: 0
-  reloadClipSpeedMultiplier: 0.8
-  reloadEmptyClipSpeedMultiplier: 1.0000001
-  partsReloadClipSpeedMultiplier: 0.8
-  partsReloadEmptyClipSpeedMultiplier: 1.0000001
-  tpReloadClipSpeedMultiplier: 0.8
-  tpReloadEmptyClipSpeedMultiplier: 1.0000001
-  tpPartsReloadClipSpeedMultiplier: 0.8
-  tpPartsReloadEmptyClipSpeedMultiplier: 1.0000001
-  reloadTime: 5
-  range: 220
-  damage: 65
-  maxAmmo: 10
-  reserveAmmoCapacity: 50
+  enforceReloadDuration: 1
+  reloadClipSpeedMultiplier: 1.0526316
+  reloadEmptyClipSpeedMultiplier: 1.3157896
+  partsReloadClipSpeedMultiplier: 1.0526316
+  partsReloadEmptyClipSpeedMultiplier: 1.3157896
+  tpReloadClipSpeedMultiplier: 1.0526316
+  tpReloadEmptyClipSpeedMultiplier: 1.3157896
+  tpPartsReloadClipSpeedMultiplier: 1.0526316
+  tpPartsReloadEmptyClipSpeedMultiplier: 1.3157896
+  reloadTime: 3.8
+  range: 260
+  damage: 200
+  maxAmmo: 5
+  reserveAmmoCapacity: 20
   forceReserveLimit: 1
-  weaponName: "Rifle de precisi\xF3n 02"
+  handling:
+    adsSeconds: 0.45
+    sprintToFireSeconds: 0.32
+    verticalRecoilDegrees: 3.6
+    horizontalRecoilDegrees: 0.85
+    recoilRecoverySeconds: 0.45
+    aimSwayDegrees: 0.16
+    movement: 0.86
+    adsMovement: 0.4
+  intermediateDamageMultiplier: 0.85
+  weaponName: "M107"
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -115617,10 +116053,11 @@ MonoBehaviour:
   bulletIgnoredLayers:
     serializedVersion: 2
     m_Bits: 1024
+  penetrationDamage: 8c00000062000000
   usesMultiPartReload: 0
-  damageFalloffStart: 220
-  damageFalloffEnd: 220
-  minDamageMultiplier: 1
+  damageFalloffStart: 110
+  damageFalloffEnd: 190
+  minDamageMultiplier: 0.7
   partsAnimator: {fileID: 6587755118943435279}
   EffectiveMaxAmmo: 0
   debugRunning: 0
@@ -115709,6 +116146,16 @@ MonoBehaviour:
   firstPersonRestStates: f98db15e9717a4bed57b29367275af88554ddf0528431e5112299e9d
   supportPoseEnabled: 1
   bareSupportPoseEnabled: 1
+  authoredSprintSupportGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
+  authoredSprintTriggerGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
   bareFirstPerson:
     position: {x: -0.019946933, y: 0.22309667, z: -0.062909506}
     elbow: {x: -0.20277803, y: 0.2570595, z: -0.25594425}
@@ -115825,8 +116272,10 @@ MonoBehaviour:
   socket: {fileID: 1625442479572000628}
   flashParticlesPrefab: {fileID: 4834526503407549940, guid: 7ca62908b2cb6ca4a9cbafc0f4c28eca, type: 3}
   flashParticlesCount: 5
+  flashParticlesScale: 1
   flashLightPrefab: {fileID: 4171051858075953094, guid: 5b74dc70c965b6d42aaf1c66f5220a5d, type: 3}
   flashLightDuration: 0.05
+  flashLightIntensityScale: 1
   flashLightOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &9151895871477864053 stripped
 Transform:
@@ -116750,8 +117199,10 @@ MonoBehaviour:
   socket: {fileID: 7617000712461067649}
   flashParticlesPrefab: {fileID: 4834526503407549940, guid: 7ca62908b2cb6ca4a9cbafc0f4c28eca, type: 3}
   flashParticlesCount: 5
+  flashParticlesScale: 1
   flashLightPrefab: {fileID: 4171051858075953094, guid: 5b74dc70c965b6d42aaf1c66f5220a5d, type: 3}
   flashLightDuration: 0.05
+  flashLightIntensityScale: 1
   flashLightOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &2810650398037680403 stripped
 Transform:
@@ -116832,28 +117283,38 @@ MonoBehaviour:
   reloadCloseSound: {fileID: 0}
   reloadBoltOpenSound: {fileID: 0}
   reloadBoltCloseSound: {fileID: 0}
-  isAutomatic: 1
+  isAutomatic: 0
   fireRate: 0.09
-  usesBurstFire: 0
+  usesBurstFire: 1
   burstCount: 3
-  burstShotInterval: 0.07
-  burstCooldown: 0.09
-  enforceReloadDuration: 0
-  reloadClipSpeedMultiplier: 1
-  reloadEmptyClipSpeedMultiplier: 1
-  partsReloadClipSpeedMultiplier: 1
-  partsReloadEmptyClipSpeedMultiplier: 1
-  tpReloadClipSpeedMultiplier: 1
-  tpReloadEmptyClipSpeedMultiplier: 1.5185187
-  tpPartsReloadClipSpeedMultiplier: 1
-  tpPartsReloadEmptyClipSpeedMultiplier: 1
-  reloadTime: 2.2333333
-  range: 55
+  burstShotInterval: 0.09
+  burstCooldown: 0.38
+  enforceReloadDuration: 1
+  reloadClipSpeedMultiplier: 1.2072072
+  reloadEmptyClipSpeedMultiplier: 1.4774776
+  partsReloadClipSpeedMultiplier: 1.2072072
+  partsReloadEmptyClipSpeedMultiplier: 1.4774776
+  tpReloadClipSpeedMultiplier: 1.2072072
+  tpReloadEmptyClipSpeedMultiplier: 2.2435774
+  tpPartsReloadClipSpeedMultiplier: 1.2072072
+  tpPartsReloadEmptyClipSpeedMultiplier: 1.4774776
+  reloadTime: 1.85
+  range: 70
   damage: 18
-  maxAmmo: 20
-  reserveAmmoCapacity: 120
+  maxAmmo: 18
+  reserveAmmoCapacity: 90
   forceReserveLimit: 1
-  weaponName: "Pistola autom\xE1tica"
+  handling:
+    adsSeconds: 0.16
+    sprintToFireSeconds: 0.1
+    verticalRecoilDegrees: 1.15
+    horizontalRecoilDegrees: 0.25
+    recoilRecoverySeconds: 0.16
+    aimSwayDegrees: 0.09
+    movement: 1
+    adsMovement: 0.85
+  intermediateDamageMultiplier: 0.75
+  weaponName: "USP a r\u00e1fagas"
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -116883,9 +117344,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   usesMultiPartReload: 0
-  damageFalloffStart: 55
-  damageFalloffEnd: 55
-  minDamageMultiplier: 1
+  damageFalloffStart: 20
+  damageFalloffEnd: 45
+  minDamageMultiplier: 0.55
   partsAnimator: {fileID: 7737209809663831311}
   EffectiveMaxAmmo: 0
   debugRunning: 0
@@ -116986,6 +117447,16 @@ MonoBehaviour:
   firstPersonRestStates: f98db15e9717a4bed57b29367275af88554ddf0528431e5112299e9d
   supportPoseEnabled: 0
   bareSupportPoseEnabled: 0
+  authoredSprintSupportGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
+  authoredSprintTriggerGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
   bareFirstPerson:
     position: {x: 0, y: 0, z: 0}
     elbow: {x: 0, y: 0, z: 0}
@@ -118237,12 +118708,12 @@ MonoBehaviour:
   reloadBoltOpenSound: {fileID: 0}
   reloadBoltCloseSound: {fileID: 0}
   isAutomatic: 1
-  fireRate: 0.06
+  fireRate: 0.065
   usesBurstFire: 0
   burstCount: 3
   burstShotInterval: 0.07
   burstCooldown: 0.06
-  enforceReloadDuration: 0
+  enforceReloadDuration: 1
   reloadClipSpeedMultiplier: 1.2500001
   reloadEmptyClipSpeedMultiplier: 1.9833335
   partsReloadClipSpeedMultiplier: 1.2500001
@@ -118252,12 +118723,22 @@ MonoBehaviour:
   tpPartsReloadClipSpeedMultiplier: 1.2500001
   tpPartsReloadEmptyClipSpeedMultiplier: 1.9833335
   reloadTime: 2
-  range: 45
-  damage: 17
+  range: 50
+  damage: 18
   maxAmmo: 30
-  reserveAmmoCapacity: 180
+  reserveAmmoCapacity: 150
   forceReserveLimit: 1
-  weaponName: MAC-10
+  handling:
+    adsSeconds: 0.2
+    sprintToFireSeconds: 0.14
+    verticalRecoilDegrees: 1.1
+    horizontalRecoilDegrees: 0.38
+    recoilRecoverySeconds: 0.18
+    aimSwayDegrees: 0.085
+    movement: 0.99
+    adsMovement: 0.75
+  intermediateDamageMultiplier: 0.75
+  weaponName: "MAC-10"
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -118287,9 +118768,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   usesMultiPartReload: 0
-  damageFalloffStart: 45
-  damageFalloffEnd: 45
-  minDamageMultiplier: 1
+  damageFalloffStart: 18
+  damageFalloffEnd: 38
+  minDamageMultiplier: 0.5
   partsAnimator: {fileID: 9028256645590592172}
   EffectiveMaxAmmo: 0
   debugRunning: 0
@@ -118378,6 +118859,16 @@ MonoBehaviour:
   firstPersonRestStates: f98db15e9717a4bed57b29367275af88554ddf0528431e5112299e9d
   supportPoseEnabled: 1
   bareSupportPoseEnabled: 0
+  authoredSprintSupportGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
+  authoredSprintTriggerGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
   bareFirstPerson:
     position: {x: 0, y: 0, z: 0}
     elbow: {x: 0, y: 0, z: 0}
@@ -118428,8 +118919,10 @@ MonoBehaviour:
   socket: {fileID: 6042438534251890831}
   flashParticlesPrefab: {fileID: 4834526503407549940, guid: 7ca62908b2cb6ca4a9cbafc0f4c28eca, type: 3}
   flashParticlesCount: 5
+  flashParticlesScale: 1
   flashLightPrefab: {fileID: 4171051858075953094, guid: 5b74dc70c965b6d42aaf1c66f5220a5d, type: 3}
   flashLightDuration: 0.05
+  flashLightIntensityScale: 1
   flashLightOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &6042438534251890831 stripped
 Transform:
@@ -118661,6 +119154,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2300000, guid: c1c55b458979d1649a41e228667f80b6, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -118942,8 +119439,10 @@ MonoBehaviour:
   socket: {fileID: 135259699560761738}
   flashParticlesPrefab: {fileID: 4834526503407549940, guid: 7ca62908b2cb6ca4a9cbafc0f4c28eca, type: 3}
   flashParticlesCount: 5
+  flashParticlesScale: 1
   flashLightPrefab: {fileID: 4171051858075953094, guid: 5b74dc70c965b6d42aaf1c66f5220a5d, type: 3}
   flashLightDuration: 0.05
+  flashLightIntensityScale: 1
   flashLightOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &3835262094480123069 stripped
 Transform:
@@ -119013,27 +119512,37 @@ MonoBehaviour:
   reloadBoltOpenSound: {fileID: 0}
   reloadBoltCloseSound: {fileID: 0}
   isAutomatic: 0
-  fireRate: 0.35
+  fireRate: 0.26
   usesBurstFire: 0
   burstCount: 3
   burstShotInterval: 0.07
   burstCooldown: 0.35
-  enforceReloadDuration: 0
-  reloadClipSpeedMultiplier: 1
-  reloadEmptyClipSpeedMultiplier: 1
-  partsReloadClipSpeedMultiplier: 1
-  partsReloadEmptyClipSpeedMultiplier: 1
-  tpReloadClipSpeedMultiplier: 1
-  tpReloadEmptyClipSpeedMultiplier: 0.99393946
-  tpPartsReloadClipSpeedMultiplier: 1
-  tpPartsReloadEmptyClipSpeedMultiplier: 1
-  reloadTime: 2.2333333
-  range: 80
-  damage: 40
-  maxAmmo: 8
-  reserveAmmoCapacity: 48
+  enforceReloadDuration: 1
+  reloadClipSpeedMultiplier: 1.2407407
+  reloadEmptyClipSpeedMultiplier: 1.5185187
+  partsReloadClipSpeedMultiplier: 1.2407407
+  partsReloadEmptyClipSpeedMultiplier: 1.5185187
+  tpReloadClipSpeedMultiplier: 1.2407407
+  tpReloadEmptyClipSpeedMultiplier: 1.5093156
+  tpPartsReloadClipSpeedMultiplier: 1.2407407
+  tpPartsReloadEmptyClipSpeedMultiplier: 1.5185187
+  reloadTime: 1.8
+  range: 100
+  damage: 34
+  maxAmmo: 15
+  reserveAmmoCapacity: 75
   forceReserveLimit: 1
-  weaponName: Pistola 02
+  handling:
+    adsSeconds: 0.16
+    sprintToFireSeconds: 0.1
+    verticalRecoilDegrees: 1.15
+    horizontalRecoilDegrees: 0.25
+    recoilRecoverySeconds: 0.16
+    aimSwayDegrees: 0.09
+    movement: 1
+    adsMovement: 0.85
+  intermediateDamageMultiplier: 0.75
+  weaponName: "Five-Seven"
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -119063,9 +119572,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   usesMultiPartReload: 0
-  damageFalloffStart: 80
-  damageFalloffEnd: 80
-  minDamageMultiplier: 1
+  damageFalloffStart: 20
+  damageFalloffEnd: 45
+  minDamageMultiplier: 0.55
   partsAnimator: {fileID: 5774245865961388039}
   EffectiveMaxAmmo: 0
   debugRunning: 0
@@ -119166,6 +119675,16 @@ MonoBehaviour:
   firstPersonRestStates: f98db15e9717a4bed57b29367275af88554ddf0528431e5112299e9d
   supportPoseEnabled: 0
   bareSupportPoseEnabled: 0
+  authoredSprintSupportGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
+  authoredSprintTriggerGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
   bareFirstPerson:
     position: {x: 0, y: 0, z: 0}
     elbow: {x: 0, y: 0, z: 0}
@@ -119376,8 +119895,10 @@ MonoBehaviour:
   socket: {fileID: 5905859051523865799}
   flashParticlesPrefab: {fileID: 4834526503407549940, guid: 7ca62908b2cb6ca4a9cbafc0f4c28eca, type: 3}
   flashParticlesCount: 5
+  flashParticlesScale: 1
   flashLightPrefab: {fileID: 4171051858075953094, guid: 5b74dc70c965b6d42aaf1c66f5220a5d, type: 3}
   flashLightDuration: 0.05
+  flashLightIntensityScale: 1
   flashLightOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &3398752746466123256 stripped
 Transform:
@@ -119435,27 +119956,37 @@ MonoBehaviour:
   reloadBoltOpenSound: {fileID: 0}
   reloadBoltCloseSound: {fileID: 0}
   isAutomatic: 0
-  fireRate: 1.08
+  fireRate: 0.85
   usesBurstFire: 0
   burstCount: 3
   burstShotInterval: 0.07
   burstCooldown: 0.42
-  enforceReloadDuration: 0
-  reloadClipSpeedMultiplier: 0.7878788
-  reloadEmptyClipSpeedMultiplier: 0.99242425
-  partsReloadClipSpeedMultiplier: 0.7878788
-  partsReloadEmptyClipSpeedMultiplier: 0.99242425
-  tpReloadClipSpeedMultiplier: 0.7878788
-  tpReloadEmptyClipSpeedMultiplier: 0.99242425
-  tpPartsReloadClipSpeedMultiplier: 0.7878788
-  tpPartsReloadEmptyClipSpeedMultiplier: 0.99242425
-  reloadTime: 4.4
-  range: 200
-  damage: 60
+  enforceReloadDuration: 1
+  reloadClipSpeedMultiplier: 1.2380953
+  reloadEmptyClipSpeedMultiplier: 1.5595238
+  partsReloadClipSpeedMultiplier: 1.2380953
+  partsReloadEmptyClipSpeedMultiplier: 1.5595238
+  tpReloadClipSpeedMultiplier: 1.2380953
+  tpReloadEmptyClipSpeedMultiplier: 1.5595238
+  tpPartsReloadClipSpeedMultiplier: 1.2380953
+  tpPartsReloadEmptyClipSpeedMultiplier: 1.5595238
+  reloadTime: 2.8
+  range: 230
+  damage: 100
   maxAmmo: 10
   reserveAmmoCapacity: 50
   forceReserveLimit: 1
-  weaponName: "Rifle de precisi\xF3n 03"
+  handling:
+    adsSeconds: 0.45
+    sprintToFireSeconds: 0.32
+    verticalRecoilDegrees: 3.6
+    horizontalRecoilDegrees: 0.85
+    recoilRecoverySeconds: 0.45
+    aimSwayDegrees: 0.16
+    movement: 0.86
+    adsMovement: 0.4
+  intermediateDamageMultiplier: 0.85
+  weaponName: "SVD"
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -119484,10 +120015,11 @@ MonoBehaviour:
   bulletIgnoredLayers:
     serializedVersion: 2
     m_Bits: 1024
+  penetrationDamage: 3c000000
   usesMultiPartReload: 0
-  damageFalloffStart: 200
-  damageFalloffEnd: 200
-  minDamageMultiplier: 1
+  damageFalloffStart: 110
+  damageFalloffEnd: 190
+  minDamageMultiplier: 0.7
   partsAnimator: {fileID: 7223935899547766049}
   EffectiveMaxAmmo: 0
   debugRunning: 0
@@ -119576,6 +120108,16 @@ MonoBehaviour:
   firstPersonRestStates: f98db15e9717a4bed57b29367275af88554ddf0528431e5112299e9d
   supportPoseEnabled: 1
   bareSupportPoseEnabled: 1
+  authoredSprintSupportGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
+  authoredSprintTriggerGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
   bareFirstPerson:
     position: {x: -0.02407882, y: 0.18013352, z: -0.048542246}
     elbow: {x: -0.11487662, y: 0.32475102, z: -0.2531682}
@@ -120124,28 +120666,38 @@ MonoBehaviour:
   reloadCloseSound: {fileID: 0}
   reloadBoltOpenSound: {fileID: 0}
   reloadBoltCloseSound: {fileID: 0}
-  isAutomatic: 0
-  fireRate: 0.27
+  isAutomatic: 1
+  fireRate: 0.075
   usesBurstFire: 0
-  burstCount: 3
-  burstShotInterval: 0.07
-  burstCooldown: 0.27
-  enforceReloadDuration: 0
-  reloadClipSpeedMultiplier: 1
-  reloadEmptyClipSpeedMultiplier: 1
-  partsReloadClipSpeedMultiplier: 1
-  partsReloadEmptyClipSpeedMultiplier: 1
-  tpReloadClipSpeedMultiplier: 1
-  tpReloadEmptyClipSpeedMultiplier: 0.99393946
-  tpPartsReloadClipSpeedMultiplier: 1
-  tpPartsReloadEmptyClipSpeedMultiplier: 1
-  reloadTime: 2.2333333
+  burstCount: 1
+  burstShotInterval: 0.075
+  burstCooldown: 0.42
+  enforceReloadDuration: 1
+  reloadClipSpeedMultiplier: 1.1452991
+  reloadEmptyClipSpeedMultiplier: 1.4017095
+  partsReloadClipSpeedMultiplier: 1.1452991
+  partsReloadEmptyClipSpeedMultiplier: 1.4017095
+  tpReloadClipSpeedMultiplier: 1.1452991
+  tpReloadEmptyClipSpeedMultiplier: 1.3932144
+  tpPartsReloadClipSpeedMultiplier: 1.1452991
+  tpPartsReloadEmptyClipSpeedMultiplier: 1.4017095
+  reloadTime: 1.95
   range: 70
-  damage: 32
-  maxAmmo: 12
-  reserveAmmoCapacity: 72
+  damage: 20
+  maxAmmo: 18
+  reserveAmmoCapacity: 90
   forceReserveLimit: 1
-  weaponName: Pistola 01
+  handling:
+    adsSeconds: 0.16
+    sprintToFireSeconds: 0.1
+    verticalRecoilDegrees: 1.15
+    horizontalRecoilDegrees: 0.25
+    recoilRecoverySeconds: 0.16
+    aimSwayDegrees: 0.09
+    movement: 1
+    adsMovement: 0.85
+  intermediateDamageMultiplier: 0.75
+  weaponName: "Glock autom\u00e1tica"
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -120175,9 +120727,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   usesMultiPartReload: 0
-  damageFalloffStart: 70
-  damageFalloffEnd: 70
-  minDamageMultiplier: 1
+  damageFalloffStart: 20
+  damageFalloffEnd: 45
+  minDamageMultiplier: 0.55
   partsAnimator: {fileID: 1583260415753255063}
   EffectiveMaxAmmo: 0
   debugRunning: 0
@@ -120278,6 +120830,16 @@ MonoBehaviour:
   firstPersonRestStates: f98db15e9717a4bed57b29367275af88554ddf0528431e5112299e9d
   supportPoseEnabled: 0
   bareSupportPoseEnabled: 0
+  authoredSprintSupportGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
+  authoredSprintTriggerGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
   bareFirstPerson:
     position: {x: 0, y: 0, z: 0}
     elbow: {x: 0, y: 0, z: 0}
@@ -120313,8 +120875,10 @@ MonoBehaviour:
   socket: {fileID: 7706161909568076538}
   flashParticlesPrefab: {fileID: 4834526503407549940, guid: 7ca62908b2cb6ca4a9cbafc0f4c28eca, type: 3}
   flashParticlesCount: 5
+  flashParticlesScale: 1
   flashLightPrefab: {fileID: 4171051858075953094, guid: 5b74dc70c965b6d42aaf1c66f5220a5d, type: 3}
   flashLightDuration: 0.05
+  flashLightIntensityScale: 1
   flashLightOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &6513830910423630433 stripped
 Transform:
@@ -120618,7 +121182,7 @@ MonoBehaviour:
   reloadBoltOpenSound: {fileID: 8300000, guid: 9437d90133cd4ff41b81629b342d38c9, type: 3}
   reloadBoltCloseSound: {fileID: 8300000, guid: 728f3240a486d8646ad6c8cb1a9cd878, type: 3}
   isAutomatic: 0
-  fireRate: 2.05
+  fireRate: 1.85
   usesBurstFire: 0
   burstCount: 3
   burstShotInterval: 0.07
@@ -120633,18 +121197,28 @@ MonoBehaviour:
   tpPartsReloadClipSpeedMultiplier: 1
   tpPartsReloadEmptyClipSpeedMultiplier: 1
   reloadTime: 5
-  range: 250
-  damage: 95
+  range: 260
+  damage: 150
   maxAmmo: 5
-  reserveAmmoCapacity: 30
+  reserveAmmoCapacity: 25
   forceReserveLimit: 1
-  weaponName: Rifle de cerrojo 01
+  handling:
+    adsSeconds: 0.45
+    sprintToFireSeconds: 0.32
+    verticalRecoilDegrees: 3.6
+    horizontalRecoilDegrees: 0.85
+    recoilRecoverySeconds: 0.45
+    aimSwayDegrees: 0.16
+    movement: 0.86
+    adsMovement: 0.4
+  intermediateDamageMultiplier: 0.85
+  weaponName: "M24"
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
   pelletCenterBias: 0.4
   requiresBoltActionAfterFire: 1
-  boltActionDuration: 2.05
+  boltActionDuration: 1.85
   boltActionDelay: 0.12
   aimFOV: 45
   aimTransitionSpeed: 10
@@ -120667,10 +121241,11 @@ MonoBehaviour:
   bulletIgnoredLayers:
     serializedVersion: 2
     m_Bits: 1024
+  penetrationDamage: 69000000
   usesMultiPartReload: 1
-  damageFalloffStart: 250
-  damageFalloffEnd: 250
-  minDamageMultiplier: 1
+  damageFalloffStart: 110
+  damageFalloffEnd: 190
+  minDamageMultiplier: 0.7
   partsAnimator: {fileID: 5167870682545015945}
   EffectiveMaxAmmo: 0
   debugRunning: 0
@@ -120771,6 +121346,16 @@ MonoBehaviour:
   firstPersonRestStates: f98db15e9717a4bed57b29367275af88554ddf0528431e5112299e9d
   supportPoseEnabled: 1
   bareSupportPoseEnabled: 1
+  authoredSprintSupportGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
+  authoredSprintTriggerGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
   bareFirstPerson:
     position: {x: -0.03025494, y: 0.40947932, z: -0.07992769}
     elbow: {x: -0.13191508, y: 0.5155548, z: -0.30290103}
@@ -120862,8 +121447,10 @@ MonoBehaviour:
   socket: {fileID: 5167870682554868607}
   flashParticlesPrefab: {fileID: 4834526503407549940, guid: 7ca62908b2cb6ca4a9cbafc0f4c28eca, type: 3}
   flashParticlesCount: 5
+  flashParticlesScale: 1
   flashLightPrefab: {fileID: 4171051858075953094, guid: 5b74dc70c965b6d42aaf1c66f5220a5d, type: 3}
   flashLightDuration: 0.05
+  flashLightIntensityScale: 1
   flashLightOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &5167870682554868581 stripped
 Transform:
@@ -121711,27 +122298,37 @@ MonoBehaviour:
   reloadBoltOpenSound: {fileID: 0}
   reloadBoltCloseSound: {fileID: 0}
   isAutomatic: 0
-  fireRate: 0.28
+  fireRate: 0.33
   usesBurstFire: 0
   burstCount: 3
   burstShotInterval: 0.07
   burstCooldown: 0.28
-  enforceReloadDuration: 0
-  reloadClipSpeedMultiplier: 1.0266668
-  reloadEmptyClipSpeedMultiplier: 1.2933334
-  partsReloadClipSpeedMultiplier: 1.0266668
-  partsReloadEmptyClipSpeedMultiplier: 1.2933334
-  tpReloadClipSpeedMultiplier: 1.0266668
-  tpReloadEmptyClipSpeedMultiplier: 1.2933334
-  tpPartsReloadClipSpeedMultiplier: 1.0266668
-  tpPartsReloadEmptyClipSpeedMultiplier: 1.2933334
-  reloadTime: 2.5
+  enforceReloadDuration: 1
+  reloadClipSpeedMultiplier: 1.0694446
+  reloadEmptyClipSpeedMultiplier: 1.3472223
+  partsReloadClipSpeedMultiplier: 1.0694446
+  partsReloadEmptyClipSpeedMultiplier: 1.3472223
+  tpReloadClipSpeedMultiplier: 1.0694446
+  tpReloadEmptyClipSpeedMultiplier: 1.3472223
+  tpPartsReloadClipSpeedMultiplier: 1.0694446
+  tpPartsReloadEmptyClipSpeedMultiplier: 1.3472223
+  reloadTime: 2.4
   range: 180
   damage: 70
-  maxAmmo: 10
+  maxAmmo: 12
   reserveAmmoCapacity: 60
   forceReserveLimit: 1
-  weaponName: "Rifle semiautom\xE1tico"
+  handling:
+    adsSeconds: 0.26
+    sprintToFireSeconds: 0.2
+    verticalRecoilDegrees: 1.4
+    horizontalRecoilDegrees: 0.42
+    recoilRecoverySeconds: 0.23
+    aimSwayDegrees: 0.1
+    movement: 0.96
+    adsMovement: 0.63
+  intermediateDamageMultiplier: 0.75
+  weaponName: "ACR"
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -121761,9 +122358,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   usesMultiPartReload: 0
-  damageFalloffStart: 180
-  damageFalloffEnd: 180
-  minDamageMultiplier: 1
+  damageFalloffStart: 38
+  damageFalloffEnd: 80
+  minDamageMultiplier: 0.6
   partsAnimator: {fileID: 3958557718811778420}
   EffectiveMaxAmmo: 0
   debugRunning: 0
@@ -121852,6 +122449,16 @@ MonoBehaviour:
   firstPersonRestStates: f98db15e9717a4bed57b29367275af88554ddf0528431e5112299e9d
   supportPoseEnabled: 1
   bareSupportPoseEnabled: 1
+  authoredSprintSupportGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
+  authoredSprintTriggerGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
   bareFirstPerson:
     position: {x: -0.0177471, y: 0.17312759, z: -0.047401287}
     elbow: {x: -0.12013399, y: 0.27166197, z: -0.27319485}
@@ -121943,8 +122550,10 @@ MonoBehaviour:
   socket: {fileID: 1671155214606246246}
   flashParticlesPrefab: {fileID: 4834526503407549940, guid: 7ca62908b2cb6ca4a9cbafc0f4c28eca, type: 3}
   flashParticlesCount: 5
+  flashParticlesScale: 1
   flashLightPrefab: {fileID: 4171051858075953094, guid: 5b74dc70c965b6d42aaf1c66f5220a5d, type: 3}
   flashLightDuration: 0.05
+  flashLightIntensityScale: 1
   flashLightOffset: {x: 0, y: 0, z: 0}
 --- !u!1001 &6099998932095295954
 PrefabInstance:
@@ -122317,27 +122926,37 @@ MonoBehaviour:
   reloadBoltOpenSound: {fileID: 0}
   reloadBoltCloseSound: {fileID: 0}
   isAutomatic: 1
-  fireRate: 0.085
+  fireRate: 0.105
   usesBurstFire: 0
   burstCount: 3
   burstShotInterval: 0.07
   burstCooldown: 0.085
-  enforceReloadDuration: 0
-  reloadClipSpeedMultiplier: 1.0641026
-  reloadEmptyClipSpeedMultiplier: 1.3333334
-  partsReloadClipSpeedMultiplier: 1.0641026
-  partsReloadEmptyClipSpeedMultiplier: 1.3333334
-  tpReloadClipSpeedMultiplier: 1.0641026
-  tpReloadEmptyClipSpeedMultiplier: 1.3333334
-  tpPartsReloadClipSpeedMultiplier: 1.0641026
-  tpPartsReloadEmptyClipSpeedMultiplier: 1.3333334
-  reloadTime: 2.6
-  range: 80
-  damage: 21
-  maxAmmo: 30
-  reserveAmmoCapacity: 180
+  enforceReloadDuration: 1
+  reloadClipSpeedMultiplier: 1.2296297
+  reloadEmptyClipSpeedMultiplier: 1.8370371
+  partsReloadClipSpeedMultiplier: 1.2296297
+  partsReloadEmptyClipSpeedMultiplier: 1.8370371
+  tpReloadClipSpeedMultiplier: 1.2296297
+  tpReloadEmptyClipSpeedMultiplier: 1.8370371
+  tpPartsReloadClipSpeedMultiplier: 1.2296297
+  tpPartsReloadEmptyClipSpeedMultiplier: 1.8370371
+  reloadTime: 2.25
+  range: 90
+  damage: 26
+  maxAmmo: 25
+  reserveAmmoCapacity: 125
   forceReserveLimit: 1
-  weaponName: Subfusil 02
+  handling:
+    adsSeconds: 0.2
+    sprintToFireSeconds: 0.14
+    verticalRecoilDegrees: 1.1
+    horizontalRecoilDegrees: 0.38
+    recoilRecoverySeconds: 0.18
+    aimSwayDegrees: 0.085
+    movement: 0.99
+    adsMovement: 0.75
+  intermediateDamageMultiplier: 0.75
+  weaponName: "UMP"
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -122367,9 +122986,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   usesMultiPartReload: 0
-  damageFalloffStart: 80
-  damageFalloffEnd: 80
-  minDamageMultiplier: 1
+  damageFalloffStart: 18
+  damageFalloffEnd: 38
+  minDamageMultiplier: 0.5
   partsAnimator: {fileID: 503255837108224141}
   EffectiveMaxAmmo: 0
   debugRunning: 0
@@ -122459,79 +123078,79 @@ MonoBehaviour:
   supportPoseEnabled: 1
   bareSupportPoseEnabled: 0
   authoredSprintSupportGrip:
-    position: {x: -0.0247613732, y: -0.143422604, z: -0.0493540689}
-    elbow: {x: -0.169688374, y: -0.0017819599, z: -0.222954676}
-    rotation: {x: -0.421987563, y: -0.699674904, z: -0.443304956, w: -0.368595302}
+    position: {x: -0.024761373, y: -0.1434226, z: -0.04935407}
+    elbow: {x: -0.16968837, y: -0.0017819599, z: -0.22295468}
+    rotation: {x: -0.42198756, y: -0.6996749, z: -0.44330496, w: -0.3685953}
     fingers:
     - bone: index_01_l
-      rotation: {x: -0.0637463778, y: 0.097197473, z: -0.511291862, w: 0.851510286}
+      rotation: {x: -0.06374638, y: 0.09719747, z: -0.51129186, w: 0.8515103}
     - bone: index_02_l
-      rotation: {x: 0.0101000704, y: 0.0235588215, z: -0.386802644, w: 0.921806276}
+      rotation: {x: 0.01010007, y: 0.023558822, z: -0.38680264, w: 0.9218063}
     - bone: index_03_l
-      rotation: {x: 0.0219923873, y: -0.023933515, z: -0.354417771, w: 0.934522092}
+      rotation: {x: 0.021992387, y: -0.023933515, z: -0.35441777, w: 0.9345221}
     - bone: middle_01_l
-      rotation: {x: -0.0783429146, y: 0.109092601, z: -0.609061599, w: 0.781668246}
+      rotation: {x: -0.078342915, y: 0.1090926, z: -0.6090616, w: 0.78166825}
     - bone: middle_02_l
-      rotation: {x: -0.0288800653, y: -0.0231404677, z: -0.503895521, w: 0.862971485}
+      rotation: {x: -0.028880065, y: -0.023140468, z: -0.5038955, w: 0.8629715}
     - bone: middle_03_l
-      rotation: {x: 0.00602584844, y: 0.0135181528, z: -0.136236623, w: 0.990565777}
+      rotation: {x: 0.0060258484, y: 0.013518153, z: -0.13623662, w: 0.9905658}
     - bone: pinky_01_l
-      rotation: {x: -0.212029889, y: 0.212142736, z: -0.700070083, w: 0.648028255}
+      rotation: {x: -0.21202989, y: 0.21214274, z: -0.7000701, w: 0.64802825}
     - bone: pinky_02_l
-      rotation: {x: -0.0548565835, y: -0.0667069629, z: -0.598282158, w: 0.796617508}
+      rotation: {x: -0.054856583, y: -0.06670696, z: -0.59828216, w: 0.7966175}
     - bone: pinky_03_l
-      rotation: {x: 0.00350530841, y: 0.0280398037, z: -0.829292893, w: 0.558099329}
+      rotation: {x: 0.0035053084, y: 0.028039804, z: -0.8292929, w: 0.5580993}
     - bone: ring_01_l
-      rotation: {x: -0.152951568, y: 0.193038985, z: -0.610994458, w: 0.752348006}
+      rotation: {x: -0.15295157, y: 0.19303899, z: -0.61099446, w: 0.752348}
     - bone: ring_02_l
-      rotation: {x: 0.0143661154, y: -0.0200496316, z: -0.615086257, w: 0.788073957}
+      rotation: {x: 0.014366115, y: -0.020049632, z: -0.61508626, w: 0.78807396}
     - bone: ring_03_l
-      rotation: {x: 0.138663992, y: -0.235461935, z: -0.306304425, w: 0.91187036}
+      rotation: {x: 0.13866399, y: -0.23546194, z: -0.30630443, w: 0.91187036}
     - bone: thumb_01_l
-      rotation: {x: 0.617024004, y: -0.553092003, z: -0.0073061185, w: 0.559747517}
+      rotation: {x: 0.617024, y: -0.553092, z: -0.0073061185, w: 0.5597475}
     - bone: thumb_02_l
-      rotation: {x: 0.163174406, y: -0.0603121519, z: -0.16436781, w: 0.970937669}
+      rotation: {x: 0.1631744, y: -0.060312152, z: -0.16436781, w: 0.97093767}
     - bone: thumb_03_l
-      rotation: {x: 0.000617047248, y: -0.0451990739, z: 0.0631591827, w: 0.996979237}
+      rotation: {x: 0.00061704725, y: -0.045199074, z: 0.06315918, w: 0.99697924}
     - bone: hand_l_holder
       rotation: {x: 0, y: 0, z: 0, w: 1}
     - bone: SM_Knife_01
-      rotation: {x: -0.516092777, y: -0.364640534, z: 0.451944262, w: 0.629628479}
+      rotation: {x: -0.5160928, y: -0.36464053, z: 0.45194426, w: 0.6296285}
   authoredSprintTriggerGrip:
-    position: {x: 0.0380450077, y: 0.111037493, z: -0.0115272757}
-    elbow: {x: 0.0880926177, y: 0.337962508, z: -0.148518369}
-    rotation: {x: 0.0479322337, y: 0.0275813546, z: -0.670217097, w: 0.740102112}
+    position: {x: 0.038045008, y: 0.11103749, z: -0.011527276}
+    elbow: {x: 0.08809262, y: 0.3379625, z: -0.14851837}
+    rotation: {x: 0.047932234, y: 0.027581355, z: -0.6702171, w: 0.7401021}
     fingers:
     - bone: index_01_r
-      rotation: {x: -0.0106628817, y: -0.0386678167, z: -0.178539768, w: 0.983114839}
+      rotation: {x: -0.010662882, y: -0.038667817, z: -0.17853977, w: 0.98311484}
     - bone: index_02_r
-      rotation: {x: 0.00627098046, y: 0.00146680896, z: -0.609406948, w: 0.792831481}
+      rotation: {x: 0.0062709805, y: 0.001466809, z: -0.60940695, w: 0.7928315}
     - bone: index_03_r
-      rotation: {x: 0.0123337815, y: -0.0115533583, z: -0.367748797, w: 0.929771662}
+      rotation: {x: 0.012333781, y: -0.011553358, z: -0.3677488, w: 0.92977166}
     - bone: middle_01_r
-      rotation: {x: -0.0125732319, y: 0.0844298676, z: -0.723817945, w: 0.684690595}
+      rotation: {x: -0.012573232, y: 0.08442987, z: -0.72381794, w: 0.6846906}
     - bone: middle_02_r
-      rotation: {x: 0.0265721492, y: -0.00296415971, z: -0.557008684, w: 0.830076218}
+      rotation: {x: 0.02657215, y: -0.0029641597, z: -0.5570087, w: 0.8300762}
     - bone: middle_03_r
-      rotation: {x: 0.11133375, y: 0.0115079172, z: -0.338118702, w: 0.934423983}
+      rotation: {x: 0.11133375, y: 0.011507917, z: -0.3381187, w: 0.934424}
     - bone: pinky_01_r
-      rotation: {x: -0.0802852735, y: 0.13994509, z: -0.665363193, w: 0.728876889}
+      rotation: {x: -0.08028527, y: 0.13994509, z: -0.6653632, w: 0.7288769}
     - bone: pinky_02_r
-      rotation: {x: -0.000776880188, y: -0.00118169992, z: -0.585597932, w: 0.810600519}
+      rotation: {x: -0.0007768802, y: -0.0011816999, z: -0.58559793, w: 0.8106005}
     - bone: pinky_03_r
-      rotation: {x: -0.0170853455, y: -0.0330507271, z: -0.463893324, w: 0.885109425}
+      rotation: {x: -0.017085345, y: -0.033050727, z: -0.46389332, w: 0.8851094}
     - bone: ring_01_r
-      rotation: {x: -0.054437343, y: 0.106232554, z: -0.695178866, w: 0.708856523}
+      rotation: {x: -0.054437343, y: 0.10623255, z: -0.69517887, w: 0.7088565}
     - bone: ring_02_r
-      rotation: {x: 5.6829922e-05, y: -1.10059818e-05, z: -0.601224065, w: 0.799080551}
+      rotation: {x: 0.000056829922, y: -0.000011005982, z: -0.60122406, w: 0.79908055}
     - bone: ring_03_r
-      rotation: {x: 0.0325025953, y: 0.00309730368, z: -0.294201076, w: 0.955185711}
+      rotation: {x: 0.032502595, y: 0.0030973037, z: -0.29420108, w: 0.9551857}
     - bone: thumb_01_r
-      rotation: {x: 0.696288824, y: -0.41645363, z: -0.412781268, w: 0.413956463}
+      rotation: {x: 0.6962888, y: -0.41645363, z: -0.41278127, w: 0.41395646}
     - bone: thumb_02_r
-      rotation: {x: 0.0106084859, y: -0.0192465018, z: -0.34461686, w: 0.938486218}
+      rotation: {x: 0.010608486, y: -0.019246502, z: -0.34461686, w: 0.9384862}
     - bone: thumb_03_r
-      rotation: {x: 0.0485103354, y: -0.0239189453, z: -0.0895863175, w: 0.994509459}
+      rotation: {x: 0.048510335, y: -0.023918945, z: -0.08958632, w: 0.99450946}
   bareFirstPerson:
     position: {x: 0, y: 0, z: 0}
     elbow: {x: 0, y: 0, z: 0}
@@ -122572,8 +123191,10 @@ MonoBehaviour:
   socket: {fileID: 210998656050894348}
   flashParticlesPrefab: {fileID: 4834526503407549940, guid: 7ca62908b2cb6ca4a9cbafc0f4c28eca, type: 3}
   flashParticlesCount: 5
+  flashParticlesScale: 1
   flashLightPrefab: {fileID: 4171051858075953094, guid: 5b74dc70c965b6d42aaf1c66f5220a5d, type: 3}
   flashLightDuration: 0.05
+  flashLightIntensityScale: 1
   flashLightOffset: {x: 0, y: 0, z: 0}
 --- !u!1001 &6426113321394416480
 PrefabInstance:
@@ -122631,6 +123252,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2300000, guid: 894eecaba4473bc41a05f263041a2272, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -123379,6 +124004,17 @@ MonoBehaviour:
     category: 1
     casingPrefab: {fileID: 1492315059354262, guid: 3ea52eaf9fe44654e880acb7e385dd7a, type: 3}
     casingEjectPoint: {fileID: 6596176373275171092}
+  - weaponId: Revolver
+    weaponRoot: {fileID: 1189448104314349165}
+    weaponComponent: {fileID: 5442065467759855334}
+    overrideController: {fileID: 22100000, guid: cea8ea29dfaeff54faf85b049b5e7c18, type: 2}
+    tpOverrideController: {fileID: 22100000, guid: 9a4d230d83db89649b7466b282f7513e, type: 2}
+    tpWeaponId: 1
+    unlockedByDefault: 0
+    weaponIcon: {fileID: 7480974206919168743, guid: 0b362a418ce19b44bbc38f8f21ae21f4, type: 3}
+    category: 1
+    casingPrefab: {fileID: 0}
+    casingEjectPoint: {fileID: 0}
   startingSlotIndex: 0
   debugInventory: 0
 --- !u!114 &588322725122010434
@@ -124759,6 +125395,576 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: f2fc14639e04fde4db228e4d14874d6c, type: 3}
   m_PrefabInstance: {fileID: 6670366358280996121}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &6791956419402516211
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 3783259333957819265}
+    m_Modifications:
+    - target: {fileID: -9115974943842744007, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -8807466059287305689, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -8680380917240015801, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.7913679
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.7913679
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.7913679
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.114174984
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.25825873
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.52616143
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7052196
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.70521975
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.054981187
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0.04803624
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8265497512370911849, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -8154898595017119573, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -7888710004059551287, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -7820417656056244989, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.000014698195
+      objectReference: {fileID: 0}
+    - target: {fileID: -7820417656056244989, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.0012509672
+      objectReference: {fileID: 0}
+    - target: {fileID: -7820417656056244989, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.00000048091147
+      objectReference: {fileID: 0}
+    - target: {fileID: -7820417656056244989, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.41948047
+      objectReference: {fileID: 0}
+    - target: {fileID: -7820417656056244989, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.583413
+      objectReference: {fileID: 0}
+    - target: {fileID: -7820417656056244989, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.40599298
+      objectReference: {fileID: 0}
+    - target: {fileID: -7820417656056244989, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0.56465495
+      objectReference: {fileID: 0}
+    - target: {fileID: -7624986593926266458, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -7615544223363200344, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -7573173711788314720, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -7500226441592204865, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -7018201018732622428, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -6870224182501960834, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -6803750817430001349, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -6647392358296171300, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -6601208551090537463, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -5889083830352943477, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -5806054985805773656, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -5698934301376386570, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -5425824932123810444, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -5294142556563821461, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -5233268783608772401, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -5204154743554693207, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -5145719167318648213, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -4972713902714552238, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -4828229946672282733, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -4503749364264616953, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -4135403912438223895, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -4089671580913160356, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -3956427155328570988, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910143407253292124, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -3242261714860908937, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -3066638911373515557, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -3008920263448108885, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -2830926421015429636, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -2736431077028968363, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -2728644033814695023, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 554d0da9e9a932a4ab85edebf7929163, type: 2}
+    - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value:
+      objectReference: {fileID: 2100000, guid: 554d0da9e9a932a4ab85edebf7929163, type: 2}
+    - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: 'm_Materials.Array.data[2]'
+      value:
+      objectReference: {fileID: 2100000, guid: 554d0da9e9a932a4ab85edebf7929163, type: 2}
+    - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: 'm_Materials.Array.data[3]'
+      value:
+      objectReference: {fileID: 2100000, guid: 12b18611cab689047b64f1667fef4fd6, type: 2}
+    - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: 'm_Materials.Array.data[4]'
+      value:
+      objectReference: {fileID: 2100000, guid: 26b72c3eb1bfe3a478bf9776caf55355, type: 2}
+    - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: 'm_Materials.Array.data[5]'
+      value:
+      objectReference: {fileID: 2100000, guid: 554d0da9e9a932a4ab85edebf7929163, type: 2}
+    - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: 'm_Materials.Array.data[6]'
+      value:
+      objectReference: {fileID: 2100000, guid: 26b72c3eb1bfe3a478bf9776caf55355, type: 2}
+    - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: 'm_Materials.Array.data[7]'
+      value:
+      objectReference: {fileID: 2100000, guid: 554d0da9e9a932a4ab85edebf7929163, type: 2}
+    - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: 'm_Materials.Array.data[8]'
+      value:
+      objectReference: {fileID: 2100000, guid: 554d0da9e9a932a4ab85edebf7929163, type: 2}
+    - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: 'm_Materials.Array.data[9]'
+      value:
+      objectReference: {fileID: 2100000, guid: 554d0da9e9a932a4ab85edebf7929163, type: 2}
+    - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: 'm_Materials.Array.data[10]'
+      value:
+      objectReference: {fileID: 2100000, guid: 3461750b7996f994dbb7f3595f878553, type: 2}
+    - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: 'm_Materials.Array.data[11]'
+      value:
+      objectReference: {fileID: 2100000, guid: 554d0da9e9a932a4ab85edebf7929163, type: 2}
+    - target: {fileID: -2531735426947555059, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -2490716778434720113, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -2445261897041197961, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -2355233260994230338, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -1759128222777268328, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -1715358203229796266, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -1468338294331177470, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -1217492129546650360, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -984344968277886006, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -499259330816501417, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -465849407467847830, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -59429242418384348, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 225426477003983525, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 499955594367959656, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 508895269423658379, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Name
+      value: EngineRevolver
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1607525716497970990, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1742634327280393368, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1793131481853797298, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1896173138140980751, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 2208694610314979319, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 2262827354749238244, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 2307632006744470144, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 2323222999259931843, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 2397400223877275983, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3006916401941450149, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3087429655769878340, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3579490971623503002, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3743993344710040121, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3793378848749839498, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3985483859935771459, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4217267165265671547, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4262218675712365253, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4527637702816002957, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4599191631109308613, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4700256845531566096, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4950649562539603988, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 5646635921986361154, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 5703791337414633652, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6630262243029803481, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6670357798177016086, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6791976768067785564, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7099623159695695167, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7103715081398613446, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7395080771226447551, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7400571097548887385, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7979607606874656507, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7988584420571643210, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8296888251931239751, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.0010404136
+      objectReference: {fileID: 0}
+    - target: {fileID: 8296888251931239751, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.0044151335
+      objectReference: {fileID: 0}
+    - target: {fileID: 8296888251931239751, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.015313531
+      objectReference: {fileID: 0}
+    - target: {fileID: 8296888251931239751, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.36258498
+      objectReference: {fileID: 0}
+    - target: {fileID: 8296888251931239751, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.64342666
+      objectReference: {fileID: 0}
+    - target: {fileID: 8296888251931239751, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.40540907
+      objectReference: {fileID: 0}
+    - target: {fileID: 8296888251931239751, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0.5386815
+      objectReference: {fileID: 0}
+    - target: {fileID: 8470291841402032914, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8550292167794429355, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.0009015687
+      objectReference: {fileID: 0}
+    - target: {fileID: 8550292167794429355, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.0053782505
+      objectReference: {fileID: 0}
+    - target: {fileID: 8550292167794429355, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.016353091
+      objectReference: {fileID: 0}
+    - target: {fileID: 8550292167794429355, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.0005301535
+      objectReference: {fileID: 0}
+    - target: {fileID: 8550292167794429355, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.99664426
+      objectReference: {fileID: 0}
+    - target: {fileID: 8550292167794429355, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.00088426843
+      objectReference: {fileID: 0}
+    - target: {fileID: 8550292167794429355, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0.08184829
+      objectReference: {fileID: 0}
+    - target: {fileID: 8550845100128417971, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8563819221711032825, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8946482200574681244, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: -1750197354950549132, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+    m_RemovedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 8296888251931239751, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7180296536615239968}
+    - targetCorrespondingSourceObject: {fileID: 8296888251931239751, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 783537006318294501}
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+--- !u!4 &3271187318099338164 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8296888251931239751, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+  m_PrefabInstance: {fileID: 6791956419402516211}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &6470363273737183512 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
+  m_PrefabInstance: {fileID: 6791956419402516211}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &6794216751322801760
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -125159,6 +126365,30 @@ PrefabInstance:
       propertyPath: m_LocalPosition.z
       value: 0.0427
       objectReference: {fileID: 0}
+    - target: {fileID: 13700000, guid: bfda376b0f658a748870ea8f7c2c7c03, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
+    - target: {fileID: 13700000, guid: bfda376b0f658a748870ea8f7c2c7c03, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value:
+      objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
+    - target: {fileID: 13700000, guid: bfda376b0f658a748870ea8f7c2c7c03, type: 3}
+      propertyPath: 'm_Materials.Array.data[2]'
+      value:
+      objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
+    - target: {fileID: 13700000, guid: bfda376b0f658a748870ea8f7c2c7c03, type: 3}
+      propertyPath: 'm_Materials.Array.data[3]'
+      value:
+      objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
+    - target: {fileID: 13700000, guid: bfda376b0f658a748870ea8f7c2c7c03, type: 3}
+      propertyPath: 'm_Materials.Array.data[4]'
+      value:
+      objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
+    - target: {fileID: 13700000, guid: bfda376b0f658a748870ea8f7c2c7c03, type: 3}
+      propertyPath: 'm_Materials.Array.data[5]'
+      value:
+      objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
@@ -125208,8 +126438,10 @@ MonoBehaviour:
   socket: {fileID: 6999794881086647239}
   flashParticlesPrefab: {fileID: 4834526503407549940, guid: 7ca62908b2cb6ca4a9cbafc0f4c28eca, type: 3}
   flashParticlesCount: 5
+  flashParticlesScale: 1
   flashLightPrefab: {fileID: 4171051858075953094, guid: 5b74dc70c965b6d42aaf1c66f5220a5d, type: 3}
   flashLightDuration: 0.05
+  flashLightIntensityScale: 1
   flashLightOffset: {x: 0, y: 0, z: 0}
 --- !u!1 &6999794881086617591 stripped
 GameObject:
@@ -125252,27 +126484,37 @@ MonoBehaviour:
   reloadBoltOpenSound: {fileID: 0}
   reloadBoltCloseSound: {fileID: 0}
   isAutomatic: 1
-  fireRate: 0.1
+  fireRate: 0.105
   usesBurstFire: 0
   burstCount: 3
   burstShotInterval: 0.07
   burstCooldown: 0.25
-  enforceReloadDuration: 0
-  reloadClipSpeedMultiplier: 1
-  reloadEmptyClipSpeedMultiplier: 1
-  partsReloadClipSpeedMultiplier: 1
-  partsReloadEmptyClipSpeedMultiplier: 1
-  tpReloadClipSpeedMultiplier: 1
-  tpReloadEmptyClipSpeedMultiplier: 1
-  tpPartsReloadClipSpeedMultiplier: 1
-  tpPartsReloadEmptyClipSpeedMultiplier: 1
-  reloadTime: 2.2
-  range: 120
-  damage: 50
+  enforceReloadDuration: 1
+  reloadClipSpeedMultiplier: 1.1594203
+  reloadEmptyClipSpeedMultiplier: 1.4927537
+  partsReloadClipSpeedMultiplier: 1.1594203
+  partsReloadEmptyClipSpeedMultiplier: 1.4927537
+  tpReloadClipSpeedMultiplier: 1.1594203
+  tpReloadEmptyClipSpeedMultiplier: 1.4927537
+  tpPartsReloadClipSpeedMultiplier: 1.1594203
+  tpPartsReloadEmptyClipSpeedMultiplier: 1.4927537
+  reloadTime: 2.3
+  range: 135
+  damage: 27
   maxAmmo: 30
-  reserveAmmoCapacity: 300
-  forceReserveLimit: 0
-  weaponName: Rifle
+  reserveAmmoCapacity: 120
+  forceReserveLimit: 1
+  handling:
+    adsSeconds: 0.26
+    sprintToFireSeconds: 0.2
+    verticalRecoilDegrees: 1.4
+    horizontalRecoilDegrees: 0.42
+    recoilRecoverySeconds: 0.23
+    aimSwayDegrees: 0.1
+    movement: 0.96
+    adsMovement: 0.63
+  intermediateDamageMultiplier: 0.75
+  weaponName: "AK-12"
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -125302,9 +126544,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   usesMultiPartReload: 0
-  damageFalloffStart: 120
-  damageFalloffEnd: 25
-  minDamageMultiplier: 0.25
+  damageFalloffStart: 38
+  damageFalloffEnd: 80
+  minDamageMultiplier: 0.6
   partsAnimator: {fileID: 0}
   EffectiveMaxAmmo: 0
   debugRunning: 0
@@ -125393,6 +126635,16 @@ MonoBehaviour:
   firstPersonRestStates: f98db15e9717a4bed57b29367275af88d75e53f37b358267554ddf0528431e5112299e9d8becf28a14490eee9a8f56c2
   supportPoseEnabled: 1
   bareSupportPoseEnabled: 0
+  authoredSprintSupportGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
+  authoredSprintTriggerGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
   bareFirstPerson:
     position: {x: 0, y: 0, z: 0}
     elbow: {x: 0, y: 0, z: 0}
@@ -125760,8 +127012,10 @@ MonoBehaviour:
   socket: {fileID: 7075609496820880818}
   flashParticlesPrefab: {fileID: 4834526503407549940, guid: 7ca62908b2cb6ca4a9cbafc0f4c28eca, type: 3}
   flashParticlesCount: 5
+  flashParticlesScale: 1
   flashLightPrefab: {fileID: 4171051858075953094, guid: 5b74dc70c965b6d42aaf1c66f5220a5d, type: 3}
   flashLightDuration: 0.05
+  flashLightIntensityScale: 1
   flashLightOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &3600466430106024802 stripped
 Transform:
@@ -125853,27 +127107,37 @@ MonoBehaviour:
   reloadBoltOpenSound: {fileID: 0}
   reloadBoltCloseSound: {fileID: 0}
   isAutomatic: 0
-  fireRate: 0.25
+  fireRate: 0.075
   usesBurstFire: 1
   burstCount: 3
-  burstShotInterval: 0.07
-  burstCooldown: 0.25
-  enforceReloadDuration: 0
-  reloadClipSpeedMultiplier: 1.2173914
-  reloadEmptyClipSpeedMultiplier: 1.5797102
-  partsReloadClipSpeedMultiplier: 1.2173914
-  partsReloadEmptyClipSpeedMultiplier: 1.5797102
-  tpReloadClipSpeedMultiplier: 1.2173914
-  tpReloadEmptyClipSpeedMultiplier: 1.5797102
-  tpPartsReloadClipSpeedMultiplier: 1.2173914
-  tpPartsReloadEmptyClipSpeedMultiplier: 1.5797102
-  reloadTime: 2.3
-  range: 140
-  damage: 30
+  burstShotInterval: 0.075
+  burstCooldown: 0.34
+  enforceReloadDuration: 1
+  reloadClipSpeedMultiplier: 1.1666668
+  reloadEmptyClipSpeedMultiplier: 1.5138889
+  partsReloadClipSpeedMultiplier: 1.1666668
+  partsReloadEmptyClipSpeedMultiplier: 1.5138889
+  tpReloadClipSpeedMultiplier: 1.1666668
+  tpReloadEmptyClipSpeedMultiplier: 1.5138889
+  tpPartsReloadClipSpeedMultiplier: 1.1666668
+  tpPartsReloadEmptyClipSpeedMultiplier: 1.5138889
+  reloadTime: 2.4
+  range: 145
+  damage: 28
   maxAmmo: 30
   reserveAmmoCapacity: 120
   forceReserveLimit: 1
-  weaponName: "Rifle de r\xE1fagas"
+  handling:
+    adsSeconds: 0.26
+    sprintToFireSeconds: 0.2
+    verticalRecoilDegrees: 1.4
+    horizontalRecoilDegrees: 0.42
+    recoilRecoverySeconds: 0.23
+    aimSwayDegrees: 0.1
+    movement: 0.96
+    adsMovement: 0.63
+  intermediateDamageMultiplier: 0.75
+  weaponName: "M4 (r\u00e1fagas)"
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -125903,9 +127167,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   usesMultiPartReload: 0
-  damageFalloffStart: 140
-  damageFalloffEnd: 140
-  minDamageMultiplier: 1
+  damageFalloffStart: 38
+  damageFalloffEnd: 80
+  minDamageMultiplier: 0.6
   partsAnimator: {fileID: 1360812085489558242}
   EffectiveMaxAmmo: 0
   debugRunning: 0
@@ -125994,6 +127258,16 @@ MonoBehaviour:
   firstPersonRestStates: f98db15e9717a4bed57b29367275af88554ddf0528431e5112299e9d
   supportPoseEnabled: 1
   bareSupportPoseEnabled: 1
+  authoredSprintSupportGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
+  authoredSprintTriggerGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
   bareFirstPerson:
     position: {x: -0.0177471, y: 0.17312759, z: -0.047401287}
     elbow: {x: -0.12013399, y: 0.27166197, z: -0.27319485}
@@ -126652,8 +127926,10 @@ MonoBehaviour:
   socket: {fileID: 724972829670763144}
   flashParticlesPrefab: {fileID: 4834526503407549940, guid: 7ca62908b2cb6ca4a9cbafc0f4c28eca, type: 3}
   flashParticlesCount: 5
+  flashParticlesScale: 1
   flashLightPrefab: {fileID: 4171051858075953094, guid: 5b74dc70c965b6d42aaf1c66f5220a5d, type: 3}
   flashLightDuration: 0.05
+  flashLightIntensityScale: 1
   flashLightOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &3246850058621354931 stripped
 Transform:
@@ -126733,22 +128009,32 @@ MonoBehaviour:
   burstCount: 3
   burstShotInterval: 0.07
   burstCooldown: 0.055
-  enforceReloadDuration: 0
-  reloadClipSpeedMultiplier: 1.0909091
-  reloadEmptyClipSpeedMultiplier: 1.439394
-  partsReloadClipSpeedMultiplier: 1.0909091
-  partsReloadEmptyClipSpeedMultiplier: 1.439394
-  tpReloadClipSpeedMultiplier: 1.0909091
-  tpReloadEmptyClipSpeedMultiplier: 1.439394
-  tpPartsReloadClipSpeedMultiplier: 1.0909091
-  tpPartsReloadEmptyClipSpeedMultiplier: 1.439394
-  reloadTime: 2.2
-  range: 55
-  damage: 18
+  enforceReloadDuration: 1
+  reloadClipSpeedMultiplier: 1.0666667
+  reloadEmptyClipSpeedMultiplier: 1.4074075
+  partsReloadClipSpeedMultiplier: 1.0666667
+  partsReloadEmptyClipSpeedMultiplier: 1.4074075
+  tpReloadClipSpeedMultiplier: 1.0666667
+  tpReloadEmptyClipSpeedMultiplier: 1.4074075
+  tpPartsReloadClipSpeedMultiplier: 1.0666667
+  tpPartsReloadEmptyClipSpeedMultiplier: 1.4074075
+  reloadTime: 2.25
+  range: 60
+  damage: 17
   maxAmmo: 25
   reserveAmmoCapacity: 150
   forceReserveLimit: 1
-  weaponName: Vector
+  handling:
+    adsSeconds: 0.2
+    sprintToFireSeconds: 0.14
+    verticalRecoilDegrees: 1.1
+    horizontalRecoilDegrees: 0.38
+    recoilRecoverySeconds: 0.18
+    aimSwayDegrees: 0.085
+    movement: 0.99
+    adsMovement: 0.75
+  intermediateDamageMultiplier: 0.75
+  weaponName: "Vector"
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -126778,9 +128064,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   usesMultiPartReload: 0
-  damageFalloffStart: 55
-  damageFalloffEnd: 55
-  minDamageMultiplier: 1
+  damageFalloffStart: 18
+  damageFalloffEnd: 38
+  minDamageMultiplier: 0.5
   partsAnimator: {fileID: 2785885894444650603}
   EffectiveMaxAmmo: 0
   debugRunning: 0
@@ -126869,6 +128155,16 @@ MonoBehaviour:
   firstPersonRestStates: f98db15e9717a4bed57b29367275af88554ddf0528431e5112299e9d
   supportPoseEnabled: 1
   bareSupportPoseEnabled: 0
+  authoredSprintSupportGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
+  authoredSprintTriggerGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
   bareFirstPerson:
     position: {x: 0, y: 0, z: 0}
     elbow: {x: 0, y: 0, z: 0}
@@ -127104,8 +128400,10 @@ MonoBehaviour:
   socket: {fileID: 112148337148109667}
   flashParticlesPrefab: {fileID: 4834526503407549940, guid: 7ca62908b2cb6ca4a9cbafc0f4c28eca, type: 3}
   flashParticlesCount: 5
+  flashParticlesScale: 1
   flashLightPrefab: {fileID: 4171051858075953094, guid: 5b74dc70c965b6d42aaf1c66f5220a5d, type: 3}
   flashLightDuration: 0.05
+  flashLightIntensityScale: 1
   flashLightOffset: {x: 0, y: 0, z: 0}
 --- !u!1 &8360316235182411666 stripped
 GameObject:
@@ -127160,27 +128458,37 @@ MonoBehaviour:
   reloadBoltOpenSound: {fileID: 0}
   reloadBoltCloseSound: {fileID: 0}
   isAutomatic: 1
-  fireRate: 0.064
+  fireRate: 0.075
   usesBurstFire: 0
   burstCount: 3
   burstShotInterval: 0.07
   burstCooldown: 0.064
-  enforceReloadDuration: 0
-  reloadClipSpeedMultiplier: 1.2307694
-  reloadEmptyClipSpeedMultiplier: 1.6538463
-  partsReloadClipSpeedMultiplier: 1.2307694
-  partsReloadEmptyClipSpeedMultiplier: 1.6538463
-  tpReloadClipSpeedMultiplier: 1.2307694
-  tpReloadEmptyClipSpeedMultiplier: 1.6538463
-  tpPartsReloadClipSpeedMultiplier: 1.2307694
-  tpPartsReloadEmptyClipSpeedMultiplier: 1.6538463
-  reloadTime: 2.6
-  range: 85
+  enforceReloadDuration: 1
+  reloadClipSpeedMultiplier: 1.2800002
+  reloadEmptyClipSpeedMultiplier: 1.7200002
+  partsReloadClipSpeedMultiplier: 1.2800002
+  partsReloadEmptyClipSpeedMultiplier: 1.7200002
+  tpReloadClipSpeedMultiplier: 1.2800002
+  tpReloadEmptyClipSpeedMultiplier: 1.7200002
+  tpPartsReloadClipSpeedMultiplier: 1.2800002
+  tpPartsReloadEmptyClipSpeedMultiplier: 1.7200002
+  reloadTime: 2.5
+  range: 90
   damage: 20
   maxAmmo: 50
   reserveAmmoCapacity: 200
   forceReserveLimit: 1
-  weaponName: P90
+  handling:
+    adsSeconds: 0.2
+    sprintToFireSeconds: 0.14
+    verticalRecoilDegrees: 1.1
+    horizontalRecoilDegrees: 0.38
+    recoilRecoverySeconds: 0.18
+    aimSwayDegrees: 0.085
+    movement: 0.99
+    adsMovement: 0.75
+  intermediateDamageMultiplier: 0.75
+  weaponName: "P90"
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -127210,9 +128518,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   usesMultiPartReload: 0
-  damageFalloffStart: 85
-  damageFalloffEnd: 85
-  minDamageMultiplier: 1
+  damageFalloffStart: 18
+  damageFalloffEnd: 38
+  minDamageMultiplier: 0.5
   partsAnimator: {fileID: 3003394257793257298}
   EffectiveMaxAmmo: 0
   debugRunning: 0
@@ -127301,6 +128609,16 @@ MonoBehaviour:
   firstPersonRestStates: f98db15e9717a4bed57b29367275af88554ddf0528431e5112299e9d
   supportPoseEnabled: 1
   bareSupportPoseEnabled: 0
+  authoredSprintSupportGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
+  authoredSprintTriggerGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
   bareFirstPerson:
     position: {x: 0, y: 0, z: 0}
     elbow: {x: 0, y: 0, z: 0}
@@ -127514,8 +128832,10 @@ MonoBehaviour:
   socket: {fileID: 6625621439838236457}
   flashParticlesPrefab: {fileID: 4834526503407549940, guid: 7ca62908b2cb6ca4a9cbafc0f4c28eca, type: 3}
   flashParticlesCount: 5
+  flashParticlesScale: 1
   flashLightPrefab: {fileID: 4171051858075953094, guid: 5b74dc70c965b6d42aaf1c66f5220a5d, type: 3}
   flashLightDuration: 0.05
+  flashLightIntensityScale: 1
   flashLightOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &5317250490589026528 stripped
 Transform:
@@ -127568,27 +128888,37 @@ MonoBehaviour:
   reloadBoltOpenSound: {fileID: 0}
   reloadBoltCloseSound: {fileID: 0}
   isAutomatic: 1
-  fireRate: 0.1
+  fireRate: 0.08
   usesBurstFire: 0
   burstCount: 3
   burstShotInterval: 0.07
   burstCooldown: 0.1
-  enforceReloadDuration: 0
-  reloadClipSpeedMultiplier: 1.0833335
-  reloadEmptyClipSpeedMultiplier: 1.3838385
-  partsReloadClipSpeedMultiplier: 1.0833335
-  partsReloadEmptyClipSpeedMultiplier: 1.3838385
-  tpReloadClipSpeedMultiplier: 1.0833335
-  tpReloadEmptyClipSpeedMultiplier: 1.3838385
-  tpPartsReloadClipSpeedMultiplier: 1.0833335
-  tpPartsReloadEmptyClipSpeedMultiplier: 1.3838385
-  reloadTime: 2.8
-  range: 95
-  damage: 24
+  enforceReloadDuration: 1
+  reloadClipSpeedMultiplier: 1.4444447
+  reloadEmptyClipSpeedMultiplier: 2.1746034
+  partsReloadClipSpeedMultiplier: 1.4444447
+  partsReloadEmptyClipSpeedMultiplier: 2.1746034
+  tpReloadClipSpeedMultiplier: 1.4444447
+  tpReloadEmptyClipSpeedMultiplier: 2.1746034
+  tpPartsReloadClipSpeedMultiplier: 1.4444447
+  tpPartsReloadEmptyClipSpeedMultiplier: 2.1746034
+  reloadTime: 2.1
+  range: 85
+  damage: 22
   maxAmmo: 30
-  reserveAmmoCapacity: 180
+  reserveAmmoCapacity: 150
   forceReserveLimit: 1
-  weaponName: Subfusil 05
+  handling:
+    adsSeconds: 0.2
+    sprintToFireSeconds: 0.14
+    verticalRecoilDegrees: 1.1
+    horizontalRecoilDegrees: 0.38
+    recoilRecoverySeconds: 0.18
+    aimSwayDegrees: 0.085
+    movement: 0.99
+    adsMovement: 0.75
+  intermediateDamageMultiplier: 0.75
+  weaponName: "MP5"
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -127618,9 +128948,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   usesMultiPartReload: 0
-  damageFalloffStart: 95
-  damageFalloffEnd: 95
-  minDamageMultiplier: 1
+  damageFalloffStart: 18
+  damageFalloffEnd: 38
+  minDamageMultiplier: 0.5
   partsAnimator: {fileID: 3109603656371097957}
   EffectiveMaxAmmo: 0
   debugRunning: 0
@@ -127709,6 +129039,16 @@ MonoBehaviour:
   firstPersonRestStates: f98db15e9717a4bed57b29367275af88554ddf0528431e5112299e9d
   supportPoseEnabled: 1
   bareSupportPoseEnabled: 0
+  authoredSprintSupportGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
+  authoredSprintTriggerGrip:
+    position: {x: 0, y: 0, z: 0}
+    elbow: {x: 0, y: 0, z: 0}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    fingers: []
   bareFirstPerson:
     position: {x: 0, y: 0, z: 0}
     elbow: {x: 0, y: 0, z: 0}

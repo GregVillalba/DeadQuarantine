@@ -503,6 +503,14 @@ private void TakeDamageServerRpc(
         );
     }
 
+    internal void ReceiveClassicShotServer(int amount, RaycastHit hit, ulong attacker, bool head, bool registerHeadshot, int limb)
+    {
+        if (!IsServer || IsPvPvEZombie)
+            return;
+
+        AplicarDano(amount, hit.point, hit.normal, head, registerHeadshot, limb, attacker, true, esDisparo: true);
+    }
+
     // Existing headshot calculation and localized reactions, reached only after server shot validation.
     public void RecibirDisparoPvPvEServidor(int amount, Vector3 point, Vector3 normal, ulong attacker, bool head, int limb)
     {

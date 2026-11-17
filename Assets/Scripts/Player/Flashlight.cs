@@ -132,6 +132,12 @@ public class Flashlight : NetworkBehaviour
         {
             var origin=attachment ? attachment.UtilityOrigin : transform.position+Vector3.up*1.5f;
             var direction=attachment ? attachment.UtilityDirection : transform.forward;
+            int equipped = presentation ? presentation.EquippedIndex : -1;
+            if (!attachment && equipped >= 0 && equipped < presentation.Weapons.Length &&
+                presentation.Weapons[equipped].Id == "Revolver" && presentation.VisibleMuzzle)
+            {
+                direction = presentation.VisibleMuzzle.forward;
+            }
             flashlightLight.transform.SetPositionAndRotation(origin,Quaternion.LookRotation(direction));
             return;
         }

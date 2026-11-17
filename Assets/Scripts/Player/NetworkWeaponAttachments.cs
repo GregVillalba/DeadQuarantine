@@ -23,6 +23,17 @@ public sealed class NetworkWeaponAttachments : NetworkBehaviour
     GameObject lastVisible;
     Row lastRow;
     bool freeFlashlight;
+    bool freeSniperScope;
+    static bool TraditionalScopeAvailable => !DisponibilidadTienda.EsPvP &&
+        (TutorialEscena.EsActiva || (DisponibilidadTienda.FlagModoActual() & DisponibilidadTienda.TodosLosModos) != 0);
+
+    public static string IncludedSniperScope(string weaponId) => weaponId switch
+    {
+        "Sniper01" => "Scope_06",
+        "Sniper02" => "Scope_07",
+        "Sniper03" => "Scope_05",
+        _ => null
+    };
     [Min(16)] public int requestsPerSecond=64;
     double requestWindow;int requestCount;
     public int RejectedRequests {get;private set;}
@@ -32,6 +43,7 @@ public sealed class NetworkWeaponAttachments : NetworkBehaviour
     public override void OnNetworkSpawn(){
         approved.OnListChanged+=ListChanged;
         freeFlashlight=DisponibilidadTienda.UsaLinternaGratuita;
+        freeSniperScope=TraditionalScopeAvailable;
         ResetVisuals();
         if(IsServer){approved.Clear();for(int i=0;i<presentation.Weapons.Length;i++)if(catalog.Eligible(presentation.Weapons[i].Id))approved.Add(new Row(i,default));}
         ApplyAll();
@@ -58,6 +70,17 @@ public sealed class NetworkWeaponAttachments : NetworkBehaviour
     void ListChanged(NetworkListEvent<Row> change){
         ApplyAll();
     }
+    internal void ClearRoundAttachmentsServer()
+    {
+        if (!IsServer || !IsSpawned) return;
+        for (int i = 0; i < approved.Count; i++)
+        {
+            var row = approved[i];
+            if (!row.Choice.Equals(default(WeaponAttachmentChoice)))
+                approved[i] = new Row(row.weapon, default);
+        }
+    }
+
     // Only the trusted deployment coordinator supplies class attachments in PvPvE.
     public bool ApplyClassServer(DeadQuarantine.PvPvE.PvPvEClassDefinition c){
         if(!IsServer||!IsSpawned||!DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(NetworkObject)||!DeadQuarantine.PvPvE.Networking.PvPvETeamRoster.Active.Configuration.Loadouts.Validate(c,out _))return false;
@@ -90,10 +113,16 @@ public sealed class NetworkWeaponAttachments : NetworkBehaviour
     WeaponAttachmentChoice EffectiveChoice(Row row)
     {
         var choice=row.Choice;
+        string id=presentation.Weapons[row.weapon].Id;
+        if (TraditionalScopeAvailable && string.IsNullOrEmpty(choice.scope))
+        {
+            string scope = IncludedSniperScope(id);
+            if (scope != null && catalog.Allows(id, WeaponAttachmentKind.Scope, scope))
+                choice.scope = scope;
+        }
         if(!DisponibilidadTienda.UsaLinternaGratuita || catalog.Find(choice.utility)?.flashlight==true)
             return choice;
 
-        string id=presentation.Weapons[row.weapon].Id;
         string utility=catalog.Find(choice.utility)?.laser==true ? "Laser_Flashlight_01" : "Flashlight_01";
         if(catalog.Allows(id,WeaponAttachmentKind.Utility,utility)) choice.utility=utility;
         return choice;
@@ -112,9 +141,11 @@ public sealed class NetworkWeaponAttachments : NetworkBehaviour
     {
         if(!IsSpawned)return;
         var free=DisponibilidadTienda.UsaLinternaGratuita;
-        if(free!=freeFlashlight)
+        bool scope=TraditionalScopeAvailable;
+        if(free!=freeFlashlight || scope!=freeSniperScope)
         {
             freeFlashlight=free;
+            freeSniperScope=scope;
             ApplyAll();
         }
         else RefreshVisibleWeapon();

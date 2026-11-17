@@ -50,7 +50,7 @@ namespace DeadQuarantine.PvPvE.Networking
         [Min(10)] public float MinimapRange=40;
         [Min(.1f)] public float EnemyShotRevealSeconds=3;
         [Min(1)] public float ResultsSeconds=12;
-        [Min(1)] public float MatchDurationSeconds=600,KillFeedSeconds=6;
+        [Min(1)] public float MatchDurationSeconds=300,KillFeedSeconds=6;
         [Range(1,10)] public int KillFeedRows=5;
         public AudioClip KillSound;
         [Header("PvPvE zombies")]

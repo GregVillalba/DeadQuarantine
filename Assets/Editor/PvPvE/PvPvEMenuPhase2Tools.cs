@@ -50,7 +50,7 @@ public static class PvPvEMenuPhase2Tools
         Label("Description",page,"Enfrentá al equipo rival mientras los zombies acechan a todos.",new Vector2(.07f,.65f),new Vector2(.91f,.73f),26,Dim());
         Rule(page,"Teams","HASTA 5 VS 5","Equipos equilibrados",.07f,.32f);
         Rule(page,"Kills",DeadQuarantine.PvPvE.Networking.PvPvENetworkSettings.DefaultKillLimit+" BAJAS PvP","Los zombies no suman al objetivo",.37f,.64f);
-        Rule(page,"Time","10 MINUTOS","Empate: muerte súbita",.69f,.94f);
+        Rule(page,"Time","5 MINUTOS","Empate: muerte súbita",.69f,.94f);
         var search=Action("SearchButton",page,"BUSCAR PARTIDA",new Vector2(.07f,.22f),new Vector2(.43f,.32f));search.interactable=false;
         Label("Availability",page,"PRÓXIMAMENTE",new Vector2(.07f,.16f),new Vector2(.43f,.21f),20,Accent);
         Label("SearchStatus",page,"La búsqueda de partidas todavía no está disponible.",new Vector2(.46f,.2f),new Vector2(.94f,.32f),23,Dim());

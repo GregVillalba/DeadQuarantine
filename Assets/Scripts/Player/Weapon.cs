@@ -160,6 +160,12 @@ public partial class Weapon : MonoBehaviour
 
     [Header("Impactos")]
     [SerializeField] private LayerMask bulletIgnoredLayers;
+    [Tooltip("Daño base del segundo objetivo y siguientes, en orden de impacto. Vacío desactiva la penetración.")]
+    [SerializeField] private int[] penetrationDamage = System.Array.Empty<int>();
+
+    internal int PenetrationTargets => 1 + (penetrationDamage?.Length ?? 0);
+    internal float PenetrationBaseDamage(float firstTargetDamage, int targetIndex) =>
+        targetIndex == 0 ? firstTargetDamage : penetrationDamage[targetIndex - 1];
 
     [Header("Animación de recarga (tercera persona)")]
     [SerializeField] private bool usesMultiPartReload = false;
@@ -180,11 +186,11 @@ public partial class Weapon : MonoBehaviour
     public UnityEngine.Audio.AudioMixerGroup PresentationMixer => audioSource ? audioSource.outputAudioMixerGroup : null;
     public GameObject PresentationTrail => bulletTrailPrefab;
     public float PresentationRange => range;
-    public float EffectiveRange=>range*(RuntimeAttachments?RuntimeAttachments.RangeMultiplier:1);
+    public float EffectiveRange => range;
     public float AttachmentAdsDuration=>RuntimeAttachments?RuntimeAttachments.AdsDurationMultiplier:1;
     public float AttachmentSway=>RuntimeAttachments?RuntimeAttachments.AdsSwayMultiplier:1;
     public float AttachmentIncomingShake=>IsAiming&&RuntimeAttachments?RuntimeAttachments.IncomingShakeMultiplier:1;
-    public float AttachmentMovement=>(RuntimeAttachments?RuntimeAttachments.MobilityMultiplier:1)*(IsAiming&&RuntimeAttachments?RuntimeAttachments.AdsMovementMultiplier:1);
+    public float AttachmentMovement => MovementStatisticsMultiplier;
     public Vector2 AttachmentRecoilAxes=>RuntimeAttachments?RuntimeAttachments.RecoilAxes:Vector2.one;
     public float PresentationFireInterval => usesBurstFire ? burstShotInterval : fireRate;
     public float PresentationReloadSpeed(bool empty) =>
@@ -758,7 +764,7 @@ public partial class Weapon : MonoBehaviour
             // siguiente. Si se aplica antes, hasta la primera bala sube.
             ShootAndPublish();
             if (cameraRecoil != null)
-                cameraRecoil.Fire(recoilPreset, true, recoilIntensityMultiplier * AttachmentRecoilMultiplier, UseAuthoredRecoil, AttachmentRecoilAxes);
+                cameraRecoil.Fire(recoilPreset, true, recoilIntensityMultiplier * AttachmentRecoilMultiplier, UseAuthoredRecoil, AttachmentRecoilAxes, EffectiveRecoilDegrees, RecoilRecoverySeconds);
             if (weaponRecoil != null)
                 weaponRecoil.Fire(recoilPreset, true, recoilIntensityMultiplier * AttachmentRecoilMultiplier, UseAuthoredRecoil, AttachmentRecoilAxes);
         }
@@ -894,15 +900,7 @@ public partial class Weapon : MonoBehaviour
     // y llega a 'Min Damage Multiplier' en 'Damage Falloff End' (o más lejos).
     private float DistanceFalloffMultiplier(float distance)
     {
-        distance/=RuntimeAttachments?RuntimeAttachments.RangeMultiplier:1;
-        if (distance <= damageFalloffStart)
-            return 1f;
-
-        if (distance >= damageFalloffEnd)
-            return minDamageMultiplier;
-
-        float t = Mathf.InverseLerp(damageFalloffStart, damageFalloffEnd, distance);
-        return Mathf.Lerp(1f, minDamageMultiplier, t);
+        return DamageMultiplierAt(distance, RuntimeAttachments ? RuntimeAttachments.RangeMultiplier : 1f);
     }
 
     private int ApplyDistanceFalloff(int baseDamage, float distance)
@@ -946,7 +944,8 @@ public partial class Weapon : MonoBehaviour
     }
 
     public bool UsesLimitedReserve =>
-        UsesPvPvEReserve || (ActiveDifficulty != null && ActiveDifficulty.limitedReserveAmmo);
+        UsesPvPvEReserve || (forceReserveLimit && !TutorialEscena.EsActiva) ||
+        (ActiveDifficulty != null && ActiveDifficulty.limitedReserveAmmo);
 
     public int ReserveCapacity
     {
@@ -1171,6 +1170,8 @@ public partial class Weapon : MonoBehaviour
 
     private void Update()
     {
+        if (playerMovement && playerMovement.IsSprinting)
+            sprintFireReadyAt = Time.time + SprintToFireSeconds;
         RestoreIntegratedAimPose();
         if (IsAiming && playerMovement != null && playerMovement.IsSprinting)
             IsAiming = false;
@@ -1245,18 +1246,7 @@ public partial class Weapon : MonoBehaviour
         if (playerCamera == null)
             return;
 
-        if (UsesIntegratedVisual||UsePackAim)
-        {
-            playerCamera.fieldOfView = Mathf.Lerp(defaultWorldFOV, AttachmentAimFov, aimingBlend);
-            return;
-        }
-        float targetFOV = IsAiming ? AttachmentAimFov : defaultWorldFOV;
-
-        playerCamera.fieldOfView = Mathf.Lerp(
-            playerCamera.fieldOfView,
-            targetFOV,
-            aimTransitionSpeed / AttachmentAdsDuration * Time.deltaTime
-        );
+        playerCamera.fieldOfView = Mathf.Lerp(defaultWorldFOV, AttachmentAimFov, aimingBlend);
     }
 
     // =========================================================
@@ -1470,20 +1460,11 @@ public partial class Weapon : MonoBehaviour
 
     private void UpdateAimingBlend()
     {
-        if (weaponAnimator == null)
-            return;
-
         float target = IsAiming ? 1f : 0f;
-
-        if (UsesIntegratedVisual||UsePackAim)
-        {
-            aimingBlend = Mathf.SmoothDamp(aimingBlend, target, ref integratedAimVelocity, AttachmentAdsDuration / Mathf.Max(1f, aimingBlendSpeed), Mathf.Infinity, Time.deltaTime);
-            if (Mathf.Abs(aimingBlend - target) < .0005f) { aimingBlend = target; integratedAimVelocity = 0; }
-        }
-        else
-            aimingBlend = Mathf.MoveTowards(aimingBlend, target, aimingBlendSpeed / AttachmentAdsDuration * Time.deltaTime);
-
-        weaponAnimator.SetFloat("Aiming", aimingBlend);
+        aimingBlend = Mathf.MoveTowards(aimingBlend, target,
+            Time.deltaTime / EffectiveAdsSeconds);
+        if (weaponAnimator != null)
+            weaponAnimator.SetFloat("Aiming", aimingBlend);
     }
 
     // =========================================================
@@ -1506,8 +1487,7 @@ public partial class Weapon : MonoBehaviour
             if (burstActive || Time.time < nextFireTime)
                 return;
 
-            // C.A. 7: cada pulsación inicia una ráfaga completa de 3 disparos y consume 3 balas.
-            if (currentAmmo < burstCount)
+            if (currentAmmo <= 0)
             {
                 PlayEmptyShotFeedback();
                 nextFireTime = Time.time + burstCooldown;
@@ -1534,6 +1514,8 @@ public partial class Weapon : MonoBehaviour
 
     private bool CanStartShot()
     {
+        if (Time.time < sprintFireReadyAt)
+            return false;
         if (PlayerInputGate.ActionsBlocked)
             return false;
 
@@ -1569,14 +1551,15 @@ public partial class Weapon : MonoBehaviour
         burstActive = true;
         nextFireTime = float.PositiveInfinity;
 
-        for (int i = 0; i < burstCount; i++)
+        int shots = Mathf.Min(burstCount, currentAmmo);
+        for (int i = 0; i < shots; i++)
         {
             if (!isActiveAndEnabled || currentAmmo <= 0 || SwitchBlocked || InputLocked || PlayerInputGate.ActionsBlocked)
                 break;
 
             FireOneRound();
 
-            if (i < burstCount - 1)
+            if (i < shots - 1)
                 yield return new WaitForSeconds(burstShotInterval);
         }
 
@@ -1617,7 +1600,7 @@ public partial class Weapon : MonoBehaviour
         if (!IsAiming)
         {
             if (cameraRecoil != null)
-                cameraRecoil.Fire(recoilPreset, false, recoilIntensityMultiplier * AttachmentRecoilMultiplier, UseAuthoredRecoil, AttachmentRecoilAxes);
+                cameraRecoil.Fire(recoilPreset, false, recoilIntensityMultiplier * AttachmentRecoilMultiplier, UseAuthoredRecoil, AttachmentRecoilAxes, EffectiveRecoilDegrees, RecoilRecoverySeconds);
             if (weaponRecoil != null)
                 weaponRecoil.Fire(recoilPreset, false, recoilIntensityMultiplier * AttachmentRecoilMultiplier, UseAuthoredRecoil, AttachmentRecoilAxes);
         }
@@ -1815,6 +1798,19 @@ public partial class Weapon : MonoBehaviour
         );
         Ray ray = new Ray(aimRay.origin, spreadDirection);
 
+        if (PenetrationTargets > 1)
+        {
+            presentationTargets.Add(ray.GetPoint(EffectiveRange));
+            var combat = DeadQuarantine.PvPvE.Networking.PvPvECombat.Active;
+            if (!combat || !combat.IsSpawned)
+            {
+                var trace = TracePenetratingShot(ray, EffectiveRange, ClassifyClassicPenetrationHit);
+                if (trace.Obstacle is RaycastHit obstacle)
+                    ApplyWorldImpact(obstacle);
+            }
+            return;
+        }
+
         RaycastHit[] hits = Physics.RaycastAll(
             ray,
             EffectiveRange,
@@ -1985,60 +1981,149 @@ if (zombieHealth != null)
 }
 //==============================================================================================================
 
-            // BARRIL EXPLOSIVO: un disparo lo hace explotar (el servidor decide y daña a los zombies alrededor).
-            BarrilExplosivo barril =
-                hit.collider.GetComponentInParent<BarrilExplosivo>();
-
-            if (barril != null)
-            {
-                barril.RecibirDisparo(
-                    Mathf.Max(1, Mathf.RoundToInt(DanoBasePorImpacto))
-                );
-
-                return;
-            }
-
-            // EASTER EGG: permite que los disparos dañen los objetos
-            // sin otorgar puntos por impacto.
-            EasterEgg easterEgg =
-                hit.collider.GetComponentInParent<EasterEgg>();
-
-            if (easterEgg != null)
-            {
-                easterEgg.TakeDamage(
-                    Mathf.Max(1, Mathf.RoundToInt(DanoBasePorImpacto)),
-                    hit.point,
-                    hit.normal
-                );
-
-                return;
-            }
-
-
-            // Impacto normal contra el escenario.
-            if (DecalManager.Instance != null)
-            {
-                DecalManager.Instance.SpawnBulletHole(
-                    hit.point,
-                    hit.normal,
-                    hit.collider
-                );
-            }
+            ApplyWorldImpact(hit);
         }
         else
         {
-            Vector3 missPoint =
-                ray.origin + spreadDirection * EffectiveRange;
-
+            Vector3 missPoint = ray.GetPoint(EffectiveRange);
             SpawnBulletTrail(missPoint);
+            Debug.DrawRay(ray.origin, spreadDirection * EffectiveRange, Color.yellow, 1f);
+        }
+    }
 
-            Debug.DrawRay(
-                ray.origin,
-                spreadDirection * EffectiveRange,
-                Color.yellow,
-                1f
+    private void ApplyWorldImpact(RaycastHit hit)
+    {
+        // BARRIL EXPLOSIVO: un disparo lo hace explotar (el servidor decide y daña a los zombies alrededor).
+        BarrilExplosivo barril =
+            hit.collider.GetComponentInParent<BarrilExplosivo>();
+
+        if (barril != null)
+        {
+            barril.RecibirDisparo(
+                Mathf.Max(1, Mathf.RoundToInt(DanoBasePorImpacto))
+            );
+
+            return;
+        }
+
+        // EASTER EGG: permite que los disparos dañen los objetos
+        // sin otorgar puntos por impacto.
+        EasterEgg easterEgg =
+            hit.collider.GetComponentInParent<EasterEgg>();
+
+        if (easterEgg != null)
+        {
+            easterEgg.TakeDamage(
+                Mathf.Max(1, Mathf.RoundToInt(DanoBasePorImpacto)),
+                hit.point,
+                hit.normal
+            );
+
+            return;
+        }
+
+
+        // Impacto normal contra el escenario.
+        if (DecalManager.Instance != null)
+        {
+            DecalManager.Instance.SpawnBulletHole(
+                hit.point,
+                hit.normal,
+                hit.collider
             );
         }
+    }
+
+    private (Component Target, bool Ignore) ClassifyClassicPenetrationHit(RaycastHit hit)
+    {
+        var collider = hit.collider;
+        if (collider.transform.root == transform.root ||
+            (bulletIgnoredLayers.value & (1 << collider.gameObject.layer)) != 0 ||
+            collider.GetComponentInParent<PlayerHealth>() ||
+            collider.GetComponentInParent<PlayerMovement>())
+            return (null, true);
+
+        var zombie = collider.GetComponentInParent<ZombieHealth>();
+        if (collider.isTrigger && !collider.GetComponent<ZombieHeadHitbox>() &&
+            !collider.GetComponent<ZombieLimbHitbox>())
+            return (null, true);
+
+        return (zombie, zombie && (zombie.IsDead || zombie.IsPvPvEZombie));
+    }
+
+    internal Vector3 ResolveClassicPenetration(Ray ray, ulong shooterId)
+    {
+        var trace = TracePenetratingShot(ray, EffectiveRange, ClassifyClassicPenetrationHit);
+        bool registeredHeadshot = false;
+        for (int i = 0; i < trace.Targets.Count; i++)
+        {
+            var (hit, target) = trace.Targets[i];
+            var zombie = (ZombieHealth)target;
+            var (head, limb) = PenetrationHitRegions(zombie, hit, trace.Hits, trace.BlockDistance);
+            int amount = Mathf.Max(1, Mathf.RoundToInt(
+                PenetrationBaseDamage(damage, i) * AttachmentDamageMultiplier *
+                DistanceFalloffMultiplier(hit.distance)));
+            zombie.ReceiveClassicShotServer(amount, hit, shooterId, head, head && !registeredHeadshot, limb);
+            registeredHeadshot |= head;
+        }
+
+        // Accuracy counts successful bullets. Each zombie awards its own confirmed impact and kill.
+        if (trace.Targets.Count > 0 && playerScore != null)
+            playerScore.DisparosAcertadosNetwork.Value++;
+
+        return trace.End;
+    }
+
+    internal (Vector3 End, RaycastHit? Obstacle, RaycastHit[] Hits, float BlockDistance,
+        System.Collections.Generic.List<(RaycastHit Hit, Component Target)> Targets)
+        TracePenetratingShot(Ray ray, float shotRange, System.Func<RaycastHit, (Component Target, bool Ignore)> classify)
+    {
+        var hits = Physics.RaycastAll(ray, shotRange, ~0, QueryTriggerInteraction.Collide);
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+        var targets = new System.Collections.Generic.List<(RaycastHit Hit, Component Target)>(PenetrationTargets);
+        var seen = new System.Collections.Generic.HashSet<Component>();
+        RaycastHit? obstacle = null;
+        float blockDistance = float.PositiveInfinity;
+
+        foreach (var hit in hits)
+        {
+            var (target, ignore) = classify(hit);
+            if (ignore)
+                continue;
+            if (!target)
+            {
+                obstacle = hit;
+                blockDistance = hit.distance;
+                break;
+            }
+            if (targets.Count < PenetrationTargets && seen.Add(target))
+                targets.Add((hit, target));
+        }
+
+        if (targets.Count == PenetrationTargets)
+            return (targets[targets.Count - 1].Hit.point, null, hits, blockDistance, targets);
+        return (obstacle?.point ?? ray.GetPoint(shotRange), obstacle, hits, blockDistance, targets);
+    }
+
+    internal static (bool Head, int Limb) PenetrationHitRegions(
+        ZombieHealth zombie, RaycastHit impact, RaycastHit[] hits, float blockDistance)
+    {
+        bool head = false;
+        int limb = -1;
+        foreach (var hit in hits)
+        {
+            if (hit.distance >= blockDistance)
+                break;
+
+            var headbox = hit.collider.GetComponent<ZombieHeadHitbox>();
+            if (headbox && headbox.Owner == zombie)
+                head = true;
+
+            var limbbox = hit.collider.GetComponent<ZombieLimbHitbox>();
+            if (limb < 0 && limbbox && limbbox.Owner == zombie && hit.distance <= impact.distance + .45f)
+                limb = limbbox.HitVariant;
+        }
+        return (head, limb);
     }
 
     // =========================================================
@@ -2048,6 +2133,11 @@ if (zombieHealth != null)
     private void SpawnBulletTrail(Vector3 targetPoint)
     {
         presentationTargets.Add(targetPoint);
+        RenderConfirmedTrail(targetPoint);
+    }
+
+    internal void RenderConfirmedTrail(Vector3 targetPoint)
+    {
         if (bulletTrailPrefab == null || firePoint == null)
             return;
         PresentationPose(firePoint,out Vector3 worldPoint,out _);

@@ -2362,12 +2362,40 @@ private IEnumerator EndRoundDelay()
             if (!playerHealth.IsSpectating)
                 continue;
 
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "MainSceneMultiPlayer" &&
+                !DeadQuarantine.PvPvE.Networking.PvPvEMatchmaking.Owns(NetworkManager))
+            {
+                client.PlayerObject.GetComponent<NetworkWeaponAttachments>()?.ClearRoundAttachmentsServer();
+                ResetRoundLoadoutClientRpc(new ClientRpcParams
+                {
+                    Send = new ClientRpcSendParams { TargetClientIds = new[] { client.ClientId } }
+                });
+            }
+
             // Primero se recupera una vida si estaba en 0.
             playerHealth.RecoverLifeAtNewRound();
 
             // Después se pasa a Alive.
             playerHealth.Respawn();
         }
+    }
+
+    [ClientRpc]
+    private void ResetRoundLoadoutClientRpc(ClientRpcParams recipients = default)
+    {
+        var player = NetworkManager.LocalClient?.PlayerObject;
+        if (player && player.TryGetComponent(out PlayerHealth health))
+            StartCoroutine(ResetRoundLoadoutAfterRespawn(health));
+    }
+
+    private IEnumerator ResetRoundLoadoutAfterRespawn(PlayerHealth health)
+    {
+        var switcher = health.GetComponentInChildren<WeaponSwitcher>(true);
+        if (!switcher) yield break;
+        while (health && health.IsSpawned && (!health.IsAlive || !switcher.IsInitialized))
+            yield return null;
+        if (health && health.IsSpawned && health.IsAlive)
+            switcher.ResetRoundLoadout();
     }
 
      [ClientRpc]

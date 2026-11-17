@@ -28,7 +28,24 @@ namespace DeadQuarantine.PvPvE.Networking {
    string weapon=Settings.Loadouts.Find(record.Weapon)?.name??record.Weapon;
    if(string.IsNullOrEmpty(weapon))weapon=record.Kind==PvPvEDamageKind.Zombie?"ATAQUE":record.Kind==PvPvEDamageKind.Environment?"ENTORNO":record.Kind.ToString();
    var entry=new PvPvEKillEntry{Sequence=++feedSequence,Killer=record.Source,Victim=record.Victim,KillerName=FeedName(actor),VictimName=FeedName(victim.Name.ToString()),Weapon=FeedName(weapon),KillerTeam=known?killer.Team:PvPvETeam.None,VictimTeam=victim.Team,Kind=record.Kind,Headshot=record.Headshot,Expires=Now+Math.Max(1,Settings.KillFeedSeconds)};
-   KillFeed.Add(entry);while(KillFeed.Count>Mathf.Clamp(Settings.KillFeedRows,1,10))KillFeed.RemoveAt(0);
+   AddKillFeedEntry(entry);
+  }
+  void PublishPenetrationZombieFeed(ulong attacker, ulong zombieId, string weapon, bool head)
+  {
+   if (!roster.TryGetMember(attacker, out var killer))
+       return;
+   AddKillFeedEntry(new PvPvEKillEntry {
+    Sequence = ++feedSequence, Killer = attacker, Victim = zombieId,
+    KillerName = FeedName(killer.Name.ToString()), VictimName = FeedName("ZOMBIE"), Weapon = FeedName(weapon),
+    KillerTeam = killer.Team, VictimTeam = PvPvETeam.None, Kind = PvPvEDamageKind.Bullet,
+    Headshot = head, Expires = Now + Math.Max(1, Settings.KillFeedSeconds)
+   });
+  }
+  void AddKillFeedEntry(PvPvEKillEntry entry)
+  {
+   KillFeed.Add(entry);
+   while (KillFeed.Count > Mathf.Clamp(Settings.KillFeedRows, 1, 10))
+       KillFeed.RemoveAt(0);
   }
   void DisposePresentation(){if(IsServer)DeathResolvedServer-=PublishDeathFeed;if(matchView)Destroy(matchView);}
  }

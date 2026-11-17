@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
-// Presentation only. Weapon.cs retains the project's existing firing and damage path.
+// Publishes weapon presentation and forwards validated network shots to the appropriate damage path.
 public sealed class NetworkWeaponPresentation : NetworkBehaviour
 {
     [Serializable] public sealed class Definition
@@ -77,7 +77,7 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
         if(!IsSpawned || !IsOwner || !Switcher || !Switcher.CurrentWeapon)return;
         var weapon=Switcher.CurrentWeapon;
         bool empty=weapon.gameObject.name.StartsWith("DQ_Weapon_",StringComparison.Ordinal)?weapon.PresentationEmpty:weapon.CurrentAmmo==0;
-        var value=new State{Weapon=Switcher.CurrentWeaponIndex,Flags=(byte)((weapon.IsReloading?1:0)|(weapon.ShellLoading?2:0)|(weapon.IsChambering?4:0)|(weapon.IsAiming?8:0)|(empty?16:0)|(Switcher.IsHolstering?32:0)|(Switcher.IsUnholstering?64:0))};
+        var value=new State{Weapon=Switcher.CurrentWeaponIndex,Flags=(byte)((weapon.IsReloading?1:0)|(weapon.ShellLoading?2:0)|(weapon.IsChambering?4:0)|(weapon.IsAiming?8:0)|(empty?16:0)|(Switcher.IsHolstering?32:0)|(Switcher.IsUnholstering?64:0)|(GetComponent<PlayerMovement>().IsSprinting?128:0))};
         if(value.Equals(sent))return;
         sent=value;Apply(value);StateServerRpc(value);
     }
@@ -124,7 +124,7 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
     {
         if(value.Weapon<0 || value.Weapon>=Weapons.Length)return;
         if(!GetComponent<PlayerHealth>().ArmaPermitidaPorClase(Weapons[value.Weapon].Id))return;
-        value.Flags&=127;
+        // All eight flag bits are used, including the sprint state validated by combat.
         var combat=DeadQuarantine.PvPvE.Networking.PvPvECombat.Active;
         if(combat&&!combat.ObserveStateServer(GetComponent<PlayerHealth>(),value.Weapon,value.Flags))return;
         state.Value=value;
@@ -277,7 +277,7 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
         // An animation can end after Update. Queue its reload-stop before the reliable shot RPC,
         // so the first valid round after a reload is not rejected against the previous frame's flag.
         var mode=DeadQuarantine.PvPvE.Networking.PvPvECombat.Active;
-        if(mode&&mode.IsSpawned&&mode.NetworkManager==NetworkManager)PublishStateIfChanged();
+        if(source.PenetrationTargets>1 || mode&&mode.IsSpawned&&mode.NetworkManager==NetworkManager)PublishStateIfChanged();
         GetComponentInChildren<ThirdPersonAnimatorSync>(true)?.NotifyFire(source);
         Vector3 origin=source.AimOrigin;
         ShotServerRpc(Switcher.CurrentWeaponIndex,++shotSequence,origin,targets);
@@ -289,16 +289,42 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
         if(!GetComponent<PlayerHealth>().ArmaPermitidaPorClase(Weapons[index].Id))return;
         var source=Weapons[index].Source;
         if(!source || Vector3.Distance(origin,transform.position+Vector3.up*1.5f)>4 || NetworkManager.ServerTime.Time+.025<nextAcceptedShot)return;
-        for(int i=0;i<targets.Length;i++)if(!Finite(targets[i]) || Vector3.Distance(origin,targets[i])>source.PresentationRange+5)return;
+        bool penetrates = source.PenetrationTargets > 1;
+        if (penetrates && (targets.Length != 1 || (targets[0] - origin).sqrMagnitude < .001f))
+            return;
+        float range = penetrates ? source.EffectiveRange : source.PresentationRange;
+        for(int i=0;i<targets.Length;i++)if(!Finite(targets[i]) || Vector3.Distance(origin,targets[i])>range+5)return;
         var combat=DeadQuarantine.PvPvE.Networking.PvPvECombat.Active;
-        if(combat&&!combat.ResolveShotServer(GetComponent<PlayerHealth>(),index,sequence,origin,targets,out targets))return;
+        if (combat && !combat.ResolveShotServer(GetComponent<PlayerHealth>(), index, sequence, origin, targets, out targets))
+            return;
+        if (!combat && penetrates)
+        {
+            if (state.Value.Weapon != index || !GetComponent<PlayerHealth>().IsAlive)
+                return;
+            var ray = new Ray(origin, (targets[0] - origin).normalized);
+            targets[0] = source.ResolveClassicPenetration(ray, OwnerClientId);
+        }
         GetComponent<NetworkWeaponAttachments>()?.PublishShotVisibility(index);
         acceptedSequence=sequence;nextAcceptedShot=NetworkManager.ServerTime.Time+Mathf.Max(.025f,source.PresentationFireInterval);
         ShotClientRpc(index,targets);
     }
     [ClientRpc] void ShotClientRpc(int index,Vector3[] targets)
     {
-        if(IsOwner){if(ShowLocalBodyForTesting)PlayParts("Fire");return;}
+        if (IsOwner)
+        {
+            var localWeapon = Weapons[index].Source;
+            if (localWeapon && localWeapon.PenetrationTargets > 1)
+                localWeapon.RenderConfirmedTrail(targets[0]);
+
+            if (ShowLocalBodyForTesting)
+            {
+                var weapon = Weapons[index];
+                if (shown == index && weapon.Id == "Revolver" && flash && weapon.Source && !weapon.Source.ShotIsSuppressed)
+                    flash.PlayEffect();
+                PlayParts("Fire");
+            }
+            return;
+        }
         Apply(new State{Weapon=index,Flags=state.Value.Weapon==index?state.Value.Flags:(byte)0});
         if(!held || !muzzle)return;
         RemoteShotCount++;

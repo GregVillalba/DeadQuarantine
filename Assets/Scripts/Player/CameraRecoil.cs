@@ -74,6 +74,10 @@ public class CameraRecoil : MonoBehaviour
 
     private int shotsFired;
     private float visiblePitchKick;
+    private float visibleYawKick;
+    private bool numericRecoil;
+    private float recoverySeconds = .2f;
+    private WeaponSwitcher equippedWeapons;
     private float lastFireTime = -999f;
     private bool lastAiming;
     private bool sourceProfile;
@@ -157,18 +161,30 @@ public class CameraRecoil : MonoBehaviour
 
         emergencyApplied = false;
         visiblePitchKick = 0;
+        visibleYawKick = 0;
     }
 
     /// <summary>Lo llama Weapon.cs en cada disparo.</summary>
-    public void Fire(RecoilPreset preset, bool aiming, float intensityMultiplier = 1f, bool authoredProfile = false, Vector2? attachmentAxes = null)
+    public void Fire(RecoilPreset preset, bool aiming, float intensityMultiplier = 1f, bool authoredProfile = false,
+        Vector2? attachmentAxes = null, Vector2? kickDegrees = null, float recovery = .2f)
     {
         if (Time.time - lastFireTime > comboResetDelay)
             shotsFired = 0;
 
         shotsFired++;
-        float pitchKick = preset == RecoilPreset.Handgun ? 1.05f : 1.35f;
-        visiblePitchKick = Mathf.Min(4f, visiblePitchKick +
-            pitchKick * Mathf.Clamp01(intensityMultiplier) * Mathf.Clamp((attachmentAxes ?? Vector2.one).x, .25f, 1.5f));
+        numericRecoil = kickDegrees.HasValue;
+        recoverySeconds = Mathf.Clamp(recovery, .02f, 2f);
+        if (numericRecoil)
+        {
+            visiblePitchKick = Mathf.Min(25f, visiblePitchKick + Mathf.Max(0, kickDegrees.Value.x));
+            visibleYawKick = Mathf.Clamp(visibleYawKick + Random.Range(-kickDegrees.Value.y, kickDegrees.Value.y), -15f, 15f);
+        }
+        else
+        {
+            float pitchKick = preset == RecoilPreset.Handgun ? 1.05f : 1.35f;
+            visiblePitchKick = Mathf.Min(4f, visiblePitchKick + pitchKick * Mathf.Clamp01(intensityMultiplier) *
+                Mathf.Clamp((attachmentAxes ?? Vector2.one).x, .25f, 1.5f));
+        }
         lastFireTime = Time.time;
         lastAiming = aiming;sourceProfile=authoredProfile;
         lastIntensity = intensityMultiplier;recoilAxes=attachmentAxes??Vector2.one;
@@ -236,12 +252,25 @@ public class CameraRecoil : MonoBehaviour
         rotationNow=Vector3.Scale(rotationNow,new Vector3(recoilAxes.x,recoilAxes.y,recoilAxes.y));
         rotationSpring.Apply((sourceProfile?sourceCamera:recoil).rotationSpring);
         locationSpring.Apply(recoil.locationSpring);
-        rotationSpring.SetTarget(rotationNow * ((sourceProfile?sourceCamera:recoil).rotationMultiplier * stateMultiplier));
+        rotationSpring.SetTarget(numericRecoil ? Vector3.zero :
+            rotationNow * ((sourceProfile?sourceCamera:recoil).rotationMultiplier * stateMultiplier));
         locationSpring.SetTarget(locationNow * (recoil.locationMultiplier * stateMultiplier));
 
         Vector3 rotation = rotationSpring.Evaluate(dt);
         rotation.x -= visiblePitchKick;
-        visiblePitchKick *= Mathf.Exp(-14f * dt);
+        rotation.y += visibleYawKick;
+        float recoveryFactor = Mathf.Exp(-(numericRecoil ? 3f / recoverySeconds : 14f) * dt);
+        visiblePitchKick *= recoveryFactor;
+        visibleYawKick *= recoveryFactor;
+        if (!equippedWeapons)
+            equippedWeapons = GetComponentInParent<PlayerMovement>()?.GetComponentInChildren<WeaponSwitcher>(true);
+        var equipped = equippedWeapons ? equippedWeapons.CurrentWeapon : null;
+        if (equipped && equipped.IsAiming)
+        {
+            float sway = equipped.AimSwayDegrees;
+            rotation.x += Mathf.Sin(Time.time * 1.7f) * sway;
+            rotation.y += Mathf.Sin(Time.time * 1.13f + .7f) * sway;
+        }
         Vector3 position = locationSpring.Evaluate(dt);
 
         // ---------------- SALTO / CAÍDA / ATERRIZAJE ----------------

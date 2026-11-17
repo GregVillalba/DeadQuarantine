@@ -1,5 +1,10 @@
 using TMPro;
 using System.Linq;
+using System;
+using System.Threading.Tasks;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
+using UnityEngine.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
 using DeadQuarantine.PvPvE.Networking;
@@ -54,7 +59,9 @@ namespace DeadQuarantine.PvPvE {
   public static void OriginalProgress(float progress){if(originalScreen)originalScreen.originalProgress=Mathf.Clamp01(progress);}
   public static void CancelOriginal(){if(originalScreen){Destroy(originalScreen.gameObject);originalScreen=null;}}
   void UpdateOriginal(){
-   var scene=UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+   if(leaving)return;
+   EnsureExitInput();
+   var scene=SceneManager.GetActiveScene().name;
    if(cooperative){status.text=GestorEscenariosPartida.Instance&&GestorEscenariosPartida.Instance.MapaMultiplayerListo?"PREPARANDO JUGADORES":cooperativeTarget!=null&&cooperativeTarget.StartsWith("MP_ZonaSegura")?"CARGANDO ZONA SEGURA":"CARGANDO ESCENARIO";}
    else if(scene!=originalOrigin&&scene!=originalTarget){CancelOriginal();return;}
    var manager=Unity.Netcode.NetworkManager.Singleton;var player=manager&&manager.LocalClient!=null?manager.LocalClient.PlayerObject:null;
@@ -70,6 +77,10 @@ namespace DeadQuarantine.PvPvE {
    FitPreview();
   }
   Camera loadingCamera;RawImage preview;TextMeshProUGUI mapName,status;bool disposed;
+  Button leave;
+  TextMeshProUGUI leaveLabel;
+  EventSystem fallbackInput;
+  bool leaving;
   public GameObject Panel=>canvas?canvas.gameObject:null;
   public bool IsShowing=>canvas&&canvas.gameObject.activeInHierarchy;
   public string MapText=>mapName?mapName.text:"";
@@ -77,14 +88,14 @@ namespace DeadQuarantine.PvPvE {
   public Texture Preview=>preview?preview.texture:null;
   public bool ShouldDisplay=>!disposed&&flow&&flow.IsSpawned&&voting.SelectedMap!=null&&!roster.Closing.Value&&!PauseController.LocalPlayerPaused&&
    !(PvPvEInitialClassView.Active&&PvPvEInitialClassView.Active.IsShowing)&&
-   (flow.Stage.Value==PvPvEPrepareStage.Lobby?voting.Phase.Value==PvPvEVotePhase.VoteResult:
-    flow.Stage.Value is PvPvEPrepareStage.LoadingMap or PvPvEPrepareStage.SelectingClasses or PvPvEPrepareStage.ReadyForPlacement or PvPvEPrepareStage.PlacingTeams);
+   (flow.Stage.Value is PvPvEPrepareStage.LoadingMap or PvPvEPrepareStage.SelectingClasses or PvPvEPrepareStage.ReadyForPlacement or PvPvEPrepareStage.PlacingTeams);
   void Awake(){flow=GetComponent<PvPvEPreparationFlow>();voting=GetComponent<PvPvEMapVoting>();roster=GetComponent<PvPvETeamRoster>();}
   void Update(){
    if(original){UpdateOriginal();return;}
    bool show=ShouldDisplay;if(show&&!canvas)Build();if(!canvas)return;canvas.gameObject.SetActive(show);if(loadingCamera)loadingCamera.enabled=show;if(!show)return;
    var map=voting.SelectedMap;var photos=map.LoadingViews;var photo=photos!=null&&photos.Length>0?photos[(int)(Time.unscaledTime/5)%photos.Length]:map.Preview;preview.texture=photo;preview.color=photo?Color.white:PanelColor;mapName.text=map.Name;
-   status.text=flow.Stage.Value==PvPvEPrepareStage.Lobby?"LA PARTIDA COMIENZA EN "+Mathf.Max(0,Mathf.CeilToInt((float)voting.Remaining)):flow.Status;
+   EnsureExitInput();
+   status.text=flow.Status;
    // Cover the screen without stretching the photograph, including 16:10 and ultrawide.
    FitPreview();
   }
@@ -103,7 +114,72 @@ namespace DeadQuarantine.PvPvE {
    var mode=Text(content,"Mode","PvPvE TEAM DEATHMATCH",0,0,1,1,null,26);Place(mode.rectTransform,new(.018f,.75f),new(.97f,.95f));mode.color=Accent;modeLabel=mode;
    mapName=Text(content,"MapName","",0,0,1,1,null,72);Place(mapName.rectTransform,new(.018f,.36f),new(.97f,.77f));mapName.font=HeadingFont;
    status=Text(content,"State","",0,0,1,1,null,24);Place(status.rectTransform,new(.018f,.06f),new(.72f,.32f));
+   if(!cooperative)
+   {
+    canvas.gameObject.AddComponent<GraphicRaycaster>();
+    var button=Panel(root,"Salir de la partida",0,0,1,1,1f);
+    Place(button,new(.76f,.89f),new(.97f,.96f));
+    leave=button.gameObject.AddComponent<Button>();
+    leave.targetGraphic=button.GetComponent<Image>();
+    leave.targetGraphic.raycastTarget=true;
+    StyleButton(leave);
+    leaveLabel=Text(button,"Etiqueta","SALIR DE LA PARTIDA",0,0,1,1,null,24);
+    Place(leaveLabel.rectTransform,Vector2.zero,Vector2.one);
+    leaveLabel.alignment=TextAlignmentOptions.Center;
+    leave.onClick.AddListener(LeaveWhileLoading);
+   }
+  }
 
+  void EnsureExitInput()
+  {
+   if(!leave)return;
+   if(!EventSystem.current && !fallbackInput)
+   {
+    var input=new GameObject("Entrada de carga",typeof(EventSystem),typeof(InputSystemUIInputModule));
+    input.transform.SetParent(canvas.transform,false);
+    fallbackInput=input.GetComponent<EventSystem>();
+    input.GetComponent<InputSystemUIInputModule>().AssignDefaultActions();
+   }
+   Cursor.lockState=CursorLockMode.None;
+   Cursor.visible=true;
+  }
+
+  async void LeaveWhileLoading()
+  {
+   if(leaving)return;
+   leaving=true;
+   leave.interactable=false;
+   leaveLabel.text="SALIENDO…";
+   try
+   {
+    if(!original && PvPvEMatchmaking.Active)
+    {
+     var matchmaking=PvPvEMatchmaking.Active;
+     await matchmaking.CancelAndLeaveAsync();
+     if(matchmaking.CanNavigateAway)return;
+    }
+    else if(original)
+    {
+     // A Unity scene load cannot be canceled once started. Let it activate before returning.
+     while(this && SceneManager.GetActiveScene().name==originalOrigin && originalOrigin!=originalTarget)
+      await Task.Yield();
+     if(!this)return;
+     if(CheckpointManager.Instance && CheckpointManager.Instance.CargaPendiente)
+      CheckpointManager.Instance.FinalizarCarga();
+     if(NetworkBootstrap.Instance && Unity.Netcode.NetworkManager.Singleton &&
+        Unity.Netcode.NetworkManager.Singleton.IsListening)
+      await NetworkBootstrap.Instance.SalirDePartidaCooperativa();
+     else
+      await SceneManager.LoadSceneAsync("PantallasUI",LoadSceneMode.Single);
+     CancelOriginal();
+     return;
+    }
+   }
+   catch(Exception e){Debug.LogException(e);}
+   if(!this || !leave)return;
+   leaving=false;
+   leave.interactable=true;
+   leaveLabel.text="REINTENTAR SALIDA";
   }
   static void Stretch(RectTransform rect){rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;}
   public void DisposeView(){if(disposed)return;disposed=true;if(loadingCamera)Destroy(loadingCamera.gameObject);if(canvas){canvas.gameObject.SetActive(false);Destroy(canvas.gameObject);}}

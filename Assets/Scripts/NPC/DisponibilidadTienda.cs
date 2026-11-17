@@ -63,7 +63,8 @@ public static class DisponibilidadTienda
 
     public static bool SeMuestraEnPartidaActual(WeaponOffer oferta)
     {
-        if (oferta == null || (oferta.esLinterna && UsaLinternaGratuita))
+        if (oferta == null || (oferta.esLinterna && UsaLinternaGratuita) ||
+            (oferta.weaponId == "Revolver" && EsPvP))
             return false;
 
         DifficultyLevel? dificultad = DificultadActual();
