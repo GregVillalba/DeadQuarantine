@@ -14,6 +14,7 @@ public static class PlayerIdentity
     private const string PREF_KEY_GOOGLE_LINKED = "DQ_GOOGLE_LINKED";
     private const string PREF_KEY_GOOGLE_ID = "DQ_GOOGLE_ID";
     private const string PREF_KEY_GOOGLE_EMAIL = "DQ_GOOGLE_EMAIL";
+    private const string PREF_KEY_PRE_GOOGLE_USER_ID = "DQ_PRE_GOOGLE_USER_ID";
 
     public const int MaxUsernameLength = 10;
     private static readonly Regex patronAlfanumerico = new Regex("^[a-zA-Z0-9]{1,10}$");
@@ -164,13 +165,20 @@ public static class PlayerIdentity
     /// </summary>
     public static void SetGoogleSession(string googleId, string email, string userId = null)
     {
+        string idCanonico = !string.IsNullOrWhiteSpace(userId) ? userId.Trim() : googleId;
+        if (!IsGoogleLinked() && !PlayerPrefs.HasKey(PREF_KEY_PRE_GOOGLE_USER_ID))
+        {
+            string idLocalPrevio = PlayerPrefs.GetString(PREF_KEY_USER_ID, string.Empty);
+            if (!string.IsNullOrWhiteSpace(idLocalPrevio) && idLocalPrevio != idCanonico)
+                PlayerPrefs.SetString(PREF_KEY_PRE_GOOGLE_USER_ID, idLocalPrevio);
+        }
+
         PlayerPrefs.SetInt(PREF_KEY_GOOGLE_LINKED, 1);
         PlayerPrefs.SetString(PREF_KEY_GOOGLE_ID, googleId ?? string.Empty);
         PlayerPrefs.SetString(PREF_KEY_GOOGLE_EMAIL, email ?? string.Empty);
 
         // Prioriza el ID canónico de la cuenta entregado por el backend. Así ranking,
         // logros y perfil usan la misma identidad aunque se inicie sesión en otro equipo.
-        string idCanonico = !string.IsNullOrWhiteSpace(userId) ? userId.Trim() : googleId;
         if (!string.IsNullOrEmpty(idCanonico))
         {
             PlayerPrefs.SetString(PREF_KEY_USER_ID, idCanonico);
@@ -178,6 +186,27 @@ public static class PlayerIdentity
 
         PlayerPrefs.Save();
         Debug.Log($"[IDENTITY] Sesión de Google guardada en disco: {email}");
+    }
+
+    /// <summary>
+    /// Cierra la sesión de Google solo en este equipo. Conserva el perfil local y
+    /// los datos del servidor; restaura el ID local previo para separar sesiones.
+    /// </summary>
+    public static void ClearGoogleSession()
+    {
+        PlayerPrefs.SetInt(PREF_KEY_GOOGLE_LINKED, 0);
+        PlayerPrefs.DeleteKey(PREF_KEY_GOOGLE_ID);
+        PlayerPrefs.DeleteKey(PREF_KEY_GOOGLE_EMAIL);
+
+        string idLocalPrevio = PlayerPrefs.GetString(PREF_KEY_PRE_GOOGLE_USER_ID, string.Empty);
+        if (!string.IsNullOrWhiteSpace(idLocalPrevio))
+            PlayerPrefs.SetString(PREF_KEY_USER_ID, idLocalPrevio);
+        else
+            PlayerPrefs.DeleteKey(PREF_KEY_USER_ID);
+
+        PlayerPrefs.DeleteKey(PREF_KEY_PRE_GOOGLE_USER_ID);
+        PlayerPrefs.Save();
+        Debug.Log("[IDENTITY] Sesión de Google cerrada en este equipo; los datos de cuenta permanecen en el servidor.");
     }
 
     public static string GetGoogleEmail()

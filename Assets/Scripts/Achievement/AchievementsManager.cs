@@ -13,6 +13,7 @@ public class AchievementsManager : MonoBehaviour
 
     [Header("Configuración Backend / Base de Datos")]
     private const string apiUrl = "https://dead-quarentine-web.wasmer.app/api/logros/desbloquear";
+    private const string apiUrlObtener = "https://dead-quarentine-web.wasmer.app/api/logros/usuario";
 
     [SerializeField]
     private string usernameJugador = "";
@@ -161,6 +162,23 @@ public class AchievementsManager : MonoBehaviour
         public bool success;
         public string mensaje;
         public string logro_padre_desbloqueado;
+    }
+
+    [System.Serializable]
+    private class LogrosCuentaApiResponse
+    {
+        public bool success;
+        public LogroCuentaApiData[] sublogros;
+    }
+
+    [System.Serializable]
+    private class LogroCuentaApiData
+    {
+        public string sublogro_clave;
+        public string rango;
+        public int progreso_actual;
+        public int objetivo_cantidad;
+        public bool completado;
     }
 
     // ============================================================
@@ -823,6 +841,112 @@ public class AchievementsManager : MonoBehaviour
             return;
 
         StartCoroutine(SincronizarProgresoPrevioCoroutine());
+    }
+
+    /// <summary>
+    /// Descarga y mezcla el progreso remoto de la cuenta autenticada con el progreso local.
+    /// Debe llamarse después de establecer el ID canónico devuelto por /api/auth.
+    /// </summary>
+    public void SincronizarDesdeServidor()
+    {
+        if (string.IsNullOrWhiteSpace(ObtenerUserId()))
+            return;
+
+        StartCoroutine(CargarLogrosCuentaCoroutine());
+    }
+
+    private IEnumerator CargarLogrosCuentaCoroutine()
+    {
+        string idUsuario = ObtenerUserId();
+        string url = $"{apiUrlObtener}?id_local={UnityWebRequest.EscapeURL(idUsuario)}";
+
+        using (UnityWebRequest request = UnityWebRequest.Get(url))
+        {
+            request.timeout = 12;
+            request.SetRequestHeader("Accept", "application/json");
+            yield return request.SendWebRequest();
+
+            if (request.result != UnityWebRequest.Result.Success ||
+                request.responseCode < 200 || request.responseCode >= 300)
+            {
+                Debug.LogWarning($"[ACHIEVEMENTS API] No se pudieron recuperar los logros de la cuenta (HTTP {request.responseCode}): {request.error} | {request.downloadHandler?.text}");
+                yield break;
+            }
+
+            LogrosCuentaApiResponse respuesta = null;
+            try
+            {
+                respuesta = JsonUtility.FromJson<LogrosCuentaApiResponse>(request.downloadHandler.text);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning("[ACHIEVEMENTS API] Respuesta de logros inválida: " + ex.Message);
+            }
+
+            if (respuesta == null || !respuesta.success || respuesta.sublogros == null)
+            {
+                Debug.LogWarning("[ACHIEVEMENTS API] La respuesta no contiene el progreso de la cuenta.");
+                yield break;
+            }
+
+            int importados = 0;
+            foreach (LogroCuentaApiData remoto in respuesta.sublogros)
+            {
+                if (remoto == null || !remoto.completado || string.IsNullOrWhiteSpace(remoto.sublogro_clave))
+                    continue;
+
+                if (AplicarSublogroRemoto(remoto))
+                    importados++;
+            }
+
+            GuardarProgreso();
+            Debug.Log($"[ACHIEVEMENTS API] Se recuperaron {importados} sublogros para la cuenta {idUsuario}.");
+
+            // Reenvía el estado combinado para conservar en el servidor cualquier progreso local previo.
+            SincronizarLogrosPrevios();
+        }
+    }
+
+    private bool AplicarSublogroRemoto(LogroCuentaApiData remoto)
+    {
+        foreach (AchievementId id in System.Enum.GetValues(typeof(AchievementId)))
+        {
+            foreach (AchievementRank rango in new[]
+                     { AchievementRank.Ninguno, AchievementRank.Bronce, AchievementRank.Plata, AchievementRank.Oro })
+            {
+                string clave = ObtenerClaveSublogro(id, rango);
+                if (string.IsNullOrEmpty(clave) ||
+                    !string.Equals(clave, remoto.sublogro_clave, System.StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                AchievementData local = ObtenerLogro(id);
+                if (local == null)
+                    return false;
+
+                int progreso = Mathf.Max(0, Mathf.Max(remoto.progreso_actual, remoto.objetivo_cantidad));
+                AchievementDefinition definicion = ObtenerDefinicion(id);
+                AchievementTierDefinition tier = definicion != null ? definicion.ObtenerRango(rango) : null;
+                if (tier != null)
+                    progreso = Mathf.Max(progreso, tier.objetivo);
+
+                local.progreso = Mathf.Max(local.progreso, progreso);
+                if (rango == AchievementRank.Ninguno)
+                {
+                    local.desbloqueado = true;
+                }
+                else
+                {
+                    if (rango > local.rangoActual)
+                        local.rangoActual = rango;
+                    local.desbloqueado = local.rangoActual == AchievementRank.Oro;
+                }
+
+                return true;
+            }
+        }
+
+        Debug.LogWarning($"[ACHIEVEMENTS API] Clave remota sin mapeo local: {remoto.sublogro_clave}");
+        return false;
     }
 
     private IEnumerator SincronizarProgresoPrevioCoroutine()

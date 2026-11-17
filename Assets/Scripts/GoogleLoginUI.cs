@@ -72,31 +72,47 @@ public class GoogleLoginUI : MonoBehaviour
 
     public void ActualizarEstadoBoton()
     {
-        if (PlayerIdentity.IsGoogleLinked())
-        {
-            DeshabilitarBotonLogin();
-        }
+        if (botonLogin == null)
+            return;
+
+        bool sesionActiva = PlayerIdentity.IsGoogleLinked();
+        botonLogin.interactable = true;
+        var graphic = botonLogin.GetComponent<Graphic>();
+        if (graphic != null) graphic.raycastTarget = true;
+
+        botonLogin.onClick.RemoveAllListeners();
+        if (sesionActiva)
+            botonLogin.onClick.AddListener(CerrarSesion);
         else
+            botonLogin.onClick.AddListener(IniciarLogin);
+
+        var txtBtn = botonLogin.GetComponentInChildren<TextMeshProUGUI>();
+        if (txtBtn != null)
         {
-            if (botonLogin != null)
-            {
-                botonLogin.interactable = true;
+            txtBtn.text = sesionActiva
+                ? "CERRAR SESION"
+                : "INICIAR SESION CON GOOGLE";
+            txtBtn.color = Color.white;
+        }
 
-                // Asegura que pueda recibir clics si aún no está vinculada
-                var graphic = botonLogin.GetComponent<Graphic>();
-                if (graphic != null) graphic.raycastTarget = true;
+        string email = PlayerIdentity.GetGoogleEmail();
+        if (sesionActiva && textoEstado != null)
+        {
+            textoEstado.text = !string.IsNullOrEmpty(email) ? $"Conectado: {email}" : "Cuenta vinculada";
+            textoEstado.color = new Color(0.2f, 0.9f, 0.3f);
+        }
+    }
 
-                botonLogin.onClick.RemoveAllListeners();
-                botonLogin.onClick.AddListener(IniciarLogin);
+    public void CerrarSesion()
+    {
+        PlayerIdentity.ClearGoogleSession();
+        JugadorActivo = null;
+        ActualizarEstadoBoton();
 
-                // Texto sin tilde para evitar errores de fuente
-                var txtBtn = botonLogin.GetComponentInChildren<TextMeshProUGUI>();
-                if (txtBtn != null)
-                {
-                    txtBtn.text = "INICIAR SESION CON GOOGLE";
-                    txtBtn.color = Color.white;
-                }
-            }
+        if (textoEstado != null)
+        {
+            textoEstado.text = "Sesion cerrada en este equipo. Tus datos siguen guardados.";
+            textoEstado.color = Color.white;
         }
     }
 
@@ -133,8 +149,6 @@ public class GoogleLoginUI : MonoBehaviour
 
     public async void IniciarLogin()
     {
-        if (PlayerIdentity.IsGoogleLinked()) return;
-
         if (textoEstado != null) textoEstado.text = "Abriendo navegador para iniciar sesión...";
         if (botonLogin != null) botonLogin.interactable = false;
 
@@ -275,8 +289,10 @@ public class GoogleLoginUI : MonoBehaviour
                         AchievementsManager.Instance.UsernameJugador = nombreGuardado;
                 }
 
-                // Bloquea el botón de inmediato
-                DeshabilitarBotonLogin();
+                if (AchievementsManager.Instance != null)
+                    AchievementsManager.Instance.SincronizarDesdeServidor();
+
+                ActualizarEstadoBoton();
 
                 Debug.Log($"<color=green>[AUTH API] Login persistido con éxito:</color> {JugadorActivo.email} | ID: {PlayerIdentity.GetUserId()} | Nombre: {nombreGuardado}");
             }
