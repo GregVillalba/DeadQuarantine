@@ -1,3 +1,4 @@
+using DeadQuarantine.PvPvE;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -33,6 +34,7 @@ public class SinglePlayerLobbyController : MonoBehaviour
     [SerializeField] private Button btnComenzar;
     [SerializeField] private Button btnPersonaje;
     [SerializeField] private Button btnVolver;
+    [SerializeField] private Button btnConfigurar;
 
     [Header("Resumen de la partida (arriba a la derecha)")]
     [SerializeField] private TMP_Text resumenModo;
@@ -60,7 +62,7 @@ public class SinglePlayerLobbyController : MonoBehaviour
     [Tooltip("Solo se usa si el lobby está solo en su escena (sin SingleplayerMenuManager).")]
     [SerializeField] private string escenaMenuPorDefecto = "PantallasUI";
 
-    private const string TextoRol = "[ UN JUGADOR / TU ]";
+    private const string TextoRol = "[ UN JUGADOR / TÚ ]";
 
     private bool cargando;
 
@@ -71,6 +73,14 @@ public class SinglePlayerLobbyController : MonoBehaviour
     // =========================================================
     // CICLO DE VIDA
     // =========================================================
+
+    private void Awake()
+    {
+        PvPvEUIFactory.StyleMenuButton(btnVolver);
+        PvPvEUIFactory.StyleMenuButton(btnPersonaje);
+        PvPvEUIFactory.StyleMenuButton(btnConfigurar, showAccent: true);
+        PvPvEUIFactory.StyleMenuButton(btnComenzar, showAccent: true);
+    }
 
     private void Start()
     {
@@ -123,7 +133,7 @@ public class SinglePlayerLobbyController : MonoBehaviour
         // "Listo" = hay una configuración válida para empezar.
         slot.SetPlayer(true, true, ConfiguracionValida(), CharacterSelection.SelectedIndex);
 
-        // El slot escribe "ANFITRION / TU": acá es un solo jugador.
+        // El slot escribe "ANFITRIÓN / TÚ": acá es un solo jugador.
         if (rolTexto != null && rolTexto.text != TextoRol)
             rolTexto.text = TextoRol;
 
@@ -148,8 +158,8 @@ public class SinglePlayerLobbyController : MonoBehaviour
         if (!ConfiguracionValida())
         {
             MostrarMensaje(
-                "SIN CONFIGURACION",
-                "Elegí Modo, Mapa y Dificultad desde CONFIGURAR PARTIDA antes de comenzar.");
+                "SIN CONFIGURACIÓN",
+                "Elegí el modo, el mapa y la dificultad desde CONFIGURAR PARTIDA antes de comenzar.");
             return;
         }
 
@@ -175,8 +185,8 @@ public class SinglePlayerLobbyController : MonoBehaviour
         else
         {
             MostrarMensaje(
-                "SIN SELECCION",
-                "No encuentro la ventana '" + nombreVentanaPersonaje + "' en esta escena. Agregala (Game > Construir UI de Seleccion de Personaje).");
+                "SIN SELECCIÓN",
+                "No encuentro la ventana '" + nombreVentanaPersonaje + "' en esta escena. Agregala (Game > Construir UI de Selección de Personaje).");
         }
     }
 

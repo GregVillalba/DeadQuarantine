@@ -25,7 +25,8 @@ namespace DeadQuarantine.PvPvE.UI
         readonly System.Collections.Generic.Dictionary<Canvas,bool> previousCanvases=new();
         void Awake(){
             PvPvELoadingScreen.ConfigureOriginal(matchmaking.Settings);
-            PvPvEUIFactory.Polish(modeSelectionPanel.transform);PvPvEUIFactory.Polish(pvpvePanel.transform);
+            PvPvEUIFactory.Polish(modeSelectionPanel.transform, useMenuFont: true);
+            PvPvEUIFactory.Polish(pvpvePanel.transform, useMenuFont: true);
             DecorateMode(modeSelectionPanel.transform);DecorateMode(pvpvePanel.transform);
         }
         void DecorateMode(Transform page){

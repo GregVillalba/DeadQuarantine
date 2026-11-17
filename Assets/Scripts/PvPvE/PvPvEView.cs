@@ -44,6 +44,8 @@ namespace DeadQuarantine.PvPvE {
    bravoScore=Text(header,"Bravo score","0",296,34,114,57,null,43);
    matchClock=Text(header,"Clock","00:00",148,23,136,41,null,29);
    matchObjective=Text(header,"Objective","",142,66,148,23,null,15);
+   if(HeadingFont)
+    matchObjective.font=HeadingFont;
    foreach(var label in new[]{alpha,bravo,alphaScore,bravoScore,matchClock,matchObjective})
     label.alignment=TextAlignmentOptions.Center;
    alphaScore.fontStyle=bravoScore.fontStyle=matchClock.fontStyle=FontStyles.Bold;

@@ -103,6 +103,7 @@ namespace DeadQuarantine.PvPvE {
    var mode=Text(content,"Mode","PvPvE TEAM DEATHMATCH",0,0,1,1,null,26);Place(mode.rectTransform,new(.018f,.75f),new(.97f,.95f));mode.color=Accent;modeLabel=mode;
    mapName=Text(content,"MapName","",0,0,1,1,null,72);Place(mapName.rectTransform,new(.018f,.36f),new(.97f,.77f));mapName.font=HeadingFont;
    status=Text(content,"State","",0,0,1,1,null,24);Place(status.rectTransform,new(.018f,.06f),new(.72f,.32f));
+   if(HeadingFont)status.font=HeadingFont;
 
   }
   static void Stretch(RectTransform rect){rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;}

@@ -57,7 +57,8 @@ namespace DeadQuarantine.PvPvE.UI
         public GameObject CharacterPopup=>characterPopup;
 
         void Awake(){
-            PvPvEUIFactory.Polish(panel.transform);PvPvEUIFactory.Polish(characterPopup.transform);
+            PvPvEUIFactory.Polish(panel.transform, useMenuFont: true);
+            PvPvEUIFactory.Polish(characterPopup.transform, useMenuFont: true);
             var selector=characterPopup.GetComponentInChildren<Canvas>(true);if(selector){var backdrop=selector.GetComponent<Image>();if(!backdrop)backdrop=selector.gameObject.AddComponent<Image>();backdrop.color=PvPvEUIFactory.PanelColor;backdrop.raycastTarget=true;}
             var title=panel.transform.Find("Title")?.GetComponent<TMP_Text>();if(title){title.fontSize=42;title.fontSizeMax=42;}
             var a=panel.transform.Find("AlphaPanel") as RectTransform;var b=panel.transform.Find("BravoPanel") as RectTransform;
@@ -69,7 +70,7 @@ namespace DeadQuarantine.PvPvE.UI
             PvPvEUIFactory.Place((RectTransform)characterButton.transform,new(.035f,.60f),new(.30f,.68f));PvPvEUIFactory.Place((RectTransform)leaveButton.transform,new(.035f,.50f),new(.30f,.58f));
             for(int team=0;team<2;team++){var frame=team==0?a:b;var heading=team==0?alpha:bravo;PvPvEUIFactory.Place(heading.rectTransform,new(.04f,.86f),new(.96f,.99f));heading.fontSize=25;
              for(int slot=0;slot<5;slot++){float top=.84f-slot*.164f;var icon=new GameObject("CharacterIcon_"+slot,typeof(RectTransform),typeof(Image)).GetComponent<Image>();icon.transform.SetParent(frame,false);PvPvEUIFactory.Place(icon.rectTransform,new(.035f,top-.13f),new(.18f,top));icon.preserveAspect=true;icon.raycastTarget=false;rosterIcons[team,slot]=icon;
-              var text=new GameObject("PlayerName_"+slot,typeof(RectTransform)).AddComponent<TextMeshProUGUI>();text.transform.SetParent(frame,false);PvPvEUIFactory.Place(text.rectTransform,new(.21f,top-.13f),new(.97f,top));text.font=PvPvEUIFactory.BodyFont;text.fontSize=20;text.enableAutoSizing=true;text.fontSizeMin=14;text.fontSizeMax=20;text.alignment=TextAlignmentOptions.MidlineLeft;text.raycastTarget=false;text.richText=false;rosterNames[team,slot]=text;}}
+              var text=new GameObject("PlayerName_"+slot,typeof(RectTransform)).AddComponent<TextMeshProUGUI>();text.transform.SetParent(frame,false);PvPvEUIFactory.Place(text.rectTransform,new(.21f,top-.13f),new(.97f,top));text.font=PvPvEUIFactory.HeadingFont;text.fontSize=20;text.enableAutoSizing=true;text.fontSizeMin=14;text.fontSizeMax=20;text.alignment=TextAlignmentOptions.MidlineLeft;text.raycastTarget=false;text.richText=false;rosterNames[team,slot]=text;}}
         }
         void ConfigureSoloCard()
         {
@@ -87,6 +88,8 @@ namespace DeadQuarantine.PvPvE.UI
                 soloCard.Find("Row_" + i)?.gameObject.SetActive(false);
             soloName = first.Find("Text").GetComponent<TMP_Text>();
             soloName.richText = false;
+            foreach (var label in soloCard.GetComponentsInChildren<TMP_Text>(true))
+                label.font = PvPvEUIFactory.HeadingFont;
             soloIcon = first.Find("Icon").GetComponent<Image>();
             foreach (var graphic in soloCard.GetComponentsInChildren<Graphic>(true))
                 graphic.enabled = true;

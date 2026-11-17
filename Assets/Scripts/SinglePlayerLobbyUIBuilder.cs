@@ -332,8 +332,8 @@ public sealed class SinglePlayerLobbyUIBuilder : EditorWindow
         // Elementos DIRECTOS del panel: el multiplayer reubica estos objetos raiz.
         // FindDeep seleccionaba a veces un "Titulo" viejo de un submenu y alteraba fuente/posicion.
         TMP_Text title = RequireCopiedText(multiplayerPanel, ui, "Titulo", "UN JUGADOR // SALA");
-        Button back = CloneButtonExact(multiplayerPanel, ui, "Home", "Atras", "ATRAS");
-        RequireCopiedText(multiplayerPanel, ui, "TextxSuperior (1)", "SESION:");
+        Button back = CloneButtonExact(multiplayerPanel, ui, "Home", "Atras", "ATRÁS");
+        RequireCopiedText(multiplayerPanel, ui, "TextxSuperior (1)", "SESIÓN:");
         GameObject codeBox = CloneVisual(RequireDirect(multiplayerPanel, "Cuadrado"), ui, "Cuadrado_Local");
         Image codeBoxImage = codeBox.GetComponent<Image>();
         if (codeBoxImage != null) codeBoxImage.enabled = true;
@@ -522,6 +522,7 @@ public sealed class SinglePlayerLobbyUIBuilder : EditorWindow
         Bind(so, "btnComenzar", start);
         Bind(so, "btnPersonaje", character);
         Bind(so, "btnVolver", back);
+        Bind(so, "btnConfigurar", config);
         Bind(so, "resumenModo", null);
         Bind(so, "resumenMapa", null);
         Bind(so, "resumenDificultad", null);
@@ -797,7 +798,7 @@ public sealed class SinglePlayerLobbyUIBuilder : EditorWindow
         Text(window.transform, "Titulo", "CONFIGURAR PARTIDA", titleFont, 44f,
             new Color(0.70f, 0.79f, 0.71f, 1f), new Vector2(0f, 1f),
             new Vector2(40f, -26f), new Vector2(920f, 56f), TextAlignmentOptions.Left);
-        Text(window.transform, "Subtitulo", "HACE CLICK EN CADA OPCION PARA CAMBIARLA",
+        Text(window.transform, "Subtitulo", "HACÉ CLIC EN CADA OPCIÓN PARA CAMBIARLA",
             monoFont, 18f, roleColor, new Vector2(0f, 1f),
             new Vector2(40f, -86f), new Vector2(920f, 24f), TextAlignmentOptions.Left);
         mode = RealSettingsRow(window.transform, monoFont, "Seccion_Modo", "MODO DE JUEGO", -130f);
@@ -844,7 +845,7 @@ public sealed class SinglePlayerLobbyUIBuilder : EditorWindow
         Image content = Image(section.transform, "Contenido", new Color(1f, 1f, 1f, .05f), false);
         PlaceOriginalRect(content.rectTransform, new Vector2(0f, 1f),
             new Vector2(0f, -36f), new Vector2(920f, 84f));
-        TMP_Text label = Text(content.transform, "Valor", "-  [ CLICK PARA ELEGIR ]", font, 20f,
+        TMP_Text label = Text(content.transform, "Valor", "-  [ CLIC PARA ELEGIR ]", font, 20f,
             new Color(.384f, .464f, .394f, 1f), new Vector2(.5f, .5f),
             Vector2.zero, new Vector2(920f, 84f), TextAlignmentOptions.Center);
         return label;

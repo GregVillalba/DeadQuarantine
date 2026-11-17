@@ -104,19 +104,10 @@ public static class TutorialDesbloqueoEspecial
 
     private static void Crear(Transform cartelNormal, RectTransform rectContenido)
     {
-        // Estilo del cartel de NORMAL: el primer texto es el título ("NORMAL"); el cuerpo usa otra fuente.
+        // El primer texto es el título y el tercero es la primera descripción.
         TMP_Text[] textos = rectContenido.GetComponentsInChildren<TMP_Text>(true);
         TMP_Text plantillaTitulo = textos.Length > 0 ? textos[0] : null;
-        TMP_Text plantillaCuerpo = plantillaTitulo;
-
-        for (int i = 0; i < textos.Length; i++)
-        {
-            if (plantillaTitulo != null && textos[i].font != plantillaTitulo.font)
-            {
-                plantillaCuerpo = textos[i];
-                break;
-            }
-        }
+        TMP_Text plantillaCuerpo = textos.Length > 2 ? textos[2] : plantillaTitulo;
 
         Image fondoNormal = rectContenido.GetComponent<Image>();
         Color colorFondo = fondoNormal != null ? fondoNormal.color : new Color(0.046f, 0.147f, 0.046f, 0.94f);
@@ -135,21 +126,18 @@ public static class TutorialDesbloqueoEspecial
 
         int capa = rectContenido.gameObject.layer;
 
-        // ---------- Recuadro: mismo ancho que el de NORMAL, pegado debajo ----------
+        // El recuadro ocupa todo el ancho de la fila de dificultades.
         GameObject cartel = new GameObject(NombreCartel, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         cartel.layer = capa;
         cartel.transform.SetParent(cartelNormal, false);
 
-        Vector2 tamanoContenido = rectContenido.rect.size;
-        float centroX = rectContenido.anchoredPosition.x + (0.5f - rectContenido.pivot.x) * tamanoContenido.x;
-        float bordeInferior = rectContenido.anchoredPosition.y - rectContenido.pivot.y * tamanoContenido.y;
-
         RectTransform rect = (RectTransform)cartel.transform;
-        rect.anchorMin = rectContenido.anchorMin;
-        rect.anchorMax = rectContenido.anchorMax;
+        rect.anchorMin = new Vector2(0f, rectContenido.anchorMin.y);
+        rect.anchorMax = new Vector2(1f, rectContenido.anchorMin.y);
         rect.pivot = new Vector2(0.5f, 1f);
-        rect.anchoredPosition = new Vector2(centroX, bordeInferior - Separacion);
-        rect.sizeDelta = new Vector2(tamanoContenido.x, Alto);
+        float bordeInferior = rectContenido.offsetMin.y - Separacion;
+        rect.offsetMin = new Vector2(0f, bordeInferior - Alto);
+        rect.offsetMax = new Vector2(0f, bordeInferior);
 
         Image fondo = cartel.GetComponent<Image>();
         fondo.color = colorFondo;

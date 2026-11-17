@@ -34,7 +34,7 @@ namespace DeadQuarantine.PvPvE.UI
   public bool PreviewReady=>preview&&preview.Ready;
   public bool CharacterPreviewReady=>false;
   public GameObject Panel=>panel;
-  void Awake(){font=PvPvEUIFactory.BodyFont?PvPvEUIFactory.BodyFont:font;store=new PvPvEClassStore(catalog);Build();panel.SetActive(false);}
+  void Awake(){font=PvPvEUIFactory.HeadingFont?PvPvEUIFactory.HeadingFont:font;store=new PvPvEClassStore(catalog);Build();panel.SetActive(false);}
   void Update()=>HandleEscape();
   public void HandleEscape(){if(!IsOpen||escapeFrame==Time.frameCount)return;if(Keyboard.current!=null&&Keyboard.current.escapeKey.wasPressedThisFrame){escapeFrame=Time.frameCount;if(picker.activeSelf)picker.SetActive(false);else Close();}}
   public void Open(){
@@ -234,7 +234,7 @@ namespace DeadQuarantine.PvPvE.UI
    var grid=options.gameObject.AddComponent<GridLayoutGroup>();grid.cellSize=new Vector2(220,160);grid.spacing=new Vector2(12,12);grid.constraint=GridLayoutGroup.Constraint.FixedColumnCount;grid.constraintCount=4;grid.padding=new RectOffset(8,8,8,8);
    var fit=options.gameObject.AddComponent<ContentSizeFitter>();fit.verticalFit=ContentSizeFitter.FitMode.PreferredSize;
    var scroll=viewport.gameObject.AddComponent<ScrollRect>();scroll.viewport=viewport;scroll.content=options;scroll.horizontal=false;scroll.movementType=ScrollRect.MovementType.Clamped;
-   PvPvEUIFactory.Polish(root,true);picker.SetActive(false);
+   PvPvEUIFactory.Polish(root, page: true, useMenuFont: true);picker.SetActive(false);
   }
   Button Card(string name,Transform parent,Vector2 min,Vector2 max,string kind,string value,Sprite icon){
    var button=Button(name,parent,"",min,max);Text("Category",button.transform,kind,new(.04f,.77f),new(.96f,.97f),14,accent);

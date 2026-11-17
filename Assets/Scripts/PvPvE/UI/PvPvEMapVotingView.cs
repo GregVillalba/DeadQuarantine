@@ -13,7 +13,7 @@ namespace DeadQuarantine.PvPvE.UI
         PvPvEMapVoting voting;
         int lastSecond=-1;
         void Awake(){
-            PvPvEUIFactory.Polish(transform);PvPvEUIFactory.Place(headline.rectTransform,new(.035f,.30f),new(.66f,.38f));headline.fontSize=21;headline.fontSizeMax=21;headline.alignment=TextAlignmentOptions.MidlineLeft;headline.color=PvPvEUIFactory.Accent;
+            PvPvEUIFactory.Polish(transform, useMenuFont: true);PvPvEUIFactory.Place(headline.rectTransform,new(.035f,.30f),new(.66f,.38f));headline.fontSize=21;headline.fontSizeMax=21;headline.alignment=TextAlignmentOptions.MidlineLeft;headline.color=PvPvEUIFactory.Accent;
             PvPvEUIFactory.Place(hint.rectTransform,new(.035f,.255f),new(.66f,.30f));hint.alignment=TextAlignmentOptions.MidlineLeft;
             for(int i=0;i<cards.Length;i++){var photograph=cards[i].GetComponentInChildren<RawImage>(true);if(photograph)photograph.texture=matchmaking.Settings.Maps[i].Preview;PvPvEUIFactory.Place((RectTransform)cards[i].transform,new(.035f+i*.21f,.025f),new(.235f+i*.21f,.245f));var title=cards[i].transform.Find("Name")?.GetComponent<TMP_Text>();if(title){title.fontSize=18;title.fontSizeMax=18;title.color=Color.white;}}
         }
