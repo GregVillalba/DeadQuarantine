@@ -410,7 +410,7 @@ public class LobbyUIBuilder : EditorWindow
         TMP_Text title = NewText("Titulo", window.transform, "CONFIGURAR PARTIDA", 44f, new Color(0.70f, 0.79f, 0.71f, 1f), TextAlignmentOptions.Left, titleFont, 24f);
         Place(title.rectTransform, TL, TL, new Vector2(40f, -26f), new Vector2(920f, 56f));
 
-        TMP_Text sub = NewText("Subtitulo", window.transform, "SOLO EL ANFITRION PUEDE CAMBIAR ESTOS VALORES", 18f, RoleColor, TextAlignmentOptions.Left, monoFont, 12f);
+        TMP_Text sub = NewText("Subtitulo", window.transform, "SOLO EL ANFITRIÓN PUEDE CAMBIAR ESTOS VALORES", 18f, RoleColor, TextAlignmentOptions.Left, monoFont, 12f);
         Place(sub.rectTransform, TL, TL, new Vector2(40f, -86f), new Vector2(920f, 24f));
 
         string[] sectionNames = { "Seccion_Modo", "Seccion_Mapa", "Seccion_Dificultad" };
@@ -428,7 +428,7 @@ public class LobbyUIBuilder : EditorWindow
             Image content = NewImage("Contenido", section.transform, new Color(1f, 1f, 1f, 0.05f), false);
             Place(content.rectTransform, TL, TL, new Vector2(0f, -36f), new Vector2(920f, 84f));
 
-            TMP_Text soon = NewText("Pendiente", content.transform, "PROXIMAMENTE", 20f, RoleColor, TextAlignmentOptions.Center, monoFont, 12f);
+            TMP_Text soon = NewText("Pendiente", content.transform, "PRÓXIMAMENTE", 20f, RoleColor, TextAlignmentOptions.Center, monoFont, 12f);
             Stretch(soon.rectTransform, 0f);
         }
 

@@ -324,10 +324,10 @@ public static class DesbloqueoDificultades
     }
 
     // =========================================================
-    // TEXTOS (sin acentos: las fuentes del lobby no los traen)
+    // TEXTOS
     // =========================================================
 
-    /// <summary>Qué hay que hacer para desbloquear esa dificultad. Ej: "SUPERA LA RONDA 10 CON MENOS DE 5 CAIDAS EN NORMAL".</summary>
+    /// <summary>Qué hay que hacer para desbloquear esa dificultad.</summary>
     public static string TextoRequisito(Modo modo, Dificultad aDesbloquear)
     {
         if (!EsModoValido(modo) || aDesbloquear <= Dificultad.Normal)
@@ -339,15 +339,15 @@ public static class DesbloqueoDificultades
         switch (modo)
         {
             case Modo.Historia:
-                texto = "COMPLETA LAS MISIONES";
+                texto = "COMPLETÁ LAS MISIONES";
                 break;
 
             case Modo.Ronda5:
-                texto = "COMPLETA 5 RONDAS";
+                texto = "COMPLETÁ 5 RONDAS";
                 break;
 
             default:
-                texto = "SUPERA LA RONDA " + requisito.rondaASuperar;
+                texto = "SUPERÁ LA RONDA " + requisito.rondaASuperar;
                 break;
         }
 
@@ -355,14 +355,14 @@ public static class DesbloqueoDificultades
         bool pideCaidas = requisito.caidasMenorQue >= 0;
 
         if (pidePuntaje)
-            texto += " CON " + FormatearPuntaje(requisito.puntajeMinimo) + " PUNTOS O MAS";
+            texto += " CON " + FormatearPuntaje(requisito.puntajeMinimo) + " PUNTOS O MÁS";
 
         if (pideCaidas)
         {
             if (requisito.caidasMenorQue <= 1)
-                texto += pidePuntaje ? " Y SIN CAIDAS" : " SIN CAIDAS";
+                texto += pidePuntaje ? " Y SIN CAÍDAS" : " SIN CAÍDAS";
             else
-                texto += (pidePuntaje ? " Y MENOS DE " : " CON MENOS DE ") + requisito.caidasMenorQue + " CAIDAS";
+                texto += (pidePuntaje ? " Y MENOS DE " : " CON MENOS DE ") + requisito.caidasMenorQue + " CAÍDAS";
         }
 
         return texto + " EN " + NombreDificultad(aDesbloquear - 1);
@@ -373,7 +373,7 @@ public static class DesbloqueoDificultades
         switch (dificultad)
         {
             case Dificultad.Normal: return "NORMAL";
-            case Dificultad.Dificil: return "DIFICIL";
+            case Dificultad.Dificil: return "DIFÍCIL";
             case Dificultad.Pesadilla: return "PESADILLA";
             default: return "-";
         }

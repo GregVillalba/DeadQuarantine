@@ -97,7 +97,7 @@ namespace DeadQuarantine.PvPvE.UI
   string AttachmentSummary(WeaponAttachmentChoice choice)=>string.Join(" · ",Enum.GetValues(typeof(WeaponAttachmentKind)).Cast<WeaponAttachmentKind>().Select(kind=>(kind switch{WeaponAttachmentKind.Scope=>"Mira",WeaponAttachmentKind.Support=>"Soporte",WeaponAttachmentKind.Utility=>"Láser / linterna",_=>"Boca"})+": "+(selector.Catalog.attachments.Find(choice.Get(kind))?.displayName??"Ninguno")));
   void SetSummary(int i,string category,string value,Sprite icon){summary[i].text=category+"\n"+value;var image=summary[i].transform.parent.Find("Icon").GetComponent<Image>();image.sprite=icon;image.enabled=icon;}
   void Build(){
-   store??=new PvPvEClassStore(selector.Catalog);font=PvPvEUIFactory.BodyFont?PvPvEUIFactory.BodyFont:TMP_Settings.defaultFontAsset;observedEpoch=selector.Epoch.Value;
+   store??=new PvPvEClassStore(selector.Catalog);font=PvPvEUIFactory.HeadingFont?PvPvEUIFactory.HeadingFont:TMP_Settings.defaultFontAsset;observedEpoch=selector.Epoch.Value;
    root=new GameObject("PvPvE Initial Class",typeof(RectTransform),typeof(Canvas),typeof(CanvasScaler),typeof(GraphicRaycaster));root.transform.SetParent(transform,false);
    canvas=root.GetComponent<Canvas>();canvas.renderMode=RenderMode.ScreenSpaceOverlay;canvas.sortingOrder=30000;
    var scaler=root.GetComponent<CanvasScaler>();scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize;scaler.referenceResolution=new Vector2(1600,900);scaler.matchWidthOrHeight=.5f;
@@ -119,7 +119,7 @@ namespace DeadQuarantine.PvPvE.UI
    reset=Button("ResetInvalidClass","RESTABLECER CLASE INVÁLIDA",new(.27f,.045f),new(.61f,.095f));reset.onClick.AddListener(()=>{if(!pending&&!selector.TryGet(selector.NetworkManager.LocalClientId,out _)){store.Reset(selected);notice="";Refresh();}});
    confirm=Button("ConfirmInitialClass","CONFIRMAR CLASE",new(.66f,.045f),new(.97f,.095f));confirm.onClick.AddListener(Confirm);
    var back=Button("CloseClassChange","VOLVER A PAUSA",new(.77f,.90f),new(.97f,.97f));back.onClick.AddListener(()=>CloseClassChange());back.gameObject.AddComponent<CanvasGroup>();
-   PvPvEUIFactory.Polish(root.transform,true);root.SetActive(false);Refresh();
+   PvPvEUIFactory.Polish(root.transform, page: true, useMenuFont: true);root.SetActive(false);Refresh();
   }
   ImageWeapon WhiteIcon(string name,Vector2 min,Vector2 max){var frame=Rect(name,root.transform,min,max);frame.gameObject.AddComponent<Image>().color=PvPvEUIFactory.Surface;frame.gameObject.AddComponent<RectMask2D>();var icon=Rect("Composition",frame,Vector2.zero,Vector2.one);return icon.gameObject.AddComponent<ImageWeapon>();}
   PvPvEWeaponPreview Preview(string name,Vector2 min,Vector2 max){var frame=Rect(name+"Frame",root.transform,min,max);frame.gameObject.AddComponent<Image>().color=PvPvEUIFactory.Surface;var r=Rect(name,frame,Vector2.zero,Vector2.one);var image=r.gameObject.AddComponent<RawImage>();image.raycastTarget=false;var aspect=r.gameObject.AddComponent<AspectRatioFitter>();aspect.aspectMode=AspectRatioFitter.AspectMode.FitInParent;aspect.aspectRatio=1000f/600;return r.gameObject.AddComponent<PvPvEWeaponPreview>();}

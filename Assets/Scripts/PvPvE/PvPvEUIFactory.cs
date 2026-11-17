@@ -14,12 +14,56 @@ namespace DeadQuarantine.PvPvE {
    if(b.targetGraphic)b.targetGraphic.color=Surface;
    var outline=b.GetComponent<Outline>();if(!outline)outline=b.gameObject.AddComponent<Outline>();outline.effectColor=new(.43f,.49f,.51f,.23f);outline.effectDistance=new(1,-1);outline.useGraphicAlpha=false;
   }
-  public static void Polish(Transform root,bool page=false){
+
+  public static void StyleMenuButton(Button button, bool showAccent = false)
+  {
+   if (!button || !(button.targetGraphic is Image background))
+    return;
+
+   background.sprite = null;
+   background.overrideSprite = null;
+   background.type = Image.Type.Simple;
+   StyleButton(button);
+
+   // Conservar la animación del lobby y aplicar los estados de color al fondo.
+   if (button.TryGetComponent<ButtonHoverMenuPrincipal>(out var hover))
+   {
+    hover.colorNormal = Color.white;
+    hover.colorHover = Color.white;
+    hover.colorPressed = Color.white;
+   }
+
+   var labelFont = HeadingFont ? HeadingFont : BodyFont;
+   foreach (var label in button.GetComponentsInChildren<TMP_Text>(true))
+   {
+    if (labelFont)
+     label.font = labelFont;
+    label.color = Color.white;
+   }
+
+   if (!showAccent)
+    return;
+
+   var strip = button.transform.Find("Accent") as RectTransform;
+   if (!strip)
+   {
+    strip = Rect(button.transform, "Accent", 0, 0, 0, 0);
+    strip.SetAsFirstSibling();
+   }
+   Place(strip, Vector2.zero, Vector2.up);
+   strip.offsetMax = new Vector2(5f, 0f);
+   var image = strip.GetComponent<Image>() ?? strip.gameObject.AddComponent<Image>();
+   image.color = new Color32(0, 255, 102, 255);
+   image.raycastTarget = false;
+  }
+
+  public static void Polish(Transform root,bool page=false,bool useMenuFont=false){
    foreach(var button in root.GetComponentsInChildren<Button>(true))StyleButton(button);
    foreach(var text in root.GetComponentsInChildren<TMP_Text>(true)){
     text.raycastTarget=false;text.characterSpacing=.3f;
     bool title=text.name is "Title" or "PickerTitle" or "ClassesTitle" or "WeaponTitle" or "Eyebrow";
-    if(BodyFont)text.font=title&&HeadingFont?HeadingFont:BodyFont;
+    var font=(title||useMenuFont)&&HeadingFont?HeadingFont:BodyFont;
+    if(font)text.font=font;
     if(text.name=="Title")text.fontSize=Mathf.Max(38,text.fontSize);if(text.name=="PickerTitle")text.fontSize=32;
     if(text.GetComponentInParent<Button>(true)&&text.name!="Category")text.color=Color.white;
     if(text.name is "Title" or "PickerTitle" or "ClassesTitle" or "WeaponTitle")text.fontStyle=FontStyles.Bold;

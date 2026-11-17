@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading;
 
+using DeadQuarantine.PvPvE;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -24,6 +25,9 @@ public class MultiplayerLobbyController : MonoBehaviour
     [SerializeField] private GameObject accionesSalaPanel;
     [SerializeField] private Button botonConfigurarSala;
     [SerializeField] private GameObject codigoSalaPanel;
+
+    [SerializeField] private Button[] botonesEstiloMenu = Array.Empty<Button>();
+    [SerializeField] private Button[] botonesDestacados = Array.Empty<Button>();
 
     [Header("--- NETWORK ---")]
     [SerializeField] private NetworkBootstrap network;
@@ -130,6 +134,12 @@ public class MultiplayerLobbyController : MonoBehaviour
 
     private void Awake()
     {
+        foreach (var boton in botonesEstiloMenu)
+            PvPvEUIFactory.StyleMenuButton(boton);
+
+        foreach (var boton in botonesDestacados)
+            PvPvEUIFactory.StyleMenuButton(boton, showAccent: true);
+
         if (network == null)
             network = NetworkBootstrap.Instance;
 
@@ -509,7 +519,7 @@ public class MultiplayerLobbyController : MonoBehaviour
         {
             MostrarMensaje(
                 "FALTA CONFIGURAR",
-                "Elegí Modo, Mapa y Dificultad desde CONFIGURAR PARTIDA antes de marcarte listo."
+                "Elegí el modo, el mapa y la dificultad desde CONFIGURAR SALA antes de marcarte como listo."
             );
 
             InicializarConfiguradorPartida();
