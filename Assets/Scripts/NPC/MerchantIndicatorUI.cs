@@ -86,6 +86,33 @@ public class MerchantIndicatorUI : MonoBehaviour
 
         shopUI = transform.root.GetComponentInChildren<NPCShopUI>(true);
 
+        TMP_FontAsset fuenteIndicador = Resources.Load<TMP_FontAsset>("PvPvE/HeadingFont");
+        TextMeshProUGUI[] textosIndicador = { distanciaText, tiempoText, saltarComprasText };
+        float[] posicionesVerticales = { -100f, -160f, -220f };
+        for (int i = 0; i < textosIndicador.Length; i++)
+        {
+            TextMeshProUGUI texto = textosIndicador[i];
+            if (texto == null)
+                continue;
+
+            if (fuenteIndicador != null)
+                texto.font = fuenteIndicador;
+            texto.enableAutoSizing = false;
+            texto.fontSize = 32f;
+            texto.fontSizeMax = 32f;
+            texto.textWrappingMode = TextWrappingModes.NoWrap;
+            texto.overflowMode = TextOverflowModes.Ellipsis;
+            texto.alignment = TextAlignmentOptions.Center;
+            texto.margin = Vector4.zero;
+
+            RectTransform rect = texto.rectTransform;
+            rect.anchorMin = new Vector2(0.5f, 1f);
+            rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = new Vector2(0f, posicionesVerticales[i]);
+            rect.sizeDelta = new Vector2(420f, 48f);
+        }
+
         CrearTextoSaltarCompras();
 
         if (saltarComprasText != null)
