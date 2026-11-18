@@ -241,18 +241,6 @@ MonoBehaviour:
       NameHash: -823668238
       Synchronize: 1
       ParameterType: 1
-    - name: Attack
-      NameHash: 1080829965
-      Synchronize: 1
-      ParameterType: 9
-    - name: Death
-      NameHash: 646380074
-      Synchronize: 1
-      ParameterType: 9
-    - name: Hit
-      NameHash: 1654612129
-      Synchronize: 1
-      ParameterType: 9
     - name: MoveX
       NameHash: 675470966
       Synchronize: 1
@@ -297,8 +285,24 @@ MonoBehaviour:
       NameHash: -1772617784
       Synchronize: 1
       ParameterType: 3
+    - name: Attack
+      NameHash: 1080829965
+      Synchronize: 1
+      ParameterType: 9
+    - name: Hit
+      NameHash: 1654612129
+      Synchronize: 1
+      ParameterType: 9
+    - name: Death
+      NameHash: 646380074
+      Synchronize: 1
+      ParameterType: 9
     - name: Spawn
       NameHash: 1372578019
+      Synchronize: 1
+      ParameterType: 9
+    - name: CancelAttack
+      NameHash: 570516181
       Synchronize: 1
       ParameterType: 9
   AnimatorParametersExpanded: 0
@@ -388,13 +392,13 @@ MonoBehaviour:
   attackCooldown: 1.5
   attackHitDelay: 0.35
   attackAnimationMaxDuration: 3
+  attackCancelExtraDistance: 0.8
+  attackCancelRecovery: 0.35
   walkSpeed: 2
   runSpeed: 6
   baseSpeedBoost: 1.1
   locomotionDampTime: 0.12
   sprintChance: 0.25
-  rerollLocomotionOnMoveStart: 1
-  idleVariantChangeInterval: 5
   freezeDuringHitReaction: 1
   hitReactionEnterTimeout: 0.35
   hitReactionMaxDuration: 3
@@ -402,6 +406,17 @@ MonoBehaviour:
   groundSpawnEffectPrefab: {fileID: 1522700639015384, guid: 3a16b32bf79fd14489d750c7e43eba9d, type: 3}
   spawnStateEnterTimeout: 0.5
   spawnMaxDuration: 8
+  alturaMaximaAtaque: 1.6
+  capasBloqueanAtaque:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  alturaLineaAtaque: 1.1
+  attackApproachDistance: 1.35
+  repathInterval: 0.15
+  approachSampleRadius: 0.75
+  attackFacingSpeed: 540
+  attackFacingTolerance: 55
+  allowForwardJumpAttack: 0
   efectoAturdido: {fileID: 1406593679585224, guid: 415a745d154d60545b9ff3810609eba7, type: 3}
   alturaEfectoAturdido: 1.8
 --- !u!114 &8216558089616959420
@@ -429,6 +444,7 @@ MonoBehaviour:
   bloodImpactPrefab: {fileID: 1036925697551712, guid: a845e59c374ae0240812749e46f13033, type: 3}
   bloodDestroyDelay: 2
   usarHitReactionLocalizado: 1
+  playHitAnimation: 1
   radioDeteccionBrazo: 0.42
   umbralLateralBrazoFallback: 0.16
   crearHitboxesBrazosAutomaticas: 1
@@ -623,6 +639,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Scripts::ZombieAppearance
   ShowTopMostFoldoutHeaderGroup: 1
   models: {fileID: 6977040657042744275}
+  storyBossModel: {fileID: 0}
 --- !u!114 &7500000000000004001
 MonoBehaviour:
   m_ObjectHideFlags: 0

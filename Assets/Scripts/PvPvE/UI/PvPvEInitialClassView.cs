@@ -59,7 +59,7 @@ namespace DeadQuarantine.PvPvE.UI
   }
   public void OpenClassChange(){
    if(!deployment||!deployment.IsSpawned||!PauseController.LocalPlayerPaused)return;
-   changingLife=true;pending=false;notice="La nueva clase se aplicará en el próximo respawn.";
+   changingLife=true;pending=false;notice="El nuevo equipamiento se aplicará en el próximo respawn.";
    if(!root)Build();store.Load();Refresh();
   }
   void OnClassChangeReply(bool accepted,string error){if(!changingLife)return;pending=false;notice=error;if(accepted){changingLife=false;if(root)root.SetActive(false);}else Refresh();}
@@ -73,11 +73,11 @@ namespace DeadQuarantine.PvPvE.UI
    if(!root||disposed)return;var catalog=selector.Catalog;bool accepted=selector.TryGet(selector.NetworkManager.LocalClientId,out var approved)&&!changingLife;
    if(accepted){pending=false;selected=approved.ClassIndex;DisplayedClass=JsonUtility.FromJson<PvPvEClassDefinition>(approved.DefinitionJson.ToString());}else DisplayedClass=store.Get(selected);
    var c=DisplayedClass;bool valid=catalog.Validate(c,out string error);
-   title.text=accepted?"CLASE INICIAL CONFIRMADA":"SELECCIONAR CLASE";
+   title.text=accepted?"EQUIPAMIENTO INICIAL CONFIRMADO":"SELECCIONAR EQUIPAMIENTO";
    var close=root.transform.Find("CloseClassChange");if(close)close.gameObject.SetActive(changingLife);
-   personalized.text="CLASE PERSONALIZADA "+(selected+1);points.text=$"PICK 10  {catalog.Pick10Cost(c)}/10";points.color=valid?accent:new Color(1,.55f,.4f);
+   personalized.text="EQUIPAMIENTO PERSONALIZADO "+(selected+1);points.text=$"LÍMITE 10  {catalog.Pick10Cost(c)}/10";points.color=valid?accent:new Color(1,.55f,.4f);
    for(int i=0;i<5;i++){var definition=store.Get(i);var a=catalog.Find(definition.primary);var b=catalog.Find(definition.secondary);
-    classes[i].GetComponentInChildren<TMP_Text>().text="Clase personalizada "+(i+1);
+    classes[i].GetComponentInChildren<TMP_Text>().text="Equipamiento personalizado "+(i+1);
     classes[i].targetGraphic.color=i==selected?new Color(.29f,.21f,.10f):tile;classes[i].interactable=!accepted&&!pending;
    }
    primaryLabel.text="PRIMARIA · "+catalog.Find(c.primary).name;secondaryLabel.text="SECUNDARIA · "+catalog.Find(c.secondary).name;
@@ -87,12 +87,12 @@ namespace DeadQuarantine.PvPvE.UI
    var grenade=Array.Find(catalog.grenades,g=>g.id==c.grenade);var healing=catalog.FindHealing(c.healing);
    SetSummary(0,"GRANADA",(grenade==null?"NINGUNA":grenade.name+"\n"+catalog.GrenadeCapacity(c)+" UN."),grenade?.icon);
    SetSummary(1,"CURACIÓN",(healing==null?"NINGUNA":healing.name+$"\n{catalog.HealingCapacity(c)} UN. · {healing.healing} PV"),healing?.icon);
-   SetSummary(2,"PERKS",string.Join(" · ",Enumerable.Range(0,4).Select(i=>catalog.perks.Find(PvPvELoadoutCatalog.GetPerk(c,i))?.NameForPvPvE).Where(n=>n!=null)),catalog.perks.Find(c.perk1)?.IconForPvPvE);
-   SetSummary(3,"WILDCARDS",(catalog.wildcards.Find(c.wildcard1)?.name??"Ninguna")+"\n"+(catalog.wildcards.Find(c.wildcard2)?.name??"Ninguna"),catalog.wildcards.Find(c.wildcard1)?.icon);
+   SetSummary(2,"HABILIDADES",string.Join(" · ",Enumerable.Range(0,4).Select(i=>catalog.perks.Find(PvPvELoadoutCatalog.GetPerk(c,i))?.NameForPvPvE).Where(n=>n!=null)),catalog.perks.Find(c.perk1)?.IconForPvPvE);
+   SetSummary(3,"COMODINES",(catalog.wildcards.Find(c.wildcard1)?.name??"Ninguno")+"\n"+(catalog.wildcards.Find(c.wildcard2)?.name??"Ninguno"),catalog.wildcards.Find(c.wildcard1)?.icon);
    confirm.interactable=valid&&!accepted&&!pending&&(changingLife||selector.CanSelect(selector.NetworkManager.LocalClientId));
-   confirm.GetComponentInChildren<TMP_Text>().text=accepted?"CLASE CONFIRMADA":pending?"CONFIRMANDO…":"CONFIRMAR CLASE";
+   confirm.GetComponentInChildren<TMP_Text>().text=accepted?"EQUIPAMIENTO CONFIRMADO":pending?"CONFIRMANDO…":"CONFIRMAR EQUIPAMIENTO";
    reset.gameObject.SetActive(!changingLife&&!valid);reset.interactable=!changingLife&&!valid&&!accepted&&!pending;
-   status.text=accepted?(PvPvEPreparationFlow.Active?PvPvEPreparationFlow.Active.Status:"Clase aprobada por el servidor. Esperando la preparación de la partida."):!string.IsNullOrEmpty(notice)?notice:!valid?error:"Elegí una de tus cinco clases guardadas y confirmá.";
+   status.text=accepted?(PvPvEPreparationFlow.Active?PvPvEPreparationFlow.Active.Status:"Equipamiento aprobado por el servidor. Esperando la preparación de la partida."):!string.IsNullOrEmpty(notice)?notice:!valid?error:"Elegí uno de tus cinco equipamientos guardados y confirmá.";
   }
   string AttachmentSummary(WeaponAttachmentChoice choice)=>string.Join(" · ",Enum.GetValues(typeof(WeaponAttachmentKind)).Cast<WeaponAttachmentKind>().Select(kind=>(kind switch{WeaponAttachmentKind.Scope=>"Mira",WeaponAttachmentKind.Support=>"Soporte",WeaponAttachmentKind.Utility=>"Láser / linterna",_=>"Boca"})+": "+(selector.Catalog.attachments.Find(choice.Get(kind))?.displayName??"Ninguno")));
   void SetSummary(int i,string category,string value,Sprite icon){summary[i].text=category+"\n"+value;var image=summary[i].transform.parent.Find("Icon").GetComponent<Image>();image.sprite=icon;image.enabled=icon;}
@@ -102,7 +102,7 @@ namespace DeadQuarantine.PvPvE.UI
    canvas=root.GetComponent<Canvas>();canvas.renderMode=RenderMode.ScreenSpaceOverlay;canvas.sortingOrder=30000;
    var scaler=root.GetComponent<CanvasScaler>();scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize;scaler.referenceResolution=new Vector2(1600,900);scaler.matchWidthOrHeight=.5f;
    root.AddComponent<Image>().color=new Color(.008f,.018f,.022f,.98f);
-   title=Text("Title",root.transform,"SELECCIONAR CLASE",new(.03f,.89f),new(.96f,.97f),32,Color.white);
+   title=Text("Title",root.transform,"SELECCIONAR EQUIPAMIENTO",new(.03f,.89f),new(.96f,.97f),32,Color.white);
    Text("Hint",root.transform,"EQUIPAMIENTO INICIAL",new(.03f,.825f),new(.23f,.87f),17,accent);
    points=Text("Pick10",root.transform,"",new(.27f,.8f),new(.65f,.88f),26,accent);
    classes=new Button[5];for(int i=0;i<5;i++){int index=i;float top=.78f-i*.14f;classes[i]=Button("SavedClass_"+i,"",new(.03f,top-.12f),new(.24f,top));var label=classes[i].GetComponentInChildren<TMP_Text>();label.enableAutoSizing=true;label.fontSizeMin=16;label.fontSizeMax=20;classes[i].onClick.AddListener(()=>Choose(index));}
@@ -116,8 +116,8 @@ namespace DeadQuarantine.PvPvE.UI
     summary[i]=Text("Details",card,"",new(.04f,.03f),new(.96f,.93f),17,Color.white);
    }
    status=Text("Status",root.transform,"",new(.27f,.008f),new(.97f,.035f),14,accent);
-   reset=Button("ResetInvalidClass","RESTABLECER CLASE INVÁLIDA",new(.27f,.045f),new(.61f,.095f));reset.onClick.AddListener(()=>{if(!pending&&!selector.TryGet(selector.NetworkManager.LocalClientId,out _)){store.Reset(selected);notice="";Refresh();}});
-   confirm=Button("ConfirmInitialClass","CONFIRMAR CLASE",new(.66f,.045f),new(.97f,.095f));confirm.onClick.AddListener(Confirm);
+   reset=Button("ResetInvalidClass","RESTABLECER EQUIPAMIENTO INVÁLIDO",new(.27f,.045f),new(.61f,.095f));reset.onClick.AddListener(()=>{if(!pending&&!selector.TryGet(selector.NetworkManager.LocalClientId,out _)){store.Reset(selected);notice="";Refresh();}});
+   confirm=Button("ConfirmInitialClass","CONFIRMAR EQUIPAMIENTO",new(.66f,.045f),new(.97f,.095f));confirm.onClick.AddListener(Confirm);
    var back=Button("CloseClassChange","VOLVER A PAUSA",new(.77f,.90f),new(.97f,.97f));back.onClick.AddListener(()=>CloseClassChange());back.gameObject.AddComponent<CanvasGroup>();
    PvPvEUIFactory.Polish(root.transform, page: true, useMenuFont: true);root.SetActive(false);Refresh();
   }

@@ -14,7 +14,7 @@ namespace DeadQuarantine.PvPvE
   public PvPvEClassStore(PvPvELoadoutCatalog catalog,string profile="local"){this.catalog=catalog;key=Key+"."+profile;Load();}
   public PvPvEClassDefinition Get(int index){if(index<0||index>=5)throw new ArgumentOutOfRangeException(nameof(index));return classes[index].Copy();}
   public bool Save(int index,PvPvEClassDefinition draft,out string error){
-   error="";if(index<0||index>=5){error="Clase inválida.";return false;}
+   error="";if(index<0||index>=5){error="Equipamiento inválido.";return false;}
    if(!catalog.Validate(draft,out error))return false;
    classes[index]=draft.Copy();Persist();Changed?.Invoke();return true;
   }

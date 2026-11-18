@@ -30,6 +30,7 @@ public class PlayerDamageEffects : MonoBehaviour
 
     private Coroutine shakeCoroutine;
     private Image damageArc;
+    private Image acidVignette;
     private Texture2D arcTexture;
     private Sprite arcSprite;
     private float arcStarted;
@@ -95,6 +96,7 @@ public class PlayerDamageEffects : MonoBehaviour
     private void OnDestroy()
     {
         if (damageArc) Destroy(damageArc.gameObject);
+        if (acidVignette) Destroy(acidVignette.gameObject);
         if (arcSprite) Destroy(arcSprite);
         if (arcTexture) Destroy(arcTexture);
         if (playerHealth != null)
@@ -121,6 +123,25 @@ public class PlayerDamageEffects : MonoBehaviour
     private void LateUpdate()
     {
         if (damageArc && damageArc.enabled) UpdateDamageArc();
+        bool acid = playerHealth && playerHealth.HasStalkerAcid && networkObject && networkObject.IsOwner;
+        if (acid && !acidVignette && damageVignette)
+        {
+            acidVignette = new GameObject("Acido del Acechador", typeof(Image)).GetComponent<Image>();
+            acidVignette.transform.SetParent(damageVignette.transform.parent, false);
+            acidVignette.sprite = damageVignette.sprite;
+            acidVignette.type = damageVignette.type;
+            acidVignette.raycastTarget = false;
+            var rect = acidVignette.rectTransform;
+            rect.anchorMin = damageVignette.rectTransform.anchorMin; rect.anchorMax = damageVignette.rectTransform.anchorMax;
+            rect.pivot = damageVignette.rectTransform.pivot; rect.anchoredPosition = damageVignette.rectTransform.anchoredPosition;
+            rect.sizeDelta = damageVignette.rectTransform.sizeDelta;
+            acidVignette.transform.SetSiblingIndex(damageVignette.transform.GetSiblingIndex() + 1);
+        }
+        if (acidVignette)
+        {
+            acidVignette.enabled = acid;
+            acidVignette.color = new Color(.35f, .85f, .05f, .09f + Mathf.Sin(Time.unscaledTime * 4) * .025f);
+        }
     }
 
     private void UpdateDamageArc()

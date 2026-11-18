@@ -2666,7 +2666,8 @@ Transform:
   m_LocalPosition: {x: -0.000045919798, y: 0.06247511, z: 0.02164003}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 8671190410173929774}
   m_Father: {fileID: 4321528544197370}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1912025797815028
@@ -2982,8 +2983,9 @@ GameObject:
   - component: {fileID: 5607981109692506505}
   - component: {fileID: 7500000000000004003}
   - component: {fileID: 8914831435575262990}
+  - component: {fileID: 1944439484194429237}
   m_Layer: 12
-  m_Name: ZombieBoss02
+  m_Name: ZombieAcechador
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2999,7 +3001,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.7, y: 1.7, z: 1.7}
+  m_LocalScale: {x: 1.1, y: 1.1, z: 1.1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4953690599616086}
@@ -3017,10 +3019,10 @@ Animator:
   m_GameObject: {fileID: 1960997148460282}
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: 03336d372b3854043b18096209507e9b, type: 3}
-  m_Controller: {fileID: 9100000, guid: fca6af1bf88e90f48ac946d0430cc9ce, type: 2}
-  m_CullingMode: 1
+  m_Controller: {fileID: 9100000, guid: 867776026eb703a43aa34602e6dfded8, type: 2}
+  m_CullingMode: 0
   m_UpdateMode: 0
-  m_ApplyRootMotion: 1
+  m_ApplyRootMotion: 0
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
@@ -3038,16 +3040,16 @@ NavMeshAgent:
   m_GameObject: {fileID: 1960997148460282}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 0.4
+  m_Radius: 0.38
   m_Speed: 1.5
   m_Acceleration: 8
   avoidancePriority: 50
   m_AngularSpeed: 120
-  m_StoppingDistance: 1.5
-  m_AutoTraverseOffMeshLink: 1
+  m_StoppingDistance: 0.35
+  m_AutoTraverseOffMeshLink: 0
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_Height: 2
+  m_Height: 1.9
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
@@ -3070,10 +3072,10 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.5
-  m_Height: 1.925291
+  m_Radius: 0.35
+  m_Height: 1.7
   m_Direction: 1
-  m_Center: {x: 0, y: 0.8649491, z: 0}
+  m_Center: {x: 0, y: 0.85, z: 0}
 --- !u!114 &3849132959168163648
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3117,25 +3119,100 @@ MonoBehaviour:
   NetworkAnimatorExpanded: 0
   AuthorityMode: 0
   m_Animator: {fileID: 95075453375667064}
-  TransitionStateInfoList: []
+  TransitionStateInfoList:
+  - IsCrossFadeExit: 0
+    Layer: 0
+    OriginatingState: 2087060975
+    DestinationState: -70904033
+    TransitionDuration: 0.08
+    TriggerNameHash: 574928312
+    TransitionIndex: 1
   AnimatorParameterEntries:
     ParameterEntries:
     - name: Speed
       NameHash: -823668238
       Synchronize: 1
       ParameterType: 1
+    - name: MoveX
+      NameHash: 675470966
+      Synchronize: 1
+      ParameterType: 1
+    - name: MoveY
+      NameHash: 1598418656
+      Synchronize: 1
+      ParameterType: 1
+    - name: IdleVariant
+      NameHash: -1623148628
+      Synchronize: 1
+      ParameterType: 1
+    - name: WalkVariant
+      NameHash: -1872527081
+      Synchronize: 1
+      ParameterType: 1
+    - name: RunVariant
+      NameHash: -2102635681
+      Synchronize: 1
+      ParameterType: 1
+    - name: SprintVariant
+      NameHash: 200000594
+      Synchronize: 1
+      ParameterType: 1
+    - name: Running
+      NameHash: -526601997
+      Synchronize: 1
+      ParameterType: 4
+    - name: Sprint
+      NameHash: -399748991
+      Synchronize: 1
+      ParameterType: 4
+    - name: Spawning
+      NameHash: 1861146890
+      Synchronize: 1
+      ParameterType: 4
+    - name: AttackIndex
+      NameHash: 1829795364
+      Synchronize: 1
+      ParameterType: 3
+    - name: HitIndex
+      NameHash: -1772617784
+      Synchronize: 1
+      ParameterType: 3
     - name: Attack
       NameHash: 1080829965
-      Synchronize: 1
-      ParameterType: 9
-    - name: Death
-      NameHash: 646380074
       Synchronize: 1
       ParameterType: 9
     - name: Hit
       NameHash: 1654612129
       Synchronize: 1
       ParameterType: 9
+    - name: Death
+      NameHash: 646380074
+      Synchronize: 1
+      ParameterType: 9
+    - name: Spawn
+      NameHash: 1372578019
+      Synchronize: 1
+      ParameterType: 9
+    - name: Acid
+      NameHash: -1231167342
+      Synchronize: 1
+      ParameterType: 9
+    - name: Escape
+      NameHash: 574928312
+      Synchronize: 1
+      ParameterType: 9
+    - name: Traverse
+      NameHash: 415510058
+      Synchronize: 1
+      ParameterType: 9
+    - name: Traversing
+      NameHash: -740917142
+      Synchronize: 1
+      ParameterType: 4
+    - name: LocomotionRate
+      NameHash: 525967399
+      Synchronize: 1
+      ParameterType: 1
   AnimatorParametersExpanded: 0
 --- !u!114 &3481732289097150300
 MonoBehaviour:
@@ -3197,11 +3274,34 @@ MonoBehaviour:
   m_EditorClassIdentifier: Scripts::ZombieAI
   ShowTopMostFoldoutHeaderGroup: 1
   attackRange: 1.8
-  attackDamage: 30
+  attackDamage: 10
+  useDifficultyDamageOverride: 1
   attackCooldown: 1.5
   attackHitDelay: 0.35
-  walkSpeed: 1.5
-  runSpeed: 3
+  attackAnimationMaxDuration: 3
+  walkSpeed: 2
+  runSpeed: 7.7999997
+  baseSpeedBoost: 1
+  locomotionDampTime: 0.12
+  sprintChance: 0
+  freezeDuringHitReaction: 0
+  hitReactionEnterTimeout: 0.35
+  hitReactionMaxDuration: 3
+  emergeFromGround: 0
+  groundSpawnEffectPrefab: {fileID: 0}
+  spawnStateEnterTimeout: 0.5
+  spawnMaxDuration: 8
+  alturaMaximaAtaque: 1.6
+  capasBloqueanAtaque:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  alturaLineaAtaque: 1.1
+  attackApproachDistance: 1.35
+  repathInterval: 0.15
+  approachSampleRadius: 0.75
+  attackFacingSpeed: 540
+  attackFacingTolerance: 55
+  allowForwardJumpAttack: 0
   efectoAturdido: {fileID: 1406593679585224, guid: 415a745d154d60545b9ff3810609eba7, type: 3}
   alturaEfectoAturdido: 1.8
 --- !u!82 &1408592114313194350
@@ -3226,7 +3326,7 @@ AudioSource:
   Priority: 10
   DopplerLevel: 1
   MinDistance: 1
-  MaxDistance: 500
+  MaxDistance: 30
   Pan2D: 0
   rolloffMode: 0
   BypassEffects: 0
@@ -3261,7 +3361,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0
+      value: 1
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -3314,23 +3414,69 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Scripts::ZombieAudio
   growlClips:
-  - {fileID: 8300000, guid: d8ed6de78016b1845a944dd84e455c81, type: 3}
-  growlIntervalMin: 1
-  growlIntervalMax: 10
-  runGrowlClips: []
-  runGrowlIntervalMin: 1.5
-  runGrowlIntervalMax: 4
+  - {fileID: 8300000, guid: caabd0ed789c70c40a3a3b9e70e0769b, type: 3}
+  - {fileID: 8300000, guid: 6566b738dabbe444eb8709add13c194d, type: 3}
+  - {fileID: 8300000, guid: 27ed0d08aae23fe47b9e7abf5a9427ae, type: 3}
+  - {fileID: 8300000, guid: 1da406167bc885e4583f9b81d1c9f272, type: 3}
+  - {fileID: 8300000, guid: ea2772511173fb44e900ead36164c944, type: 3}
+  - {fileID: 8300000, guid: b67f721fec790214babc42989bf91858, type: 3}
+  growlIntervalMin: 3
+  growlIntervalMax: 6
+  runGrowlClips:
+  - {fileID: 8300000, guid: d577b2e686516f742a21edeece5e20bc, type: 3}
+  - {fileID: 8300000, guid: c9804c38cd7219844a84f30d66996de7, type: 3}
+  - {fileID: 8300000, guid: 0bb5f7f82c909fa428b1b08b5956247a, type: 3}
+  - {fileID: 8300000, guid: 4645b9ea34ca7c346b928d612bba1f68, type: 3}
+  - {fileID: 8300000, guid: 063d25197bce189498627ca3fe3d01f8, type: 3}
+  - {fileID: 8300000, guid: bfbd831b685f692408fc0458e7e3ed23, type: 3}
+  - {fileID: 8300000, guid: 9127c3a2e55e9fe4aaa46dc7e681acd3, type: 3}
+  - {fileID: 8300000, guid: 857247bc4f908624ab42dd5b4c2f0d25, type: 3}
+  - {fileID: 8300000, guid: 4ef3e474fdc4a994892201152389bba4, type: 3}
+  runGrowlIntervalMin: 1
+  runGrowlIntervalMax: 3
   footstepClips:
   - {fileID: 8300000, guid: 5bf350cfd986b7e41b0c4950468cd4f4, type: 3}
   footstepInterval: 33
   movementThreshold: 0.1
-  behindPlayerClips: []
+  behindPlayerClips:
+  - {fileID: 8300000, guid: 4f12f7693d465ee48ac131cd7ebb4f92, type: 3}
+  - {fileID: 8300000, guid: 9ba73147e8384df458f0ac48b814238e, type: 3}
+  - {fileID: 8300000, guid: a53b3f1b7fe262842b6b4f7a2a6b4be2, type: 3}
+  - {fileID: 8300000, guid: 45a8cd9733ecdb24396616d61290e0fd, type: 3}
+  - {fileID: 8300000, guid: 02ce5d2a19048294383c95580987d4d2, type: 3}
+  - {fileID: 8300000, guid: 4db241cdeea59ec418f34d1940f5116b, type: 3}
   behindPlayerIntervalMin: 2
   behindPlayerIntervalMax: 5
-  attackClips: []
+  attackClips:
+  - {fileID: 8300000, guid: dc06a813d70d63748b26867abacf9d7a, type: 3}
+  - {fileID: 8300000, guid: 320b1ebea2f34f34c84260d831f198e7, type: 3}
+  - {fileID: 8300000, guid: 1c8d69c4a8eb61d48ae707b255cdc6f8, type: 3}
+  - {fileID: 8300000, guid: b1102543e36176147b03f74aae28ba8f, type: 3}
+  - {fileID: 8300000, guid: e479d20d59a58e54dac91da19e2f4120, type: 3}
+  - {fileID: 8300000, guid: 7f686ed79e5cf4c45a10fbc816d24f8f, type: 3}
+  - {fileID: 8300000, guid: eed7046f3adee3044b9d0d72f4cbd9c1, type: 3}
+  - {fileID: 8300000, guid: 01f4bfff4bc6e6a43a20492f3cacd3d5, type: 3}
+  - {fileID: 8300000, guid: 37eae858eb35f4a40b8ffea834da9f11, type: 3}
+  - {fileID: 8300000, guid: 3598e5224684c10479d4b37d4bc66530, type: 3}
+  - {fileID: 8300000, guid: 5dedc8f3b0ff6954697b256062f13ce4, type: 3}
+  - {fileID: 8300000, guid: d52386b4bf4b7cd47bac3477614e36ef, type: 3}
+  - {fileID: 8300000, guid: b10857834bb9646418e6d7581ab18497, type: 3}
+  - {fileID: 8300000, guid: 18535fab4bd2b2f40a46827fa2af3876, type: 3}
+  - {fileID: 8300000, guid: c4a52fa261353264db810e3673d61c7a, type: 3}
+  - {fileID: 8300000, guid: b6921e5e2e125c34b9c120c76c170a65, type: 3}
   hitClips: []
   deathClips:
-  - {fileID: 8300000, guid: ab28161855d29a3449c746b316fd80f4, type: 3}
+  - {fileID: 8300000, guid: d12f1ebb3f2701944ae759d2ce339da4, type: 3}
+  - {fileID: 8300000, guid: de92bfa459bc6d243963ad456d969cf8, type: 3}
+  - {fileID: 8300000, guid: eff390e25ef915f488aa4d812ab51141, type: 3}
+  - {fileID: 8300000, guid: c545ccab0cef23f44b1b35bc2219721b, type: 3}
+  - {fileID: 8300000, guid: 6f69780a856c45043971ef929282a69b, type: 3}
+  - {fileID: 8300000, guid: c290b4673dad38542b33ec398a1b5563, type: 3}
+  - {fileID: 8300000, guid: 1e7037042959937448b0e6f057438e4f, type: 3}
+  - {fileID: 8300000, guid: 01957faa8c1a3f94aa9d65a80bf85477, type: 3}
+  - {fileID: 8300000, guid: 656d05b5e5fccd745b5e3b64fb902c53, type: 3}
+  - {fileID: 8300000, guid: 2a6f0bac4eb0d014f8a19b8bb095ae03, type: 3}
+  - {fileID: 8300000, guid: ef4294511edbd1b45a5b8c22c232f731, type: 3}
 --- !u!114 &5607981109692506505
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3344,8 +3490,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Scripts::ZombieHealth
   ShowTopMostFoldoutHeaderGroup: 1
-  maxHealth: 100
+  maxHealth: 140
   destroyDelay: 3
+  useRagdollOnDeath: 1
   healthSlider: {fileID: 8559503093539802652}
   healthFillImage: {fileID: 1331786148333997105}
   healthBarCanvas: {fileID: 1791440747401126125}
@@ -3354,6 +3501,13 @@ MonoBehaviour:
   colorVidaBaja: {r: 1, g: 0, b: 0, a: 1}
   bloodImpactPrefab: {fileID: 1968586304485042, guid: 6c86c599d7bf3464eb4506d2584fbe57, type: 3}
   bloodDestroyDelay: 2
+  usarHitReactionLocalizado: 1
+  playHitAnimation: 0
+  radioDeteccionBrazo: 0.42
+  umbralLateralBrazoFallback: 0.16
+  crearHitboxesBrazosAutomaticas: 1
+  radioHitboxBrazo: 0.12
+  extensionHitboxBrazo: 0.06
   efectoQuemadura: {fileID: 1853590768085000, guid: 1356dc656cdf1654faa01a76e60e6b45, type: 3}
   alturaEfectoQuemadura: 1
 --- !u!114 &7500000000000004003
@@ -3368,7 +3522,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56f86d9f5386404da3b56db345ed94e8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Scripts::DropRecursosZombie
-  tabla: {fileID: 11400000, guid: 4a52f8e03dec4db8aaa35a47a731c50f, type: 2}
+  tabla: {fileID: 11400000, guid: 69a2a24b4f4e4c5faceea1655a6e0f50, type: 2}
   prefabRecurso: {fileID: 7500000000000003003, guid: 1c84733243a847f9a92a4cb928321719, type: 3}
   escenaSinDrops: TutorialScene
   alturaSobreElPiso: 0.35
@@ -3397,6 +3551,46 @@ MonoBehaviour:
   - 0.3
   reduccionPorRonda: 0.01
   porcentajeMinimo: 0.2
+--- !u!114 &1944439484194429237
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1960997148460282}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e35a9ba8e35bdb418bf326b109a62a9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::ZombieStalker
+  ShowTopMostFoldoutHeaderGroup: 0
+  preferredNear: 15
+  preferredFar: 25
+  retreatDistance: 9
+  resumeAttackDistance: 14
+  attackRange: 32
+  attackCooldown: 3
+  coverPause: 1.8
+  decisionInterval: 1.5
+  maxPositionTime: 6
+  positionSamples: 20
+  maxNavigableHeight: 8
+  acidBallSpeed: 40
+  acidBallRadius: 0.3
+  acidGravity: 1.5
+  acidReleasePhase: 0.45
+  acidAimLockPhase: 0.42
+  acidLeadFraction: 0.9
+  acidMaxLead: 4.5
+  acidDuration: 4
+  acidDamagePerSecond: 4
+  acidImpactDamage: 15
+  acidMaterial: {fileID: 2100000, guid: 10fb0db75c4340f4a92095c31b46aaa2, type: 2}
+  mouth: {fileID: 8671190410173929774}
+  jumpDuration: 1.5000001
+  jumpArc: 0.65
+  maxLinkDistance: 4
+  maxLinkHeight: 2
 --- !u!1 &1972321633568710
 GameObject:
   m_ObjectHideFlags: 0
@@ -3532,6 +3726,37 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!1 &3058170054608463742
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8671190410173929774}
+  m_Layer: 0
+  m_Name: Boss Acid Origin
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8671190410173929774
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3058170054608463742}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.000000001869921, y: -0.023529328, z: 0.10588235}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4101672376824560}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3173250842366431873
 GameObject:
   m_ObjectHideFlags: 0

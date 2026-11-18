@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.UI;
 using Unity.Netcode;
@@ -31,6 +31,8 @@ public class ZombieHealth : NetworkBehaviour
     [Header("--- HIT REACTION LOCALIZADO ---")]
     [Tooltip("Cabeza = Head, brazo izquierdo = LeftArm, brazo derecho = RightArm. Torso y piernas no interrumpen la locomoción.")]
     [SerializeField] private bool usarHitReactionLocalizado = true;
+    [Tooltip("Desactivado: conserva daño, sangre y sonido, sin reproducir animación de impacto.")]
+    [SerializeField] private bool playHitAnimation = true;
     [Tooltip("Distancia máxima en metros entre el punto del disparo y la cadena de huesos del brazo para considerarlo un impacto en ese brazo.")]
     [SerializeField] private float radioDeteccionBrazo = 0.42f;
     [Tooltip("Fallback para rigs no Humanoid: distancia lateral mínima respecto al centro para considerar que el disparo fue al brazo.")]
@@ -591,6 +593,10 @@ private void TakeDamageServerRpc(
                 hitVariantExplicito
             );
 
+            // Boss specials must stay synchronized: ordinary bullet reactions
+            // cannot interrupt the remote Animator while the server keeps attacking.
+            if (zombieAI != null && zombieAI.HasBossCombat) hitVariant = -1;
+
             if (zombieAI != null && hitVariant >= 0)
                 zombieAI.ReaccionarAlImpacto(hitVariant);
 
@@ -630,6 +636,8 @@ private void TakeDamageServerRpc(
         bool esHeadshot,
         int hitVariantExplicito)
     {
+        if (!playHitAnimation) return -1;
+
         // Los AnimationDriver (perro zombie, etc.) mantienen su reacción propia.
         if (animationDriver != null)
             return 0;

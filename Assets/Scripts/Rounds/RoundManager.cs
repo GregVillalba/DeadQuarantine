@@ -31,6 +31,81 @@ public class RoundManager : NetworkBehaviour
 
     [Header("Boss")]
     [SerializeField] private GameObject[] bossPrefabs;
+    [SerializeField] private GameObject stalkerPrefab;
+    [System.Serializable]
+    private struct SurvivalStalkerTier
+    {
+        [Min(5)] public int firstRound;
+        [Range(0, 4)] public int maxAlive;
+        public SurvivalStalkerTier(int round, int alive) { firstRound = round; maxAlive = alive; }
+    }
+
+    [Header("Acechador: progresión de Supervivencia")]
+    [Tooltip("Límite global de vivos simultáneos desde cada ronda; no limita el total de apariciones.")]
+    [SerializeField] private SurvivalStalkerTier[] survivalStalkerTiers =
+    {
+        new(5, 1), new(10, 2), new(15, 3), new(20, 4)
+    };
+    [Tooltip("X: ronda. Y: probabilidad (0–1) por oportunidad, después de un spawn normal. Se suma sin reemplazar normales.")]
+    [SerializeField] private AnimationCurve survivalStalkerChanceByRound = AnimationCurve.Linear(5, .04f, 30, .18f);
+    [Tooltip("Separación mínima entre Acechadores. No fuerza apariciones al cumplirse el tiempo.")]
+    [Min(1)] [SerializeField] private float survivalStalkerSpawnSpacing = 12;
+    private float nextSurvivalStalkerSpawn;
+
+    private int SurvivalStalkerAliveLimit(int round)
+    {
+        if (round < 5 || survivalStalkerTiers == null) return 0;
+        int latestRound = 0, limit = 0;
+        foreach (var tier in survivalStalkerTiers)
+        {
+            int firstRound = Mathf.Max(5, tier.firstRound);
+            if (firstRound <= round && firstRound >= latestRound)
+            {
+                latestRound = firstRound;
+                limit = Mathf.Clamp(tier.maxAlive, 0, 4);
+            }
+        }
+        return limit;
+    }
+    private float SurvivalStalkerChance(int round) => round < 5 || survivalStalkerChanceByRound == null
+        ? 0 : Mathf.Clamp01(survivalStalkerChanceByRound.Evaluate(round));
+    private int storyStalkersCreated, storyNormalsCreated;
+    private Transform stalkerScenarioKey;
+    internal GameModeConfig StalkerRulesMode => RulesMode;
+    int AliveStalkers()
+    {
+        int count = 0;
+        foreach (var stalker in FindObjectsByType<ZombieStalker>())
+            if (stalker.IsSpawned && stalker.IsServer && stalker.NetworkManager == NetworkManager && !stalker.GetComponent<ZombieHealth>().IsDead) count++;
+        return count;
+    }
+    internal bool CanSpawnSurvivalStalker(int round, float roll) =>
+        IsServer && stalkerPrefab && !TutorialEscena.EsActiva && !EsModoHistoria &&
+        !DeadQuarantine.PvPvE.PvPvEZombieDirector.Active &&
+        ZombieStalker.AllowsSurvival(RulesMode, round) &&
+        Time.time >= nextSurvivalStalkerSpawn && AliveStalkers() < SurvivalStalkerAliveLimit(round) &&
+        (RulesMode.maxAliveAtOnce <= 0 || zombiesSpawnedThisRound - zombiesKilledThisRound < RulesMode.maxAliveAtOnce) &&
+        roll < SurvivalStalkerChance(round);
+
+    private bool TrySpawnSurvivalStalker(int round, Transform point, int health, float speedMultiplier, float roll)
+    {
+        if (!CanSpawnSurvivalStalker(round, roll) ||
+            !SpawnZombie(stalkerPrefab, point, health, true, speedMultiplier)) return false;
+
+        zombiesSpawnedThisRound++;
+        ZombiesThisRoundNetwork.Value++;
+        AliveZombiesNetwork.Value++;
+        nextSurvivalStalkerSpawn = Time.time + Mathf.Max(1, survivalStalkerSpawnSpacing);
+        return true;
+    }
+    bool CanSpawnStoryStalker()
+    {
+        int players = 0;
+        foreach (var client in NetworkManager.ConnectedClientsList) if (client.PlayerObject) players++;
+        return stalkerPrefab && EsModoHistoria && !DeadQuarantine.PvPvE.PvPvEZombieDirector.Active &&
+            storyStalkersCreated < ZombieStalker.StoryBudget(players) && AliveStalkers() < 2 &&
+            storyNormalsCreated >= 6 + storyStalkersCreated * 8;
+    }
     [SerializeField] private int bossRound = 5;
     [SerializeField] private int bossHealthMultiplier = 10;
 
@@ -408,6 +483,12 @@ StartCoroutine(WaitForAllPlayersAtSpawnThenStart(1));*/
     }
 
     spawnPoints = nuevosSpawnPoints;
+    Transform scenarioKey = System.Array.Find(spawnPoints, point => point != null);
+    if (scenarioKey != stalkerScenarioKey)
+    {
+        stalkerScenarioKey = scenarioKey;
+        storyStalkersCreated = storyNormalsCreated = 0;
+    }
 
     Debug.Log(
         "[RoundManager] Spawn Points del escenario configurados correctamente. " +
@@ -1046,6 +1127,7 @@ public void StartRound(int round)
 
         int dogsRemaining = dogZombiesToSpawn;
         int normalsRemaining = normalOnlyToSpawn;
+        nextSurvivalStalkerSpawn = Time.time + Mathf.Max(1, survivalStalkerSpawnSpacing);
 
         if (dogZombiesToSpawn > 0)
         {
@@ -1095,10 +1177,7 @@ public void StartRound(int round)
                 (normalsRemaining <= 0 ||
                  Random.value < (dogsRemaining / (float)enemiesRemaining));
 
-            GameObject prefabToSpawn =
-                spawnDog
-                    ? dogZombiePrefab
-                    : zombiePrefab;
+            GameObject prefabToSpawn = spawnDog ? dogZombiePrefab : zombiePrefab;
 
             int enemyHealth =
                 spawnDog && activeMode != null
@@ -1125,6 +1204,10 @@ public void StartRound(int round)
                     dogsRemaining--;
                 else
                     normalsRemaining--;
+
+                // Separate, staggered opportunity: normal/dog quotas and their probabilities stay intact.
+                if (!spawnDog)
+                    TrySpawnSurvivalStalker(round, spawnPoint, zombieHealthThisRound, speedMultiplier, Random.value);
             }
 
             if (
@@ -1335,8 +1418,12 @@ private IEnumerator HistoriaSpawnRoutine()
         if (AliveZombiesNetwork.Value < limite)
         {
             Transform spawnPoint = ObtenerSpawnAleatorioHistoria();
-            if (spawnPoint != null && SpawnZombie(zombiePrefab, spawnPoint, balance.Vida, true))
+            bool ranged = CanSpawnStoryStalker();
+            if (spawnPoint != null && SpawnZombie(ranged ? stalkerPrefab : zombiePrefab, spawnPoint, balance.Vida, true))
+            {
                 AliveZombiesNetwork.Value++;
+                if (ranged) storyStalkersCreated++; else storyNormalsCreated++;
+            }
         }
 
         yield return new WaitForSeconds(Random.Range(balance.Intervalo.x, balance.Intervalo.y));
@@ -1489,6 +1576,9 @@ private bool SpawnZombieAtPosition(
     bool patrullaHistoria = false
 )
 {
+    if (prefab.TryGetComponent<ZombieStalker>(out _) &&
+        (esBossHistoria || DeadQuarantine.PvPvE.PvPvEZombieDirector.Active ||
+        !EsModoHistoria && !ZombieStalker.AllowsSurvival(RulesMode, CurrentRoundNetwork.Value))) return false;
     GameObject zombieInstance = Instantiate(prefab, position, rotation);
 
     ZombieAppearance zombieAppearance =
@@ -1512,6 +1602,17 @@ private bool SpawnZombieAtPosition(
 
     if (zombieHealthComponent != null)
     {
+        // Only prefabs with the exclusive boss component receive encounter scaling.
+        var bossCombat = zombieInstance.GetComponent<ZombieBossCombat>();
+        if (bossCombat != null)
+        {
+            int participants = 0;
+            foreach (var client in NetworkManager.ConnectedClientsList)
+                if (client.PlayerObject && client.PlayerObject.GetComponent<PlayerHealth>()) participants++;
+            health = bossCombat.EncounterHealth(health, participants);
+        }
+        if (zombieInstance.GetComponent<ZombieStalker>())
+            health = ZombieStalker.HealthFor(health, (DifficultyLevel)DifficultyNetwork.Value);
         zombieHealthComponent.InitializeHealth(health);
 
         if (esBossHistoria)
@@ -1563,7 +1664,7 @@ private bool SpawnZombieAtPosition(
             in bossPrefabs
         )
         {
-            if (bossPrefab != null)
+            if (bossPrefab != null && !bossPrefab.GetComponent<ZombieStalker>())
                 return true;
         }
 
@@ -1582,7 +1683,7 @@ private bool SpawnZombieAtPosition(
             in bossPrefabs
         )
         {
-            if (bossPrefab != null)
+            if (bossPrefab != null && !bossPrefab.GetComponent<ZombieStalker>())
             {
                 availableBosses++;
             }
@@ -1602,7 +1703,7 @@ private bool SpawnZombieAtPosition(
             in bossPrefabs
         )
         {
-            if (bossPrefab == null)
+            if (bossPrefab == null || bossPrefab.GetComponent<ZombieStalker>())
                 continue;
 
             if (selectedBoss == 0)

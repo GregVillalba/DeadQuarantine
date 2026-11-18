@@ -36,7 +36,7 @@ public class CharacterSelectMenu : MonoBehaviour
     [Header("Datos")]
     [SerializeField] private CharacterCatalog catalog;
 
-    [Header("Tarjetas de clase (Scout, Soldier, Tank)")]
+    [Header("Tarjetas de equipamiento (Scout, Soldier, Tank)")]
     [SerializeField] private ClassSlot[] classSlots;
 
     [Header("Variante")]

@@ -10,9 +10,9 @@ using UnityEngine;
 /// Va en el mismo GameObject de siempre (el que tiene el componente Camera), así
 /// Weapon.cs sigue llamando cameraRecoil.Fire() sin cambiar referencias.
 ///
-/// RECOIL = RecoilMotion del original con SO_WEP_Recoil_Camera: se evalúan las curvas
-/// de rotación con el nº de disparos seguidos. La cámara SUBE ~1,2° por disparo y llega
-/// a ~12° en una ráfaga larga, con un leve vaivén de yaw/roll; al soltar vuelve sola.
+/// RECOIL: las armas actuales acumulan sus grados efectivos por bala durante una
+/// ráfaga y recuperan la posición al dejar de disparar. Las llamadas antiguas
+/// conservan las curvas originales y sus multiplicadores.
 /// SALTO / ATERRIZAJE = SO_AC_Jump / Fall / Land _Camera (cabeceo corto al saltar y
 /// al caer). Todo con los keyframes y resortes reales del original.
 ///
@@ -77,7 +77,9 @@ public class CameraRecoil : MonoBehaviour
     private float visibleYawKick;
     private bool numericRecoil;
     private float recoverySeconds = .2f;
+    private float recoveryStartsAt;
     private WeaponSwitcher equippedWeapons;
+    private PlayerHealth bossImpactHealth;
     private float lastFireTime = -999f;
     private bool lastAiming;
     private bool sourceProfile;
@@ -166,7 +168,7 @@ public class CameraRecoil : MonoBehaviour
 
     /// <summary>Lo llama Weapon.cs en cada disparo.</summary>
     public void Fire(RecoilPreset preset, bool aiming, float intensityMultiplier = 1f, bool authoredProfile = false,
-        Vector2? attachmentAxes = null, Vector2? kickDegrees = null, float recovery = .2f)
+        Vector2? attachmentAxes = null, Vector2? kickDegrees = null, float recovery = .2f, float shotInterval = .1f, WeaponHandlingStatistics profile = null)
     {
         if (Time.time - lastFireTime > comboResetDelay)
             shotsFired = 0;
@@ -174,10 +176,17 @@ public class CameraRecoil : MonoBehaviour
         shotsFired++;
         numericRecoil = kickDegrees.HasValue;
         recoverySeconds = Mathf.Clamp(recovery, .02f, 2f);
+        recoveryStartsAt = Time.time + Mathf.Clamp(shotInterval * 1.35f, .1f, .35f);
         if (numericRecoil)
         {
-            visiblePitchKick = Mathf.Min(25f, visiblePitchKick + Mathf.Max(0, kickDegrees.Value.x));
-            visibleYawKick = Mathf.Clamp(visibleYawKick + Random.Range(-kickDegrees.Value.y, kickDegrees.Value.y), -15f, 15f);
+            float kickScale = profile == null ? 1f : shotsFired == 1 ? profile.firstShotRecoilMultiplier :
+                Mathf.Lerp(1f, profile.sustainedRecoilMultiplier,
+                    Mathf.Clamp01((shotsFired - 2f) / Mathf.Max(1, profile.recoilRampShots - 2)));
+            float lateral = profile == null ? Random.Range(-1f, 1f) :
+                Mathf.Sin((shotsFired - 1) * .72f + profile.horizontalRecoilBias * Mathf.PI) * .75f +
+                profile.horizontalRecoilBias * .25f;
+            visiblePitchKick = Mathf.Min(70f, visiblePitchKick + Mathf.Max(0, kickDegrees.Value.x) * kickScale);
+            visibleYawKick = Mathf.Clamp(visibleYawKick + kickDegrees.Value.y * lateral, -15f, 15f);
         }
         else
         {
@@ -259,7 +268,10 @@ public class CameraRecoil : MonoBehaviour
         Vector3 rotation = rotationSpring.Evaluate(dt);
         rotation.x -= visiblePitchKick;
         rotation.y += visibleYawKick;
-        float recoveryFactor = Mathf.Exp(-(numericRecoil ? 3f / recoverySeconds : 14f) * dt);
+        // Hold the accumulated climb throughout sustained fire. Recovery begins only
+        // after the cadence grace expires; accessories scale each real angular kick.
+        float recoveryDt = numericRecoil ? Mathf.Clamp(Time.time - recoveryStartsAt, 0f, dt) : dt;
+        float recoveryFactor = Mathf.Exp(-(numericRecoil ? 3f / recoverySeconds : 14f) * recoveryDt);
         visiblePitchKick *= recoveryFactor;
         visibleYawKick *= recoveryFactor;
         if (!equippedWeapons)
@@ -293,11 +305,36 @@ public class CameraRecoil : MonoBehaviour
             rotation.z += (Mathf.PerlinNoise(seedZ, shakeTime) - 0.5f) * shakeAmount;
         }
 
+        rotation += BossImpactSway();
         Apply(rotation, position);
+    }
+
+    private Vector3 BossImpactSway()
+    {
+        if (!bossImpactHealth) bossImpactHealth = GetComponentInParent<PlayerHealth>();
+        if (!bossImpactHealth || !bossImpactHealth.IsBossStunned) return Vector3.zero;
+        float remaining = bossImpactHealth.BossStunRemaining;
+        float strength = Mathf.Clamp01((PlayerHealth.BossRockStunSeconds - remaining) / .18f) *
+            Mathf.SmoothStep(0, 1, Mathf.Clamp01(remaining / .9f));
+        float t = (float)bossImpactHealth.NetworkManager.ServerTime.Time;
+        return new Vector3(Mathf.Sin(t * 2.7f) * 1.1f,
+            Mathf.Sin(t * 1.9f + .6f) * .65f, Mathf.Sin(t * 3.2f) * 2.7f) * strength;
     }
 
     private void Apply(Vector3 rotation, Vector3 position)
     {
+        if (numericRecoil)
+        {
+            // The accumulated kick may reach the look limit during a long burst,
+            // but must never flip the camera over when already aiming upward.
+            Quaternion basis = rootCached && motionRoot ? motionRoot.localRotation : transform.localRotation;
+            if (rootCached && motionRoot && rootRotationApplied && Quaternion.Angle(basis, lastRootWritten) < .001f)
+                basis *= Quaternion.Inverse(lastRootRecoil);
+            else if ((!rootCached || !motionRoot) && emergencyApplied && Quaternion.Angle(basis, emergencyLastWritten) < .0005f)
+                basis *= Quaternion.Inverse(emergencyLastOffset);
+            float basePitch = Mathf.DeltaAngle(0, basis.eulerAngles.x);
+            rotation.x = Mathf.Clamp(basePitch + rotation.x, -85f, 85f) - basePitch;
+        }
         Quaternion q = Quaternion.Euler(rotation);
 
         if (rootCached && motionRoot != null)

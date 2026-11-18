@@ -261,7 +261,7 @@ namespace DeadQuarantine.PvPvE.UI
             if (!searchingForPlayers || !roster || !roster.IsSpawned)
             {
                 status.text=matchmaking.State==PvPvEConnectionState.Failed?matchmaking.Error:
-                    searchingForPlayers?"BUSCANDO SALA COMPATIBLE"+Dots():"LOBBY PvPvE · PREPARÁ TU CLASE";
+                    searchingForPlayers?"BUSCANDO SALA COMPATIBLE"+Dots():"LOBBY PvPvE · PREPARÁ TU EQUIPAMIENTO";
                 for(int i=0;i<actors.Length;i++)
                 {
                     if(i==0)actors[i].SetPose(stage.transform.TransformPoint(new Vector3(1.6f,-1.26f,-65.6f)),180);

@@ -85,7 +85,7 @@ public class CharacterCatalog : ScriptableObject
         [Tooltip("Prefab del personaje (SM_Chr_...). De ahí se toma el cuerpo y los accesorios que estén ACTIVOS en el prefab. Vacío = esta variante no existe.")]
         public GameObject modelPrefab;
 
-        [Tooltip("Icono (retrato) de ESTA variante: el de hombre y el de mujer son distintos. Si queda vacío se usa el Icon de la clase.")]
+        [Tooltip("Icono (retrato) de ESTA variante: el de hombre y el de mujer son distintos. Si queda vacío se usa el Icon de el equipamiento.")]
         public Sprite icon;
     }
 

@@ -8,6 +8,11 @@ public sealed class WeaponHandlingStatistics
     [Min(0)] public float sprintToFireSeconds = .18f;
     [Min(0)] public float verticalRecoilDegrees = 1.35f;
     [Min(0)] public float horizontalRecoilDegrees = .35f;
+    [Header("Patrón de ráfaga (multiplicadores de la patada por bala)")]
+    [Range(.5f, 2f)] public float firstShotRecoilMultiplier = 1.15f;
+    [Range(1f, 2f)] public float sustainedRecoilMultiplier = 1.3f;
+    [Range(2, 20)] public int recoilRampShots = 8;
+    [Range(-1, 1)] public float horizontalRecoilBias = .15f;
     [Min(.02f)] public float recoilRecoverySeconds = .2f;
     [Min(0)] public float aimSwayDegrees = .12f;
     [Range(.1f, 1.5f)] public float movement = 1f;

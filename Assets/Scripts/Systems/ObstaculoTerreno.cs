@@ -44,7 +44,7 @@ public class ObstaculoTerreno : MonoBehaviour
     [Header("Jugadores")]
     [Tooltip("Cuánto ralentiza a un personaje de velocidad Normal (0.25 = 25%).")]
     [Range(0f, 0.9f)] [SerializeField] private float reduccionJugador = 0.25f;
-    [Tooltip("La ralentización se multiplica por la velocidad de la clase: afecta menos a los más lentos.")]
+    [Tooltip("La ralentización se multiplica por la velocidad de el equipamiento: afecta menos a los más lentos.")]
     [SerializeField] private bool escalarConClase = true;
 
     [Header("Zombies")]

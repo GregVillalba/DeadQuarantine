@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -121,7 +121,8 @@ public partial class PlayerMovement : NetworkBehaviour
     public bool IsSprinting { get; private set; }
     public bool IsCrouching { get; private set; }
     private bool movementLocked;
-    public bool MovementLocked { get => movementLocked || (IsOwner && DeadQuarantine.PvPvE.UI.PvPvEInitialClassView.BlocksLocalGameplay); set => movementLocked = value; }
+    public bool IsBossStunned => playerHealth != null && playerHealth.IsBossStunned;
+    public bool MovementLocked { get => movementLocked || IsBossStunned || (IsOwner && DeadQuarantine.PvPvE.UI.PvPvEInitialClassView.BlocksLocalGameplay); set => movementLocked = value; }
     // Bloqueado (pausa, historia...) devuelve 0: así el sway y la animación del arma no reaccionan a las teclas.
     public Vector2 MoveInput =>
         (MovementLocked || PauseController.LocalPlayerPaused) ? Vector2.zero : moveInput; // <- NUEVO: para que WeaponSway lea hacia dónde te movés

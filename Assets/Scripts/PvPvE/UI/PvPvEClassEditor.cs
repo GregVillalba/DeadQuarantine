@@ -97,24 +97,24 @@ namespace DeadQuarantine.PvPvE.UI
   bool Fail(string error){status.text=error;status.color=new Color(1,.55f,.4f);return false;}
   void Refresh(){
    var c=Current;int points=catalog.Pick10Cost(c);
-   pick10Counter.text=$"PICK 10   {points}/{PvPvELoadoutCatalog.Pick10Limit}";pick10Counter.color=points>10?new Color(1,.55f,.4f):accent;
+   pick10Counter.text=$"LÍMITE 10   {points}/{PvPvELoadoutCatalog.Pick10Limit}";pick10Counter.color=points>10?new Color(1,.55f,.4f):accent;
    for(int i=0;i<pick10Pips.Length;i++)pick10Pips[i].color=i<points?pick10Counter.color:tile;
-   nameInput.SetTextWithoutNotify(c.name);heading.text="CREAR UNA CLASE  /  "+(selected+1).ToString("00");
-   for(int i=0;i<5;i++){var label=classButtons[i].GetComponentInChildren<TMP_Text>();label.text="Clase personalizada "+(i+1);classButtons[i].targetGraphic.color=i==selected?new Color(.29f,.21f,.10f):tile;}
+   nameInput.SetTextWithoutNotify(c.name);heading.text="CREAR EQUIPAMIENTO  /  "+(selected+1).ToString("00");
+   for(int i=0;i<5;i++){var label=classButtons[i].GetComponentInChildren<TMP_Text>();label.text="Equipamiento personalizado "+(i+1);classButtons[i].targetGraphic.color=i==selected?new Color(.29f,.21f,.10f):tile;}
    SetCard(primaryCard,"PRIMARIA",catalog.Find(c.primary).name+"\n"+AttachmentLabels(c.primaryAttachments),catalog.Find(c.primary).icon);
    SetCard(secondaryCard,"SECUNDARIA",catalog.Find(c.secondary).name+"\n"+AttachmentLabels(c.secondaryAttachments),catalog.Find(c.secondary).icon);
    var grenade=Array.Find(catalog.grenades,g=>g.id==c.grenade);var heal=Array.Find(catalog.healings,g=>g.id==c.healing);
    SetCard(grenadeCard,"GRANADA",(grenade==null?"NINGUNA":grenade.name+"\n"+catalog.GrenadeCapacity(c)+" UN."),grenade?.icon);SetCard(healingCard,"CURACIÓN",(heal==null?"NINGUNA":heal.name+"\n"+catalog.HealingCapacity(c)+" UN. · "+heal.healing+" PV / UN."),heal?.icon);
    for(int i=0;i<4;i++){var perk=catalog.perks.Find(PvPvELoadoutCatalog.GetPerk(c,i));bool extra=i>=2;perkCards[i].gameObject.SetActive(!extra||catalog.HasWildcard(c,i==2?PvPvEWildcard.Perk1Greed:PvPvEWildcard.Perk2Greed));SetCard(perkCards[i],i%2==0?"MOVILIDAD":"MANEJO",perk?.NameForPvPvE??"NINGUNO",perk?.IconForPvPvE);}
    for(int weapon=0;weapon<2;weapon++){var selection=weapon==0?c.primaryAttachments:c.secondaryAttachments;var selectedItems=AttachmentItems(selection);int limit=catalog.AttachmentLimit(c,weapon==1);for(int slot=0;slot<3;slot++){var card=attachmentCards[weapon,slot];card.gameObject.SetActive(slot<limit);var entry=slot<selectedItems.Length?catalog.attachments.Find(selection.Get(selectedItems[slot])):null;SetCard(card,"ACCESORIO "+(slot+1),entry?.displayName??"NINGUNO",entry?.icon);card.interactable=catalog.attachments.Eligible(weapon==0?c.primary:c.secondary);}}
-   for(int i=0;i<2;i++){var wc=catalog.wildcards.Find(i==0?c.wildcard1:c.wildcard2);SetCard(wildcardCards[i],"WILDCARD "+(i+1),wc?.name??"NINGUNA",wc?.icon);}
+   for(int i=0;i<2;i++){var wc=catalog.wildcards.Find(i==0?c.wildcard1:c.wildcard2);SetCard(wildcardCards[i],"COMODÍN "+(i+1),wc?.name??"NINGUNO",wc?.icon);}
    var gun=catalog.Find(secondaryFocus?c.secondary:c.primary);var choice=secondaryFocus?c.secondaryAttachments:c.primaryAttachments;
 
-   previewTitle.text="CLASE PERSONALIZADA "+(selected+1)+"\n"+gun.name;
+   previewTitle.text="EQUIPAMIENTO PERSONALIZADO "+(selected+1)+"\n"+gun.name;
    preview.Show(gun,catalog.attachments,choice);
 
    DrawWeaponStats(stats,gun,choice,false);
-   status.text=points>PvPvELoadoutCatalog.Pick10Limit?$"CLASE ANTERIOR: {points}/10. Quitá {points-10} punto(s) para guardar. Se conserva el original.":"Los cambios se guardan automáticamente.";status.color=points>10?new Color(1,.55f,.4f):new Color(.65f,.75f,.72f);
+   status.text=points>PvPvELoadoutCatalog.Pick10Limit?$"EQUIPAMIENTO ANTERIOR: {points}/10. Quitá {points-10} punto(s) para guardar. Se conserva el original.":"Los cambios se guardan automáticamente.";status.color=points>10?new Color(1,.55f,.4f):new Color(.65f,.75f,.72f);
   }
   void Weapons(bool secondary){
    secondaryFocus=secondary;OpenPicker(secondary?"ELEGIR SECUNDARIA":"ELEGIR PRIMARIA",true);
@@ -125,13 +125,13 @@ namespace DeadQuarantine.PvPvE.UI
   }
   void Utilities(bool healing){OpenPicker(healing?"ELEGIR CURACIÓN":"ELEGIR GRANADA");var empty=Current;if(healing)empty.healing="";else empty.grenade="";Option("utility_none","NINGUNA",null,()=>ChooseUtility(healing,""),empty);foreach(var u in healing?catalog.healings:catalog.grenades){var capture=u;var candidate=Current;if(healing)candidate.healing=u.id;else candidate.grenade=u.id;Option(u.id,healing?catalog.HealingSummary(u):u.name,u.icon,()=>ChooseUtility(healing,capture.id),candidate);}}
   void Perks(int slot){
-   bool mobility=slot%2==0;OpenPicker(mobility?"PERK 1 / MOVILIDAD":"PERK 2 / MANEJO");options.GetComponent<GridLayoutGroup>().cellSize=new Vector2(220,220);
-   var empty=Current;PvPvELoadoutCatalog.SetPerk(empty,slot,"");Option("perk_none","NINGUNO",null,()=>ChoosePerk(slot,""),empty);
+   bool mobility=slot%2==0;OpenPicker(mobility?"HABILIDAD 1 / MOVILIDAD":"HABILIDAD 2 / MANEJO");options.GetComponent<GridLayoutGroup>().cellSize=new Vector2(220,220);
+   var empty=Current;PvPvELoadoutCatalog.SetPerk(empty,slot,"");Option("perk_none","NINGUNA",null,()=>ChoosePerk(slot,""),empty);
    foreach(var entry in catalog.perks.entries.Where(e=>e.CategoryForPvPvE==(mobility?PerkCategory.Mobility:PerkCategory.Handling))){var capture=entry;var candidate=Current;PvPvELoadoutCatalog.SetPerk(candidate,slot,entry.id);Option(entry.id,entry.NameForPvPvE+"\n"+entry.description,entry.IconForPvPvE,()=>ChoosePerk(slot,capture.id),candidate);var button=options.GetChild(options.childCount-1);button.Find("Category").GetComponent<TMP_Text>().text=mobility?"MOVILIDAD":"MANEJO";var label=button.Find("Name").GetComponent<TMP_Text>();label.fontSize=14;label.rectTransform.anchorMax=new(.96f,.49f);((RectTransform)button.Find("Icon")).anchorMin=new(.06f,.51f);}
   }
   void Wildcards(int slot){
-   OpenPicker("WILDCARD "+(slot+1)+"  /  MÁXIMO DOS DISTINTAS");options.GetComponent<GridLayoutGroup>().cellSize=new Vector2(220,220);
-   Option("wildcard_none","NINGUNA",null,()=>ChooseWildcard(slot,""),WildcardCandidate(slot,""));
+   OpenPicker("COMODÍN "+(slot+1)+"  /  MÁXIMO DOS DISTINTOS");options.GetComponent<GridLayoutGroup>().cellSize=new Vector2(220,220);
+   Option("wildcard_none","NINGUNO",null,()=>ChooseWildcard(slot,""),WildcardCandidate(slot,""));
    var c=Current;var other=catalog.wildcards.Find(slot==0?c.wildcard2:c.wildcard1);
    foreach(var entry in catalog.wildcards.entries){var capture=entry;var candidate=WildcardCandidate(slot,entry.id);Option(entry.id,entry.name+"\n"+entry.description,entry.icon,()=>ChooseWildcard(slot,capture.id),candidate);
     var b=options.GetChild(options.childCount-1).GetComponent<Button>();b.interactable&=other==null||other.kind!=entry.kind;
@@ -159,7 +159,7 @@ namespace DeadQuarantine.PvPvE.UI
   }
   void Option(string id,string name,Sprite icon,Action action,PvPvEClassDefinition candidate=null){
    var card=Card("Choose_"+id,options,Vector2.zero,Vector2.one,"",name,icon);card.onClick.AddListener(()=>{action();if(candidate!=null&&pickerEquipment){picker.SetActive(true);pickerPreview.gameObject.SetActive(true);ShowCandidate(Current);card.Select();}});
-   if(candidate!=null){card.interactable=CanChoose(candidate);card.transform.Find("Category").GetComponent<TMP_Text>().text=catalog.Find(id)?.Category??$"CLASE  {catalog.Pick10Cost(candidate)}/10";
+   if(candidate!=null){card.interactable=CanChoose(candidate);card.transform.Find("Category").GetComponent<TMP_Text>().text=catalog.Find(id)?.Category??$"EQUIPAMIENTO  {catalog.Pick10Cost(candidate)}/10";
     if(!card.interactable)card.transform.Find("Name").GetComponent<TMP_Text>().alpha=.45f;
    }
    if(candidate!=null){var events=card.gameObject.AddComponent<EventTrigger>();foreach(var type in new[]{EventTriggerType.PointerEnter,EventTriggerType.Select}){var entry=new EventTrigger.Entry{eventID=type};entry.callback.AddListener(_=>{ShowCandidate(candidate);if(!pickerEquipment){pickerDetailIcon.sprite=icon;pickerDetailIcon.enabled=icon;ClearWeaponStats(pickerStats);pickerStats.text=name;}});events.triggers.Add(entry);}}
@@ -201,12 +201,12 @@ namespace DeadQuarantine.PvPvE.UI
   static string KindName(WeaponAttachmentKind kind)=>kind switch{WeaponAttachmentKind.Scope=>"MIRA",WeaponAttachmentKind.Support=>"SOPORTE",WeaponAttachmentKind.Utility=>"LÁSER / LINTERNA",_=>"BOCA"};
   void Build(){
    var root=Rect("CreateAClass",container,Vector2.zero,Vector2.one);panel=root.gameObject;root.gameObject.AddComponent<Image>().color=new Color(.012f,.022f,.025f,1f);
-   heading=Text("Title",root,"CREAR UNA CLASE",new(.035f,.9f),new(.58f,.98f),31,Color.white);
-   pick10Counter=Text("Pick10Counter",root,"PICK 10",new(.61f,.93f),new(.82f,.985f),24,accent);
+   heading=Text("Title",root,"CREAR EQUIPAMIENTO",new(.035f,.9f),new(.58f,.98f),31,Color.white);
+   pick10Counter=Text("Pick10Counter",root,"LÍMITE 10",new(.61f,.93f),new(.82f,.985f),24,accent);
    pick10Pips=new Image[10];for(int i=0;i<10;i++){pick10Pips[i]=Rect("Pick10Point_"+i,root,new(.61f+i*.021f,.912f),new(.627f+i*.021f,.922f)).gameObject.AddComponent<Image>();pick10Pips[i].raycastTarget=false;}
    var back=Button("CloseClasses",root,"VOLVER",new(.84f,.91f),new(.97f,.97f));back.onClick.AddListener(Close);
-   Text("ClassesTitle",root,"CLASES PERSONALIZADAS",new(.025f,.8f),new(.18f,.87f),16,accent);
-   classButtons=new Button[5];for(int i=0;i<5;i++){int index=i;float top=.78f-i*.105f;classButtons[i]=Button("Class_"+i,root,"CLASE "+(i+1),new(.025f,top-.085f),new(.18f,top));classButtons[i].onClick.AddListener(()=>SelectClass(index));}
+   Text("ClassesTitle",root,"EQUIPAMIENTOS PERSONALIZADOS",new(.025f,.8f),new(.18f,.87f),16,accent);
+   classButtons=new Button[5];for(int i=0;i<5;i++){int index=i;float top=.78f-i*.105f;classButtons[i]=Button("Class_"+i,root,"EQUIPAMIENTO "+(i+1),new(.025f,top-.085f),new(.18f,top));classButtons[i].onClick.AddListener(()=>SelectClass(index));}
    var inputRect=Rect("ClassName",root,new(.21f,.83f),new(.61f,.88f));inputRect.gameObject.AddComponent<Image>().color=tile;
    nameInput=inputRect.gameObject.AddComponent<TMP_InputField>();nameInput.characterLimit=32;
    var nameText=Text("Value",inputRect,"",new(.035f,.05f),new(.965f,.95f),23,Color.white);nameInput.textViewport=inputRect;nameInput.textComponent=(TextMeshProUGUI)nameText;nameInput.fontAsset=font;nameInput.onEndEdit.AddListener(value=>Rename(value));
@@ -220,8 +220,8 @@ namespace DeadQuarantine.PvPvE.UI
    perkCards=new Button[4];for(int i=0;i<4;i++){int slot=i;float left=i<2?.64f:.815f;float bottom=i%2==0?.40f:.27f;perkCards[i]=Card("Perk_"+i,root,new(left,bottom),new(left+.155f,bottom+.115f),i%2==0?"MOVILIDAD":"MANEJO","NINGUNO",null);perkCards[i].onClick.AddListener(()=>Perks(slot));}
    grenadeCard=Card("Grenade",root,new(.64f,.145f),new(.97f,.255f),"GRANADA","",null);grenadeCard.onClick.AddListener(()=>Utilities(false));
    healingCard=Card("Healing",root,new(.64f,.025f),new(.97f,.135f),"CURACIÓN","",null);healingCard.onClick.AddListener(()=>Utilities(true));ExpandHealingLabel(healingCard);ExpandHealingLabel(grenadeCard);
-   wildcardCards=new Button[2];for(int i=0;i<2;i++){int slot=i;float left=.21f+i*.205f;wildcardCards[i]=Card("Wildcard_"+i,root,new(left,.025f),new(left+.195f,.15f),"WILDCARD "+(i+1),"NINGUNA",null);wildcardCards[i].onClick.AddListener(()=>Wildcards(slot));var label=wildcardCards[i].transform.Find("Name").GetComponent<TMP_Text>();label.fontSize=15;label.rectTransform.anchorMax=new(.67f,.65f);PvPvEUIFactory.Place((RectTransform)wildcardCards[i].transform.Find("Icon"),new(.70f,.18f),new(.97f,.72f));}
-   var reset=Button("ResetClass",root,"RESTABLECER ESTA CLASE",new(.025f,.025f),new(.18f,.10f));reset.onClick.AddListener(()=>{store.Reset(selected);legacyDrafts.Remove(selected);Refresh();});
+   wildcardCards=new Button[2];for(int i=0;i<2;i++){int slot=i;float left=.21f+i*.205f;wildcardCards[i]=Card("Wildcard_"+i,root,new(left,.025f),new(left+.195f,.15f),"COMODÍN "+(i+1),"NINGUNA",null);wildcardCards[i].onClick.AddListener(()=>Wildcards(slot));var label=wildcardCards[i].transform.Find("Name").GetComponent<TMP_Text>();label.fontSize=15;label.rectTransform.anchorMax=new(.67f,.65f);PvPvEUIFactory.Place((RectTransform)wildcardCards[i].transform.Find("Icon"),new(.70f,.18f),new(.97f,.72f));}
+   var reset=Button("ResetClass",root,"RESTABLECER ESTE EQUIPAMIENTO",new(.025f,.025f),new(.18f,.10f));reset.onClick.AddListener(()=>{store.Reset(selected);legacyDrafts.Remove(selected);Refresh();});
    var pick=Rect("ItemPicker",root,new(.2f,.005f),new(.98f,.815f));picker=pick.gameObject;pick.gameObject.AddComponent<Image>().color=new Color(.018f,.035f,.04f,1f);
    pickerTitle=Text("PickerTitle",pick,"",new(.025f,.87f),new(.8f,.99f),26,Color.white);
    Button("ClosePicker",pick,"VOLVER",new(.82f,.89f),new(.97f,.97f)).onClick.AddListener(()=>picker.SetActive(false));
@@ -243,7 +243,7 @@ namespace DeadQuarantine.PvPvE.UI
   }
   void SetCard(Button button,string kind,string value,Sprite icon){
    button.transform.Find("Category").GetComponent<TMP_Text>().text=kind;button.transform.Find("Name").GetComponent<TMP_Text>().text=value;
-   var image=button.transform.Find("Icon").GetComponent<Image>();image.sprite=icon;image.enabled=icon;if(kind.StartsWith("WILDCARD"))image.material=Resources.Load<Material>("PvPvE/WhiteIcon");
+   var image=button.transform.Find("Icon").GetComponent<Image>();image.sprite=icon;image.enabled=icon;if(kind.StartsWith("COMODÍN"))image.material=Resources.Load<Material>("PvPvE/WhiteIcon");
   }
   static void ExpandHealingLabel(Button card){var label=card.transform.Find("Name").GetComponent<TMP_Text>();label.fontSize=16;label.rectTransform.anchorMax=new Vector2(.96f,.4f);((RectTransform)card.transform.Find("Icon")).anchorMin=new Vector2(.06f,.41f);}
   RectTransform Rect(string name,Transform parent,Vector2 min,Vector2 max){var r=new GameObject(name,typeof(RectTransform)).GetComponent<RectTransform>();r.SetParent(parent,false);r.anchorMin=min;r.anchorMax=max;r.offsetMin=r.offsetMax=Vector2.zero;return r;}

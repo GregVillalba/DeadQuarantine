@@ -58,7 +58,7 @@ public partial class Weapon : MonoBehaviour
     [Min(0.01f)] [SerializeField] private float burstCooldown = 0.25f;
 
     [Header("Recarga exacta por arma")]
-    [Tooltip("Solo para armas nuevas. Hace que Reload Time sea la duración base real de la recarga (antes del modificador de clase).")]
+    [Tooltip("Solo para armas nuevas. Hace que Reload Time sea la duración base real de la recarga (antes del modificador de equipamiento).")]
     [SerializeField] private bool enforceReloadDuration = false;
     [Tooltip("Multiplicador del clip de recarga normal calculado por el integrador para que visualmente dure Reload Time.")]
     [Min(0.01f)] [SerializeField] private float reloadClipSpeedMultiplier = 1f;
@@ -323,7 +323,7 @@ public partial class Weapon : MonoBehaviour
 
     public bool InputLocked
     {
-        get => inputLocked;
+        get => inputLocked || (playerMovement != null && playerMovement.IsBossStunned);
 
         set
         {
@@ -764,7 +764,7 @@ public partial class Weapon : MonoBehaviour
             // siguiente. Si se aplica antes, hasta la primera bala sube.
             ShootAndPublish();
             if (cameraRecoil != null)
-                cameraRecoil.Fire(recoilPreset, true, recoilIntensityMultiplier * AttachmentRecoilMultiplier, UseAuthoredRecoil, AttachmentRecoilAxes, EffectiveRecoilDegrees, RecoilRecoverySeconds);
+                cameraRecoil.Fire(recoilPreset, true, recoilIntensityMultiplier * AttachmentRecoilMultiplier, UseAuthoredRecoil, AttachmentRecoilAxes, EffectiveRecoilDegrees, RecoilRecoverySeconds, PresentationFireInterval, handling);
             if (weaponRecoil != null)
                 weaponRecoil.Fire(recoilPreset, true, recoilIntensityMultiplier * AttachmentRecoilMultiplier, UseAuthoredRecoil, AttachmentRecoilAxes);
         }
@@ -939,19 +939,26 @@ public partial class Weapon : MonoBehaviour
         {
             if (!forceReserveLimit) return false;
             if (!presentation) presentation = GetComponentInParent<NetworkWeaponPresentation>();
-            return presentation && DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(presentation.NetworkObject);
+            if (!presentation) return false;
+            var roster = DeadQuarantine.PvPvE.Networking.PvPvETeamRoster.Active;
+            return (roster && roster.IsSpawned && presentation.IsSpawned &&
+                roster.NetworkManager == presentation.NetworkManager && roster.Contains(presentation.OwnerClientId)) ||
+                DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(presentation.NetworkObject);
         }
     }
 
-    public bool UsesLimitedReserve =>
-        UsesPvPvEReserve || (forceReserveLimit && !TutorialEscena.EsActiva) ||
-        (ActiveDifficulty != null && ActiveDifficulty.limitedReserveAmmo);
+    public bool UsesLimitedReserve => UsesPvPvEReserve ||
+        (!TutorialEscena.EsActiva && TraditionalDifficulty >= DifficultyLevel.Dificil);
+
+    private DifficultyLevel TraditionalDifficulty => ActiveDifficulty != null ? ActiveDifficulty.level :
+        RoundManager.Instance != null ? (DifficultyLevel)RoundManager.Instance.DifficultyNetwork.Value :
+        DifficultyManager.Instance != null ? DifficultyManager.Instance.CurrentDifficulty : DifficultyLevel.Normal;
 
     public int ReserveCapacity
     {
         get
         {
-            if (forceReserveLimit)
+            if (UsesPvPvEReserve)
                 return Mathf.Max(0, reserveAmmoCapacity);
 
             float multiplier = ActiveDifficulty != null
@@ -1600,7 +1607,7 @@ public partial class Weapon : MonoBehaviour
         if (!IsAiming)
         {
             if (cameraRecoil != null)
-                cameraRecoil.Fire(recoilPreset, false, recoilIntensityMultiplier * AttachmentRecoilMultiplier, UseAuthoredRecoil, AttachmentRecoilAxes, EffectiveRecoilDegrees, RecoilRecoverySeconds);
+                cameraRecoil.Fire(recoilPreset, false, recoilIntensityMultiplier * AttachmentRecoilMultiplier, UseAuthoredRecoil, AttachmentRecoilAxes, EffectiveRecoilDegrees, RecoilRecoverySeconds, PresentationFireInterval, handling);
             if (weaponRecoil != null)
                 weaponRecoil.Fire(recoilPreset, false, recoilIntensityMultiplier * AttachmentRecoilMultiplier, UseAuthoredRecoil, AttachmentRecoilAxes);
         }

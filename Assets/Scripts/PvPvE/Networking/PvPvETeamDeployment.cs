@@ -165,12 +165,12 @@ namespace DeadQuarantine.PvPvE.Networking
    row.Acknowledged=true;row.Life=PvPvELifeStage.Alive;row.Due=0;row.ProtectedUntil=flow.Stage.Value==PvPvEPrepareStage.Playing?NetworkManager.ServerTime.Time+Settings.SpawnProtectionSeconds:double.MaxValue;Players[index]=row;
   }
   [ServerRpc(RequireOwnership=false)] public void ChangeClassServerRpc(int index,string json,uint epoch,ServerRpcParams rpc=default){
-   ulong sender=rpc.Receive.SenderClientId;bool accepted=false;string error="La clase no se puede cambiar ahora.";
+   ulong sender=rpc.Receive.SenderClientId;bool accepted=false;string error="El equipamiento no se puede cambiar ahora.";
    if(flow.Stage.Value==PvPvEPrepareStage.Playing&&epoch==selection.Epoch.Value&&roster.Contains(sender)&&TryGet(sender,out var row)&&(!requests.TryGetValue(sender,out double due)||NetworkManager.ServerTime.Time>=due)){
     requests[sender]=NetworkManager.ServerTime.Time+.2;
     if(index>=0&&index<5&&!string.IsNullOrEmpty(json)&&Encoding.UTF8.GetByteCount(json)<=PvPvEInitialClassSelection.MaximumRequestBytes){
      PvPvEClassDefinition c=null;try{c=JsonUtility.FromJson<PvPvEClassDefinition>(json);}catch(ArgumentException){}
-     if(Settings.Loadouts.Validate(c,out error)){pendingClasses[sender]=new FixedString4096Bytes(JsonUtility.ToJson(c));row.PendingIndex=index;Players[Index(sender)]=row;accepted=true;error="La nueva clase se aplicará en el próximo respawn.";}
+     if(Settings.Loadouts.Validate(c,out error)){pendingClasses[sender]=new FixedString4096Bytes(JsonUtility.ToJson(c));row.PendingIndex=index;Players[Index(sender)]=row;accepted=true;error="El nuevo equipamiento se aplicará en el próximo respawn.";}
     }
    }
    ClassReplyClientRpc(accepted,error,new ClientRpcParams{Send=new ClientRpcSendParams{TargetClientIds=new[]{sender}}});

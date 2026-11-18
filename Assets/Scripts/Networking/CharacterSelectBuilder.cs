@@ -159,7 +159,7 @@ public class CharacterSelectUIBuilder : EditorWindow
         TMP_Text titulo = NewText("Titulo", rt, "SELECCIÓN DE PERSONAJE", 56f, Color.white, TextAlignmentOptions.Left, true, 30f);
         Place(titulo.rectTransform, TL, TL, new Vector2(104f, -104f), new Vector2(1300f, 70f));
 
-        TMP_Text subtitulo = NewText("Subtitulo", rt, "ELEGÍ TU CLASE Y TU VARIANTE", 22f, A, TextAlignmentOptions.Left, false, 14f);
+        TMP_Text subtitulo = NewText("Subtitulo", rt, "ELEGÍ TU EQUIPAMIENTO Y TU VARIANTE", 22f, A, TextAlignmentOptions.Left, false, 14f);
         Place(subtitulo.rectTransform, TL, TL, new Vector2(106f, -168f), new Vector2(900f, 30f));
 
         Image atrasBg;

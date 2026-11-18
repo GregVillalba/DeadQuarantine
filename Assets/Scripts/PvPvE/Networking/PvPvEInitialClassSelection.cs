@@ -52,13 +52,13 @@ namespace DeadQuarantine.PvPvE.Networking
    if(nextRequest.TryGetValue(sender,out float until)&&Time.unscaledTime<until){Answer(sender,epoch,requestId,false,"Esperá un momento antes de reintentar.");return;}
    nextRequest[sender]=Time.unscaledTime+.15f;
    if(epoch!=Epoch.Value||!CanSelect(sender)){Answer(sender,epoch,requestId,false,"La selección de esta partida no está disponible.");return;}
-   if(classIndex<0||classIndex>=5||string.IsNullOrEmpty(definitionJson)||Encoding.UTF8.GetByteCount(definitionJson)>MaximumRequestBytes){Answer(sender,epoch,requestId,false,"Clase inválida.");return;}
+   if(classIndex<0||classIndex>=5||string.IsNullOrEmpty(definitionJson)||Encoding.UTF8.GetByteCount(definitionJson)>MaximumRequestBytes){Answer(sender,epoch,requestId,false,"Equipamiento inválido.");return;}
    PvPvEClassDefinition definition;
-   try{definition=JsonUtility.FromJson<PvPvEClassDefinition>(definitionJson);}catch(ArgumentException){Answer(sender,epoch,requestId,false,"No se pudo leer la clase.");return;}
+   try{definition=JsonUtility.FromJson<PvPvEClassDefinition>(definitionJson);}catch(ArgumentException){Answer(sender,epoch,requestId,false,"No se pudo leer el equipamiento.");return;}
    if(!Catalog.Validate(definition,out string error)){Answer(sender,epoch,requestId,false,error);return;}
    string canonical=JsonUtility.ToJson(definition);
-   if(Encoding.UTF8.GetByteCount(canonical)>MaximumRequestBytes){Answer(sender,epoch,requestId,false,"Clase demasiado extensa.");return;}
-   if(TryGet(sender,out var existing)){bool same=existing.ClassIndex==classIndex&&existing.DefinitionJson.ToString()==canonical;Answer(sender,epoch,requestId,same,same?"":"Ya confirmaste tu clase inicial.");return;}
+   if(Encoding.UTF8.GetByteCount(canonical)>MaximumRequestBytes){Answer(sender,epoch,requestId,false,"Equipamiento demasiado extenso.");return;}
+   if(TryGet(sender,out var existing)){bool same=existing.ClassIndex==classIndex&&existing.DefinitionJson.ToString()==canonical;Answer(sender,epoch,requestId,same,same?"":"Ya confirmaste tu equipamiento inicial.");return;}
    Confirmed.Add(new PvPvEConfirmedClass{ClientId=sender,Epoch=Epoch.Value,ClassIndex=classIndex,DefinitionJson=new FixedString4096Bytes(canonical)});
    Answer(sender,epoch,requestId,true,"");
   }

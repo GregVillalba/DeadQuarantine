@@ -20,6 +20,11 @@ public class ZombieAI : NetworkBehaviour
     [Tooltip("Tiempo máximo de seguridad para mantener bloqueado el movimiento durante una animación de ataque.")]
     [SerializeField] private float attackAnimationMaxDuration = 3f;
 
+    [Header("Cancelación del golpe: zombie normal")]
+    [Tooltip("Distancia adicional al alcance del golpe para cancelar y retomar la persecución.")]
+    [SerializeField, Min(.1f)] private float attackCancelExtraDistance = .8f;
+    [SerializeField, Min(.1f)] private float attackCancelRecovery = .35f;
+
     [Header("Velocidad")]
     [SerializeField] private float walkSpeed = 1.5f;
     [SerializeField] private float runSpeed = 3f;
@@ -46,6 +51,7 @@ public class ZombieAI : NetworkBehaviour
     [Tooltip("Opcional. Si queda vacío se genera automáticamente una ráfaga simple de tierra/polvo.")]
     [SerializeField] private GameObject groundSpawnEffectPrefab;
     [SerializeField] private float spawnStateEnterTimeout = 0.5f;
+    [Tooltip("Límite mínimo de seguridad. Se amplía automáticamente para cubrir ambos clips completos.")]
     [SerializeField] private float spawnMaxDuration = 8f;
 
     [Header("Alcance del golpe")]
@@ -121,10 +127,13 @@ public class ZombieAI : NetworkBehaviour
     private Animator animator;
     private NetworkAnimator networkAnimator;
     private ZombieAnimationDriver animationDriver;
+    private ZombieBossCombat bossCombat;
+    private ZombieStalker stalker;
 
     private readonly HashSet<int> animatorParameters = new HashSet<int>();
     private Coroutine hitReactionRoutine;
     private Coroutine attackLockRoutine;
+    private Coroutine attackDamageRoutine;
     private Coroutine spawnRoutine;
     private bool spawnGameplayLock;
 
@@ -158,6 +167,7 @@ public class ZombieAI : NetworkBehaviour
     private static readonly int SprintVariantHash = Animator.StringToHash("SprintVariant");
     private static readonly int AttackIndexHash = Animator.StringToHash("AttackIndex");
     private static readonly int HitIndexHash = Animator.StringToHash("HitIndex");
+    private static readonly int CancelAttackHash = Animator.StringToHash("CancelAttack");
     private static readonly int SpawningHash = Animator.StringToHash("Spawning");
     private ZombieHealth zombieHealth;
     private ZombieAudio zombieAudio;
@@ -199,6 +209,8 @@ public class ZombieAI : NetworkBehaviour
 
         zombieHealth = GetComponent<ZombieHealth>();
         zombieAudio = GetComponent<ZombieAudio>();
+        bossCombat = GetComponent<ZombieBossCombat>();
+        stalker = GetComponent<ZombieStalker>();
     }
 
     public override void OnNetworkSpawn()
@@ -266,6 +278,11 @@ public class ZombieAI : NetworkBehaviour
             spawnRoutine = null;
         }
 
+        if (attackDamageRoutine != null)
+        {
+            StopCoroutine(attackDamageRoutine);
+            attackDamageRoutine = null;
+        }
         FinalizarRootMotionSpawn();
     }
 
@@ -300,7 +317,7 @@ public class ZombieAI : NetworkBehaviour
             attackLockRoutine = null;
         }
 
-        if (AgenteSobreNavMesh())
+        if (AgenteSobreNavMesh() && (stalker == null || !stalker.IsTraversing))
         {
             agent.isStopped = true;
             agent.ResetPath();
@@ -448,8 +465,7 @@ public class ZombieAI : NetworkBehaviour
         // si este zombie fue asignado como "sprint" y actualmente está corriendo.
         visualSprint = IsRunning && assignedSprintVisual;
 
-        SetAnimatorBool(RunningHash, IsRunning);
-        SetAnimatorBool(SprintHash, visualSprint);
+        ApplyVisualGait();
         AplicarVariantesLocomocionAnimator();
 
         AplicarVelocidad();
@@ -476,7 +492,7 @@ public class ZombieAI : NetworkBehaviour
             agent.speed =
                 baseMovementSpeed *
                 speedMultiplier *
-                multiplicadorTerreno;
+                multiplicadorTerreno * (bossCombat != null ? bossCombat.PursuitMultiplier : 1f);
         }
     }
 
@@ -530,6 +546,11 @@ public class ZombieAI : NetworkBehaviour
         }
 
         if(InPvPvE&&(!DeadQuarantine.PvPvE.Networking.PvPvECombat.Active||!DeadQuarantine.PvPvE.Networking.PvPvECombat.Active.IsPlaying)){QuedarseQuieto();return;}
+        if (stalker != null && stalker.IsTraversing)
+        {
+            stalker.TickTraversal();
+            return;
+        }
         if (spawnGameplayLock)
         {
             QuedarseQuieto();
@@ -548,8 +569,26 @@ public class ZombieAI : NetworkBehaviour
             return;
         }
 
+        if (stalker != null && !InPvPvE && stalker.CanUseRangedMode)
+        {
+            ActualizarTerreno();
+            stalker.Tick();
+            UpdateAnimator();
+            return;
+        }
+
+        if (bossCombat != null && bossCombat.BlocksMovement)
+        {
+            UpdateAnimator();
+            return;
+        }
+
         ActualizarTerreno();
+        // Boss phase changes update pursuit speed even when terrain is unchanged.
+        if (bossCombat != null) AplicarVelocidad();
         FindClosestPlayer();
+        if (bossCombat != null && !InPvPvE && targetTorreta == null)
+            target = bossCombat.PreferredTarget(target);
 
         if (storyPatrolling)
         {
@@ -572,6 +611,12 @@ public class ZombieAI : NetworkBehaviour
 
         // Plana (sin altura) hasta el jugador, o hasta el borde de la torreta.
         float distanceToTarget = DistanciaAlObjetivo();
+        if (bossCombat != null && !InPvPvE) bossCombat.UpdatePursuit(distanceToTarget);
+
+        if (bossCombat != null && !InPvPvE && targetTorreta == null &&
+            !isAttacking && Time.time >= nextAttackTime &&
+            bossCombat.TrySpecial(target.position, distanceToTarget))
+            return;
 
         if (distanceToTarget <= attackRange && PuedeGolpearObjetivo())
         {
@@ -584,6 +629,8 @@ public class ZombieAI : NetworkBehaviour
 
             // En espacios cerrados primero gira sobre su propio eje. Evita que
             // el agente intente rodear al jugador para "buscar" el ángulo.
+            if (bossCombat != null && !InPvPvE && !isAttacking && bossCombat.TryTurn(target.position))
+                return;
             RotarHaciaObjetivo();
 
             if (EstaMirandoObjetivoParaAtacar())
@@ -1002,7 +1049,7 @@ public class ZombieAI : NetworkBehaviour
         }
         else if (animator != null)
         {
-            int attackIndex = ElegirAtaque();
+            int attackIndex = bossCombat == null ? ElegirAtaque() : 0;
             SetAnimatorInt(AttackIndexHash, attackIndex);
             SetNetworkedTrigger("Attack");
         }
@@ -1012,9 +1059,8 @@ public class ZombieAI : NetworkBehaviour
             zombieAudio.PlayAttackSound();
         }
 
-        StartCoroutine(
-            ApplyAttackDamage()
-        );
+        if (attackDamageRoutine != null) StopCoroutine(attackDamageRoutine);
+        attackDamageRoutine = StartCoroutine(ApplyAttackDamage());
 
         if (animationDriver == null && animator != null)
         {
@@ -1029,9 +1075,15 @@ public class ZombieAI : NetworkBehaviour
 
     private IEnumerator ApplyAttackDamage()
     {
-        yield return new WaitForSeconds(
-            attackHitDelay
-        );
+        if (bossCombat == null)
+            yield return new WaitForSeconds(attackHitDelay);
+        else
+        {
+            float limit = Time.time + 2f;
+            while (isAttacking && !aturdidoNetwork.Value && !bossCombat.MeleeReachedImpact && Time.time < limit)
+                yield return null;
+            if (!isAttacking || !bossCombat.MeleeReachedImpact) yield break;
+        }
 
         if (
             zombieHealth != null &&
@@ -1109,7 +1161,13 @@ public class ZombieAI : NetworkBehaviour
     }
 
     // Daño de la dificultad (si está activo y configurado) o el del prefab.
-    private int DanoDeAtaque()
+    internal bool HasBossCombat => bossCombat != null;
+
+    internal bool CanReceiveBossDamage(PlayerHealth player) =>
+        player && player.IsAlive && !EstaEnZonaSegura(player.OwnerClientId) &&
+        (!player.TryGetComponent(out PauseController pause) || !pause.EnMinijuegoNet.Value);
+
+    internal int DanoDeAtaque()
     {
         RoundManager rondas = RoundManager.Instance;
         if (useDifficultyDamageOverride && rondas != null && rondas.EsModoHistoria && !InPvPvE)
@@ -1127,6 +1185,31 @@ public class ZombieAI : NetworkBehaviour
         return damage;
     }
 
+    private bool ShouldCancelNormalAttack()
+    {
+        // Boss, stalker, dog/AnimationDriver and turret attacks retain their own rules.
+        if (!isAttacking || bossCombat != null || stalker != null || animationDriver != null ||
+            animator == null || !TieneParametro(CancelAttackHash) || targetTorreta != null) return false;
+        if (target == null) return true;
+        var player = target.GetComponentInParent<PlayerHealth>();
+        return (player != null && !player.IsAlive) ||
+            DistanciaPlana(transform.position, target.position) > attackRange + Mathf.Max(.1f, attackCancelExtraDistance) ||
+            Mathf.Abs(transform.position.y - target.position.y) > alturaMaximaAtaque;
+    }
+
+    private void CancelAttackForPursuit()
+    {
+        isAttacking = false;
+        if (attackDamageRoutine != null) { StopCoroutine(attackDamageRoutine); attackDamageRoutine = null; }
+        nextAttackTime = Mathf.Min(nextAttackTime, Time.time + Mathf.Max(.1f, attackCancelRecovery));
+        nextPathUpdateTime = 0;
+        if (networkAnimator != null && networkAnimator.isActiveAndEnabled) networkAnimator.ResetTrigger("Attack");
+        else if (animator != null) animator.ResetTrigger("Attack");
+        SetNetworkedTrigger("CancelAttack");
+        if (AgenteSobreNavMesh()) agent.isStopped = false;
+        attackLockRoutine = null;
+    }
+
     private IEnumerator FinalizarAtaqueAlTerminarAnimacion()
     {
         float enterElapsed = 0f;
@@ -1134,6 +1217,7 @@ public class ZombieAI : NetworkBehaviour
 
         while (enterElapsed < 0.4f)
         {
+            if (ShouldCancelNormalAttack()) { CancelAttackForPursuit(); yield break; }
             if (animator == null || !animator.enabled)
                 break;
 
@@ -1153,6 +1237,7 @@ public class ZombieAI : NetworkBehaviour
             float elapsed = 0f;
             while (elapsed < Mathf.Max(0.5f, attackAnimationMaxDuration))
             {
+                if (ShouldCancelNormalAttack()) { CancelAttackForPursuit(); yield break; }
                 if (animator == null || !animator.enabled)
                     break;
 
@@ -1204,8 +1289,7 @@ public class ZombieAI : NetworkBehaviour
 
         SetAnimatorFloat(MoveXHash, direction.x, locomotionDampTime);
         SetAnimatorFloat(MoveYHash, direction.y, locomotionDampTime);
-        SetAnimatorBool(RunningHash, IsRunning);
-        SetAnimatorBool(SprintHash, visualSprint);
+        ApplyVisualGait();
 
         // Las variantes visuales NO cambian durante la vida del zombie.
         // Idle, Walk, Run, Sprint y el estilo frontal de ataque fueron elegidos
@@ -1224,7 +1308,7 @@ public class ZombieAI : NetworkBehaviour
     /// </summary>
     public void ReaccionarAlImpacto(int variante)
     {
-        if (!IsServer || animationDriver != null)
+        if (!IsServer || animationDriver != null || HasBossCombat || stalker != null)
             return;
 
         if (zombieHealth != null && zombieHealth.IsDead)
@@ -1338,6 +1422,9 @@ public class ZombieAI : NetworkBehaviour
     private IEnumerator RutinaAparicionDesdeTierra()
     {
         QuedarseQuieto();
+        // All NetworkBehaviours must finish spawning before sending the synchronized trigger.
+        yield return null;
+        SetNetworkedTrigger("Spawn");
 
         float enterElapsed = 0f;
         bool entered = false;
@@ -1362,19 +1449,28 @@ public class ZombieAI : NetworkBehaviour
 
         if (entered)
         {
-            while (elapsed < Mathf.Max(1f, spawnMaxDuration))
+            float safetyDuration = Mathf.Max(1, spawnMaxDuration);
+            var measuredSpawnStates = new HashSet<int>();
+            while (elapsed < safetyDuration)
             {
                 if (animator == null || !animator.enabled)
                     break;
 
                 AnimatorStateInfo state = animator.GetCurrentAnimatorStateInfo(0);
                 bool spawning = state.IsTag("Spawning");
+                // Measure each actual state once, independent of imported clip names.
+                if (spawning && measuredSpawnStates.Add(state.fullPathHash))
+                {
+                    float rate = Mathf.Max(.05f, Mathf.Abs(state.speed * state.speedMultiplier));
+                    safetyDuration = Mathf.Max(safetyDuration, elapsed + state.length / rate + 2);
+                }
 
                 if (!spawning && !animator.IsInTransition(0))
                     break;
 
                 QuedarseQuieto();
-                elapsed += Time.deltaTime;
+                // A stun pauses the animation and must not consume the spawn safety window.
+                elapsed += Time.deltaTime * Mathf.Abs(animator.speed);
                 yield return null;
             }
         }
@@ -1385,9 +1481,10 @@ public class ZombieAI : NetworkBehaviour
             yield return new WaitForSeconds(0.2f);
         }
 
-        spawningNetwork.Value = false;
         FinalizarRootMotionSpawn();
         spawnGameplayLock = false;
+        spawningNetwork.Value = false;
+        ApplyVisualGait();
         spawnRoutine = null;
     }
 
@@ -1507,11 +1604,15 @@ public class ZombieAI : NetworkBehaviour
         SetAnimatorBool(SpawningHash, spawning);
 
         if (!spawning)
+        {
+            // Remote gait comes from NetworkAnimator, not the client's unsynchronized IsRunning property.
+            if (IsServer) ApplyVisualGait();
             return;
-
-        if (animator != null && TieneParametro(Animator.StringToHash("Spawn")))
-            animator.SetTrigger("Spawn");
-
+        }
+        SetAnimatorFloat(SpeedHash, 0, 0);
+        SetAnimatorBool(RunningHash, false);
+        SetAnimatorBool(SprintHash, false);
+        // Server sends Spawn once; late joiners keep the synchronized state and normalized time.
         CrearEfectoSalidaTierra();
     }
 
@@ -1600,7 +1701,11 @@ public class ZombieAI : NetworkBehaviour
         currentSprintVariant = DeterministicInt(2, 19);
         currentIdleVariant = DeterministicInt(4, 7);
 
-        assignedSprintVisual = Deterministic01(29) < sprintChance;
+        if (stalker != null)
+        {
+            currentIdleVariant = currentWalkVariant = currentRunVariant = currentSprintVariant = 0;
+        }
+        assignedSprintVisual = stalker == null && Deterministic01(29) < sprintChance;
         visualSprint = IsRunning && assignedSprintVisual;
 
         // Ataques frontales fijos para este zombie.
@@ -1616,10 +1721,16 @@ public class ZombieAI : NetworkBehaviour
         currentRunningFrontAttackVariant =
             runningFrontAttacks[DeterministicInt(runningFrontAttacks.Length, 59)];
 
-        SetAnimatorBool(RunningHash, IsRunning);
-        SetAnimatorBool(SprintHash, visualSprint);
+        ApplyVisualGait();
         SetAnimatorFloat(IdleVariantHash, currentIdleVariant, 0f);
         AplicarVariantesLocomocionAnimator();
+    }
+
+    private void ApplyVisualGait()
+    {
+        bool ready = !spawnGameplayLock && !spawningNetwork.Value;
+        SetAnimatorBool(RunningHash, ready && IsRunning);
+        SetAnimatorBool(SprintHash, ready && visualSprint);
     }
 
     private void AplicarVariantesLocomocionAnimator()

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -178,6 +178,8 @@ public partial class PlayerHealth : NetworkBehaviour
     {
         if (IsServer)
         {
+            BossStunUntil.Value = 0;
+            ClearStalkerAcid();
             CurrentHealth.Value = maxHealth;
             Armor.Value = 0;
             VestShield.Value = 0;
@@ -216,6 +218,7 @@ public partial class PlayerHealth : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        ClearStalkerAcid();
         CurrentHealth.OnValueChanged -= HealthChanged;
         Lives.OnValueChanged -= LivesChanged;
         State.OnValueChanged -= StateChanged;
@@ -654,6 +657,7 @@ public partial class PlayerHealth : NetworkBehaviour
         if (!IsServer)
             return;
 
+        ClearStalkerAcid();
         CurrentHealth.Value = maxHealth;
         State.Value = PlayerState.Alive;
         lastDamageTime = Time.time;
@@ -696,6 +700,7 @@ public partial class PlayerHealth : NetworkBehaviour
 
     private void StateChanged(PlayerState previousState, PlayerState newState)
     {
+        if (IsServer && newState != PlayerState.Alive) { BossStunUntil.Value = 0; ClearStalkerAcid(); }
         OnStateChanged?.Invoke(previousState, newState);
     }
 }

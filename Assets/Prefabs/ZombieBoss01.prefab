@@ -2046,7 +2046,8 @@ Transform:
   m_LocalPosition: {x: -0.016893692, y: -0.042444874, z: 0.0000000037272545}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 7628255549946759941}
   m_Father: {fileID: 4556476489660434}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1554260137432796
@@ -2410,6 +2411,7 @@ GameObject:
   - component: {fileID: -6822992530280944789}
   - component: {fileID: 7500000000000004002}
   - component: {fileID: 5777048855465510976}
+  - component: {fileID: 3321278018228221139}
   m_Layer: 12
   m_Name: ZombieBoss01
   m_TagString: Untagged
@@ -2445,10 +2447,10 @@ Animator:
   m_GameObject: {fileID: 1658146812600542}
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: 7933c903cd8e81a4592f32062ab6883f, type: 3}
-  m_Controller: {fileID: 9100000, guid: fca6af1bf88e90f48ac946d0430cc9ce, type: 2}
-  m_CullingMode: 1
+  m_Controller: {fileID: 9100000, guid: 00bf3ce45f31b7542b984de8f99c27e5, type: 2}
+  m_CullingMode: 0
   m_UpdateMode: 0
-  m_ApplyRootMotion: 1
+  m_ApplyRootMotion: 0
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
@@ -2547,7 +2549,7 @@ MonoBehaviour:
   attackCooldown: 1.5
   attackHitDelay: 0.35
   walkSpeed: 1.5
-  runSpeed: 3
+  runSpeed: 4.5
   efectoAturdido: {fileID: 1406593679585224, guid: 415a745d154d60545b9ff3810609eba7, type: 3}
   alturaEfectoAturdido: 1.8
 --- !u!114 &2002627523088998024
@@ -2707,6 +2709,86 @@ MonoBehaviour:
       NameHash: 1654612129
       Synchronize: 1
       ParameterType: 9
+    - name: MoveX
+      NameHash: 675470966
+      Synchronize: 1
+      ParameterType: 1
+    - name: MoveY
+      NameHash: 1598418656
+      Synchronize: 1
+      ParameterType: 1
+    - name: IdleVariant
+      NameHash: -1623148628
+      Synchronize: 1
+      ParameterType: 1
+    - name: WalkVariant
+      NameHash: -1872527081
+      Synchronize: 1
+      ParameterType: 1
+    - name: RunVariant
+      NameHash: -2102635681
+      Synchronize: 1
+      ParameterType: 1
+    - name: SprintVariant
+      NameHash: 200000594
+      Synchronize: 1
+      ParameterType: 1
+    - name: Running
+      NameHash: -526601997
+      Synchronize: 1
+      ParameterType: 4
+    - name: Sprint
+      NameHash: -399748991
+      Synchronize: 1
+      ParameterType: 4
+    - name: Spawning
+      NameHash: 1861146890
+      Synchronize: 1
+      ParameterType: 4
+    - name: AttackIndex
+      NameHash: 1829795364
+      Synchronize: 1
+      ParameterType: 3
+    - name: HitIndex
+      NameHash: -1772617784
+      Synchronize: 1
+      ParameterType: 3
+    - name: Spawn
+      NameHash: 1372578019
+      Synchronize: 1
+      ParameterType: 9
+    - name: BossTurnLeft45
+      NameHash: -626504106
+      Synchronize: 1
+      ParameterType: 9
+    - name: BossTurnRight45
+      NameHash: 141438431
+      Synchronize: 1
+      ParameterType: 9
+    - name: BossTurnRight45Alt
+      NameHash: 483183582
+      Synchronize: 1
+      ParameterType: 9
+    - name: BossTurnRight90
+      NameHash: -844454115
+      Synchronize: 1
+      ParameterType: 9
+    - name: BossLeap
+      NameHash: -207813103
+      Synchronize: 1
+      ParameterType: 9
+    - name: BossShockwave
+      NameHash: 1546660094
+      Synchronize: 1
+      ParameterType: 9
+    - name: BossAcid
+      NameHash: -679871477
+      Synchronize: 1
+      ParameterType: 9
+    - name: BossRock
+      NameHash: -157349883
+      Synchronize: 1
+      ParameterType: 9
   AnimatorParametersExpanded: 0
 --- !u!114 &5681347188894933260
 MonoBehaviour:
@@ -2840,6 +2922,70 @@ MonoBehaviour:
   - 0.3
   reduccionPorRonda: 0.01
   porcentajeMinimo: 0.2
+--- !u!114 &3321278018228221139
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1658146812600542}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28dda5f48f1a88948b176e4ae71b669e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Scripts::ZombieBossCombat
+  ShowTopMostFoldoutHeaderGroup: 1
+  leap:
+    damage: 40
+    minRange: 3.5
+    maxRange: 13
+    cooldown: 7
+    chance: 0.85
+  shockwave:
+    damage: 32
+    minRange: 0
+    maxRange: 12
+    cooldown: 8
+    chance: 0.65
+  acid:
+    damage: 8
+    minRange: 1.2
+    maxRange: 11
+    cooldown: 9
+    chance: 0.8
+  rock:
+    damage: 42
+    minRange: 8
+    maxRange: 24
+    cooldown: 6.5
+    chance: 0.8
+  soloHealthMultiplier: 2.4
+  minimumSoloHealth: 4000
+  healthPerExtraPlayer: 0.8
+  woundedCooldownMultiplier: 0.75
+  enragedCooldownMultiplier: 0.6
+  rockImpactRadius: 1.6
+  timeBetweenSpecials: 1.1
+  leapWaveRadius: 5.5
+  leapWaveDamageScale: 0.6
+  leapRadius: 2.7
+  leapHeight: 3.8
+  waveRadius: 18
+  waveSpeed: 20
+  waveHeight: 0.32
+  acidTickInterval: 0.4
+  acidSpread: 42
+  rockSpeed: 20
+  rockLifetime: 4
+  rockRadius: 1.15
+  impactEffectDuration: 2
+  mouth: {fileID: 7628255549946759941}
+  throwingHand: {fileID: 4948947966699040}
+  impactEffect: {fileID: 1186432685672840, guid: 7178009a59b47d44385e833bda688e76, type: 3}
+  rockPrefab: {fileID: 1953317842719524, guid: 8d16041c0d131c94fa77f8401777777f, type: 3}
+  impactSound: {fileID: 8300000, guid: 3ba5e26ab3bf72d4697e4b3b1e340933, type: 3}
+  waveMaterial: {fileID: 2100000, guid: 8f275ee20d08e9246b0484a8b58ed0fe, type: 2}
+  acidMaterial: {fileID: 2100000, guid: 10fb0db75c4340f4a92095c31b46aaa2, type: 2}
 --- !u!1 &1667025595505794
 GameObject:
   m_ObjectHideFlags: 0
@@ -3979,6 +4125,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71941ba6960ed114982f618aed116b82, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Scripts::ZombieHeadHitbox
+--- !u!1 &2656335202598449208
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7628255549946759941}
+  m_Layer: 0
+  m_Name: Boss Acid Origin
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7628255549946759941
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2656335202598449208}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.003469631, y: 0.10840977, z: -0.000013380444}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4917727494006356}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3422865059564429686
 GameObject:
   m_ObjectHideFlags: 0

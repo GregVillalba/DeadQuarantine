@@ -55,7 +55,7 @@ public partial class PlayerHealth
         if (!IsServer) return;
         Perks.Value = 0; SlideUntil.Value = 0; nextSlide = 0; lastSprintMovement = -100;
         LimpiarWildcardsServidor();
-        if (endMatch) perksMatchEnded = true;
+        if (endMatch) { perksMatchEnded = true; ClearStalkerAcid(); }
     }
     public static void FinPartidaPerksServidor()
     {

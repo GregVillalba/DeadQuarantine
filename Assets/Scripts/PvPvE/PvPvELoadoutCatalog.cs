@@ -4,7 +4,7 @@ using UnityEngine;
 namespace DeadQuarantine.PvPvE
 {
  [Serializable] public sealed class PvPvEClassDefinition {
-  public string name="CLASE",primary,secondary,grenade,healing;
+  public string name="EQUIPAMIENTO",primary,secondary,grenade,healing;
   public WeaponAttachmentChoice primaryAttachments,secondaryAttachments;
   public string perk1="",perk2="",perk1Extra="",perk2Extra="",wildcard1="",wildcard2="";
   public PvPvEClassDefinition Copy()=>JsonUtility.FromJson<PvPvEClassDefinition>(JsonUtility.ToJson(this));
@@ -49,22 +49,22 @@ namespace DeadQuarantine.PvPvE
   public int Pick10Cost(PvPvEClassDefinition c)=>c==null?0:Pick(c.primary)+Pick(c.secondary)+Pick(c.grenade)+Pick(c.healing)+AttachmentPoints(c.primaryAttachments)+AttachmentPoints(c.secondaryAttachments)+Pick(c.perk1)+Pick(c.perk2)+Pick(c.perk1Extra)+Pick(c.perk2Extra)+Pick(c.wildcard1)+Pick(c.wildcard2);
   public bool Validate(PvPvEClassDefinition c,out string error){
    if(!ValidateEquipment(c,out error))return false;
-   int points=Pick10Cost(c);if(points>Pick10Limit){error=$"PICK 10: {points}/{Pick10Limit}. Quitá {points-Pick10Limit} punto(s) para guardar.";return false;}
+   int points=Pick10Cost(c);if(points>Pick10Limit){error=$"LÍMITE 10: {points}/{Pick10Limit}. Quitá {points-Pick10Limit} punto(s) para guardar.";return false;}
    return true;
   }
   // Used only to edit a pre-Pick-10 draft without discarding its existing choices.
   // Server application and persistent saves always call Validate, including the budget.
   public bool ValidateEquipment(PvPvEClassDefinition c,out string error){
    error="";
-   if(c==null){error="La clase no existe.";return false;}
+   if(c==null){error="El equipamiento no existe.";return false;}
    if(string.IsNullOrWhiteSpace(c.name)||c.name.Length>32){error="Usá un nombre de 1 a 32 caracteres.";return false;}
-   if(!wildcards||!wildcards.TryMask(c.wildcard1,c.wildcard2,out _)){error="Elegí hasta dos Wildcards distintas y existentes.";return false;}
+   if(!wildcards||!wildcards.TryMask(c.wildcard1,c.wildcard2,out _)){error="Elegí hasta dos Comodines distintos y existentes.";return false;}
    if(Find(c.primary) is not {secondary:false} || !AllowsSecondary(c,Find(c.secondary))){error="Elegí armas distintas y compatibles con el slot secundario.";return false;}
    if(!ValidAttachments(c.primary,c.primaryAttachments)||!ValidAttachments(c.secondary,c.secondaryAttachments)){error="Accesorio incompatible con el arma.";return false;}
    if(!string.IsNullOrEmpty(c.grenade)&&!grenades.Any(g=>g.id==c.grenade)||!string.IsNullOrEmpty(c.healing)&&!healings.Any(h=>h.id==c.healing)){error="Elegí utilidades existentes del juego.";return false;}
    var healing=FindHealing(c.healing);if(healing!=null&&(healing.healing<=0||healing.carryCount<1||healing.carryCount>99)){error="La curación no tiene una capacidad válida configurada.";return false;}
    if(HasWildcard(c,PvPvEWildcard.ExtraHealing)&&string.IsNullOrEmpty(c.healing)||HasWildcard(c,PvPvEWildcard.ExtraGrenades)&&string.IsNullOrEmpty(c.grenade)){error="Las cantidades extra requieren una utilidad equipada.";return false;}
-   if(!TryPerkMask(c,out _)){error="Movilidad en Perk 1; Manejo en Perk 2. Los espacios extra requieren su Greed y perks distintas.";return false;}
+   if(!TryPerkMask(c,out _)){error="Movilidad en Habilidad 1; Manejo en Habilidad 2. Los espacios extra requieren su Greed y habilidades distintas.";return false;}
    if(AttachmentCount(c.primaryAttachments)>AttachmentLimit(c,false)||AttachmentCount(c.secondaryAttachments)>AttachmentLimit(c,true)){error="Máximo dos accesorios por arma; el tercero requiere su Gunfighter.";return false;}
    if(wildcards.extraHealingUnits<1||wildcards.extraHealingUnits>98||wildcards.extraGrenadeUnits<1||wildcards.extraGrenadeUnits>98){error="Configuración de cantidades extra inválida.";return false;}
    if(grenades.Any(g=>g.id==c.grenade&&(g.carryCount<1||g.carryCount>99))){error="Capacidad de granadas inválida.";return false;}
@@ -106,10 +106,11 @@ namespace DeadQuarantine.PvPvE
    if(attachments.Eligible(gun))return attachments.Validate(gun,choice);
    return Enum.GetValues(typeof(WeaponAttachmentKind)).Cast<WeaponAttachmentKind>().All(k=>string.IsNullOrEmpty(choice.Get(k)));
   }
-  public PvPvEClassDefinition Default(int index)=>new(){name="CLASE "+(index+1),primary=weapons.First(w=>!w.secondary).id,secondary=weapons.First(w=>w.secondary).id,grenade=grenades[0].id,healing=healings[0].id};
+  public PvPvEClassDefinition Default(int index)=>new(){name="EQUIPAMIENTO "+(index+1),primary=weapons.First(w=>!w.secondary).id,secondary=weapons.First(w=>w.secondary).id,grenade=grenades[0].id,healing=healings[0].id};
   public PvPvEClassDefinition Repair(PvPvEClassDefinition value,int index){
    var c=value?.Copy()??Default(index);var fallback=Default(index);
    c.name=string.IsNullOrWhiteSpace(c.name)?fallback.name:c.name.Trim().Substring(0,Math.Min(32,c.name.Trim().Length));
+   if(System.Text.RegularExpressions.Regex.IsMatch(c.name,@"^(CLASE|Clase personalizada) \d+$"))c.name="EQUIPAMIENTO "+(index+1);
    if(!wildcards||wildcards.Find(c.wildcard1)==null)c.wildcard1="";
    if(!wildcards||!wildcards.TryMask(c.wildcard1,c.wildcard2,out _))c.wildcard2="";
    if(Find(c.primary) is not {secondary:false})c.primary=fallback.primary;

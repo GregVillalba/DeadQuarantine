@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using UnityEngine.UI;
 using DeadQuarantine.PvPvE;
 using UnityEngine;
@@ -511,7 +511,7 @@ public class PauseController : NetworkBehaviour
                 action.onClick.GetPersistentTarget(0) != this ||
                 action.onClick.GetPersistentMethodName(0) != nameof(ReiniciarJuego)) continue;
 
-            caption.text = CanChangePvPvEClass ? "CAMBIAR CLASE" : "Reiniciar";
+            caption.text = CanChangePvPvEClass ? "CAMBIAR EQUIPAMIENTO" : "Reiniciar";
             action.gameObject.SetActive(CanChangePvPvEClass || EsSinglePlayer());
             break;
         }
