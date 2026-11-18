@@ -952,9 +952,9 @@ MonoBehaviour:
       m_Calls: []
   m_text: "Tras escapar del laboratorio hacia una ciudad infestada, el objetivo es
     llegar a la antena de radio para pedir auxilio, ya que la \xFAnica salida viable
-    es por aire. Abri\xE9ndose paso entre los infectados y tras una breve parada
-    t\xE1ctica, logran entrar a la estaci\xF3n junto a otros refugiados para resistir
-    hasta la evacuaci\xF3n militar.\n\nOBJETIVO: Comunicarte con otros sobrevivientes."
+    es por aire. Abri\xE9ndose paso entre los infectados y tras una breve parada t\xE1ctica,
+    logran entrar a la estaci\xF3n junto a otros refugiados para resistir hasta la
+    evacuaci\xF3n militar.\n\nOBJETIVO: Comunicarte con otros sobrevivientes."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -6418,7 +6418,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 378, y: 26}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &167381576528470234
@@ -9381,7 +9381,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 669.15, y: -85}
-  m_SizeDelta: {x: 1231.3, y: 30.000002}
+  m_SizeDelta: {x: 359.31, y: 30.000002}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3574847295435753346
 CanvasRenderer:
@@ -9411,7 +9411,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '[ {0} ] abatido a [ {1} ] metros! Revivelo en [ {2} ] seg'
+  m_text: '{0} fue abatido'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 102734b590693d240886df79eaaa686c, type: 2}
   m_sharedMaterial: {fileID: -5490844095787397770, guid: 102734b590693d240886df79eaaa686c, type: 2}
@@ -9420,8 +9420,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281701683
-  m_fontColor: {r: 0.2, g: 0.58431375, b: 0.20784314, a: 1}
+    rgba: 4278585954
+  m_fontColor: {r: 0.38431373, g: 0.039215688, b: 0.023529412, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -9444,7 +9444,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 16
+  m_fontStyle: 17
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
   m_textAlignment: 65535
@@ -9554,7 +9554,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 669.15, y: -15.000001}
-  m_SizeDelta: {x: 1231.3, y: 30.000002}
+  m_SizeDelta: {x: 359.31, y: 30.000002}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3918392846718057752
 CanvasRenderer:
@@ -9584,7 +9584,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '[ {0} ] abatido a [ {1} ] metros! Revivelo en [ {2} ] seg'
+  m_text: '{0} fue abatido'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 102734b590693d240886df79eaaa686c, type: 2}
   m_sharedMaterial: {fileID: -5490844095787397770, guid: 102734b590693d240886df79eaaa686c, type: 2}
@@ -9593,8 +9593,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281701683
-  m_fontColor: {r: 0.2, g: 0.58431375, b: 0.20784314, a: 1}
+    rgba: 4278585953
+  m_fontColor: {r: 0.381132, g: 0.038415298, b: 0.022292607, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -9617,7 +9617,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 16
+  m_fontStyle: 17
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
   m_textAlignment: 65535
@@ -19113,7 +19113,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 14155ad11385f944abf8a29d2113129e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Scripts::Weapon
   firePoint: {fileID: 7180296536615239968}
   playerCamera: {fileID: 8884011811728304703}
@@ -19173,7 +19173,7 @@ MonoBehaviour:
     movement: 1
     adsMovement: 0.85
   intermediateDamageMultiplier: 0.75
-  weaponName: "Rev\u00f3lver"
+  weaponName: "Rev\xF3lver"
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -23958,7 +23958,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 669.15, y: -50}
-  m_SizeDelta: {x: 1231.3, y: 30.000002}
+  m_SizeDelta: {x: 359.31, y: 30.000002}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1049826069609767324
 CanvasRenderer:
@@ -23988,7 +23988,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '[ {0} ] abatido a [ {1} ] metros! Revivelo en [ {2} ] seg'
+  m_text: '{0} fue abatido'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 102734b590693d240886df79eaaa686c, type: 2}
   m_sharedMaterial: {fileID: -5490844095787397770, guid: 102734b590693d240886df79eaaa686c, type: 2}
@@ -23997,8 +23997,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281701683
-  m_fontColor: {r: 0.2, g: 0.58431375, b: 0.20784314, a: 1}
+    rgba: 4278585954
+  m_fontColor: {r: 0.38431373, g: 0.039215688, b: 0.023529412, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -24021,7 +24021,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 16
+  m_fontStyle: 17
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
   m_textAlignment: 65535
@@ -34801,6 +34801,40 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &1971020452796888060
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8673627603344465800}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15b0d8a603fbcc64bbd0db164c97d872, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::IndicadoresObjetivosHistoria
+  panelObjetosHistoria: {fileID: 2551370955625371830}
+  indicadorTarjeta: {fileID: 1763271112012989896}
+  indicadorRadio: {fileID: 5779957424597614352}
+  iconoRadioAnimado: {fileID: 8072623184360946280}
+  ondaRadio1: {fileID: 6683500789113417861}
+  ondaRadio2: {fileID: 0}
+  transparenciaOnda1: {fileID: 0}
+  transparenciaOnda2: {fileID: 0}
+  duracionLlamada: 6
+  movimientoVertical: 6
+  duracionOnda: 1
+  escalaMinimaOnda: 1
+  escalaMaximaOnda: 2
+  fuenteDialogo: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  fuenteTitulo: {fileID: 11400000, guid: 0d82eaf50c142fa4ba34beb1fc9a12e4, type: 2}
+  fondoBoton: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+  modeloSobreviviente: {fileID: 1245639020409412, guid: 96e947df06e21f948a8c6ad8fc919f5d, type: 3}
+  animadorSobreviviente: {fileID: 9100000, guid: e1e1f7b3cff1ee3408163f3417fcda70, type: 2}
+  paginasAudio:
+  - {fileID: 8300000, guid: a65448a0db614bed87454dce69617e0c, type: 3}
+  - {fileID: 8300000, guid: 0344089b5916478d9bf89b62bc86ab6b, type: 3}
+  - {fileID: 8300000, guid: 572a5482011144b59e1e8d353ad93c59, type: 3}
 --- !u!114 &8759692890773157113
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -46999,8 +47033,8 @@ MonoBehaviour:
   m_text: "Nos encontramos en el laboratorio donde todo empez\xF3: un virus desatado
     que transforma a todo aquel que lo inhala. Avanzamos sigilosamente hacia la salida,
     tratando de no alertar a nadie. Sin embargo, como era de esperarse, la puerta
-    est\xE1 bloqueada. Tu misi\xF3n sera encontrar la tarjeta magn\xE9tica de la
-    puerta principal.\n\nOBJETIVO: Encontrar la tarjeta y escapar."
+    est\xE1 bloqueada. Tu misi\xF3n sera encontrar la tarjeta magn\xE9tica de la puerta
+    principal.\n\nOBJETIVO: Encontrar la tarjeta y escapar."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -55012,9 +55046,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_text: "Nos encontramos en el laboratorio donde todo empez\xF3: un virus desatado
-    que transforma a todo aquel que lo tenga una mordida zombie. Debemos escapar
-    de esta instalaci\xF3n antes de que los infectados nos conviertan. Tenemos que
-    acabar con todos, inclutyendo a Billy, un infectado mutante enorme capaz de comandar
+    que transforma a todo aquel que lo tenga una mordida zombie. Debemos escapar de
+    esta instalaci\xF3n antes de que los infectados nos conviertan. Tenemos que acabar
+    con todos, inclutyendo a Billy, un infectado mutante enorme capaz de comandar
     oleadas de infectados.\n\nOBJETIVO: Acabar con las hordas y zombie mutante."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -67354,7 +67388,7 @@ MonoBehaviour:
     movement: 1
     adsMovement: 0.85
   intermediateDamageMultiplier: 0.75
-  weaponName: "Pistola inicial"
+  weaponName: Pistola inicial
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -72726,7 +72760,8 @@ MonoBehaviour:
   - {fileID: 3983800977381523042}
   - {fileID: 1732794719291287450}
   - {fileID: 5501802024544809197}
-  formatoTexto: '[ {0} ] abatido a [ {1} ] metros! Revivelo en [ {2} ] seg'
+  formatoTexto: '{0} fue abatido'
+  duracionAviso: 5
   umbralUrgente: 5
   colorNormal: {r: 0.20195796, g: 0.5849056, b: 0.20799635, a: 1}
   colorUrgente: {r: 1, g: 0, b: 0, a: 1}
@@ -77337,7 +77372,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 05661f0f187f88d48bd2bf9f1ebe71ad, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Scripts::Muzzle
   socket: {fileID: 3214607539429684684}
   flashParticlesPrefab: {fileID: 4834526503407549940, guid: 7ca62908b2cb6ca4a9cbafc0f4c28eca, type: 3}
@@ -78595,9 +78630,9 @@ MonoBehaviour:
       m_Calls: []
   m_text: "Estamos ante un panorama aterrador: el virus se ha propagado por la ciudad.
     Nos ordenaron mantener la calma, aunque nos advirtieron de un infectado mutante
-    enorme capaz de comandar oleadas de infectados que atacan bases militares en
-    grupo. Ese mutante es la prioridad m\xE1xima, en caso de verlo hay que eliminarlo
-    para acabar con esta pesadilla.\n\nOBJETIVO: Acabar con las hordas y zombie mutante."
+    enorme capaz de comandar oleadas de infectados que atacan bases militares en grupo.
+    Ese mutante es la prioridad m\xE1xima, en caso de verlo hay que eliminarlo para
+    acabar con esta pesadilla.\n\nOBJETIVO: Acabar con las hordas y zombie mutante."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -105094,9 +105129,9 @@ MonoBehaviour:
       m_Calls: []
   m_text: "El grupo de refugiados fue dividido en distintos puntos seguros del bosque.
     Nos ordenaron mantener la calma, aunque nos advirtieron de un infectado mutante
-    enorme capaz de comandar oleadas de infectados que atacan bases militares en
-    grupo. Ese mutante es la prioridad m\xE1xima, en caso de verlo hay que eliminarlo
-    para acabar con esta pesadilla.\n\nOBJETIVO: Acabar con las hordas y zombie mutante."
+    enorme capaz de comandar oleadas de infectados que atacan bases militares en grupo.
+    Ese mutante es la prioridad m\xE1xima, en caso de verlo hay que eliminarlo para
+    acabar con esta pesadilla.\n\nOBJETIVO: Acabar con las hordas y zombie mutante."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -107234,40 +107269,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &1971020452796888060
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8673627603344465800}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 15b0d8a603fbcc64bbd0db164c97d872, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Scripts::IndicadoresObjetivosHistoria
-  panelObjetosHistoria: {fileID: 2551370955625371830}
-  indicadorTarjeta: {fileID: 1763271112012989896}
-  indicadorRadio: {fileID: 5779957424597614352}
-  iconoRadioAnimado: {fileID: 8072623184360946280}
-  ondaRadio1: {fileID: 6683500789113417861}
-  ondaRadio2: {fileID: 0}
-  transparenciaOnda1: {fileID: 0}
-  transparenciaOnda2: {fileID: 0}
-  duracionLlamada: 6
-  movimientoVertical: 6
-  duracionOnda: 1
-  escalaMinimaOnda: 1
-  escalaMaximaOnda: 2
-  fuenteDialogo: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  fuenteTitulo: {fileID: 11400000, guid: 0d82eaf50c142fa4ba34beb1fc9a12e4, type: 2}
-  fondoBoton: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  modeloSobreviviente: {fileID: 1245639020409412, guid: 96e947df06e21f948a8c6ad8fc919f5d, type: 3}
-  animadorSobreviviente: {fileID: 9100000, guid: e1e1f7b3cff1ee3408163f3417fcda70, type: 2}
-  paginasAudio:
-  - {fileID: 8300000, guid: a65448a0db614bed87454dce69617e0c, type: 3}
-  - {fileID: 8300000, guid: 0344089b5916478d9bf89b62bc86ab6b, type: 3}
-  - {fileID: 8300000, guid: 572a5482011144b59e1e8d353ad93c59, type: 3}
 --- !u!1 &8690151349000155973
 GameObject:
   m_ObjectHideFlags: 0
@@ -115194,8 +115195,8 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2300000, guid: 9f4d52975d229e74fa27561b00052caa, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      propertyPath: m_Materials.Array.data[0]
+      value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -115320,24 +115321,24 @@ PrefabInstance:
       value: 373.361
       objectReference: {fileID: 0}
     - target: {fileID: 13700000, guid: f6d93d298c291ed488f806db88e98379, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
-      value:
+      propertyPath: m_Materials.Array.data[1]
+      value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 13700000, guid: f6d93d298c291ed488f806db88e98379, type: 3}
-      propertyPath: 'm_Materials.Array.data[2]'
-      value:
+      propertyPath: m_Materials.Array.data[2]
+      value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 13700000, guid: f6d93d298c291ed488f806db88e98379, type: 3}
-      propertyPath: 'm_Materials.Array.data[3]'
-      value:
+      propertyPath: m_Materials.Array.data[3]
+      value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 13700000, guid: f6d93d298c291ed488f806db88e98379, type: 3}
-      propertyPath: 'm_Materials.Array.data[4]'
-      value:
+      propertyPath: m_Materials.Array.data[4]
+      value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 13700000, guid: f6d93d298c291ed488f806db88e98379, type: 3}
-      propertyPath: 'm_Materials.Array.data[5]'
-      value:
+      propertyPath: m_Materials.Array.data[5]
+      value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -115465,7 +115466,7 @@ MonoBehaviour:
     movement: 0.94
     adsMovement: 0.55
   intermediateDamageMultiplier: 0.45
-  weaponName: "Escopeta"
+  weaponName: Escopeta
   firesMultiplePellets: 1
   pelletsPerShot: 8
   pelletSpreadAngle: 4
@@ -115677,7 +115678,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: c8dbd703e3bdfb8488b1c4fda0e33ac1, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: c8dbd703e3bdfb8488b1c4fda0e33ac1, type: 3}
@@ -115752,7 +115753,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: c5783d7a6bb46c9458700a6e9f983674, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: c5783d7a6bb46c9458700a6e9f983674, type: 3}
@@ -115883,31 +115884,31 @@ PrefabInstance:
       value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 5817160054661865454, guid: 15f72bc2ae68f1d4bb38e8c99380b5ac, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 5817160054661865454, guid: 15f72bc2ae68f1d4bb38e8c99380b5ac, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
+      propertyPath: m_Materials.Array.data[1]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 5817160054661865454, guid: 15f72bc2ae68f1d4bb38e8c99380b5ac, type: 3}
-      propertyPath: 'm_Materials.Array.data[2]'
+      propertyPath: m_Materials.Array.data[2]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 5817160054661865454, guid: 15f72bc2ae68f1d4bb38e8c99380b5ac, type: 3}
-      propertyPath: 'm_Materials.Array.data[3]'
+      propertyPath: m_Materials.Array.data[3]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 5817160054661865454, guid: 15f72bc2ae68f1d4bb38e8c99380b5ac, type: 3}
-      propertyPath: 'm_Materials.Array.data[4]'
+      propertyPath: m_Materials.Array.data[4]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 5817160054661865454, guid: 15f72bc2ae68f1d4bb38e8c99380b5ac, type: 3}
-      propertyPath: 'm_Materials.Array.data[5]'
+      propertyPath: m_Materials.Array.data[5]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 5817160054661865454, guid: 15f72bc2ae68f1d4bb38e8c99380b5ac, type: 3}
-      propertyPath: 'm_Materials.Array.data[8]'
+      propertyPath: m_Materials.Array.data[8]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 5866666021909216657, guid: 15f72bc2ae68f1d4bb38e8c99380b5ac, type: 3}
@@ -116040,7 +116041,7 @@ MonoBehaviour:
     movement: 0.86
     adsMovement: 0.4
   intermediateDamageMultiplier: 0.85
-  weaponName: "M107"
+  weaponName: M107
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -116347,7 +116348,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 3d0298ace79f2c8458ecb699974c62d7, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: 3d0298ace79f2c8458ecb699974c62d7, type: 3}
@@ -116927,7 +116928,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 50d22dff939340548a0a043d97131dd7, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: 50d22dff939340548a0a043d97131dd7, type: 3}
@@ -117002,7 +117003,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 4fc6acb89ee83fa4c863878f9f3b1e6b, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: 4fc6acb89ee83fa4c863878f9f3b1e6b, type: 3}
@@ -117129,23 +117130,23 @@ PrefabInstance:
       value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 3114327979479961174, guid: 5bef28454a22b254b9f86ba9b3bb2fd4, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 3114327979479961174, guid: 5bef28454a22b254b9f86ba9b3bb2fd4, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
+      propertyPath: m_Materials.Array.data[1]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 3114327979479961174, guid: 5bef28454a22b254b9f86ba9b3bb2fd4, type: 3}
-      propertyPath: 'm_Materials.Array.data[2]'
+      propertyPath: m_Materials.Array.data[2]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 3114327979479961174, guid: 5bef28454a22b254b9f86ba9b3bb2fd4, type: 3}
-      propertyPath: 'm_Materials.Array.data[3]'
+      propertyPath: m_Materials.Array.data[3]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 3114327979479961174, guid: 5bef28454a22b254b9f86ba9b3bb2fd4, type: 3}
-      propertyPath: 'm_Materials.Array.data[4]'
+      propertyPath: m_Materials.Array.data[4]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 5900013450912621064, guid: 5bef28454a22b254b9f86ba9b3bb2fd4, type: 3}
@@ -117334,7 +117335,7 @@ MonoBehaviour:
     movement: 1
     adsMovement: 0.85
   intermediateDamageMultiplier: 0.75
-  weaponName: "USP a r\u00e1fagas"
+  weaponName: "USP a r\xE1fagas"
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -117566,11 +117567,11 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 7e6b984d2fd188442be27f12f0f305ab, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: -7511558181221131132, guid: 7e6b984d2fd188442be27f12f0f305ab, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
+      propertyPath: m_Materials.Array.data[1]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: 7e6b984d2fd188442be27f12f0f305ab, type: 3}
@@ -117645,11 +117646,11 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: d278954465bed204da058fa16e88aa40, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: -7511558181221131132, guid: d278954465bed204da058fa16e88aa40, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
+      propertyPath: m_Materials.Array.data[1]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: d278954465bed204da058fa16e88aa40, type: 3}
@@ -117732,7 +117733,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2300000, guid: a4b1684227d3ef848b206d020d22696f, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     m_RemovedComponents: []
@@ -118631,19 +118632,19 @@ PrefabInstance:
       value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 7813624873795352153, guid: 122318b846818b5439124120005e9055, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 7813624873795352153, guid: 122318b846818b5439124120005e9055, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
+      propertyPath: m_Materials.Array.data[1]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 7813624873795352153, guid: 122318b846818b5439124120005e9055, type: 3}
-      propertyPath: 'm_Materials.Array.data[4]'
+      propertyPath: m_Materials.Array.data[4]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 7813624873795352153, guid: 122318b846818b5439124120005e9055, type: 3}
-      propertyPath: 'm_Materials.Array.data[5]'
+      propertyPath: m_Materials.Array.data[5]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     m_RemovedComponents: []
@@ -118762,7 +118763,7 @@ MonoBehaviour:
     movement: 0.99
     adsMovement: 0.75
   intermediateDamageMultiplier: 0.75
-  weaponName: "MAC-10"
+  weaponName: MAC-10
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -119017,7 +119018,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 5768cd2a374cbdc4b90b691ee329397b, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: 5768cd2a374cbdc4b90b691ee329397b, type: 3}
@@ -119092,11 +119093,11 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 3fb9a16929ebae44588561efa31a0c81, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: -7511558181221131132, guid: 3fb9a16929ebae44588561efa31a0c81, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
+      propertyPath: m_Materials.Array.data[1]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: 3fb9a16929ebae44588561efa31a0c81, type: 3}
@@ -119179,8 +119180,8 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2300000, guid: c1c55b458979d1649a41e228667f80b6, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      propertyPath: m_Materials.Array.data[0]
+      value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -119241,7 +119242,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 8403bf2128e0dcf4da37e1b8dfe2a8f2, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: 8403bf2128e0dcf4da37e1b8dfe2a8f2, type: 3}
@@ -119364,19 +119365,19 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1881809168681272471, guid: 7aa200bd378e03c44a5e033a000e5db7, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 1881809168681272471, guid: 7aa200bd378e03c44a5e033a000e5db7, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
+      propertyPath: m_Materials.Array.data[1]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 1881809168681272471, guid: 7aa200bd378e03c44a5e033a000e5db7, type: 3}
-      propertyPath: 'm_Materials.Array.data[2]'
+      propertyPath: m_Materials.Array.data[2]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 1881809168681272471, guid: 7aa200bd378e03c44a5e033a000e5db7, type: 3}
-      propertyPath: 'm_Materials.Array.data[3]'
+      propertyPath: m_Materials.Array.data[3]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 2021158913539906011, guid: 7aa200bd378e03c44a5e033a000e5db7, type: 3}
@@ -119570,7 +119571,7 @@ MonoBehaviour:
     movement: 1
     adsMovement: 0.85
   intermediateDamageMultiplier: 0.75
-  weaponName: "Five-Seven"
+  weaponName: Five-Seven
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -119798,27 +119799,27 @@ PrefabInstance:
       value: 3
       objectReference: {fileID: 0}
     - target: {fileID: -4686195144225259354, guid: fef7c4c6fbe999d4b9e77d6b6bb6d35f, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: -4686195144225259354, guid: fef7c4c6fbe999d4b9e77d6b6bb6d35f, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
+      propertyPath: m_Materials.Array.data[1]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: -4686195144225259354, guid: fef7c4c6fbe999d4b9e77d6b6bb6d35f, type: 3}
-      propertyPath: 'm_Materials.Array.data[2]'
+      propertyPath: m_Materials.Array.data[2]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: -4686195144225259354, guid: fef7c4c6fbe999d4b9e77d6b6bb6d35f, type: 3}
-      propertyPath: 'm_Materials.Array.data[3]'
+      propertyPath: m_Materials.Array.data[3]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: -4686195144225259354, guid: fef7c4c6fbe999d4b9e77d6b6bb6d35f, type: 3}
-      propertyPath: 'm_Materials.Array.data[4]'
+      propertyPath: m_Materials.Array.data[4]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: -4686195144225259354, guid: fef7c4c6fbe999d4b9e77d6b6bb6d35f, type: 3}
-      propertyPath: 'm_Materials.Array.data[5]'
+      propertyPath: m_Materials.Array.data[5]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: -2178230817663131788, guid: fef7c4c6fbe999d4b9e77d6b6bb6d35f, type: 3}
@@ -120018,7 +120019,7 @@ MonoBehaviour:
     movement: 0.86
     adsMovement: 0.4
   intermediateDamageMultiplier: 0.85
-  weaponName: "SVD"
+  weaponName: SVD
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -120290,7 +120291,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 6a0e8f86fe3df7d4fb7852cc80a8067f, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: 6a0e8f86fe3df7d4fb7852cc80a8067f, type: 3}
@@ -120436,7 +120437,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 3d2b856b2d22f4b4bb1a99e19628fca3, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: 3d2b856b2d22f4b4bb1a99e19628fca3, type: 3}
@@ -120555,23 +120556,23 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1502709293594827187, guid: d649718d0486a5042b8b547cce260e96, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 1502709293594827187, guid: d649718d0486a5042b8b547cce260e96, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
+      propertyPath: m_Materials.Array.data[1]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 1502709293594827187, guid: d649718d0486a5042b8b547cce260e96, type: 3}
-      propertyPath: 'm_Materials.Array.data[2]'
+      propertyPath: m_Materials.Array.data[2]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 1502709293594827187, guid: d649718d0486a5042b8b547cce260e96, type: 3}
-      propertyPath: 'm_Materials.Array.data[3]'
+      propertyPath: m_Materials.Array.data[3]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 1502709293594827187, guid: d649718d0486a5042b8b547cce260e96, type: 3}
-      propertyPath: 'm_Materials.Array.data[4]'
+      propertyPath: m_Materials.Array.data[4]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 2075359345393705802, guid: d649718d0486a5042b8b547cce260e96, type: 3}
@@ -120733,7 +120734,7 @@ MonoBehaviour:
     movement: 1
     adsMovement: 0.85
   intermediateDamageMultiplier: 0.75
-  weaponName: "Glock autom\u00e1tica"
+  weaponName: "Glock autom\xE1tica"
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -121128,19 +121129,19 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 13700000, guid: 2c83c9b52aa9ed148998e69b5f33e88b, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 13700000, guid: 2c83c9b52aa9ed148998e69b5f33e88b, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
+      propertyPath: m_Materials.Array.data[1]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 13700000, guid: 2c83c9b52aa9ed148998e69b5f33e88b, type: 3}
-      propertyPath: 'm_Materials.Array.data[2]'
+      propertyPath: m_Materials.Array.data[2]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 13700000, guid: 2c83c9b52aa9ed148998e69b5f33e88b, type: 3}
-      propertyPath: 'm_Materials.Array.data[3]'
+      propertyPath: m_Materials.Array.data[3]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     m_RemovedComponents: []
@@ -121252,7 +121253,7 @@ MonoBehaviour:
     movement: 0.86
     adsMovement: 0.4
   intermediateDamageMultiplier: 0.85
-  weaponName: "M24"
+  weaponName: M24
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -121571,7 +121572,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 61d730e9285fc2147bb51af16df77ab6, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: 61d730e9285fc2147bb51af16df77ab6, type: 3}
@@ -121712,7 +121713,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: e38284a3c5e0b4146ae92a5a019b1f2f, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: e38284a3c5e0b4146ae92a5a019b1f2f, type: 3}
@@ -122055,7 +122056,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 0434f8e1c9325004e8125c862a41450f, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: 0434f8e1c9325004e8125c862a41450f, type: 3}
@@ -122142,15 +122143,15 @@ PrefabInstance:
       value: 3
       objectReference: {fileID: 0}
     - target: {fileID: -5120161052670305876, guid: 45b6447b50f532b4ab2048ce19731204, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: -5120161052670305876, guid: 45b6447b50f532b4ab2048ce19731204, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
+      propertyPath: m_Materials.Array.data[1]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: -5120161052670305876, guid: 45b6447b50f532b4ab2048ce19731204, type: 3}
-      propertyPath: 'm_Materials.Array.data[2]'
+      propertyPath: m_Materials.Array.data[2]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: -4905721500365080413, guid: 45b6447b50f532b4ab2048ce19731204, type: 3}
@@ -122372,7 +122373,7 @@ MonoBehaviour:
     movement: 0.96
     adsMovement: 0.63
   intermediateDamageMultiplier: 0.75
-  weaponName: "ACR"
+  weaponName: ACR
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -122648,7 +122649,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 49a44ef3b36f16546843e8c0929a8398, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: 49a44ef3b36f16546843e8c0929a8398, type: 3}
@@ -122723,11 +122724,11 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: a9cd4f284f201204a93c637da12223bf, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: -7511558181221131132, guid: a9cd4f284f201204a93c637da12223bf, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
+      propertyPath: m_Materials.Array.data[1]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: a9cd4f284f201204a93c637da12223bf, type: 3}
@@ -123004,7 +123005,7 @@ MonoBehaviour:
     movement: 0.99
     adsMovement: 0.75
   intermediateDamageMultiplier: 0.75
-  weaponName: "UMP"
+  weaponName: UMP
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -123301,8 +123302,8 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2300000, guid: 894eecaba4473bc41a05f263041a2272, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      propertyPath: m_Materials.Array.data[0]
+      value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -123363,11 +123364,11 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 392816f313f033941bdb19e8a1835b0f, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: -7511558181221131132, guid: 392816f313f033941bdb19e8a1835b0f, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
+      propertyPath: m_Materials.Array.data[1]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: 392816f313f033941bdb19e8a1835b0f, type: 3}
@@ -123486,7 +123487,7 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -5675355151119989895, guid: f2fc14639e04fde4db228e4d14874d6c, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 9bea14ef0920fb4469a0db3542252ea1, type: 2}
     - target: {fileID: -5441733475878552817, guid: f2fc14639e04fde4db228e4d14874d6c, type: 3}
@@ -125676,52 +125677,52 @@ PrefabInstance:
       value: 3
       objectReference: {fileID: 0}
     - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      propertyPath: m_Materials.Array.data[0]
+      value: 
       objectReference: {fileID: 2100000, guid: 554d0da9e9a932a4ab85edebf7929163, type: 2}
     - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
-      value:
+      propertyPath: m_Materials.Array.data[1]
+      value: 
       objectReference: {fileID: 2100000, guid: 554d0da9e9a932a4ab85edebf7929163, type: 2}
     - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
-      propertyPath: 'm_Materials.Array.data[2]'
-      value:
+      propertyPath: m_Materials.Array.data[2]
+      value: 
       objectReference: {fileID: 2100000, guid: 554d0da9e9a932a4ab85edebf7929163, type: 2}
     - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
-      propertyPath: 'm_Materials.Array.data[3]'
-      value:
+      propertyPath: m_Materials.Array.data[3]
+      value: 
       objectReference: {fileID: 2100000, guid: 12b18611cab689047b64f1667fef4fd6, type: 2}
     - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
-      propertyPath: 'm_Materials.Array.data[4]'
-      value:
+      propertyPath: m_Materials.Array.data[4]
+      value: 
       objectReference: {fileID: 2100000, guid: 26b72c3eb1bfe3a478bf9776caf55355, type: 2}
     - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
-      propertyPath: 'm_Materials.Array.data[5]'
-      value:
+      propertyPath: m_Materials.Array.data[5]
+      value: 
       objectReference: {fileID: 2100000, guid: 554d0da9e9a932a4ab85edebf7929163, type: 2}
     - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
-      propertyPath: 'm_Materials.Array.data[6]'
-      value:
+      propertyPath: m_Materials.Array.data[6]
+      value: 
       objectReference: {fileID: 2100000, guid: 26b72c3eb1bfe3a478bf9776caf55355, type: 2}
     - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
-      propertyPath: 'm_Materials.Array.data[7]'
-      value:
+      propertyPath: m_Materials.Array.data[7]
+      value: 
       objectReference: {fileID: 2100000, guid: 554d0da9e9a932a4ab85edebf7929163, type: 2}
     - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
-      propertyPath: 'm_Materials.Array.data[8]'
-      value:
+      propertyPath: m_Materials.Array.data[8]
+      value: 
       objectReference: {fileID: 2100000, guid: 554d0da9e9a932a4ab85edebf7929163, type: 2}
     - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
-      propertyPath: 'm_Materials.Array.data[9]'
-      value:
+      propertyPath: m_Materials.Array.data[9]
+      value: 
       objectReference: {fileID: 2100000, guid: 554d0da9e9a932a4ab85edebf7929163, type: 2}
     - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
-      propertyPath: 'm_Materials.Array.data[10]'
-      value:
+      propertyPath: m_Materials.Array.data[10]
+      value: 
       objectReference: {fileID: 2100000, guid: 3461750b7996f994dbb7f3595f878553, type: 2}
     - target: {fileID: -2595243373771367250, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
-      propertyPath: 'm_Materials.Array.data[11]'
-      value:
+      propertyPath: m_Materials.Array.data[11]
+      value: 
       objectReference: {fileID: 2100000, guid: 554d0da9e9a932a4ab85edebf7929163, type: 2}
     - target: {fileID: -2531735426947555059, guid: c8e76d17596f69442ba212c558bac20e, type: 3}
       propertyPath: m_Layer
@@ -126414,28 +126415,28 @@ PrefabInstance:
       value: 0.0427
       objectReference: {fileID: 0}
     - target: {fileID: 13700000, guid: bfda376b0f658a748870ea8f7c2c7c03, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      propertyPath: m_Materials.Array.data[0]
+      value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 13700000, guid: bfda376b0f658a748870ea8f7c2c7c03, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
-      value:
+      propertyPath: m_Materials.Array.data[1]
+      value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 13700000, guid: bfda376b0f658a748870ea8f7c2c7c03, type: 3}
-      propertyPath: 'm_Materials.Array.data[2]'
-      value:
+      propertyPath: m_Materials.Array.data[2]
+      value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 13700000, guid: bfda376b0f658a748870ea8f7c2c7c03, type: 3}
-      propertyPath: 'm_Materials.Array.data[3]'
-      value:
+      propertyPath: m_Materials.Array.data[3]
+      value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 13700000, guid: bfda376b0f658a748870ea8f7c2c7c03, type: 3}
-      propertyPath: 'm_Materials.Array.data[4]'
-      value:
+      propertyPath: m_Materials.Array.data[4]
+      value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 13700000, guid: bfda376b0f658a748870ea8f7c2c7c03, type: 3}
-      propertyPath: 'm_Materials.Array.data[5]'
-      value:
+      propertyPath: m_Materials.Array.data[5]
+      value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -126566,7 +126567,7 @@ MonoBehaviour:
     movement: 0.96
     adsMovement: 0.63
   intermediateDamageMultiplier: 0.75
-  weaponName: "AK-12"
+  weaponName: AK-12
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -126786,7 +126787,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: ebd0537abf6033e4e951aac5e9b8324a, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: ebd0537abf6033e4e951aac5e9b8324a, type: 3}
@@ -126984,19 +126985,19 @@ PrefabInstance:
       value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 2758066850473617531, guid: 0b59c35f2802ef349b05f480e829e527, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 2758066850473617531, guid: 0b59c35f2802ef349b05f480e829e527, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
+      propertyPath: m_Materials.Array.data[1]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 2758066850473617531, guid: 0b59c35f2802ef349b05f480e829e527, type: 3}
-      propertyPath: 'm_Materials.Array.data[2]'
+      propertyPath: m_Materials.Array.data[2]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 2758066850473617531, guid: 0b59c35f2802ef349b05f480e829e527, type: 3}
-      propertyPath: 'm_Materials.Array.data[5]'
+      propertyPath: m_Materials.Array.data[5]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 3808888646551737217, guid: 0b59c35f2802ef349b05f480e829e527, type: 3}
@@ -127193,7 +127194,7 @@ MonoBehaviour:
     movement: 0.96
     adsMovement: 0.63
   intermediateDamageMultiplier: 0.75
-  weaponName: "M4 (r\u00e1fagas)"
+  weaponName: "M4 (r\xE1fagas)"
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -127525,11 +127526,11 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 5fa2471b62db3d34b89451c262bf6e7f, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: -7511558181221131132, guid: 5fa2471b62db3d34b89451c262bf6e7f, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
+      propertyPath: m_Materials.Array.data[1]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: 5fa2471b62db3d34b89451c262bf6e7f, type: 3}
@@ -127604,7 +127605,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: cc2a33e2e88ac924ca4325e047e332af, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: cc2a33e2e88ac924ca4325e047e332af, type: 3}
@@ -127761,7 +127762,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: ac534aedce77bb6428daba8f7fa8944a, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 919132149155446097, guid: ac534aedce77bb6428daba8f7fa8944a, type: 3}
@@ -127892,19 +127893,19 @@ PrefabInstance:
       value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 5338413243382810967, guid: b7119bc2d9d98b6488a7cc590f14ba51, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 5338413243382810967, guid: b7119bc2d9d98b6488a7cc590f14ba51, type: 3}
-      propertyPath: 'm_Materials.Array.data[2]'
+      propertyPath: m_Materials.Array.data[2]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 5338413243382810967, guid: b7119bc2d9d98b6488a7cc590f14ba51, type: 3}
-      propertyPath: 'm_Materials.Array.data[3]'
+      propertyPath: m_Materials.Array.data[3]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 5338413243382810967, guid: b7119bc2d9d98b6488a7cc590f14ba51, type: 3}
-      propertyPath: 'm_Materials.Array.data[4]'
+      propertyPath: m_Materials.Array.data[4]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 5866666021909216657, guid: b7119bc2d9d98b6488a7cc590f14ba51, type: 3}
@@ -128094,7 +128095,7 @@ MonoBehaviour:
     movement: 0.99
     adsMovement: 0.75
   intermediateDamageMultiplier: 0.75
-  weaponName: "Vector"
+  weaponName: Vector
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -128310,19 +128311,19 @@ PrefabInstance:
       value: 3
       objectReference: {fileID: 0}
     - target: {fileID: -4049816218337563135, guid: 7d626470a62b39a44ac8d1a5f28a34d2, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: -4049816218337563135, guid: 7d626470a62b39a44ac8d1a5f28a34d2, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
+      propertyPath: m_Materials.Array.data[1]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: -4049816218337563135, guid: 7d626470a62b39a44ac8d1a5f28a34d2, type: 3}
-      propertyPath: 'm_Materials.Array.data[3]'
+      propertyPath: m_Materials.Array.data[3]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: -4049816218337563135, guid: 7d626470a62b39a44ac8d1a5f28a34d2, type: 3}
-      propertyPath: 'm_Materials.Array.data[4]'
+      propertyPath: m_Materials.Array.data[4]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: -3663809021211357382, guid: 7d626470a62b39a44ac8d1a5f28a34d2, type: 3}
@@ -128552,7 +128553,7 @@ MonoBehaviour:
     movement: 0.99
     adsMovement: 0.75
   intermediateDamageMultiplier: 0.75
-  weaponName: "P90"
+  weaponName: P90
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6
@@ -128824,15 +128825,15 @@ PrefabInstance:
       value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 8716340398241949078, guid: 4179adb2016a5fb46b51b13bcaf54e79, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
+      propertyPath: m_Materials.Array.data[1]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 8716340398241949078, guid: 4179adb2016a5fb46b51b13bcaf54e79, type: 3}
-      propertyPath: 'm_Materials.Array.data[2]'
+      propertyPath: m_Materials.Array.data[2]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     - target: {fileID: 8716340398241949078, guid: 4179adb2016a5fb46b51b13bcaf54e79, type: 3}
-      propertyPath: 'm_Materials.Array.data[3]'
+      propertyPath: m_Materials.Array.data[3]
       value: 
       objectReference: {fileID: 2100000, guid: 85f37da445b3cfd4f8a94cef0bca3ebd, type: 2}
     m_RemovedComponents: []
@@ -128986,7 +128987,7 @@ MonoBehaviour:
     movement: 0.99
     adsMovement: 0.75
   intermediateDamageMultiplier: 0.75
-  weaponName: "MP5"
+  weaponName: MP5
   firesMultiplePellets: 0
   pelletsPerShot: 8
   pelletSpreadAngle: 6

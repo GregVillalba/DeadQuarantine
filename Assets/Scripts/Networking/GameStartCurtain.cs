@@ -17,6 +17,8 @@ public class GameStartCurtain : MonoBehaviour
     private static double? inicioCortinaPersistente;
     public static bool CargaEnCurso => cortinaPersistenteLobby != null && !saliendoAlMenu;
 
+    private static GameObject camaraRespaldo;
+
     public static void MostrarCortinaDesdeLobby()
     {
         MostrarCortinaPersistente();
@@ -149,8 +151,20 @@ public class GameStartCurtain : MonoBehaviour
     avisoCarga.transform.parent.gameObject.SetActive(true);
 }
 
+    private static void ActivarCamaraRespaldo()
+    {
+        if (camaraRespaldo != null) return;
+
+        camaraRespaldo = new GameObject("CamaraRespaldo");
+        var cam = camaraRespaldo.AddComponent<Camera>();
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = Color.black;
+        cam.cullingMask = 0;
+        cam.depth = -100;
+    }
     public static void MostrarSalidaAlMenu(string aviso = null)
     {
+        ActivarCamaraRespaldo();
         saliendoAlMenu = true;
         DeadQuarantine.PvPvE.PvPvELoadingScreen.CancelOriginal();
         if (cortinaPersistenteLobby == null)

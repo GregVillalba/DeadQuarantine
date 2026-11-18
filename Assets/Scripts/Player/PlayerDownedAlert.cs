@@ -8,27 +8,23 @@ using System.Collections.Generic;
 // junto a PlayerHealth. Solo actúa en el dueño.
 public class PlayerDownedAlert : NetworkBehaviour
 {
+    
     [Header("Referencias")]
     [SerializeField] private PlayerHealth playerHealth;
 
     [Header("UI")]
     [SerializeField] private GameObject panelAviso;
-   // [SerializeField] private TextMeshProUGUI textoAviso;
     [Tooltip("{0} se reemplaza por los segundos restantes.")]
-   // [SerializeField] private string formatoTexto = "¡Compañero abatido! Reanimalo: {0} s";
 
-   [SerializeField] private TextMeshProUGUI[] textosAviso;   // 3 líneas (máx. 3 compañeros)
-//[Tooltip("{0} = nombre del jugador, {1} = segundos restantes.")]
-//[SerializeField] private string formatoTexto = "{0} abatido! Reanimalo en {1} seg";
+    [SerializeField] private TextMeshProUGUI[] textosAviso;   // 3 líneas (máx. 3 compañeros)
+    [Tooltip("{0} = nombre del jugador.")]
+    [SerializeField] private string formatoTexto = "{0} fue abatido";
+    [Tooltip("Segundos que se muestra el aviso de cada compañero abatido.")]
+    [SerializeField] private float duracionAviso = 5f;
 
-[Tooltip("{0} = nombre, {1} = metros, {2} = segundos restantes.")]
-[SerializeField] private string formatoTexto = "{0} fue abatido a {1} metros! Revivelo en {2} seg";
-
-//private readonly List<(string nombre, float tiempo)> abatidos =
-  //  new List<(string nombre, float tiempo)>();
-
-  private readonly List<(string nombre, float tiempo, int metros)> abatidos =
-    new List<(string nombre, float tiempo, int metros)>();
+private readonly Dictionary<PlayerHealth, float> vencimientos = new Dictionary<PlayerHealth, float>();
+private readonly List<PlayerHealth> paraQuitar = new List<PlayerHealth>();
+private readonly List<(string nombre, float vence)> abatidos = new List<(string nombre, float vence)>();
 
     [Header("Urgencia")]
     [Tooltip("Por debajo de estos segundos el texto cambia de color.")]
@@ -41,6 +37,7 @@ public class PlayerDownedAlert : NetworkBehaviour
 
     private PlayerHealth[] jugadores = new PlayerHealth[0];
     private float proximaBusqueda;
+    
 
     private void Awake()
     {
@@ -105,7 +102,17 @@ public class PlayerDownedAlert : NetworkBehaviour
             return;
         }*/
 
-        abatidos.Clear();
+    abatidos.Clear();
+paraQuitar.Clear();
+
+// Quitar a los que ya no están abatidos, para que una nueva caída vuelva a avisar.
+foreach (var par in vencimientos)
+{
+    if (par.Key == null || !par.Key.IsSpawned || !par.Key.IsDowned)
+        paraQuitar.Add(par.Key);
+}
+foreach (PlayerHealth quitar in paraQuitar)
+    vencimientos.Remove(quitar);
 
 foreach (PlayerHealth jugador in jugadores)
 {
@@ -115,16 +122,20 @@ foreach (PlayerHealth jugador in jugadores)
     if (!jugador.IsSpawned || !jugador.IsDowned)
         continue;
 
+    // Primera vez que se lo ve abatido: arranca su cuenta de 5 s.
+    if (!vencimientos.TryGetValue(jugador, out float vence))
+    {
+        vence = Time.time + duracionAviso;
+        vencimientos[jugador] = vence;
+    }
+
+    if (Time.time >= vence)
+        continue;
+
     PlayerNameplate rotulo = jugador.GetComponentInChildren<PlayerNameplate>(true);
     string nombre = rotulo != null ? rotulo.UsernameOnly : "JUGADOR";
 
-   // abatidos.Add((nombre, jugador.DownedTimeRemaining.Value));
-
-   int metros = Mathf.RoundToInt(
-    Vector3.Distance(playerHealth.transform.position, jugador.transform.position)
-);
-
-abatidos.Add((nombre, jugador.DownedTimeRemaining.Value, metros));
+    abatidos.Add((nombre, vence));
 }
 
 if (abatidos.Count == 0)
@@ -133,32 +144,9 @@ if (abatidos.Count == 0)
     return;
 }
 
-// El que menos tiempo tiene queda arriba.
-abatidos.Sort((a, b) => a.tiempo.CompareTo(b.tiempo));
+abatidos.Sort((a, b) => a.vence.CompareTo(b.vence));
 Mostrar();
-
-        Mostrar();
     }
-
-   /* private void Mostrar(float segundosRestantes)
-    {
-        if (panelAviso != null && !panelAviso.activeSelf)
-            panelAviso.SetActive(true);
-
-        if (textoAviso == null)
-            return;
-
-        textoAviso.text = string.Format(
-            formatoTexto,
-            Mathf.CeilToInt(segundosRestantes)
-        );
-
-        textoAviso.color =
-            segundosRestantes <= umbralUrgente
-                ? colorUrgente
-                : colorNormal;
-    }*/
-
     private void Mostrar()
 {
     if (panelAviso != null && !panelAviso.activeSelf)
@@ -183,14 +171,8 @@ Mostrar();
         if (!texto.gameObject.activeSelf)
             texto.gameObject.SetActive(true);
 
-       /* var (nombre, tiempo) = abatidos[i];
-
-        texto.text = string.Format(formatoTexto, nombre, Mathf.CeilToInt(tiempo));*/
-
-        var (nombre, tiempo, metros) = abatidos[i];
-
-        texto.text = string.Format(formatoTexto, nombre, metros, Mathf.CeilToInt(tiempo));
-        texto.color = tiempo <= umbralUrgente ? colorUrgente : colorNormal;
+        texto.text = string.Format(formatoTexto, abatidos[i].nombre);
+        texto.color = colorNormal;
     }
 }
 
