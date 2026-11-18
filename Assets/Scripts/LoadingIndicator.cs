@@ -56,6 +56,8 @@ internal sealed class LoadingIndicator : MonoBehaviour
         if (!string.IsNullOrEmpty(message))
         {
             var label = PvPvEUIFactory.Text(track, "Status", message, 0, 0, 300, 35, null);
+            if (PvPvEUIFactory.HeadingFont)
+                label.font = PvPvEUIFactory.HeadingFont;
             label.alignment = TextAlignmentOptions.Center;
             label.rectTransform.anchoredPosition = new Vector2(0f, 41f);
         }

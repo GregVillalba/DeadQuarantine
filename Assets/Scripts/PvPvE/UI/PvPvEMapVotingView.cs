@@ -16,7 +16,7 @@ namespace DeadQuarantine.PvPvE.UI
         TMP_Text readyLabel;
         bool? requestedReady;
         void Awake(){
-            PvPvEUIFactory.Polish(transform);PvPvEUIFactory.Place(headline.rectTransform,new(.035f,.30f),new(.66f,.38f));headline.fontSize=21;headline.fontSizeMax=21;headline.alignment=TextAlignmentOptions.MidlineLeft;headline.color=PvPvEUIFactory.Accent;
+            PvPvEUIFactory.Polish(transform, useMenuFont: true);PvPvEUIFactory.Place(headline.rectTransform,new(.035f,.30f),new(.66f,.38f));headline.fontSize=21;headline.fontSizeMax=21;headline.alignment=TextAlignmentOptions.MidlineLeft;headline.color=PvPvEUIFactory.Accent;
             PvPvEUIFactory.Place(hint.rectTransform,new(.035f,.255f),new(.66f,.30f));hint.alignment=TextAlignmentOptions.MidlineLeft;
             var readyPanel=PvPvEUIFactory.Panel(transform, "ConfirmReady", 0, 0, 1, 1);
             PvPvEUIFactory.Place(readyPanel, new(.035f,.394f), new(.30f,.474f));

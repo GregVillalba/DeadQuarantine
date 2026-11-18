@@ -141,7 +141,7 @@ public class LobbyPlayerSlot : MonoBehaviour
             titleText.text = cleanName.Length > 0 ? cleanName : "JUGADOR " + (slotIndex + 1);
 
         if (roleText != null)
-            roleText.text = "[ " + (isHost ? "ANFITRION" : "CO - OP / REMOTO") + (isLocal ? " / TU" : "") + " ]";
+            roleText.text = "[ " + (isHost ? "ANFITRIÓN" : "CO - OP / REMOTO") + (isLocal ? " / TÚ" : "") + " ]";
 
         SetLine(connectionText, connectionIcon, true, "CONECTADO", "DESCONECTADO");
         SetLine(readyText, readyIcon, ready, "ESTADO: LISTO", "ESTADO: NO LISTO");

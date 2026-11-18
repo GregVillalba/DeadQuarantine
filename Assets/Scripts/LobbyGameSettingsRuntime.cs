@@ -1,4 +1,5 @@
 using System;
+using DeadQuarantine.PvPvE;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -85,6 +86,7 @@ public class LobbyGameSettingsRuntime : MonoBehaviour
             : BuscarValorDeSeccion(popup.transform, "Seccion_Dificultad");
 
         subtitulo = BuscarTexto(popup.transform, "Subtitulo");
+        EstilizarBotonCerrar();
 
         botonModo = PrepararBoton("Seccion_Modo", SiguienteModo);
         botonMapa = PrepararBoton("Seccion_Mapa", SiguienteMapa);
@@ -120,8 +122,8 @@ public class LobbyGameSettingsRuntime : MonoBehaviour
         if (subtitulo != null)
         {
             subtitulo.text = editable
-                ? "HACE CLICK EN CADA OPCION PARA CAMBIARLA"
-                : "SOLO EL ANFITRION PUEDE MODIFICAR LA CONFIGURACION";
+                ? "HACÉ CLIC EN CADA OPCIÓN PARA CAMBIARLA"
+                : "SOLO EL ANFITRIÓN PUEDE MODIFICAR LA CONFIGURACIÓN";
         }
 
         ActualizarVisual();
@@ -468,6 +470,23 @@ public class LobbyGameSettingsRuntime : MonoBehaviour
                cfg.modoSeleccionado == ConfiguracionPartidaSeleccionada.ModoJuego.Historia;
     }
 
+    private void EstilizarBotonCerrar()
+    {
+        Transform cierre = BuscarEnHijos(popup.transform, "Btn_Cerrar") ??
+            BuscarEnHijos(popup.transform, "Cerrar");
+        Button boton = cierre?.GetComponentInChildren<Button>(true);
+        if (boton == null)
+            return;
+
+        PvPvEUIFactory.StyleMenuButton(boton);
+        TMP_Text etiqueta = boton.GetComponentInChildren<TMP_Text>(true);
+        if (etiqueta == null)
+            return;
+
+        etiqueta.enableAutoSizing = false;
+        etiqueta.fontSize = 26f;
+    }
+
     private Button PrepararBoton(string nombreSeccion, Action accion)
     {
         Transform seccion = BuscarEnHijos(popup.transform, nombreSeccion);
@@ -501,7 +520,7 @@ public class LobbyGameSettingsRuntime : MonoBehaviour
             return valor;
 
         if (valor == "-")
-            return "-  [ CLICK PARA ELEGIR ]";
+            return "-  [ CLIC PARA ELEGIR ]";
 
         return valor + "  >";
     }
@@ -533,7 +552,7 @@ public class LobbyGameSettingsRuntime : MonoBehaviour
         switch (dificultad)
         {
             case ConfiguracionPartidaSeleccionada.Dificultad.Normal: return "NORMAL";
-            case ConfiguracionPartidaSeleccionada.Dificultad.Dificil: return "DIFICIL";
+            case ConfiguracionPartidaSeleccionada.Dificultad.Dificil: return "DIFÍCIL";
             case ConfiguracionPartidaSeleccionada.Dificultad.Pesadilla: return "PESADILLA";
             default: return "-";
         }

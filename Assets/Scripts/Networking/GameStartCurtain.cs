@@ -103,6 +103,8 @@ public class GameStartCurtain : MonoBehaviour
         RectTransform aviso = Panel(raiz.transform, "Aviso de desconexión", 0, 0, 1, 1, 1f);
         Place(aviso, new Vector2(.17f, .49f), new Vector2(.83f, .61f));
         avisoCarga = Text(aviso, "Mensaje", "", 0, 0, 1, 1, null, 30);
+        if (HeadingFont)
+            avisoCarga.font = HeadingFont;
         Place(avisoCarga.rectTransform, new Vector2(.03f, .06f), new Vector2(.97f, .94f));
         avisoCarga.alignment = TextAlignmentOptions.Center;
         if (!pantallaCooperativa) avisoCarga.text = "CARGANDO ESCENARIO";

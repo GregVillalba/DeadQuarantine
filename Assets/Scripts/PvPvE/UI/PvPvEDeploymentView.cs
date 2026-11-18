@@ -24,7 +24,7 @@ namespace DeadQuarantine.PvPvE.UI {
    if(backdrop){PvPvEUIFactory.Place(backdrop.rectTransform,dead?new(.28f,.35f):new(.50f,.18f),dead?new(.72f,.69f):new(.98f,.88f));backdrop.gameObject.SetActive(dead);}
    PvPvEUIFactory.Place(heading.rectTransform,dead?new(.32f,.53f):new(.54f,.76f),dead?new(.68f,.64f):new(.94f,.85f));
    PvPvEUIFactory.Place(message.rectTransform,dead?new(.32f,.39f):new(.54f,.65f),dead?new(.68f,.53f):new(.94f,.75f));
-   heading.font=PvPvEUIFactory.HeadingFont;heading.fontSize=dead?44:28;message.font=PvPvEUIFactory.BodyFont;
+   heading.font=PvPvEUIFactory.HeadingFont;heading.fontSize=dead?44:28;message.font=PvPvEUIFactory.HeadingFont;
    heading.alignment=dead?TextAlignmentOptions.Center:TextAlignmentOptions.MidlineLeft;message.alignment=heading.alignment;
    if(start&&!dead){PvPvEUIFactory.Place(heading.rectTransform,new(.35f,.41f),new(.65f,.59f));heading.alignment=TextAlignmentOptions.Center;heading.fontSize=96;heading.color=Color.white;if(backdrop){PvPvEUIFactory.Place(backdrop.rectTransform,new(.35f,.41f),new(.65f,.59f));backdrop.color=new Color(0,0,0,.65f);backdrop.gameObject.SetActive(true);}}
    heading.text=dead?"HAS MUERTO":start?"START":"PREPARANDO EQUIPAMIENTO";
@@ -50,7 +50,7 @@ namespace DeadQuarantine.PvPvE.UI {
   }
   void Button(string name,string text,int index,UnityEngine.Events.UnityAction action){
    var go=new GameObject(name,typeof(RectTransform),typeof(Image),typeof(Button));go.transform.SetParent(choices,false);var rt=(RectTransform)go.transform;rt.anchorMin=new(0,1-(index+1)*.15f);rt.anchorMax=new(1,1-index*.15f);rt.offsetMin=new(0,3);rt.offsetMax=new(0,-3);go.GetComponent<Image>().color=new(.025f,.10f,.11f,.96f);go.GetComponent<Button>().onClick.AddListener(action);PvPvEUIFactory.StyleButton(go.GetComponent<Button>());
-   var t=new GameObject("Label",typeof(RectTransform)).AddComponent<TextMeshProUGUI>();t.transform.SetParent(go.transform,false);t.rectTransform.anchorMin=Vector2.zero;t.rectTransform.anchorMax=Vector2.one;t.rectTransform.offsetMin=new(10,0);t.rectTransform.offsetMax=new(-10,0);t.font=PvPvEUIFactory.BodyFont;t.fontSize=18;t.text=text;t.richText=false;t.alignment=TextAlignmentOptions.MidlineLeft;
+   var t=new GameObject("Label",typeof(RectTransform)).AddComponent<TextMeshProUGUI>();t.transform.SetParent(go.transform,false);t.rectTransform.anchorMin=Vector2.zero;t.rectTransform.anchorMax=Vector2.one;t.rectTransform.offsetMin=new(10,0);t.rectTransform.offsetMax=new(-10,0);t.font=PvPvEUIFactory.HeadingFont;t.fontSize=18;t.text=text;t.richText=false;t.alignment=TextAlignmentOptions.MidlineLeft;
   }
   TMP_Text Label(string name,Vector2 min,Vector2 max,int size){var go=new GameObject(name,typeof(RectTransform));go.transform.SetParent(root.transform,false);var t=go.AddComponent<TextMeshProUGUI>();t.rectTransform.anchorMin=min;t.rectTransform.anchorMax=max;t.rectTransform.offsetMin=t.rectTransform.offsetMax=Vector2.zero;t.fontSize=size;t.color=PvPvEUIFactory.Accent;t.richText=false;return t;}
   public void DisposeView(){if(root){root.SetActive(false);Destroy(root);}if(input)Destroy(input);if(deployment)deployment.ClassReply-=Reply;}
