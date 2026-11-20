@@ -15,7 +15,7 @@ namespace ithappy.Casino
     public sealed class SlotMachineJugable : MonoBehaviour
     {
         private const string JackpotMessage = "DeadQuarantine.SlotMachineJackpot";
-        private static bool jackpotMessageRegistered;
+        private static NetworkManager jackpotHandlerManager;
 
         [Header("Chances")]
         [SerializeField, Min(1)] private int chancesMaximas = 5;
@@ -68,14 +68,22 @@ namespace ithappy.Casino
             RegistrarMensajePremio();
         }
 
+        private void Update()
+        {
+            // Las máquinas de historia pueden despertar antes de que se inicialice
+            // NetworkManager. Reintentar permite que el servidor registre el handler
+            // cuando ya existe CustomMessagingManager.
+            RegistrarMensajePremio();
+        }
+
         private static void RegistrarMensajePremio()
         {
             NetworkManager red = NetworkManager.Singleton;
-            if (jackpotMessageRegistered || red == null || red.CustomMessagingManager == null)
+            if (red == null || red.CustomMessagingManager == null || jackpotHandlerManager == red)
                 return;
 
             red.CustomMessagingManager.RegisterNamedMessageHandler(JackpotMessage, RecibirSolicitudPremio);
-            jackpotMessageRegistered = true;
+            jackpotHandlerManager = red;
         }
 
         /// <summary>Gasta una chance y gira. Devuelve false si no se pudo.</summary>
