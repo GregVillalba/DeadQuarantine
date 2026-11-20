@@ -68,7 +68,8 @@ public class ColocadorObjetos : NetworkBehaviour
     [Tooltip("Se muestra solo mientras se coloca un objeto.")]
     [SerializeField] private GameObject panelAyuda;
     [SerializeField] private TextMeshProUGUI textoAyuda;
-    [Tooltip("{0} = tecla de colocar, {1} = tecla de cancelar, {2} = nombre del objeto (el de la oferta).")]
+    [Tooltip("{0} = tecla de colocar, {1} = tecla de cancelar, {2} = nombre del objeto (el de la oferta). " +
+             "No usar llaves { } sueltas: para corchetes, [ ].")]
     [SerializeField] private string formatoAyuda = "{0} Colocar {2}    {1} Cancelar";
     [SerializeField] private string textoEspacioOcupado = "Espacio ocupado";
     [Tooltip("Tutorial: el fantasma está fuera de la zona marcada en el piso.")]
@@ -568,11 +569,20 @@ public class ColocadorObjetos : NetworkBehaviour
         if (textoAyuda == null)
             return;
 
-        string ayuda = string.Format(
-            formatoAyuda,
-            controls.Player.Fire.GetBindingDisplayString(),
-            controls.Player.Aim.GetBindingDisplayString(),
-            nombreActual);
+        string ayuda;
+        try
+        {
+            ayuda = string.Format(
+                formatoAyuda,
+                controls.Player.Fire.GetBindingDisplayString(),
+                controls.Player.Aim.GetBindingDisplayString(),
+                nombreActual);
+        }
+        catch (System.FormatException)
+        {
+            // Una llave suelta ({ o }) en el texto del Inspector: se muestra tal cual en vez de tirar error cada frame.
+            ayuda = formatoAyuda;
+        }
 
         string motivoInvalido = fueraDeZona ? textoFueraDeZona : textoEspacioOcupado;
         textoAyuda.text = posicionValida ? ayuda : motivoInvalido + "    " + ayuda;
