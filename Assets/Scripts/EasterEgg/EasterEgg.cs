@@ -12,15 +12,10 @@ public class EasterEgg : NetworkBehaviour
     [Header("Interacción")]
     [SerializeField] private float interactionDistance = 3f;
 
-    [Tooltip("Objeto que contiene el cartel 'Presione E'.")]
-    private GameObject interactionPrompt;
-
     [Header("Collider")]
     [Tooltip("Collider invisible que recibe los disparos.")]
     [SerializeField] private Collider eggCollider;
 
-    private PlayerControls controls;
-    private Camera localPlayerCamera;
     private bool encontradoPorGestorHistoria;
     private int saludFallback;
 
@@ -45,37 +40,9 @@ public class EasterEgg : NetworkBehaviour
     private void Awake()
     {
         saludFallback = maxHealth;
-        controls = new PlayerControls();
-
-        ConfiguracionesJuego.CargarRebinds(controls.asset);
-
         if (eggCollider == null)
             eggCollider = GetComponent<Collider>();
-
-        OcultarPrompt();
     }
-
-    // =========================================================
-    // ENABLE / DISABLE
-    // =========================================================
-
-    private void OnEnable()
-    {
-        if (controls != null)
-            controls.Player.Enable();
-    }
-
-    private void OnDisable()
-    {
-        if (controls != null)
-            controls.Player.Disable();
-    }
-public override void OnDestroy()
-{
-    controls?.Dispose();
-
-    base.OnDestroy();
-}
 
     // =========================================================
     // NETWORK SPAWN
@@ -83,7 +50,6 @@ public override void OnDestroy()
 
     public override void OnNetworkSpawn()
     {
-        currentHealthNetwork.OnValueChanged += OnHealthChanged;
         foundNetwork.OnValueChanged += OnFoundChanged;
 
         if (IsServer)
@@ -97,139 +63,10 @@ public override void OnDestroy()
 
     public override void OnNetworkDespawn()
     {
-        currentHealthNetwork.OnValueChanged -= OnHealthChanged;
         foundNetwork.OnValueChanged -= OnFoundChanged;
     }
 
-    // =========================================================
-    // UPDATE
-    // =========================================================
-
-private void Update()
-{
-    BuscarCamaraJugadorLocal();
-
-    if (localPlayerCamera == null)
-        return;
-
-    if (EstaDisponibleParaInteraccion() &&
-        controls.Player.Interact.triggered)
-    {
-        ActivarPorInteraccion();
-    }
-}
-
-    // =========================================================
-    // BUSCAR CÁMARA LOCAL
-    // =========================================================
-
-    private void BuscarCamaraJugadorLocal()
-    {
-        if (localPlayerCamera != null &&
-            localPlayerCamera.isActiveAndEnabled)
-        {
-            return;
-        }
-
-        localPlayerCamera = null;
-
-        Camera[] cameras =
-            FindObjectsByType<Camera>(
-                FindObjectsInactive.Exclude
-            );
-
-        foreach (Camera cam in cameras)
-        {
-            if (cam.gameObject.name != "PlayerCamera")
-                continue;
-
-            if (!cam.isActiveAndEnabled)
-                continue;
-
-            NetworkObject networkObject =
-                cam.GetComponentInParent<NetworkObject>();
-
-            // MULTIPLAYER
-            if (networkObject != null &&
-                networkObject.IsSpawned &&
-                networkObject.IsOwner)
-            {
-                localPlayerCamera = cam;
-                return;
-            }
-
-            // SINGLEPLAYER
-            if (networkObject == null &&
-                cam == Camera.main)
-            {
-                localPlayerCamera = cam;
-                return;
-            }
-        }
-
-        // FALLBACK
-        if (Camera.main != null &&
-            Camera.main.isActiveAndEnabled &&
-            Camera.main.gameObject.name == "PlayerCamera")
-        {
-            NetworkObject networkObject =
-                Camera.main.GetComponentInParent<NetworkObject>();
-
-            if (networkObject == null ||
-                networkObject.IsOwner)
-            {
-                localPlayerCamera = Camera.main;
-            }
-        }
-    }
-
-    // =========================================================
-    // INTERACCIÓN
-    // =========================================================
-
-    private bool EstaDisponibleParaInteraccion()
-    {
-
-        if (!PuedeMostrarCartel())
-    return false;
-    
-        if (EstaEncontrado())
-            return false;
-
-        if (eggCollider == null || !eggCollider.enabled)
-            return false;
-
-        Ray ray = new Ray(
-            localPlayerCamera.transform.position,
-            localPlayerCamera.transform.forward
-        );
-
-        RaycastHit[] hits = Physics.RaycastAll(
-            ray,
-            interactionDistance,
-            Physics.DefaultRaycastLayers,
-            QueryTriggerInteraction.Collide
-        );
-        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
-
-        foreach (RaycastHit hit in hits)
-        {
-            if (hit.collider.transform.IsChildOf(transform.root) ||
-                hit.collider.isTrigger)
-                continue;
-
-            EasterEgg egg = hit.collider.GetComponentInParent<EasterEgg>();
-            if (egg != null)
-                return egg == this;
-
-            // Un objeto sólido entre la cámara y el huevo bloquea la interacción.
-            return false;
-        }
-
-        return false;
-    }
-
-    private void ActivarPorInteraccion()
+    internal void ActivarPorInteraccion()
     {
         if (EstaEncontrado())
             return;
@@ -564,13 +401,6 @@ private void Update()
         saludFallback = 0;
         AplicarEstadoActual();
     }
-    private void OnHealthChanged(
-        int previousValue,
-        int newValue)
-    {
-        if (newValue <= 0)
-            OcultarPrompt();
-    }
 
     private void OnFoundChanged(
         bool previousValue,
@@ -581,133 +411,15 @@ private void Update()
 
     private void AplicarEstadoActual()
     {
-        if (EstaEncontrado())
-        {
-            OcultarPrompt();
-
-            if (eggCollider != null)
-                eggCollider.enabled = false;
-        }
-        else
-        {
-            if (eggCollider != null)
-                eggCollider.enabled = true;
-        }
-    }
-
-    // =========================================================
-    // PROMPT
-    // =========================================================
-
-    private void MostrarPrompt()
-    {
-        if (interactionPrompt != null)
-            interactionPrompt.SetActive(true);
-    }
-
-    private void OcultarPrompt()
-    {
-        if (interactionPrompt != null)
-            interactionPrompt.SetActive(false);
-    }
-
-    private void BuscarPromptJugadorLocal()
-    {
-        if (interactionPrompt != null)
-            return;
-
-        PlayerScore[] players =
-            FindObjectsByType<PlayerScore>();
-
-        foreach (PlayerScore player in players)
-        {
-            NetworkObject networkObject =
-                player.GetComponentInParent<NetworkObject>();
-
-            // MULTIPLAYER: solo el jugador local
-            if (NetworkManager.Singleton != null &&
-                NetworkManager.Singleton.IsListening)
-            {
-                if (networkObject == null || !networkObject.IsOwner)
-                    continue;
-            }
-
-            Transform root = player.transform.root;
-
-            Transform hudCanvas =
-                BuscarHijoPorNombre(root, "HUD_Canvas");
-
-            if (hudCanvas == null)
-                continue;
-
-            Transform easterEggUI =
-                BuscarHijoPorNombre(
-                    hudCanvas,
-                    "EasterEggInteractionUI");
-
-            if (easterEggUI == null)
-                continue;
-
-            Transform interfaz =
-                BuscarHijoPorNombre(
-                    easterEggUI,
-                    "interface_EasterEgg");
-
-            if (interfaz == null)
-                continue;
-
-            Transform texto =
-                BuscarHijoPorNombre(
-                    interfaz,
-                    "Text_EasterEgg");
-
-            if (texto == null)
-                continue;
-
-            interactionPrompt = texto.gameObject;
-
-            Debug.Log(
-                "[EasterEgg] Texto de interacción encontrado " +
-                "en el jugador local."
-            );
-
-            return;
-        }
-    }
-
-    private Transform BuscarHijoPorNombre(
-        Transform padre,
-        string nombre)
-    {
-        if (padre.name == nombre)
-            return padre;
-
-        foreach (Transform hijo in padre)
-        {
-            Transform encontrado =
-                BuscarHijoPorNombre(hijo, nombre);
-
-            if (encontrado != null)
-                return encontrado;
-        }
-
-        return null;
+        if (eggCollider != null)
+            eggCollider.enabled = !EstaEncontrado();
     }
 
     public bool PuedeMostrarCartel()
-{
-    if (EstaEncontrado())
-        return false;
-
-    if (string.IsNullOrWhiteSpace(easterEggId))
-        return false;
-
-    if (AchievementsManager.Instance != null &&
-        AchievementsManager.Instance.EasterEggYaEncontrado(easterEggId))
     {
-        return false;
+        return !EstaEncontrado() &&
+            !string.IsNullOrWhiteSpace(easterEggId) &&
+            (AchievementsManager.Instance == null ||
+             !AchievementsManager.Instance.EasterEggYaEncontrado(easterEggId));
     }
-
-    return true;
-}
 }

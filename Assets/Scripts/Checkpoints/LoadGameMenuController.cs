@@ -518,7 +518,8 @@ private void ComprobarPartidaGuardada()
                 MostrarErrorCarga();
             }
         }
-        else if (!SceneTransition.TryLoad(escenaJuego, showMap: true, onFailure: MostrarErrorCarga))
+        else if (!SceneTransition.TryLoad(escenaJuego, showMap: true,
+            onFailure: MostrarErrorCarga, onExit: LimpiarCargaPendiente))
         {
             MostrarErrorCarga();
         }
@@ -526,10 +527,7 @@ private void ComprobarPartidaGuardada()
 
     private void MostrarErrorCarga()
     {
-        if (CheckpointManager.Instance != null && !CargandoSupervivenciaDesdeMenu)
-            CheckpointManager.Instance.FinalizarCarga();
-        else
-            FinalizarCargaDesdeMenu();
+        LimpiarCargaPendiente();
 
         if (this == null)
             return;
@@ -539,6 +537,14 @@ private void ComprobarPartidaGuardada()
         if (botonCargar != null) botonCargar.interactable = true;
         if (botonVolver != null) botonVolver.interactable = true;
         if (informacion != null) informacion.text = "No se pudo abrir la partida guardada.";
+    }
+
+    private static void LimpiarCargaPendiente()
+    {
+        if (CheckpointManager.Instance != null && !CargandoSupervivenciaDesdeMenu)
+            CheckpointManager.Instance.FinalizarCarga();
+        else
+            FinalizarCargaDesdeMenu();
     }
 
     // =====================================================

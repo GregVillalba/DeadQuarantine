@@ -1,7 +1,5 @@
 using UnityEngine;
 using Unity.Netcode;
-using UnityEngine.EventSystems;
-using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 using TMPro;
 using static DeadQuarantine.PvPvE.PvPvEUIFactory;
@@ -11,7 +9,7 @@ public class GameStartCurtain : MonoBehaviour
     private static GameObject cortinaPersistenteLobby;
     private static Image fondoPersistente;
     private static Button botonSalir;
-    private static TextMeshProUGUI etiquetaSalir;
+    private static TMP_Text etiquetaSalir;
     private static TextMeshProUGUI avisoCarga;
     private static bool saliendoAlMenu;
     private static double? inicioCortinaPersistente;
@@ -90,17 +88,7 @@ public class GameStartCurtain : MonoBehaviour
         fondoPersistente.color = pantallaCooperativa ? Color.clear : Color.black;
         fondoPersistente.raycastTarget = false;
 
-        RectTransform boton = Panel(raiz.transform, "Salir de la partida", 0, 0, 1, 1, 1f);
-        Place(boton, new Vector2(.76f, .89f), new Vector2(.97f, .96f));
-        Image imagenBoton = boton.GetComponent<Image>();
-        imagenBoton.raycastTarget = true;
-        botonSalir = boton.gameObject.AddComponent<Button>();
-        botonSalir.targetGraphic = imagenBoton;
-        StyleButton(botonSalir);
-        etiquetaSalir = Text(boton, "Etiqueta", "Salir de la partida", 0, 0, 1, 1, null, 26);
-        Place(etiquetaSalir.rectTransform, Vector2.zero, Vector2.one);
-        etiquetaSalir.alignment = TextAlignmentOptions.Center;
-        botonSalir.onClick.AddListener(SalirDesdeCortina);
+        (botonSalir, etiquetaSalir) = LoadingIndicator.CreateExitButton(raiz.transform, SalirDesdeCortina);
 
         RectTransform aviso = Panel(raiz.transform, "Aviso de desconexión", 0, 0, 1, 1, 1f);
         Place(aviso, new Vector2(.17f, .49f), new Vector2(.83f, .61f));
@@ -119,16 +107,7 @@ public class GameStartCurtain : MonoBehaviour
         if (cortinaPersistenteLobby == null || !cortinaPersistenteLobby.activeInHierarchy)
             return;
 
-        if (EventSystem.current == null)
-        {
-            GameObject entradaCarga = new GameObject("Entrada de pantalla de carga",
-                typeof(EventSystem), typeof(InputSystemUIInputModule));
-            entradaCarga.transform.SetParent(cortinaPersistenteLobby.transform, false);
-            entradaCarga.GetComponent<InputSystemUIInputModule>().AssignDefaultActions();
-        }
-
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        LoadingIndicator.MaintainInput(cortinaPersistenteLobby.transform);
     }
 
     /*public static void AvisarSalidaDeCompanero()

@@ -76,7 +76,7 @@ public class MenuPrincipalAcciones : MonoBehaviour
     public void IniciarTutorial()
     {
         Time.timeScale = 1f;
-        SceneTransition.TryLoad(EscenaTutorial);
+        SceneTransition.TryLoad(EscenaTutorial, showMap: true);
     }
 
     // Opci�n 2: Carga cualquier escena escribiendo su nombre en el recuadro del bot�n (como lo ten�as antes)

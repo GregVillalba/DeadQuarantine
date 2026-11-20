@@ -189,6 +189,25 @@ public partial class HUDController : MonoBehaviour
 
     private void Awake()
     {
+        TMP_FontAsset hudFont = Resources.Load<TMP_FontAsset>("PvPvE/HeadingFont");
+        if (hudFont != null)
+        {
+            if (playerLabelText) playerLabelText.font = hudFont;
+            if (ammoText) ammoText.font = hudFont;
+            if (ammoMaxText) ammoMaxText.font = hudFont;
+            if (weaponNameText) weaponNameText.font = hudFont;
+        }
+        if (weaponNameText)
+        {
+            weaponNameText.enableAutoSizing = true;
+            weaponNameText.fontSizeMin = 14f;
+            weaponNameText.fontSizeMax = 22f;
+            weaponNameText.fontSize = 22f;
+            weaponNameText.enableWordWrapping = false;
+            weaponNameText.overflowMode = TextOverflowModes.Ellipsis;
+            weaponNameText.margin = Vector4.zero;
+        }
+
         if (fondoPanelObjetivo)
         {
             var panel = fondoPanelObjetivo.rectTransform;
@@ -217,8 +236,8 @@ public partial class HUDController : MonoBehaviour
                 ClearLegacyFrame(content.GetComponent<Image>());
                 FitHudRect(content, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             }
-            ArrangeHudMetric(roundsText, "Rounds_Text", 74, 127, 37);
-            ArrangeHudMetric(zombiesText, "Zombies_Text", 16, 68, 37);
+            ArrangeHudMetric(roundsText, "Rounds_Text", 74, 127, 41);
+            ArrangeHudMetric(zombiesText, "Zombies_Text", 16, 68, 41);
         }
 
         var roundNotice = ammoText && ammoText.canvas
@@ -336,7 +355,8 @@ public partial class HUDController : MonoBehaviour
             label.alignment = TextAlignmentOptions.MidlineLeft;
             label.enableAutoSizing = true;
             label.fontSizeMin = 20;
-            label.fontSizeMax = 24;
+            label.fontSizeMax = 28;
+            label.fontSize = 28;
             label.overflowMode = TextOverflowModes.Ellipsis;
             label.fontStyle = FontStyles.Bold;
             label.characterSpacing = .8f;
@@ -348,6 +368,7 @@ public partial class HUDController : MonoBehaviour
         value.enableAutoSizing = true;
         value.fontSizeMin = 12;
         value.fontSizeMax = size;
+        value.fontSize = size;
         value.overflowMode = TextOverflowModes.Ellipsis;
         value.margin = Vector4.zero;
         value.color = new Color(.18f, .88f, .39f);

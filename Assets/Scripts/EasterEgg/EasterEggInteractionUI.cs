@@ -52,6 +52,12 @@ public class EasterEggInteractionUI : MonoBehaviour
 
     private void Update()
     {
+        if (PlayerInputGate.ActionsBlocked)
+        {
+            Ocultar();
+            return;
+        }
+
         // En multiplayer, solo actúa el jugador propietario.
         if (NetworkManager.Singleton != null &&
             NetworkManager.Singleton.IsListening)
@@ -76,7 +82,24 @@ public class EasterEggInteractionUI : MonoBehaviour
             return;
         }
 
-        BuscarEasterEgg();
+        EasterEgg egg = BuscarEasterEgg();
+        if (egg == null)
+        {
+            Ocultar();
+            return;
+        }
+
+        if (controls.Player.Interact.WasPressedThisFrame())
+        {
+            egg.ActivarPorInteraccion();
+            if (!egg.PuedeMostrarCartel())
+            {
+                Ocultar();
+                return;
+            }
+        }
+
+        Mostrar();
     }
 
     // =========================================================
@@ -140,7 +163,7 @@ public class EasterEggInteractionUI : MonoBehaviour
     // BUSCAR EASTER EGG
     // =========================================================
 
-    private void BuscarEasterEgg()
+    private EasterEgg BuscarEasterEgg()
     {
         Ray ray = new Ray(
             playerCamera.transform.position,
@@ -158,16 +181,20 @@ public class EasterEggInteractionUI : MonoBehaviour
 
         foreach (RaycastHit hit in hits)
         {
+            // La cámara puede estar detrás de colliders del propio jugador.
+            if (hit.collider.transform.IsChildOf(playerCamera.transform.root))
+                continue;
+
             EasterEgg egg = hit.collider.GetComponentInParent<EasterEgg>();
             if (egg != null)
             {
-                if (egg.PuedeMostrarCartel())
-                {
-                    Mostrar();
-                    return;
-                }
+                if (hit.distance <= egg.InteractionDistance && egg.PuedeMostrarCartel())
+                    return egg;
 
-                continue;
+                if (hit.collider.isTrigger)
+                    continue;
+
+                break;
             }
 
             // Triggers de volumen, sonido o navegación no deben tapar el
@@ -175,14 +202,10 @@ public class EasterEggInteractionUI : MonoBehaviour
             if (hit.collider.isTrigger)
                 continue;
 
-            // Ignora colliders pertenecientes al propio jugador.
-            if (hit.collider.transform.IsChildOf(transform.root))
-                continue;
-
             break;
         }
 
-        Ocultar();
+        return null;
     }
 
     // =========================================================

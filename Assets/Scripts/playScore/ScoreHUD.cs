@@ -16,6 +16,14 @@ public class ScoreHUD : NetworkBehaviour
     {
         playerScore = GetComponentInParent<PlayerScore>();
         StyleScore();
+        TMP_FontAsset hudFont = Resources.Load<TMP_FontAsset>("PvPvE/HeadingFont");
+        if (hudFont != null && textoPuntaje != null)
+        {
+            textoPuntaje.font = hudFont;
+            TMP_Text label = textoPuntaje.rectTransform.parent.Find("textoPuntaje")
+                ?.GetComponent<TMP_Text>();
+            if (label != null) label.font = hudFont;
+        }
     }
 
     public override void OnNetworkSpawn()
@@ -61,7 +69,7 @@ public class ScoreHUD : NetworkBehaviour
             backdrop.transform.SetAsFirstSibling();
             HUDController.ApplyStatusFrame(backdrop, source, true);
             HUDController.FitHudRect(frame.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-            HUDController.ArrangeHudMetric(textoPuntaje, "textoPuntaje", 13, 79, 44);
+            HUDController.ArrangeHudMetric(textoPuntaje, "textoPuntaje", 13, 79, 48);
         }
         modePanel = panel.GetComponent<CanvasGroup>();
         if (!modePanel) modePanel = panel.gameObject.AddComponent<CanvasGroup>();

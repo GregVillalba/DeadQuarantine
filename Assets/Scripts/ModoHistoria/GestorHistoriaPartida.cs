@@ -447,7 +447,7 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
         jugadoresEnTriggerSalidaCiudad.Remove(clientId);
         jugadoresEnZonaSegura.Remove(clientId);
 
-        TransferirObjetivoDelJugadorDesconectado(clientId);
+        ReasignarObjetivoSinPortadorDisponible(clientId);
 
         if (!EsZonaSeguraMultiplayerActiva())
             return;
@@ -456,34 +456,37 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
         ActualizarCantidadJugadoresZonaSegura();
     }
 
-    private void TransferirObjetivoDelJugadorDesconectado(ulong clientId)
+    private void ReasignarObjetivoSinPortadorDisponible(ulong clienteDesconectado = ulong.MaxValue)
     {
         NetworkManager red = NetworkManager.Singleton;
         if (!IsSpawned || !IsServer || red == null || red.ShutdownInProgress)
             return;
 
         int estado = EstadoMisionNetwork.Value;
-        bool teniaTarjeta = estado == AbrirPuerta && ClienteConTarjetaNetwork.Value == clientId;
-        bool teniaRadio = (estado == BuscarSenal || estado == ContactarSobrevivientes) &&
-            ClienteConRadioNetwork.Value == clientId;
-        if (!teniaTarjeta && !teniaRadio)
+        bool requiereTarjeta = estado == AbrirPuerta;
+        if (!requiereTarjeta && estado != BuscarSenal && estado != ContactarSobrevivientes)
+            return;
+
+        NetworkVariable<ulong> objetivo = requiereTarjeta
+            ? ClienteConTarjetaNetwork
+            : ClienteConRadioNetwork;
+        ulong portador = objetivo.Value;
+        if (portador == ulong.MaxValue ||
+            (portador != clienteDesconectado &&
+             red.ConnectedClients.TryGetValue(portador, out NetworkClient clientePortador) &&
+             !JugadorEliminado(clientePortador.PlayerObject)))
             return;
 
         foreach (NetworkClient cliente in red.ConnectedClientsList)
         {
             NetworkObject jugador = cliente.PlayerObject;
-            if (cliente.ClientId == clientId || jugador == null ||
+            if (cliente.ClientId == portador || cliente.ClientId == clienteDesconectado || jugador == null ||
                 !jugador.TryGetComponent(out PlayerHealth salud) || !salud.IsAlive)
                 continue;
 
-            if (teniaTarjeta)
-                ClienteConTarjetaNetwork.Value = cliente.ClientId;
-            else
-            {
-                ClienteConRadioNetwork.Value = cliente.ClientId;
-                if (estado == BuscarSenal)
-                    ActivarDetectorSenal(cliente.ClientId);
-            }
+            objetivo.Value = cliente.ClientId;
+            if (estado == BuscarSenal)
+                ActivarDetectorSenal(cliente.ClientId);
 
             return;
         }
@@ -572,6 +575,7 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
     private void Update()
     {
         ActualizarCantidadJugadoresZonaSegura();
+        ReasignarObjetivoSinPortadorDisponible();
 
         if (IsSpawned && Time.unscaledTime >= proximaSincronizacionObjetivo)
         {
