@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 7600000000000004002}
   - component: {fileID: 7600000000000004003}
   - component: {fileID: 7600000000000004004}
+  - component: {fileID: 7600000000000004005}
   m_Layer: 2
   m_Name: RecursoEscenario
   m_TagString: Untagged
@@ -47,7 +48,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2963410587
+  GlobalObjectIdHash: 3780064942
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -105,6 +106,30 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.6, y: 0.6, z: 0.6}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &7600000000000004005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7600000000000004000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3ca8cc9798b4215a473f81731f2a2f5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::BrilloRecurso
+  colorPilaDeLatas: {r: 1, g: 0.15, b: 0.1, a: 1}
+  colorCantimplora: {r: 0.6, g: 0.8, b: 0.95, a: 1}
+  colorBidon: {r: 0.2, g: 1, b: 0.3, a: 1}
+  intensidadMinima: 0
+  intensidadMaxima: 0.3
+  latidosPorSegundo: 0.5
+  conParticulas: 1
+  materialParticulas: {fileID: 2100000, guid: e6869247b9114b23a87d38d4868c55a6, type: 2}
+  particulasPorSegundo: 4
+  tamanioParticula: 0.07
+  alturaParticulas: 0.15
+  radioParticulas: 0.25
 --- !u!1 &7600000000000004010
 GameObject:
   m_ObjectHideFlags: 0
@@ -227,6 +252,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &7600000000000004200
 GameObject:
@@ -317,6 +343,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &7600000000000004210
 GameObject:
@@ -406,6 +433,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &7600000000000004300
 GameObject:
@@ -495,4 +523,5 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}

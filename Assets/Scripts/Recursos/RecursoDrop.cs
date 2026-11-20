@@ -185,5 +185,10 @@ public class RecursoDrop : NetworkBehaviour
 
         if (modeloBidon != null)
             modeloBidon.SetActive(tipo == TipoRecurso.Bidon);
+
+        // El brillo toma el color del tipo.
+        BrilloRecurso brillo = GetComponent<BrilloRecurso>();
+        if (brillo != null)
+            brillo.AplicarTipo(tipo);
     }
 }
