@@ -11,6 +11,7 @@ public class PantallaFinPartida : MonoBehaviour
 {
     [Header("Estadísticas")]
     [SerializeField] private TextMeshProUGUI textoPuntaje;
+    [SerializeField] private TextMeshProUGUI textoPuntajeFinal;
     [SerializeField] private TextMeshProUGUI textoZombies;
     [SerializeField] private TextMeshProUGUI textoPrecision;
     [SerializeField] private TextMeshProUGUI textoCaidas;
@@ -72,8 +73,15 @@ public class PantallaFinPartida : MonoBehaviour
         if (score != null)
         {
             // Puntaje con las caídas ya descontadas (500 por cada una).
+          /*  if (textoPuntaje != null)
+                textoPuntaje.text = score.PuntajeFinal.ToString();*/
+            // Puntaje ganado, sin descuento de caídas.
             if (textoPuntaje != null)
-                textoPuntaje.text = score.PuntajeFinal.ToString();
+                textoPuntaje.text = score.ScoreNetwork.Value.ToString();
+
+            // Puntaje con las caídas ya descontadas (500 por cada una).
+            if (textoPuntajeFinal != null)
+                textoPuntajeFinal.text = score.PuntajeFinal.ToString();
 
             if (textoZombies != null)
                 textoZombies.text =
@@ -109,6 +117,7 @@ public class PantallaFinPartida : MonoBehaviour
     private void PrepararTextosDeEstadisticas()
     {
         EnUnRenglon(textoPuntaje);
+        EnUnRenglon(textoPuntajeFinal);
         EnUnRenglon(textoZombies);
         EnUnRenglon(textoPrecision);
         EnUnRenglon(textoCaidas);
