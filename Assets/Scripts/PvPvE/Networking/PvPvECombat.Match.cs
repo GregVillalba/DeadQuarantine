@@ -59,8 +59,9 @@ namespace DeadQuarantine.PvPvE.Networking {
   void TeamVictoryClientRpc(ClientRpcParams recipients = default)
   {
    var achievements = AchievementsManager.Instance;
-   if (achievements != null &&
-       !achievements.EstaDesbloqueado(AchievementId.VictoriaEnEquipo))
+   // Cada cliente ganador evalúa su propio progreso. Desbloquear ya evita
+   // repetir el aviso si ese jugador tenía el logro.
+   if (achievements != null)
     achievements.Desbloquear(AchievementId.VictoriaEnEquipo);
   }
   public void ResetMatchServer(){

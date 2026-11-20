@@ -117,6 +117,8 @@ public sealed class ConfiguracionMenuController : MonoBehaviour
         if (initialized)
             return;
 
+        ApplyVisualStyle();
+
         // El botón USUARIO se conecta primero y por separado
         WireUsuarioButton();
 
@@ -127,6 +129,92 @@ public sealed class ConfiguracionMenuController : MonoBehaviour
         WireEvents();
 
         initialized = true;
+    }
+
+    private void ApplyVisualStyle()
+    {
+        TMP_FontAsset font = Resources.Load<TMP_FontAsset>("PvPvE/HeadingFont");
+        Color charcoal = new Color(0.055f, 0.065f, 0.070f, 0.96f);
+        Color light = new Color(0.94f, 0.94f, 0.92f, 1f);
+        Color green = new Color(0.23f, 0.82f, 0.51f, 1f);
+
+        foreach (TMP_Text label in GetComponentsInChildren<TMP_Text>(true))
+        {
+            if (font != null)
+                label.font = font;
+
+            // Las descripciones y las opciones ganan legibilidad sin cambiar la disposición.
+            if (label.fontSize < 24f)
+                label.fontSize = Mathf.Min(label.fontSize + 2f, 24f);
+        }
+
+        foreach (Button button in botonesSeccion)
+        {
+            if (button == null) continue;
+            Image background = button.GetComponent<Image>();
+            if (background != null) background.color = charcoal;
+            RectTransform rect = button.GetComponent<RectTransform>();
+            if (rect != null)
+            {
+                Vector2 min = rect.offsetMin;
+                Vector2 max = rect.offsetMax;
+                rect.offsetMin = new Vector2(min.x, min.y - 3f);
+                rect.offsetMax = new Vector2(max.x, max.y + 3f);
+            }
+            TMP_Text label = button.GetComponentInChildren<TMP_Text>(true);
+            if (label != null) label.fontSize = 31f;
+        }
+
+        foreach (Button button in new[] { restaurarButton, aplicarButton, volverButton })
+        {
+            if (button == null) continue;
+            Image background = button.GetComponent<Image>();
+            if (background != null)
+                background.color = button == aplicarButton
+                    ? new Color(0.06f, 0.27f, 0.15f, 0.96f)
+                    : charcoal;
+            TMP_Text label = button.GetComponentInChildren<TMP_Text>(true);
+            if (label != null)
+            {
+                label.color = button == aplicarButton ? green : light;
+                label.fontSize = 27f;
+            }
+        }
+
+        foreach (TMP_Dropdown dropdown in GetComponentsInChildren<TMP_Dropdown>(true))
+        {
+            Image background = dropdown.GetComponent<Image>();
+            if (background != null) background.color = charcoal;
+            if (dropdown.captionText != null)
+            {
+                if (font != null) dropdown.captionText.font = font;
+                dropdown.captionText.fontSize = 30f;
+                dropdown.captionText.color = light;
+            }
+            if (dropdown.itemText != null)
+            {
+                if (font != null) dropdown.itemText.font = font;
+                dropdown.itemText.fontSize = 27f;
+                dropdown.itemText.color = light;
+            }
+            if (dropdown.template == null) continue;
+            foreach (Image image in dropdown.template.GetComponentsInChildren<Image>(true))
+            {
+                if (image.transform == dropdown.template ||
+                    image.name == "Viewport" || image.name == "Content")
+                    image.color = charcoal;
+                else if (image.name == "Item Background")
+                    image.color = new Color(0.13f, 0.17f, 0.15f, 1f);
+            }
+            foreach (Toggle item in dropdown.template.GetComponentsInChildren<Toggle>(true))
+            {
+                ColorBlock colors = item.colors;
+                colors.normalColor = Color.white;
+                colors.highlightedColor = new Color(0.35f, 0.64f, 0.45f, 1f);
+                colors.selectedColor = colors.highlightedColor;
+                item.colors = colors;
+            }
+        }
     }
 
     private void PrepareOptions()

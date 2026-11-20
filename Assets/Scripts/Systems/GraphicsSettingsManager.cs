@@ -398,6 +398,13 @@ public sealed class GraphicsSettingsManager : MonoBehaviour
         if (snapshot == null)
             return;
 
+        // Reconfigurar la pantalla por un cambio de calidad puede sacar a la
+        // build de pantalla completa. Solo hacerlo si cambió una opción de Pantalla.
+        bool displayChanged = current == null ||
+            snapshot.width != current.width ||
+            snapshot.height != current.height ||
+            snapshot.screenMode != current.screenMode;
+
         current =
             snapshot.Clone();
 
@@ -405,7 +412,7 @@ public sealed class GraphicsSettingsManager : MonoBehaviour
 
         ApplyRuntime(
             current,
-            true
+            displayChanged
         );
 
         Save(current);

@@ -261,12 +261,33 @@ public class AchievementsManager : MonoBehaviour
         if (playerScore == null)
             BuscarPlayerScore();
 
-        if (avisosPendientes.Count > 0 && GameplayPopupsController.Instance != null)
+        if (avisosPendientes.Count > 0)
         {
             KeyValuePair<AchievementId, AchievementRank> aviso = avisosPendientes.Peek();
-            if (GameplayPopupsController.Instance.IntentarMostrarLogro(aviso.Key, aviso.Value))
+            if (IntentarMostrarAvisoLocal(aviso.Key, aviso.Value))
                 avisosPendientes.Dequeue();
         }
+    }
+
+    private static bool IntentarMostrarAvisoLocal(AchievementId id, AchievementRank rango)
+    {
+        // PvPvE usa una vista propia y puede no tener GameplayPopupsController.
+        if (GameplayPopupsController.Instance != null &&
+            GameplayPopupsController.Instance.IntentarMostrarLogro(id, rango))
+            return true;
+
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening ||
+            NetworkManager.Singleton.LocalClient == null ||
+            NetworkManager.Singleton.LocalClient.PlayerObject == null)
+            return false;
+
+        AchievementHUD hud = NetworkManager.Singleton.LocalClient.PlayerObject
+            .GetComponentInChildren<AchievementHUD>(true);
+        if (hud == null || !hud.isActiveAndEnabled) return false;
+        Canvas canvas = hud.GetComponentInParent<Canvas>();
+        if (canvas == null || !canvas.isActiveAndEnabled) return false;
+        hud.Show(id, rango);
+        return true;
     }
 
     // ============================================================

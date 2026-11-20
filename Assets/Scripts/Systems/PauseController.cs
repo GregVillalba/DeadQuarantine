@@ -504,6 +504,7 @@ public class PauseController : NetworkBehaviour
     {
         ActualizarBotonReiniciar();
         if (!popupMenuHome) return;
+        AplicarEstiloPausa();
         foreach (var action in popupMenuHome.GetComponentsInChildren<Button>(true))
         {
             var caption = action.GetComponentInChildren<TMP_Text>(true);
@@ -514,6 +515,76 @@ public class PauseController : NetworkBehaviour
             caption.text = CanChangePvPvEClass ? "CAMBIAR EQUIPAMIENTO" : "Reiniciar";
             action.gameObject.SetActive(CanChangePvPvEClass || EsSinglePlayer());
             break;
+        }
+    }
+
+    private void AplicarEstiloPausa()
+    {
+        TMP_FontAsset fuente = Resources.Load<TMP_FontAsset>("PvPvE/HeadingFont");
+        Color fondoBoton = new Color(0.055f, 0.075f, 0.075f, 0.96f);
+        Color bordeBoton = new Color(0.28f, 0.34f, 0.32f, 0.8f);
+        Color verdeMenu = new Color(0.16f, 0.62f, 0.31f);
+
+        foreach (Image imagen in popupMenuHome.GetComponentsInChildren<Image>(true))
+        {
+            if (imagen.name == "Divider Top")
+                imagen.color = verdeMenu;
+        }
+
+        foreach (TMP_Text texto in popupMenuHome.GetComponentsInChildren<TMP_Text>(true))
+        {
+            if (fuente) texto.font = fuente;
+            texto.color = Color.white;
+            texto.enableAutoSizing = false;
+            texto.alignment = TextAlignmentOptions.Center;
+            texto.fontSize = texto.name == "Text Information" ? 20f :
+                texto.name.Trim() == "Title" ? 38f : 25f;
+        }
+
+        foreach (Button boton in popupMenuHome.GetComponentsInChildren<Button>(true))
+        {
+            RectTransform rect = boton.transform as RectTransform;
+            if (rect) rect.sizeDelta = new Vector2(310f, 60f);
+
+            ColorBlock colores = boton.colors;
+            colores.normalColor = Color.white;
+            colores.selectedColor = Color.white;
+            colores.highlightedColor = new Color(1.15f, 1.15f, 1.15f);
+            boton.colors = colores;
+
+            Image imagen = boton.GetComponent<Image>();
+            if (imagen)
+            {
+                imagen.sprite = null;
+                imagen.type = Image.Type.Simple;
+                imagen.color = fondoBoton;
+                Outline borde = imagen.GetComponent<Outline>();
+                if (!borde) borde = imagen.gameObject.AddComponent<Outline>();
+                borde.effectColor = bordeBoton;
+                borde.effectDistance = new Vector2(1f, -1f);
+            }
+
+            TMP_Text etiqueta = boton.GetComponentInChildren<TMP_Text>(true);
+            if (!etiqueta || !etiqueta.text.ToUpperInvariant().Contains("VOLVER A LA PARTIDA"))
+                continue;
+
+            Transform franja = boton.transform.Find("FranjaVerde");
+            if (!franja)
+            {
+                GameObject objeto = new GameObject("FranjaVerde", typeof(RectTransform), typeof(Image));
+                objeto.transform.SetParent(boton.transform, false);
+                franja = objeto.transform;
+            }
+
+            RectTransform franjaRect = (RectTransform)franja;
+            franjaRect.anchorMin = new Vector2(0f, 0f);
+            franjaRect.anchorMax = new Vector2(0f, 1f);
+            franjaRect.pivot = new Vector2(0f, 0.5f);
+            franjaRect.anchoredPosition = Vector2.zero;
+            franjaRect.sizeDelta = new Vector2(5f, 0f);
+            Image franjaImagen = franja.GetComponent<Image>();
+            franjaImagen.color = verdeMenu;
+            franjaImagen.raycastTarget = false;
         }
     }
 
