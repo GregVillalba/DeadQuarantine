@@ -82,5 +82,10 @@ public class RecursoEscenario : NetworkBehaviour
 
         if (modeloBidon != null)
             modeloBidon.SetActive(tipo == TipoRecurso.Bidon);
+
+        // El brillo y las partículas toman el color del tipo.
+        BrilloRecurso brillo = GetComponent<BrilloRecurso>();
+        if (brillo != null)
+            brillo.AplicarTipo(tipo);
     }
 }
