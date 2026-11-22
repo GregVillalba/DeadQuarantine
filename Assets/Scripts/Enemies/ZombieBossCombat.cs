@@ -794,7 +794,7 @@ public sealed class ZombieBossCombat : NetworkBehaviour
     private void PlayImpact(Vector3 point)
     {
         if (impactEffect) Destroy(Instantiate(impactEffect, point, Quaternion.identity), impactEffectDuration);
-        if (impactSound) AudioSource.PlayClipAtPoint(impactSound, point, voice ? voice.volume : 1);
+        if (impactSound) GameAudio.PlayAtPoint(impactSound, point, voice ? voice.volume : 1);
     }
 
     private void UpdateVisuals()

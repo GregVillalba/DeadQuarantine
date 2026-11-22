@@ -14,6 +14,9 @@ public void GuardarDatosJugador(DatosJugadorSaveData datos)
     if (!IsServer || datos == null || !IsSpawned)
         return;
 
+    // El guardado de Supervivencia continúa la misma partida, sin regalar otra ronda.
+    var upgrades = GetComponent<SurvivalUpgrades>();
+    datos.survivalUpgrades = upgrades && upgrades.Active ? upgrades.Progress.Value : default;
     // VIDA Y VIDAS
     datos.salud = CurrentHealth.Value;
     datos.vidas = Lives.Value;
@@ -80,6 +83,8 @@ public void RestaurarDatosJugador(DatosJugadorSaveData datos)
         downedCoroutine = null;
     }
 
+    var upgrades = GetComponent<SurvivalUpgrades>();
+    if (upgrades && upgrades.Active) upgrades.SetProgressServer(datos.survivalUpgrades);
     // VIDA Y VIDAS
     CurrentHealth.Value = Mathf.Clamp(
         Mathf.RoundToInt(datos.salud),

@@ -371,13 +371,17 @@ public void MarcarComoBossHistoria()
     // CONFIGURAR VIDA SEGÚN LA RONDA
     // =========================================================
 
+    private double survivalDamageFraction;
+
     public void InitializeHealth(int newMaxHealth)
     {
+        survivalDamageFraction = 0;
         maxHealth = newMaxHealth;
     }
 
     public override void OnNetworkSpawn()
     {
+        survivalDamageFraction = 0;
         IsPvPvEZombie=DeadQuarantine.PvPvE.PvPvEZombieDirector.Active;
 
         currentHealthNetwork.OnValueChanged +=
@@ -537,6 +541,10 @@ private void TakeDamageServerRpc(
             return;
         if(IsPvPvEZombie){var combat=DeadQuarantine.PvPvE.Networking.PvPvECombat.Active;if(!combat||!combat.IsPlaying||!combat.GetComponent<DeadQuarantine.PvPvE.Networking.PvPvETeamRoster>().Contains(shooterClientId))return;}
 
+        // Único punto de bonificación de Supervivencia: después de caída/perdigones/
+        // penetración y antes del headshot. Los emisores conservan su daño original.
+        float survivalDamage = SurvivalUpgrades.OutgoingDamage(NetworkManager, shooterClientId, amount);
+        bool hasSurvivalBonus = survivalDamage > amount;
 //======================= NUEVO =========================
         // Headshot: ZombieHeadshot decide cuánto daño hace.
     bool headshotAplicado = false;
@@ -548,13 +556,23 @@ private void TakeDamageServerRpc(
             currentHealthNetwork.Value
         );*/
 
-        amount = !IsPvPvEZombie?Mathf.Max(1,Mathf.RoundToInt(amount*2f)):zombieHeadshot.CalcularDano(
+        amount = !IsPvPvEZombie?Mathf.Max(1,Mathf.RoundToInt(survivalDamage*2f)):zombieHeadshot.CalcularDano(
                 amount,
                 currentHealthNetwork.Value,
                 maxHealthNetwork.Value
         );
 
         headshotAplicado = true;
+    }
+    else amount = Mathf.Max(1, Mathf.RoundToInt(survivalDamage));
+
+    if (hasSurvivalBonus)
+    {
+        // La barra sigue usando enteros, pero las fracciones no se pierden entre impactos.
+        // Se descuenta la parte entera y se conserva el resto: 31,5 + 31,5 = 63.
+        double preciseDamage = survivalDamage * (headshotAplicado ? 2 : 1) + survivalDamageFraction;
+        amount = Mathf.Max(1, (int)System.Math.Floor(preciseDamage + .0001));
+        survivalDamageFraction = System.Math.Max(0, preciseDamage - amount);
     }
 
 //=========================================================
@@ -1267,6 +1285,7 @@ private void Die(ulong shooterClientId)
 
         if (IsServer)
         {
+            survivalDamageFraction = 0;
             currentHealthNetwork.Value = maxHealth;
             ApagarQuemadura();
 

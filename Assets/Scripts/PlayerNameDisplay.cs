@@ -45,6 +45,66 @@ private Material timerOverlayMaterial, timerOriginalMaterial, iconOverlayMateria
     public bool IsOccluded {get;private set;}
     public bool NameVisible => nameplateContainer && nameplateContainer.activeInHierarchy;
     public float NameOpacity => opacity;
+    private Image portrait;
+    private RectTransform healthFill;
+    private TMP_Text healthValue;
+    private CanvasGroup plateAlpha;
+    public float HealthFraction => playerHealth ? Mathf.Clamp01((float)playerHealth.CurrentHealth.Value / Mathf.Max(1, playerHealth.MaxHealth)) : 0;
+
+    private void BuildTeammatePlate()
+    {
+        if (!nameplateContainer || !txtPlayerName || portrait) return;
+        var root = nameplateContainer.GetComponent<RectTransform>();
+        root.sizeDelta = new Vector2(320, 72);
+        root.localScale = Vector3.one * .006f;
+        plateAlpha = root.GetComponent<CanvasGroup>();
+        if (!plateAlpha) plateAlpha = root.gameObject.AddComponent<CanvasGroup>();
+        plateAlpha.interactable = plateAlpha.blocksRaycasts = false;
+        foreach (var label in root.GetComponentsInChildren<TMP_Text>(true))
+            if (label != txtPlayerName && (!downedGroup || !label.transform.IsChildOf(downedGroup.transform))) label.gameObject.SetActive(false);
+        var material = Resources.Load<Material>("TeammatePlateOverlay");
+        Image PlateImage(string name, float x, float y, float width, float height, Color color)
+        {
+            var rect = DeadQuarantine.PvPvE.PvPvEUIFactory.Rect(root, name, x, y, width, height);
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(.5f, .5f);
+            rect.anchoredPosition = new Vector2(x, y);
+            var image = rect.gameObject.AddComponent<Image>(); image.color = color; image.raycastTarget = false;
+            if (material) image.material = material;
+            return image;
+        }
+        var background = PlateImage("FondoCompanero", 0, 0, 320, 72, new Color(.025f, .055f, .042f, .88f));
+        background.transform.SetAsFirstSibling();
+        PlateImage("Acento", -158, 0, 3, 72, new Color(.25f, .85f, .45f));
+        portrait = PlateImage("Personaje", -126, 0, 48, 56, Color.white); portrait.preserveAspect = true;
+        var textRect = txtPlayerName.rectTransform;
+        textRect.anchorMin = textRect.anchorMax = new Vector2(.5f, .5f);
+        textRect.anchoredPosition = new Vector2(27, 14); textRect.sizeDelta = new Vector2(240, 32);
+        var font = DeadQuarantine.PvPvE.PvPvEUIFactory.HeadingFont;
+        if (font) { txtPlayerName.font = font; if (txtDownedTimer) txtDownedTimer.font = font; }
+        txtPlayerName.fontSize = 23; txtPlayerName.enableAutoSizing = true; txtPlayerName.fontSizeMin = 14; txtPlayerName.fontSizeMax = 23;
+        txtPlayerName.textWrappingMode = TextWrappingModes.NoWrap; txtPlayerName.overflowMode = TextOverflowModes.Ellipsis;
+        txtPlayerName.alignment = TextAlignmentOptions.MidlineLeft; txtPlayerName.color = new Color(.94f, .97f, .95f); txtPlayerName.richText = false;
+        var track = PlateImage("VidaFondo", 3, -17, 194, 7, new Color(.13f, .2f, .16f));
+        var fill = new GameObject("Vida", typeof(RectTransform), typeof(Image));
+        healthFill = fill.GetComponent<RectTransform>(); healthFill.SetParent(track.transform, false);
+        healthFill.anchorMin = Vector2.zero; healthFill.anchorMax = Vector2.one; healthFill.offsetMin = healthFill.offsetMax = Vector2.zero;
+        var fillImage = fill.GetComponent<Image>(); fillImage.color = new Color(.25f, .9f, .45f); fillImage.material = material; fillImage.raycastTarget = false;
+        healthValue = DeadQuarantine.PvPvE.PvPvEUIFactory.Text(root, "Salud", "100%", 126, -17, 56, 24, font, 18);
+        healthValue.rectTransform.anchorMin = healthValue.rectTransform.anchorMax = healthValue.rectTransform.pivot = new Vector2(.5f, .5f);
+        healthValue.rectTransform.anchoredPosition = new Vector2(126, -17);
+        if (font) healthValue.font = font;
+        healthValue.alignment = TextAlignmentOptions.MidlineRight; healthValue.isOverlay = true;
+        if (downedGroup && downedGroup.transform is RectTransform downedRect) downedRect.anchoredPosition = new Vector2(0, -64);
+        UpdatePortrait();
+    }
+
+    private void UpdatePortrait()
+    {
+        if (!portrait || !playerCharacter || !playerCharacter.Catalog) return;
+        var variant = playerCharacter.Catalog.GetVariant(playerCharacter.CharacterIndex.Value);
+        portrait.sprite = variant != null ? playerCharacter.Catalog.GetIcon(variant.type, variant.gender) : null;
+        portrait.enabled = portrait.sprite;
+    }
 
     private static readonly Dictionary<ulong, string> nombresPorCliente = new Dictionary<ulong, string>();
 
@@ -92,6 +152,7 @@ if (playerHealth == null)
 
     public override void OnNetworkSpawn()
     {
+        BuildTeammatePlate();
         if (nameplateContainer != null)
             nameplateContainer.SetActive(!IsOwner);
         if(txtPlayerName) {
@@ -100,6 +161,7 @@ if (playerHealth == null)
             if(overlayTemplate)overlayMaterial.shader=overlayTemplate.shader;
             overlayMaterial.SetFloat(ShaderUtilities.ShaderTag_ZTestMode,(float)UnityEngine.Rendering.CompareFunction.Always);
             txtPlayerName.fontSharedMaterial=overlayMaterial;txtPlayerName.isOverlay=true;txtPlayerName.raycastTarget=false;
+            if (healthValue) healthValue.fontSharedMaterial = overlayMaterial;
         }
 
         if (txtPlayerName != null)
@@ -199,13 +261,14 @@ if (playerHealth == null)
 
     private void OnCharacterChanged(int previousIndex, int newIndex)
     {
+        UpdatePortrait();
         ActualizarTexto(networkPlayerName.Value.ToString());
     }
 
     private void LateUpdate()
     {
         if(!nameplateContainer)return;
-        bool visible=!IsOwner;
+        bool visible=!IsOwner && (!playerHealth || !(playerHealth.IsDead || playerHealth.IsSpectating));
         var roster=DeadQuarantine.PvPvE.Networking.PvPvETeamRoster.Active;
         if(roster&&roster.IsSpawned){
             visible=visible&&roster.TryGetMember(NetworkManager.LocalClientId,out var local)&&roster.TryGetMember(OwnerClientId,out var other)&&local.Team==other.Team;
@@ -213,7 +276,7 @@ if (playerHealth == null)
         if(nameplateContainer.activeSelf!=visible)nameplateContainer.SetActive(visible);
         if(!visible)return;
 
-        if (localCamera == null)
+        if (localCamera == null || !localCamera.isActiveAndEnabled)
         {
             localCamera = Camera.main;
             if (localCamera == null) return;
@@ -223,6 +286,8 @@ if (playerHealth == null)
 
         if(IsOwner) {nameplateContainer.SetActive(false);return;}
         nameplateContainer.transform.position=transform.position+offset;
+        float distance = Vector3.Distance(localCamera.transform.position, nameplateContainer.transform.position);
+        nameplateContainer.transform.localScale = Vector3.one * (.006f * Mathf.Clamp(distance / 10f, 1, 2.5f));
         if(Time.unscaledTime>=nextOcclusionCheck) {
             nextOcclusionCheck=Time.unscaledTime+.12f;
             Vector3 target=transform.position+Vector3.up*1.4f;
@@ -234,9 +299,9 @@ if (playerHealth == null)
             }
         }
         opacity=Mathf.MoveTowards(opacity,IsOccluded?.35f:1f,Time.unscaledDeltaTime*5);
-        if(txtPlayerName)txtPlayerName.alpha=opacity;
-        if (txtDownedTimer) txtDownedTimer.alpha = opacity;
-        if (downedIcon) downedIcon.canvasRenderer.SetAlpha(opacity);
+        if (plateAlpha) plateAlpha.alpha = opacity;
+        if (healthFill) healthFill.anchorMax = new Vector2(HealthFraction, 1);
+        if (healthValue) healthValue.text = Mathf.RoundToInt(HealthFraction * 100) + "%";
         // Efecto Billboard hacia la cámara activa
         Vector3 direccionACamara = nameplateContainer.transform.position - localCamera.transform.position;
         if (direccionACamara.sqrMagnitude > 0.001f)

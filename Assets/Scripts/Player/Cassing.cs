@@ -35,6 +35,7 @@ public class Casing : MonoBehaviour
 
     private void Awake()
     {
+        GameAudio.RouteTree(gameObject);
         rb = GetComponent<Rigidbody>();
         audioSource = GetComponent<AudioSource>();
 

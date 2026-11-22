@@ -52,6 +52,8 @@ public class ZombieAudio : MonoBehaviour
         zombieAI = GetComponent<ZombieAI>();
 
         footstepSource = gameObject.AddComponent<AudioSource>();
+        GameAudio.Route(audioSource);
+        GameAudio.Route(footstepSource);
         footstepSource.playOnAwake = false;
         footstepSource.loop = false;
         footstepSource.spatialBlend = 1f;

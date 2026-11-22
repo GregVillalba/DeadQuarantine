@@ -70,6 +70,7 @@ public class DatosJugadorSaveData
 
     // ESTADO DEL JUGADOR
 
+    public SurvivalUpgradeState survivalUpgrades;
     public float salud;
     public int vidas;
     public bool jugadorVivo;

@@ -183,6 +183,7 @@ public class TorretaAutomatica : NetworkBehaviour
 
     private void Awake()
     {
+        GameAudio.RouteTree(gameObject);
         List<Collider> solidos = new List<Collider>();
 
         foreach (Collider propio in GetComponentsInChildren<Collider>(true))

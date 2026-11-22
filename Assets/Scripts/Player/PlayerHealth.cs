@@ -92,11 +92,28 @@ public partial class PlayerHealth : NetworkBehaviour
             NetworkVariableWritePermission.Server
         );
 
+    private int survivalBaseMaxHealth;
+    private SurvivalUpgrades survivalUpgrades;
+    private SurvivalUpgrades Survival => survivalUpgrades ? survivalUpgrades : (survivalUpgrades = GetComponent<SurvivalUpgrades>());
     public int MaxHealth => maxHealth;
+
+    internal void RefreshSurvivalMaxHealth(bool healAddedMaximum)
+    {
+        if (survivalBaseMaxHealth <= 0) survivalBaseMaxHealth = maxHealth;
+        int previousMax = maxHealth;
+        maxHealth = Mathf.Max(1, Mathf.RoundToInt(survivalBaseMaxHealth * (Survival ? Survival.HealthMultiplier : 1)));
+        if (IsSpawned && IsServer)
+        {
+            int added = healAddedMaximum && IsAlive ? Mathf.Max(0, maxHealth - previousMax) : 0;
+            CurrentHealth.Value = Mathf.Min(maxHealth, CurrentHealth.Value + added);
+        }
+        OnHealthChanged?.Invoke(CurrentHealth.Value, CurrentHealth.Value);
+    }
 
     public void SetMaxHealth(int newMaxHealth, bool refill = true)
     {
-        maxHealth = Mathf.Max(1, newMaxHealth);
+        survivalBaseMaxHealth = Mathf.Max(1, newMaxHealth);
+        maxHealth = Mathf.Max(1, Mathf.RoundToInt(survivalBaseMaxHealth * (Survival ? Survival.HealthMultiplier : 1)));
 
         if (!IsSpawned)
             return;
@@ -657,6 +674,7 @@ public partial class PlayerHealth : NetworkBehaviour
         if (!IsServer)
             return;
 
+        PrepareOutsideMapRespawn();
         ClearStalkerAcid();
         CurrentHealth.Value = maxHealth;
         State.Value = PlayerState.Alive;

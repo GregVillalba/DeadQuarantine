@@ -165,6 +165,6 @@ public class GrenadeProjectile : NetworkBehaviour
         }
 
         if (explosionSound != null)
-            AudioSource.PlayClipAtPoint(explosionSound, position);
+            GameAudio.PlayAtPoint(explosionSound, position);
     }
 }

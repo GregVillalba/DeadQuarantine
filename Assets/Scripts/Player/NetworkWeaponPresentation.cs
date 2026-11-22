@@ -61,7 +61,7 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
     {
         storyIntro=GetComponentInParent<NetworkObject>()?.GetComponentInChildren<StoryIntroController>(true);
         hand=Array.Find(Body.GetComponentsInChildren<Transform>(true),t=>t.name=="Hand_R");
-        audioOutput=gameObject.AddComponent<AudioSource>();audioOutput.playOnAwake=false;audioOutput.spatialBlend=1;
+        audioOutput=gameObject.AddComponent<AudioSource>();GameAudio.Route(audioOutput);audioOutput.playOnAwake=false;audioOutput.spatialBlend=1;
         audioOutput.minDistance=3;audioOutput.maxDistance=90;audioOutput.rolloffMode=AudioRolloffMode.Logarithmic;
         state.OnValueChanged+=StateChanged;sent=new State{Weapon=-2};Apply(state.Value);
     }

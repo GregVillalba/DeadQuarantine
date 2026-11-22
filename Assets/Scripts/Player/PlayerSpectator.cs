@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.InputSystem;
 using UnityEngine;
@@ -66,6 +66,36 @@ public class PlayerSpectator : NetworkBehaviour
 
     private bool isSpectating;
     private bool restoringFromSpectator;
+    private GameObject respawnCurtain;
+    public static bool LocalRespawnPending { get; private set; }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetRespawnPresentation() => LocalRespawnPending = false;
+
+    private void ShowRespawnCurtain()
+    {
+        if (respawnCurtain) return;
+        LocalRespawnPending = true;
+        var canvas = DeadQuarantine.PvPvE.PvPvEUIFactory.Canvas(gameObject, "Reaparicion", short.MaxValue - 2);
+        respawnCurtain = canvas.gameObject;
+        var image = respawnCurtain.AddComponent<UnityEngine.UI.Image>();
+        image.color = new Color(.018f, .024f, .022f, 1);
+        image.raycastTarget = true;
+        respawnCurtain.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+        var label = DeadQuarantine.PvPvE.PvPvEUIFactory.Text(canvas.transform, "Estado", "REAPARECIENDO…", 0, 0, 700, 65, DeadQuarantine.PvPvE.PvPvEUIFactory.HeadingFont, 36);
+        label.font = DeadQuarantine.PvPvE.PvPvEUIFactory.HeadingFont;
+        label.rectTransform.anchorMin = label.rectTransform.anchorMax = label.rectTransform.pivot = new Vector2(.5f, .5f);
+        label.rectTransform.anchoredPosition = Vector2.zero;
+        label.alignment = TextAlignmentOptions.Center;
+        label.color = new Color(.3f, .9f, .5f);
+    }
+
+    private void HideRespawnCurtain()
+    {
+        if (!IsOwner && !respawnCurtain) return;
+        LocalRespawnPending = false;
+        if (respawnCurtain) { respawnCurtain.SetActive(false); Destroy(respawnCurtain); respawnCurtain = null; }
+    }
 
     private Coroutine restoreCoroutine;
 
@@ -182,6 +212,7 @@ public class PlayerSpectator : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        HideRespawnCurtain();
         if (playerHealth != null)
         {
             playerHealth.OnStateChanged -=
@@ -296,6 +327,7 @@ public class PlayerSpectator : NetworkBehaviour
 
     private void StartSpectating()
     {
+        HideRespawnCurtain();
         if (isSpectating)
             return;
 
@@ -381,6 +413,7 @@ public class PlayerSpectator : NetworkBehaviour
 
     private void FreezeAsDead()
     {
+        HideRespawnCurtain();
         if (restoreCoroutine != null)
         {
             StopCoroutine(
@@ -427,6 +460,7 @@ public class PlayerSpectator : NetworkBehaviour
 
     private void StartRestoringFromRespawn()
     {
+        ShowRespawnCurtain();
         if (restoreCoroutine != null)
         {
             StopCoroutine(
@@ -490,25 +524,25 @@ public class PlayerSpectator : NetworkBehaviour
 
         float elapsed = 0f;
 
-        while (
-            elapsed <
-            maxRespawnWaitTime
-        )
+        bool cooperative = !PvPvECombat.Active;
+        if (cooperative && spawnAssigner) spawnAssigner.RequestRespawnPlacement();
+        while (cooperative || elapsed < maxRespawnWaitTime)
         {
             if (spawnAssigner == null)
                 break;
 
-            if (
-                spawnAssigner.IsAtAssignedSpawn(
-                    respawnPositionTolerance
-                )
-            )
+            var map = GestorEscenariosPartida.Instance;
+            bool placed = spawnAssigner.IsAtSpawn.Value &&
+                (spawnAssigner.SpawnCheckpointActivo.Value || spawnAssigner.IsAtAssignedSpawn(respawnPositionTolerance));
+            if (map && map.UsaEscenasAditivasMultiplayer)
+                placed &= map.MapaMultiplayerListo && spawnAssigner.ConfirmoSpawnEnEscena(map.NombreMapaMultiplayerActivo);
+            if (placed)
             {
                 break;
             }
 
             elapsed +=
-                Time.deltaTime;
+                Time.unscaledDeltaTime;
 
             yield return null;
         }
@@ -587,6 +621,10 @@ public class PlayerSpectator : NetworkBehaviour
         }
 
         restoringFromSpectator = false;
+
+        // No descubrir la cámara hasta que vuelva al personaje y sus controles estén activos.
+        yield return null;
+        HideRespawnCurtain();
 
         restoreCoroutine = null;
 
@@ -716,7 +754,7 @@ public class PlayerSpectator : NetworkBehaviour
         {
             if (
                 spectatorCamera != null &&
-                originalCameraParent != null
+                originalCameraParent != null && spectatorCamera.parent == originalCameraParent
             )
             {
                 spectatorCamera.localPosition =
@@ -781,6 +819,7 @@ public class PlayerSpectator : NetworkBehaviour
 
     private void OnDisable()
     {
+        HideRespawnCurtain();
         if (spectatorHud) spectatorHud.SetActive(false);
     }
 

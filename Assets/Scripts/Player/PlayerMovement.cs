@@ -122,15 +122,18 @@ public partial class PlayerMovement : NetworkBehaviour
     public bool IsCrouching { get; private set; }
     private bool movementLocked;
     public bool IsBossStunned => playerHealth != null && playerHealth.IsBossStunned;
-    public bool MovementLocked { get => movementLocked || IsBossStunned || (IsOwner && DeadQuarantine.PvPvE.UI.PvPvEInitialClassView.BlocksLocalGameplay); set => movementLocked = value; }
+    public bool MovementLocked { get => movementLocked || IsBossStunned || (IsOwner && (DeadQuarantine.PvPvE.UI.PvPvEInitialClassView.BlocksLocalGameplay || SurvivalUpgradeUI.BlocksLocalGameplay)); set => movementLocked = value; }
     // Bloqueado (pausa, historia...) devuelve 0: así el sway y la animación del arma no reaccionan a las teclas.
     public Vector2 MoveInput =>
         (MovementLocked || PauseController.LocalPlayerPaused) ? Vector2.zero : moveInput; // <- NUEVO: para que WeaponSway lea hacia dónde te movés
 
     // Velocidades actuales: las fija el personaje elegido (PlayerCharacter) y las puede leer la animación de tercera persona.
-    public float MoveSpeed => moveSpeed;
-    public float SprintSpeed => sprintSpeed;
-    public float CrouchSpeed => crouchSpeed;
+    private SurvivalUpgrades survivalUpgrades;
+    private SurvivalUpgrades Survival => survivalUpgrades ? survivalUpgrades : (survivalUpgrades = GetComponent<SurvivalUpgrades>());
+    private float SurvivalMove => Survival ? Survival.MovementMultiplier : 1;
+    public float MoveSpeed => moveSpeed * SurvivalMove;
+    public float SprintSpeed => sprintSpeed * SurvivalMove;
+    public float CrouchSpeed => crouchSpeed * SurvivalMove;
 
     /// <summary>
     /// Pone las velocidades del personaje elegido (tanque, soldado, explorador...). Lo llama PlayerCharacter.
@@ -438,6 +441,7 @@ public partial class PlayerMovement : NetworkBehaviour
         else if (IsSprinting)
             currentSpeed = sprintSpeed;
 
+        if (!playerHealth || !playerHealth.IsDowned) currentSpeed *= SurvivalMove;
         var equipped=weaponSwitcher?weaponSwitcher.CurrentWeapon:null;
         if(equipped)currentSpeed*=equipped.AttachmentMovement;
         currentSpeed *= ActualizarObstaculos();
@@ -2024,7 +2028,7 @@ public partial class PlayerMovement : NetworkBehaviour
                 false;
 
             CurrentStamina +=
-                staminaRegenRate * (playerHealth ? playerHealth.PerkStaminaRegen : 1f) *
+                staminaRegenRate * (Survival ? Survival.RegenMultiplier : 1) * (playerHealth ? playerHealth.PerkStaminaRegen : 1f) *
                 Time.deltaTime;
 
             CurrentStamina =

@@ -410,6 +410,7 @@ public partial class Weapon : MonoBehaviour
 
     private void Awake()
     {
+        GameAudio.RouteTree(gameObject);
         packPresentation=GetComponent<PackWeaponPresentation>();
         controls = new PlayerControls();
         ConfiguracionesJuego.CargarRebinds(controls.asset);

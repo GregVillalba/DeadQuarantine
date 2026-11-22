@@ -269,6 +269,12 @@ private bool iniciarRondaDesdeGuardado;
     public int CountdownRemaining =>
         CountdownNetwork.Value;
 
+    public NetworkVariable<bool> SurvivalUpgradeWindow = new(false,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    public bool IsSurvivalUpgradeMode => !TutorialEscena.EsActiva &&
+        ModoNetwork.Value == (int)ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia &&
+        !DeadQuarantine.PvPvE.PvPvEZombieDirector.Active;
+
     public bool IsShopPhaseActive =>
         ShopPhaseActiveNetwork.Value;
 
@@ -694,6 +700,7 @@ private IEnumerator EsperarFinIntroLocal()
     // =========================================================
 public void StartRound(int round)
 {
+    if (IsServer) SurvivalUpgradeWindow.Value = false;
     if (!IsServer)
         return;
 
@@ -862,6 +869,7 @@ public void StartRound(int round)
         }
 
         dogRoundAudioSource = source;
+        GameAudio.Route(source);
         source.PlayOneShot(dogRoundHowlClip, dogRoundHowlVolume);
     }
 
@@ -2076,10 +2084,15 @@ private void DesbloquearLogroModoClientRpc(
     // =========================================================
 private void EndRound()
 {
-    if (!IsServer)
+    if (!IsServer || !roundInProgress)
         return;
 
     roundInProgress = false;
+    if (IsSurvivalUpgradeMode)
+    {
+        SurvivalUpgradeWindow.Value = true;
+        SurvivalUpgradeSession.For(NetworkManager).AwardRound(this, CurrentRoundNetwork.Value);
+    }
 
     StartCoroutine(
         EndRoundDelay()

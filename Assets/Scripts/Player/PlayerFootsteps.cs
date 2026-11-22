@@ -20,6 +20,7 @@ public class PlayerFootsteps : MonoBehaviour
 
     private void Awake()
     {
+        GameAudio.RouteTree(gameObject);
         audioSource = GetComponent<AudioSource>();
         controls = new PlayerControls();
         ConfiguracionesJuego.CargarRebinds(controls.asset);

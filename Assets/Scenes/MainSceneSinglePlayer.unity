@@ -30305,6 +30305,40 @@ MonoBehaviour:
   bossPrefabs:
   - {fileID: 1658146812600542, guid: 574d3bbe7d1c8684f9101c2b823c5770, type: 3}
   stalkerPrefab: {fileID: 1960997148460282, guid: a3029e28af10f4f458f5d25d6118a906, type: 3}
+  survivalStalkerTiers:
+  - firstRound: 5
+    maxAlive: 1
+  - firstRound: 10
+    maxAlive: 2
+  - firstRound: 15
+    maxAlive: 3
+  - firstRound: 20
+    maxAlive: 4
+  survivalStalkerChanceByRound:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 5
+      value: 0.04
+      inSlope: 0
+      outSlope: 0.0056000003
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 30
+      value: 0.18
+      inSlope: 0.0056000003
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  survivalStalkerSpawnSpacing: 12
   bossRound: 5
   bossHealthMultiplier: 15
   startingZombies: 6
@@ -30383,6 +30417,11 @@ MonoBehaviour:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 1
+  SurvivalUpgradeWindow:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
   ShopReadyClientsNetwork:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
@@ -49027,6 +49066,100 @@ MonoBehaviour:
   m_Center: {x: 0, y: 0, z: 0}
   m_Area: 1
   m_AffectedAgents: ffffffff
+--- !u!1 &7399000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7399000005}
+  - component: {fileID: 7399000004}
+  - component: {fileID: 7399000003}
+  - component: {fileID: 7399000002}
+  m_Layer: 0
+  m_Name: Map Lower Boundary
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &7399000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7399000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14d240b3e1e1f4842a0167fcb4ac7020, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::MapLowerBoundary
+--- !u!54 &7399000003
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7399000001}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!65 &7399000004
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7399000001}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 3070.4258, y: 20, z: 2915.5464}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!4 &7399000005
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7399000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -519.11255, y: -92.889984, z: -544.2848}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &7422000663175666591
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -49201,7 +49334,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5368491365814529478, guid: 4e7427283fddd5e4d8f3ca3c3b2bb3f6, type: 3}
       propertyPath: restaurarAlDesactivar
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5749292482597677923, guid: 4e7427283fddd5e4d8f3ca3c3b2bb3f6, type: 3}
       propertyPath: m_LocalPosition.x
@@ -52721,6 +52854,7 @@ PrefabInstance:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 7399000005}
   - {fileID: 1825434689}
   - {fileID: 1241978720}
   - {fileID: 837854131}

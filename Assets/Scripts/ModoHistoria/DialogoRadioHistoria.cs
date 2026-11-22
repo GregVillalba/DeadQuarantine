@@ -56,6 +56,7 @@ internal sealed class DialogoRadioHistoria : MonoBehaviour
         panel.unJugador = unJugador;
         panel.solicitarAvance = solicitarAvance;
         panel.radio = marco.gameObject.AddComponent<AudioSource>();
+        GameAudio.Route(panel.radio);
         panel.radio.playOnAwake = false;
         panel.radio.spatialBlend = 0f;
         panel.radio.volume = 0.8f;

@@ -35,6 +35,7 @@ public static class PlayerInputGate
     }
 
     public static bool MenuOpen =>
+        PlayerSpectator.LocalRespawnPending || SurvivalUpgradeUI.BlocksLocalGameplay ||
         DeadQuarantine.PvPvE.UI.PvPvEInitialClassView.BlocksLocalGameplay ||
         PauseController.LocalPlayerPaused ||
         NPCShopUI.LocalShopOpen;
@@ -45,7 +46,7 @@ public static class PlayerInputGate
     /// También mientras se coloca una torreta o un barril: el clic izquierdo lo coloca y el derecho cancela.
     /// </summary>
     public static bool ActionsBlocked =>
-        MenuOpen || MatchLost || LocalPlayerEliminated || LocalBossStunned ||
+        PlayerSpectator.LocalRespawnPending || MenuOpen || MatchLost || LocalPlayerEliminated || LocalBossStunned ||
         DeadQuarantine.PvPvE.Networking.PvPvECombat.LocalBlocked ||
         ColocadorObjetos.ColocandoLocal;
 
@@ -54,6 +55,7 @@ public static class PlayerInputGate
     /// Incluye unos frames de seguridad después de cerrar UI.
     /// </summary>
     public static bool MouseBlocked =>
+        PlayerSpectator.LocalRespawnPending || SurvivalUpgradeUI.BlocksMouse ||
         DeadQuarantine.PvPvE.UI.PvPvEInitialClassView.BlocksLocalGameplay ||
         PauseController.MouseInputBlocked ||
         NPCShopUI.MouseInputBlocked || MatchLost || LocalPlayerEliminated || LocalBossStunned;

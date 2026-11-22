@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
@@ -1539,7 +1539,7 @@ public void ShowHitMarker(bool killedZombie, bool headshot = false)
     // One bounded voice for confirmed hits; pellet/multi-collider feedback cannot stack or clip.
     if(Time.unscaledTime-lastConfirmedHitSound>=.025f){
         var clip=Resources.Load<AudioClip>("PvPvE/ConfirmedHit");
-        if(clip){if(!confirmedHitAudio){confirmedHitAudio=gameObject.AddComponent<AudioSource>();confirmedHitAudio.playOnAwake=false;confirmedHitAudio.spatialBlend=0;confirmedHitAudio.volume=.35f;}if(weapon)confirmedHitAudio.outputAudioMixerGroup=weapon.PresentationMixer;confirmedHitAudio.Stop();confirmedHitAudio.clip=clip;confirmedHitAudio.Play();lastConfirmedHitSound=Time.unscaledTime;}
+        if(clip){if(!confirmedHitAudio){confirmedHitAudio=gameObject.AddComponent<AudioSource>();confirmedHitAudio.playOnAwake=false;confirmedHitAudio.spatialBlend=0;confirmedHitAudio.volume=.35f;}if(weapon)confirmedHitAudio.outputAudioMixerGroup=weapon.PresentationMixer;GameAudio.Route(confirmedHitAudio);confirmedHitAudio.Stop();confirmedHitAudio.clip=clip;confirmedHitAudio.Play();lastConfirmedHitSound=Time.unscaledTime;}
     }
     if (hitMarker == null)
         return;

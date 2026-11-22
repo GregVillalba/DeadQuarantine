@@ -75,6 +75,9 @@ public sealed class ConfiguracionMenuController : MonoBehaviour
 
     private float pendingVolume;
     private float pendingSensitivity;
+    private readonly Slider[] audioChannels = new Slider[4];
+    private readonly TMP_Text[] audioValues = new TMP_Text[4];
+    private readonly float[] pendingAudio = new float[4];
 
     private bool initialized;
     private bool syncing;
@@ -117,6 +120,7 @@ public sealed class ConfiguracionMenuController : MonoBehaviour
         if (initialized)
             return;
 
+        EnsureAudioChannels();
         ApplyVisualStyle();
 
         // El botón USUARIO se conecta primero y por separado
@@ -640,6 +644,7 @@ public sealed class ConfiguracionMenuController : MonoBehaviour
 
     private void ReloadAppliedValues()
     {
+        for (int i = 0; i < pendingAudio.Length; i++) pendingAudio[i] = GameAudio.Volume((GameAudioChannel)i);
         pending =
             manager.CaptureSnapshot();
 
@@ -659,6 +664,11 @@ public sealed class ConfiguracionMenuController : MonoBehaviour
 
     private void SyncUI()
     {
+        for (int i = 0; i < audioChannels.Length; i++)
+        {
+            if (audioChannels[i]) audioChannels[i].SetValueWithoutNotify(pendingAudio[i]);
+            if (audioValues[i]) audioValues[i].text = Mathf.RoundToInt(pendingAudio[i] * 100) + "%";
+        }
         if (pending == null)
             return;
 
@@ -838,9 +848,7 @@ public sealed class ConfiguracionMenuController : MonoBehaviour
 
         manager.ApplySnapshot(pending);
 
-        ConfiguracionesJuego.GuardarVolumen(
-            pendingVolume
-        );
+        ApplyAudioPending();
 
         ConfiguracionesJuego.GuardarSensibilidad(
             pendingSensitivity
@@ -866,6 +874,7 @@ public sealed class ConfiguracionMenuController : MonoBehaviour
 
     private void RestoreRecommendedPending()
     {
+        for (int i = 0; i < pendingAudio.Length; i++) pendingAudio[i] = 1;
         pending =
             manager.CreateRecommendedSnapshot();
 
@@ -1008,6 +1017,51 @@ public sealed class ConfiguracionMenuController : MonoBehaviour
             pending.vSync
                 ? "V-SYNC ACTIVO // el monitor puede imponer el límite real de FPS."
                 : "V-SYNC DESACTIVADO // se usa el límite de FPS seleccionado.";
+    }
+
+    private void ApplyAudioPending()
+    {
+        ConfiguracionesJuego.GuardarVolumen(pendingVolume);
+        for (int i = 0; i < pendingAudio.Length; i++) GameAudio.SetVolume((GameAudioChannel)i, pendingAudio[i]);
+        PlayerPrefs.Save();
+    }
+
+    private void EnsureAudioChannels()
+    {
+        if (!volumenSlider || audioChannels[0]) return;
+        var row = volumenSlider.transform.parent as RectTransform;
+        if (!row) return;
+        string[] names = { "MÚSICA", "AMBIENTE", "EFECTOS", "INTERFAZ" };
+        string[] descriptions = {
+            "Música del menú y de los escenarios.",
+            "Lluvia, truenos, viento y sonidos del escenario.",
+            "Disparos, pasos, enemigos, explosiones y diálogos.",
+            "Sonidos de botones y compras."
+        };
+        for (int i = 0; i < names.Length; i++)
+        {
+            int channel = i;
+            var clone = Instantiate(row, row.parent);
+            clone.name = "Fila_Audio_" + (GameAudioChannel)i;
+            clone.anchoredPosition = row.anchoredPosition + Vector2.down * (108 * (i + 1));
+            audioChannels[i] = clone.GetComponentInChildren<Slider>(true);
+            audioChannels[i].minValue = 0; audioChannels[i].maxValue = 1;
+            audioChannels[i].onValueChanged = new Slider.SliderEvent();
+            foreach (var label in clone.GetComponentsInChildren<TMP_Text>(true))
+            {
+                if (label.name == "Label") label.text = names[i];
+                if (label.name == "Descripcion") label.text = descriptions[i];
+                if (label.name == "Valor") audioValues[i] = label;
+            }
+            audioChannels[i].onValueChanged.AddListener(value => {
+                if (syncing) return;
+                pendingAudio[channel] = value;
+                if (audioValues[channel]) audioValues[channel].text = Mathf.RoundToInt(value * 100) + "%";
+                SetDirty();
+            });
+        }
+        var info = row.parent.Find("Info_AUDIO") as RectTransform;
+        if (info) info.anchoredPosition += Vector2.down * 432;
     }
 
     private void UpdateVolumeLabel()

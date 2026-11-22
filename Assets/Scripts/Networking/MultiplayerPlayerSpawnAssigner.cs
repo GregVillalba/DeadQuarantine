@@ -231,6 +231,22 @@ public class MultiplayerPlayerSpawnAssigner : NetworkBehaviour
         }
     }
 
+    public void RequestRespawnPlacement()
+    {
+        if (!IsSpawned || !IsOwner || SpawnCheckpointActivo.Value) return;
+        if (IsServer) PlaceRespawnServer(); else RequestRespawnPlacementServerRpc();
+    }
+
+    [ServerRpc]
+    private void RequestRespawnPlacementServerRpc() => PlaceRespawnServer();
+
+    private void PlaceRespawnServer()
+    {
+        if (!IsServer || SpawnCheckpointActivo.Value || DeadQuarantine.PvPvE.Networking.PvPvECombat.Active ||
+            !TryGetComponent<PlayerHealth>(out var health) || !health.IsAlive) return;
+        RespawnAtAssignedSpawn();
+    }
+
     [ClientRpc]
     private void RespawnOwnerClientRpc()
     {

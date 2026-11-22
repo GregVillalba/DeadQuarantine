@@ -62,6 +62,7 @@ public class NPCWeaponVendor : MonoBehaviour
 
     private void Awake()
     {
+        GameAudio.RouteTree(gameObject);
         if (audioSource != null)
             audioSource.ignoreListenerPause = true;
     }

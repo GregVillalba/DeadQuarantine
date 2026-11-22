@@ -220,6 +220,7 @@ public class NPCShopUI : MonoBehaviour
 
     private void Awake()
     {
+        GameAudio.RouteTree(gameObject);
         controls = new PlayerControls();
         ConfiguracionesJuego.CargarRebinds(controls.asset);
 
@@ -308,6 +309,8 @@ public class NPCShopUI : MonoBehaviour
             ActualizarCompraMantenida();
             return;
         }
+
+        if (SurvivalUpgradeUI.BlocksLocalGameplay) { OcultarPrompt(); return; }
 
         // Colocando una torreta o un barril no se puede volver a abrir la tienda.
         if (ColocadorObjetos.ColocandoLocal)

@@ -9,6 +9,7 @@ public class MainMenuLightning : MonoBehaviour
     [SerializeField] private Vector2 intervalRange = new Vector2(8f, 18f);
     [SerializeField] private Vector2 intensityRange = new Vector2(1.2f, 2.6f);
     [SerializeField] private float flashDuration = 0.10f;
+    [SerializeField] private MansionWeather weather;
 
     private float nextFlash;
     private float flashEnd;
@@ -29,6 +30,12 @@ public class MainMenuLightning : MonoBehaviour
     {
         if (lightningLight == null)
             return;
+        if (weather && !weather.IsRunning)
+        {
+            lightningLight.intensity = 0;
+            ScheduleNext();
+            return;
+        }
 
         float now = Time.unscaledTime;
 
@@ -51,6 +58,7 @@ public class MainMenuLightning : MonoBehaviour
                 );
 
             flashEnd = now + flashDuration;
+            if (weather) weather.PlayThunder();
         }
     }
 

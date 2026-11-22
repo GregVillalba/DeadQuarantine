@@ -158,7 +158,7 @@ public class BarrilExplosivo : NetworkBehaviour
         }
 
         if (sonidoExplosion != null)
-            AudioSource.PlayClipAtPoint(sonidoExplosion, posicion);
+            GameAudio.PlayAtPoint(sonidoExplosion, posicion);
     }
 
     private void OnDrawGizmosSelected()

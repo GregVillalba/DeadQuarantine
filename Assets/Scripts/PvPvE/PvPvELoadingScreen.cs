@@ -8,6 +8,8 @@ using static DeadQuarantine.PvPvE.PvPvEUIFactory;
 namespace DeadQuarantine.PvPvE {
  // Recovered preview/shade/mode/map/status layout; current NGO flow remains the authority.
  public sealed class PvPvELoadingScreen:MonoBehaviour {
+  static readonly System.Collections.Generic.HashSet<PvPvELoadingScreen> screens = new();
+  public static bool AnyVisible => screens.Any(screen => screen && screen.isActiveAndEnabled && screen.IsShowing);
   PvPvEPreparationFlow flow;PvPvEMapVoting voting;PvPvETeamRoster roster;Canvas canvas;
   static PvPvENetworkSettings originalSettings;static PvPvELoadingScreen originalScreen;
   bool original,cooperative,localTransition,returningToMenu;string originalTarget,originalOrigin,cooperativeTarget;float originalProgress;PvPvEMapOption originalMap;Texture2D safeZonePreview;TextMeshProUGUI modeLabel;
@@ -109,7 +111,7 @@ namespace DeadQuarantine.PvPvE {
    !(PvPvEInitialClassView.Active&&PvPvEInitialClassView.Active.IsShowing)&&
    (flow.Stage.Value==PvPvEPrepareStage.Lobby?voting.Phase.Value==PvPvEVotePhase.VoteResult:
     flow.Stage.Value is PvPvEPrepareStage.LoadingMap or PvPvEPrepareStage.SelectingClasses or PvPvEPrepareStage.ReadyForPlacement or PvPvEPrepareStage.PlacingTeams);
-  void Awake(){flow=GetComponent<PvPvEPreparationFlow>();voting=GetComponent<PvPvEMapVoting>();roster=GetComponent<PvPvETeamRoster>();}
+  void Awake(){screens.Add(this);flow=GetComponent<PvPvEPreparationFlow>();voting=GetComponent<PvPvEMapVoting>();roster=GetComponent<PvPvETeamRoster>();}
   void Update(){
    if(original){UpdateOriginal();return;}
    bool show=ShouldDisplay;if(show&&!canvas)Build();if(!canvas)return;canvas.gameObject.SetActive(show);if(loadingCamera)loadingCamera.enabled=show;if(!show)return;
@@ -138,6 +140,6 @@ namespace DeadQuarantine.PvPvE {
   }
   static void Stretch(RectTransform rect){rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;}
   public void DisposeView(){if(disposed)return;disposed=true;if(loadingCamera)Destroy(loadingCamera.gameObject);if(canvas){canvas.gameObject.SetActive(false);Destroy(canvas.gameObject);}}
-  void OnDestroy(){if(originalScreen==this)originalScreen=null;DisposeView();}
+  void OnDestroy(){screens.Remove(this);if(originalScreen==this)originalScreen=null;DisposeView();}
  }
 }
