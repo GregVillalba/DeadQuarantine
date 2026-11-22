@@ -360,7 +360,8 @@ public class PauseController : NetworkBehaviour
         DebugPauseCalls++;
 #endif
         bool historiaActiva = storyIntro != null && storyIntro.HistoriaActiva;
-        if (!IsOwner || estaPausado || historiaActiva) return;
+       // if (!IsOwner || estaPausado || historiaActiva) return;
+       if (!IsOwner || estaPausado || historiaActiva || finDeRondaActivo) return;
 
         estaPausado = true;
         LocalPlayerPaused = true;
@@ -426,6 +427,27 @@ public class PauseController : NetworkBehaviour
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
     }
+
+    private void CerrarPausaPorFinDePartida()
+    {
+        if (!estaPausado) return;
+
+        estaPausado = false;
+        LocalPlayerPaused = false;
+        resumeFrame = Time.frameCount;
+
+        if (opcionesControles != null) opcionesControles.Cerrar();
+        if (configuraciones != null) configuraciones.CerrarTodo();
+        if (menuConfiguracion != null) menuConfiguracion.SetActive(false);
+        if (popupMenuHome != null) popupMenuHome.SetActive(false);
+
+        if (EsSinglePlayer())
+        {
+            Time.timeScale = 1f;
+            AudioListener.pause = false;
+        }
+    }
+
 
     private void BloquearJugador()
     {
@@ -756,6 +778,8 @@ public class PauseController : NetworkBehaviour
         if (!IsOwner) return;
 
         finDeRondaActivo = true;
+        OcultarAvisosAbandono();
+        CerrarPausaPorFinDePartida();
         if (hud != null) hud.SetActive(false);
         BloquearJugador();
 
@@ -795,6 +819,8 @@ public class PauseController : NetworkBehaviour
         if (!IsOwner) return;
 
         finDeRondaActivo = true;
+        OcultarAvisosAbandono();
+        CerrarPausaPorFinDePartida();
         if (hud != null) hud.SetActive(false);
         BloquearJugador();
 
@@ -927,7 +953,8 @@ public class PauseController : NetworkBehaviour
 
     private void MostrarAvisoCompaneroAbandono(string nombre)
 {
-    if (panelCompaneroAbandono == null) return;
+    //if (panelCompaneroAbandono == null) return;
+    if (panelCompaneroAbandono == null || finDeRondaActivo) return;
 
     string linea = string.Format(formatoCompaneroAbandono, nombre);
     avisosAbandono.Add((linea, Time.unscaledTime + duracionPanelCompaneroAbandono));
@@ -961,6 +988,20 @@ private void ActualizarAvisosAbandono()
 
     if (textoCompaneroAbandono != null)
         textoCompaneroAbandono.text = string.Join("\n", avisosAbandono.Select(a => a.linea));
+}
+
+private void OcultarAvisosAbandono()
+{
+    avisosAbandono.Clear();
+
+    if (ocultarPanelCompaneroCoroutine != null)
+    {
+        StopCoroutine(ocultarPanelCompaneroCoroutine);
+        ocultarPanelCompaneroCoroutine = null;
+    }
+
+    if (panelCompaneroAbandono != null)
+        panelCompaneroAbandono.SetActive(false);
 }
 
 }
