@@ -10291,8 +10291,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0.000061035, y: 0.0339}
-  m_SizeDelta: {x: 3700, y: 2101.0225}
+  m_AnchoredPosition: {x: 0.000061035, y: 0.0056152}
+  m_SizeDelta: {x: 3700, y: 2500}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4456571376314483065
 CanvasRenderer:
@@ -67553,8 +67553,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0.000061035, y: 0.0339}
-  m_SizeDelta: {x: 3700, y: 2101.0225}
+  m_AnchoredPosition: {x: 0.000061035, y: 0.0055237}
+  m_SizeDelta: {x: 3700, y: 2500}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7067229452813290274
 CanvasRenderer:
@@ -73971,6 +73971,49 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   catalog: {fileID: 11400000, guid: 2de6ea5c94dbd8f448fa5806799bce46, type: 2}
   requestsPerSecond: 64
+--- !u!114 &771671487761037335
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5539736354694109012}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7883e31c3b79f064b85f0d7b6b339ccd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::SurvivalUpgrades
+  ShowTopMostFoldoutHeaderGroup: 1
+  Progress:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue:
+      health: 0
+      damage: 0
+      staminaRegen: 0
+      movement: 0
+      points: 0
+      lastRewardRound: 0
+--- !u!114 &2459394049728565811
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5539736354694109012}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0aaa08d2e10cf8c44aece6f821b4abe6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Scripts::SurvivalUpgradeUI
+  illustrations:
+  - {fileID: 21300000, guid: 85114c1f7a7cda34dabc7afc2dc3685a, type: 3}
+  - {fileID: 21300000, guid: b0df3f96c728d5e4a9e503b00729a7e9, type: 3}
+  - {fileID: 21300000, guid: 53ce5d8ce8506884c85f5f42d181440e, type: 3}
+  - {fileID: 21300000, guid: 1dc955ee13855d640bd06659eaf6d3c9, type: 3}
+  headingFont: {fileID: 11400000, guid: 853bf37eaaf2c1148a3cecc0f74b2a0c, type: 2}
+  bodyFont: {fileID: 11400000, guid: f35489d702819a44fbd5d540d8b969ed, type: 2}
 --- !u!1 &5541150915868226879
 GameObject:
   m_ObjectHideFlags: 0
@@ -93319,7 +93362,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 5501707589087169415}
   m_HandleRect: {fileID: 6321719336241033124}
   m_Direction: 2
-  m_Value: 0
+  m_Value: 1
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -131169,46 +131212,3 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 9139680355167268490, guid: e00c3bd2fbd7aee4fbb9cf9971e44edb, type: 3}
   m_PrefabInstance: {fileID: 9016556796638000695}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &771671487761037335
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5539736354694109012}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7883e31c3b79f064b85f0d7b6b339ccd, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Scripts::SurvivalUpgrades
-  ShowTopMostFoldoutHeaderGroup: 1
-  Progress:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue:
-      health: 0
-      damage: 0
-      staminaRegen: 0
-      movement: 0
-      points: 0
-      lastRewardRound: 0
---- !u!114 &2459394049728565811
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5539736354694109012}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0aaa08d2e10cf8c44aece6f821b4abe6, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Scripts::SurvivalUpgradeUI
-  illustrations:
-  - {fileID: 21300000, guid: 85114c1f7a7cda34dabc7afc2dc3685a, type: 3}
-  - {fileID: 21300000, guid: b0df3f96c728d5e4a9e503b00729a7e9, type: 3}
-  - {fileID: 21300000, guid: 53ce5d8ce8506884c85f5f42d181440e, type: 3}
-  - {fileID: 21300000, guid: 1dc955ee13855d640bd06659eaf6d3c9, type: 3}
-  headingFont: {fileID: 11400000, guid: 853bf37eaaf2c1148a3cecc0f74b2a0c, type: 2}
-  bodyFont: {fileID: 11400000, guid: f35489d702819a44fbd5d540d8b969ed, type: 2}
