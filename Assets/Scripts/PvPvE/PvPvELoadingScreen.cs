@@ -102,6 +102,7 @@ namespace DeadQuarantine.PvPvE {
    FitPreview();
   }
   Camera loadingCamera;RawImage preview;TextMeshProUGUI mapName,status;bool disposed;
+  Button leave;TMP_Text leaveLabel;bool leaving;
   public GameObject Panel=>canvas?canvas.gameObject:null;
   public bool IsShowing=>canvas&&canvas.gameObject.activeInHierarchy;
   public string MapText=>mapName?mapName.text:"";
@@ -115,6 +116,7 @@ namespace DeadQuarantine.PvPvE {
   void Update(){
    if(original){UpdateOriginal();return;}
    bool show=ShouldDisplay;if(show&&!canvas)Build();if(!canvas)return;canvas.gameObject.SetActive(show);if(loadingCamera)loadingCamera.enabled=show;if(!show)return;
+   if(leave)LoadingIndicator.MaintainInput(canvas.transform);
    var map=voting.SelectedMap;var photos=map.LoadingViews;var photo=photos!=null&&photos.Length>0?photos[(int)(Time.unscaledTime/5)%photos.Length]:map.Preview;preview.texture=photo;preview.color=photo?Color.white:PanelColor;mapName.text=map.Name;
    status.text=flow.Stage.Value==PvPvEPrepareStage.Lobby?"LA PARTIDA COMIENZA EN "+Mathf.Max(0,Mathf.CeilToInt((float)voting.Remaining)):flow.Status;
    // Cover the screen without stretching the photograph, including 16:10 and ultrawide.
@@ -136,7 +138,25 @@ namespace DeadQuarantine.PvPvE {
    mapName=Text(content,"MapName","",0,0,1,1,null,72);Place(mapName.rectTransform,new(.018f,.36f),new(.97f,.77f));mapName.font=HeadingFont;
    status=Text(content,"State","",0,0,1,1,null,24);Place(status.rectTransform,new(.018f,.06f),new(.72f,.32f));
    if(HeadingFont)status.font=HeadingFont;
+   // SP transitions and the co-op curtain already own their exit controls.
+   // Restore the PvPvE loading exit without duplicating those newer systems.
+   if(!original){
+    if(!canvas.TryGetComponent<GraphicRaycaster>(out _))canvas.gameObject.AddComponent<GraphicRaycaster>();
+    (leave,leaveLabel)=LoadingIndicator.CreateExitButton(root,LeaveWhileLoading);
+    leaveLabel.font=status.font;
+   }
 
+  }
+  async void LeaveWhileLoading(){
+   if(leaving||!PvPvEMatchmaking.Active)return;
+   var matchmaking=PvPvEMatchmaking.Active;
+   leaving=true;leave.interactable=false;leaveLabel.text="SALIENDO…";
+   try{
+    await matchmaking.CancelAndLeaveAsync();
+    if(!this||matchmaking.CanNavigateAway)return;
+   }catch(System.Exception error){Debug.LogException(error);}
+   if(!this||!leave)return;
+   leaving=false;leave.interactable=true;leaveLabel.text="REINTENTAR SALIDA";
   }
   static void Stretch(RectTransform rect){rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;}
   public void DisposeView(){if(disposed)return;disposed=true;if(loadingCamera)Destroy(loadingCamera.gameObject);if(canvas){canvas.gameObject.SetActive(false);Destroy(canvas.gameObject);}}

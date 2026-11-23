@@ -36,7 +36,15 @@ namespace DeadQuarantine.PvPvE.UI
   public bool CharacterPreviewReady=>false;
   public GameObject Panel=>panel;
   void Awake(){font=PvPvEUIFactory.HeadingFont?PvPvEUIFactory.HeadingFont:font;store=new PvPvEClassStore(catalog);Build();panel.SetActive(false);}
-  void Update()=>HandleEscape();
+  void Update(){
+   HandleEscape();
+   if(picker&&picker.activeInHierarchy){
+    var viewport=(RectTransform)options.parent;
+    var grid=options.GetComponent<GridLayoutGroup>();
+    int columns=Mathf.Clamp(Mathf.FloorToInt((viewport.rect.width-4)/232),1,6);
+    if(grid.constraintCount!=columns)grid.constraintCount=columns;
+   }
+  }
   public void HandleEscape(){if(!IsOpen||escapeFrame==Time.frameCount)return;if(Keyboard.current!=null&&Keyboard.current.escapeKey.wasPressedThisFrame){escapeFrame=Time.frameCount;if(picker.activeSelf)picker.SetActive(false);else Close();}}
   public void Open(){
    var lobby=GetComponent<PvPvELobbyView>();if(!lobby||!lobby.IsShowing)return;
@@ -191,28 +199,19 @@ namespace DeadQuarantine.PvPvE.UI
    }
 
   }
-  void ClearWeaponStats(TMP_Text target){var bars=target.transform.Find("WeaponStatBars");if(bars)bars.gameObject.SetActive(false);target.enabled=true;}
+  void ClearWeaponStats(TMP_Text target){
+   foreach(Transform child in target.transform)child.gameObject.SetActive(false);
+   target.enabled=true;
+  }
   void DrawWeaponStats(TMP_Text target,PvPvELoadoutCatalog.Gun gun,WeaponAttachmentChoice choice,bool vertical){
-   target.enabled=vertical;target.text=vertical?gun.name.ToUpperInvariant():"";
-   var group=target.transform.Find("WeaponStatBars") as RectTransform;
-   if(!group)group=Rect("WeaponStatBars",target.transform,Vector2.zero,new(1,vertical?.82f:1));group.gameObject.SetActive(true);
-   float damage=1,spread=1,recoil=1;
-   foreach(WeaponAttachmentKind k in Enum.GetValues(typeof(WeaponAttachmentKind))){var a=catalog.attachments.Find(choice.Get(k));if(a!=null){damage*=a.damage;spread*=a.spread;recoil*=a.recoil;}}
-   float reach=catalog.attachments.Modifier(choice,a=>a.range);recoil*=catalog.attachments.Modifier(choice,a=>a.verticalRecoil);
-   string[] names={"DAÑO","ALCANCE","CADENCIA","CARGADOR","DISPERSIÓN REL.","RETROCESO REL."};
-   float[] values={gun.damage*damage,gun.range*reach,60/Mathf.Max(.01f,gun.fireInterval),gun.magazine,spread*100,recoil*100};
-   float[] maximum={catalog.weapons.Max(g=>g.damage)*1.25f,catalog.weapons.Max(g=>g.range),catalog.weapons.Max(g=>60/Mathf.Max(.01f,g.fireInterval)),catalog.weapons.Max(g=>g.magazine),150,150};
-   string[] units={""," m","/min","","%","%"};
-   for(int i=0;i<names.Length;i++){
-    var row=group.Find("Stat"+i) as RectTransform;float x=vertical?0:(i%2)*.51f;float top=1-(vertical?i*.165f:(i/2)*.333f);
-    if(!row){row=Rect("Stat"+i,group,new(x,top-(vertical?.16f:.32f)),new(x+(vertical?1:.48f),top));
-     var label=Text("Label",row,"",new(0,.32f),new(1,1),vertical?15:12,Color.white);
-     var track=Rect("Track",row,new(0,.08f),new(1,.24f));track.gameObject.AddComponent<Image>().color=new Color(.17f,.2f,.2f);
-     Rect("Fill",track,Vector2.zero,Vector2.one).gameObject.AddComponent<Image>().color=new Color(.2f,.86f,.43f);
-    }
-    row.Find("Label").GetComponent<TMP_Text>().text=names[i]+"  "+values[i].ToString("0.#")+units[i];
-    var fill=(RectTransform)row.Find("Track/Fill");fill.anchorMax=new(Mathf.Clamp01(values[i]/Mathf.Max(.01f,maximum[i])),1);
-   }
+   if(!gun.statisticsSource){ClearWeaponStats(target);target.text=gun.name;return;}
+   var current=Current;
+   var originalGun=catalog.Find(secondaryFocus?current.secondary:current.primary);
+   var originalChoice=secondaryFocus?current.secondaryAttachments:current.primaryAttachments;
+   WeaponStatistics? baseline=vertical&&originalGun?.statisticsSource ?
+       originalGun.statisticsSource.Statistics(originalChoice,catalog.attachments,true,true) : null;
+   var effective=gun.statisticsSource.Statistics(choice,catalog.attachments,true,true);
+   WeaponStatisticsView.Draw(target,effective,baseline,!vertical,gun.name.ToUpperInvariant());
   }
   static string KindName(WeaponAttachmentKind kind)=>kind switch{WeaponAttachmentKind.Scope=>"MIRA",WeaponAttachmentKind.Support=>"SOPORTE",WeaponAttachmentKind.Utility=>"LÁSER / LINTERNA",_=>"BOCA"};
   void Build(){
