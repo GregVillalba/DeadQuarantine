@@ -201,6 +201,10 @@ public class PlayerSpectator : NetworkBehaviour
             playerHealth.State.Value
         );
 
+        ApplyRemoteBodyCollision(
+            playerHealth.State.Value
+        );
+
         if (IsOwner)
         {
             ApplyOwnerState(
@@ -245,6 +249,8 @@ public class PlayerSpectator : NetworkBehaviour
         if (!PvPvECombat.Active || newState != PlayerHealth.PlayerState.Dead)
             ApplyBodyVisibility(newState);
 
+        ApplyRemoteBodyCollision(newState);
+
         if (!IsOwner)
             return;
 
@@ -283,6 +289,26 @@ public class PlayerSpectator : NetworkBehaviour
         }
 
         // Downed mantiene el cuerpo visible.
+    }
+
+    // =========================================================
+    // COLISIÓN DEL CUERPO EN LAS RÉPLICAS REMOTAS
+    // =========================================================
+
+    // El dueño apaga su CharacterController al morir, pero en las demás
+    // máquinas la réplica lo mantenía encendido: el cuerpo quedaba invisible
+    // y los jugadores vivos chocaban contra él. El dueño se sigue manejando
+    // en ApplyOwnerState / RestoreAfterRespawn (allí importa el orden del respawn).
+    private void ApplyRemoteBodyCollision(
+        PlayerHealth.PlayerState state
+    )
+    {
+        if (IsOwner || characterController == null)
+            return;
+
+        characterController.enabled =
+            state == PlayerHealth.PlayerState.Alive ||
+            state == PlayerHealth.PlayerState.Downed;
     }
 
     // =========================================================

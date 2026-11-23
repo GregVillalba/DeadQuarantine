@@ -31,6 +31,10 @@ public partial class PlayerHealth : NetworkBehaviour
     [SerializeField] private float downedDurationSingleplayer = 5f;
     [SerializeField] private float downedDurationMultiplayer = 20f;
 
+    [Header("Tutorial")]
+    [Tooltip("En el tutorial no hay abatido: al morir el jugador reaparece en su spawn inicial después de estos segundos.")]
+    [Min(0f)] [SerializeField] private float tutorialRespawnDelay = 3f;
+
     [Header("Regeneración")]
     [SerializeField] private float regenerationDelay = 5f;
     [SerializeField] private int healthRecoveredPerTick = 25;
@@ -153,6 +157,7 @@ public partial class PlayerHealth : NetworkBehaviour
     private float lastDamageTime;
     private float nextRegenerationTime;
     private Coroutine downedCoroutine;
+    private Coroutine tutorialRespawnCoroutine;
 
     private DifficultySettings ActiveDifficulty =>
         RoundManager.Instance != null
@@ -235,6 +240,12 @@ public partial class PlayerHealth : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        if (tutorialRespawnCoroutine != null)
+        {
+            StopCoroutine(tutorialRespawnCoroutine);
+            tutorialRespawnCoroutine = null;
+        }
+
         ClearStalkerAcid();
         CurrentHealth.OnValueChanged -= HealthChanged;
         Lives.OnValueChanged -= LivesChanged;
@@ -431,7 +442,12 @@ public partial class PlayerHealth : NetworkBehaviour
 
         if (CurrentHealth.Value <= 0)
         {
-            if (Lives.Value > 0 && !DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(NetworkObject))
+            // En el tutorial no hay abatido: muere directo y reaparece en su spawn (ver EliminatePlayer).
+            if (TutorialEscena.EsActiva)
+            {
+                EliminatePlayer();
+            }
+            else if (Lives.Value > 0 && !DeadQuarantine.PvPvE.Networking.PvPvEPreparationFlow.OwnsStagingPlayer(NetworkObject))
             {
                 EnterDownedState();
             }
@@ -648,6 +664,34 @@ public partial class PlayerHealth : NetworkBehaviour
         {
             RoundManager.Instance.PlayerDied();
         }
+
+        if (TutorialEscena.EsActiva)
+        {
+            if (tutorialRespawnCoroutine != null)
+                StopCoroutine(tutorialRespawnCoroutine);
+
+            tutorialRespawnCoroutine = StartCoroutine(TutorialRespawnRoutine());
+        }
+    }
+
+    // =========================================================
+    // RESPAWN EN EL TUTORIAL
+    // =========================================================
+
+    // El tutorial no tiene RoundManager que reviva al empezar la ronda: sin esto el jugador
+    // quedaba muerto para siempre. Respawn() lo pone vivo y PlayerSpectator (del dueño) pide
+    // el lugar al servidor, que lo manda al mismo spawn del tutorial donde apareció la primera vez.
+    private IEnumerator TutorialRespawnRoutine()
+    {
+        yield return new WaitForSeconds(tutorialRespawnDelay);
+
+        tutorialRespawnCoroutine = null;
+
+        if (!IsSpawned || !TutorialEscena.EsActiva)
+            yield break;
+
+        if (State.Value == PlayerState.Dead || State.Value == PlayerState.Spectating)
+            Respawn();
     }
 
     public void SetSpectating()
