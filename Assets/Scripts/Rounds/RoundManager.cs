@@ -49,7 +49,7 @@ public class RoundManager : NetworkBehaviour
     [Tooltip("X: ronda. Y: probabilidad (0–1) por oportunidad, después de un spawn normal. Se suma sin reemplazar normales.")]
     [SerializeField] private AnimationCurve survivalStalkerChanceByRound = AnimationCurve.Linear(5, .04f, 30, .18f);
     [Tooltip("Separación mínima entre Acechadores. No fuerza apariciones al cumplirse el tiempo.")]
-    [Min(1)] [SerializeField] private float survivalStalkerSpawnSpacing = 12;
+    [Min(12)] [SerializeField] private float survivalStalkerSpawnSpacing = 12;
     private float nextSurvivalStalkerSpawn;
 
     private int SurvivalStalkerAliveLimit(int round)
@@ -68,7 +68,7 @@ public class RoundManager : NetworkBehaviour
         return limit;
     }
     private float SurvivalStalkerChance(int round) => round < 5 || survivalStalkerChanceByRound == null
-        ? 0 : Mathf.Clamp01(survivalStalkerChanceByRound.Evaluate(round));
+        ? 0 : round >= 30 ? .18f : Mathf.Clamp01(survivalStalkerChanceByRound.Evaluate(round));
     private int storyStalkersCreated, storyNormalsCreated;
     private Transform stalkerScenarioKey;
     internal GameModeConfig StalkerRulesMode => RulesMode;
@@ -95,7 +95,6 @@ public class RoundManager : NetworkBehaviour
         zombiesSpawnedThisRound++;
         ZombiesThisRoundNetwork.Value++;
         AliveZombiesNetwork.Value++;
-        nextSurvivalStalkerSpawn = Time.time + Mathf.Max(1, survivalStalkerSpawnSpacing);
         return true;
     }
     bool CanSpawnStoryStalker()
@@ -1181,7 +1180,7 @@ public void StartRound(int round)
 
         int dogsRemaining = dogZombiesToSpawn;
         int normalsRemaining = normalOnlyToSpawn;
-        nextSurvivalStalkerSpawn = Time.time + Mathf.Max(1, survivalStalkerSpawnSpacing);
+        nextSurvivalStalkerSpawn = Time.time + Mathf.Max(12, survivalStalkerSpawnSpacing);
 
         if (dogZombiesToSpawn > 0)
         {
@@ -1631,9 +1630,15 @@ private bool SpawnZombieAtPosition(
 )
 {
     int requestedHealth = health;
-    if (prefab.TryGetComponent<ZombieStalker>(out _) &&
+    bool isStalker = prefab.TryGetComponent<ZombieStalker>(out _);
+    if (isStalker &&
         (esBossHistoria || DeadQuarantine.PvPvE.PvPvEZombieDirector.Active ||
         !EsModoHistoria && !ZombieStalker.AllowsSurvival(RulesMode, CurrentRoundNetwork.Value))) return false;
+    // También las reposiciones por tiempo de vida pasan por este límite global.
+    // No dependen de una nueva oportunidad de spawn normal ni de su tirada de probabilidad.
+    if (isStalker && !EsModoHistoria &&
+        (Time.time < nextSurvivalStalkerSpawn ||
+         AliveStalkers() >= SurvivalStalkerAliveLimit(CurrentRoundNetwork.Value))) return false;
     GameObject zombieInstance = Instantiate(prefab, position, rotation);
 
     ZombieAppearance zombieAppearance =
@@ -1695,6 +1700,8 @@ private bool SpawnZombieAtPosition(
         zombieAIComponent.ConfigurarPatrullaHistoria(position);
 
     netObj.Spawn();
+    if (isStalker && !EsModoHistoria)
+        nextSurvivalStalkerSpawn = Time.time + Mathf.Max(12, survivalStalkerSpawnSpacing);
     if (infiniteMode && !esBossHistoria && zombieHealthComponent && !zombieInstance.GetComponent<ZombieBossCombat>())
         survivalEnemyLifetimes.Add(new SurvivalEnemyLifetime {
             zombie = zombieHealthComponent, prefab = prefab, health = requestedHealth, running = willRun,
