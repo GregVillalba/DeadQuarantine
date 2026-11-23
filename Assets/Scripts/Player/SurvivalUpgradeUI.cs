@@ -27,7 +27,7 @@ public sealed class SurvivalUpgradeUI : MonoBehaviour
     readonly Image[] bars = new Image[4];
     readonly Outline[] borders = new Outline[4];
     int selected = -1, observedRound, requestedSpent;
-    bool pending, queuedOpen;
+    bool pending, queuedOpen, acceptedReply;
     float pendingAt;
     SurvivalUpgradeState observed;
     static readonly Color green = new(.25f, .9f, .39f), muted = new(.57f, .66f, .63f), panel = new(.045f, .052f, .049f, .98f);
@@ -42,7 +42,8 @@ public sealed class SurvivalUpgradeUI : MonoBehaviour
         if (!canvasRoot) Build();
         canvasRoot.SetActive(true);
         var state = upgrades.Progress.Value;
-        if (!state.Equals(observed)) { observed = state; if (pending && state.Spent > requestedSpent) Close(); Refresh(); }
+        if (!state.Equals(observed)) { observed = state; Refresh(); }
+        CompleteSelectionIfReady();
         if (state.lastRewardRound > observedRound) { observedRound = state.lastRewardRound; queuedOpen = state.points > 0; }
         bool otherMenu = PauseController.LocalPlayerPaused || NPCShopUI.LocalShopOpen;
         bool available = upgrades.CanChoose && state.points > 0;
@@ -82,15 +83,25 @@ public sealed class SurvivalUpgradeUI : MonoBehaviour
         if (!IsOpen || pending || !upgrades.CanChoose || upgrades.Progress.Value.points < 1 || index < 0 || index > 3 ||
             upgrades.Progress.Value.Level(index) >= SurvivalUpgradeState.Limit(index)) return;
         selected = index; requestedSpent = upgrades.Progress.Value.Spent;
-        pending = true; pendingAt = Time.unscaledTime;
+        pending = true; acceptedReply = false; pendingAt = Time.unscaledTime;
         Refresh(); upgrades.Choose(index);
     }
     void Reply(bool accepted)
     {
-        pending = false;
-        if (accepted) Close();
+        if (!pending) return;
+        acceptedReply = accepted;
+        if (!accepted) pending = false;
+        CompleteSelectionIfReady();
         Refresh();
         if (!accepted) status.text = "La elección no está disponible. Revisá tus puntos o la fase de la ronda.";
+    }
+    void CompleteSelectionIfReady()
+    {
+        // El RPC y el estado replicado pueden llegar en distinto orden.
+        if (!pending || !acceptedReply || upgrades.Progress.Value.Spent <= requestedSpent) return;
+        pending = false; acceptedReply = false; selected = -1;
+        if (upgrades.Progress.Value.points == 0) Close();
+        Refresh();
     }
     void Refresh()
     {

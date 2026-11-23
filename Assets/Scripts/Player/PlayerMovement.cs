@@ -134,6 +134,8 @@ public partial class PlayerMovement : NetworkBehaviour
     public float MoveSpeed => moveSpeed * SurvivalMove;
     public float SprintSpeed => sprintSpeed * SurvivalMove;
     public float CrouchSpeed => crouchSpeed * SurvivalMove;
+    public float StaminaRegenerationPerSecond => staminaRegenRate *
+        (Survival ? Survival.RegenMultiplier : 1) * (playerHealth ? playerHealth.PerkStaminaRegen : 1f);
 
     /// <summary>
     /// Pone las velocidades del personaje elegido (tanque, soldado, explorador...). Lo llama PlayerCharacter.
@@ -2028,8 +2030,7 @@ public partial class PlayerMovement : NetworkBehaviour
                 false;
 
             CurrentStamina +=
-                staminaRegenRate * (Survival ? Survival.RegenMultiplier : 1) * (playerHealth ? playerHealth.PerkStaminaRegen : 1f) *
-                Time.deltaTime;
+                StaminaRegenerationPerSecond * Time.deltaTime;
 
             CurrentStamina =
                 Mathf.Clamp(

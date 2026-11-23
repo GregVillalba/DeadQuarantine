@@ -143,6 +143,17 @@ public sealed class SurvivalUpgrades : NetworkBehaviour
         SurvivalUpgradeSession.For(NetworkManager).Store(OwnerClientId, state);
         Progress.Value = state;
     }
+#if UNITY_EDITOR
+    // Solo diagnóstico del Inspector en Play: conserva los límites y la sesión del Host.
+    public bool AddEditorTestPoints(int amount)
+    {
+        if (!Application.isPlaying || !IsSpawned || !IsServer || !Active || amount <= 0) return false;
+        var state = Progress.Value;
+        state.points = Mathf.Min(110 - state.Spent, state.points + Mathf.Clamp(amount, 0, 110));
+        SetProgressServer(state);
+        return true;
+    }
+#endif
     // Un único punto del cálculo de daño; nunca se modifican las estadísticas de las armas.
     internal static float OutgoingDamage(NetworkManager network, ulong clientId, float original)
     {
