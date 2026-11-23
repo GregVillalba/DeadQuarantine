@@ -456,40 +456,40 @@ JugadoresZonaSeguraNetwork.OnValueChanged +=
         ActualizarCantidadJugadoresZonaSegura();
     }
 
+    public void NotificarJugadorEliminado(ulong clientId)
+    {
+        if (IsServer) ReasignarObjetivoSinPortadorDisponible(clientId);
+    }
+
     private void ReasignarObjetivoSinPortadorDisponible(ulong clienteDesconectado = ulong.MaxValue)
     {
         NetworkManager red = NetworkManager.Singleton;
         if (!IsSpawned || !IsServer || red == null || red.ShutdownInProgress)
             return;
 
-        int estado = EstadoMisionNetwork.Value;
-        bool requiereTarjeta = estado == AbrirPuerta;
-        if (!requiereTarjeta && estado != BuscarSenal && estado != ContactarSobrevivientes)
-            return;
+        ReasignarObjetoHistoria(ClienteConTarjetaNetwork, clienteDesconectado, false);
+        ReasignarObjetoHistoria(ClienteConRadioNetwork, clienteDesconectado, true);
+    }
 
-        NetworkVariable<ulong> objetivo = requiereTarjeta
-            ? ClienteConTarjetaNetwork
-            : ClienteConRadioNetwork;
-        ulong portador = objetivo.Value;
-        if (portador == ulong.MaxValue ||
-            (portador != clienteDesconectado &&
-             red.ConnectedClients.TryGetValue(portador, out NetworkClient clientePortador) &&
-             !JugadorEliminado(clientePortador.PlayerObject)))
-            return;
+    private void ReasignarObjetoHistoria(NetworkVariable<ulong> objeto, ulong desconectado, bool radio)
+    {
+        var red = NetworkManager.Singleton;
+        ulong anterior = objeto.Value;
+        if (anterior == ulong.MaxValue) return;
+        if (anterior != desconectado && red.ConnectedClients.TryGetValue(anterior, out var portador) &&
+            portador.PlayerObject && portador.PlayerObject.TryGetComponent<PlayerHealth>(out var saludPortador) &&
+            !saludPortador.IsDead && !saludPortador.IsSpectating) return;
 
-        foreach (NetworkClient cliente in red.ConnectedClientsList)
-        {
-            NetworkObject jugador = cliente.PlayerObject;
-            if (cliente.ClientId == portador || cliente.ClientId == clienteDesconectado || jugador == null ||
-                !jugador.TryGetComponent(out PlayerHealth salud) || !salud.IsAlive)
-                continue;
-
-            objetivo.Value = cliente.ClientId;
-            if (estado == BuscarSenal)
-                ActivarDetectorSenal(cliente.ClientId);
-
-            return;
-        }
+        var candidatos = new List<ulong>();
+        foreach (var cliente in red.ConnectedClientsList)
+            if (cliente.ClientId != anterior && cliente.ClientId != desconectado && cliente.PlayerObject &&
+                cliente.PlayerObject.TryGetComponent<PlayerHealth>(out var salud) && salud.IsAlive)
+                candidatos.Add(cliente.ClientId);
+        // Conservar la posesión pendiente si aún no hay nadie vivo; Update vuelve a intentarlo.
+        if (candidatos.Count == 0) return;
+        ulong elegido = candidatos[Random.Range(0, candidatos.Count)];
+        objeto.Value = elegido;
+        if (radio && EstadoMisionNetwork.Value == BuscarSenal) ActivarDetectorSenal(elegido);
     }
 
     private bool EsZonaSeguraMultiplayerActiva()

@@ -34,6 +34,7 @@ public partial class Weapon : MonoBehaviour
 
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
+    private readonly GameAudio.ShotVoices shotVoices = new();
     [SerializeField] private AudioClip shootSound;
     [SerializeField] private AudioClip emptySound;
     [SerializeField] private AudioClip reloadSound;
@@ -802,6 +803,7 @@ public partial class Weapon : MonoBehaviour
 
     private void OnDisable()
     {
+        shotVoices.Stop();
         RenderPipelineManager.beginCameraRendering -= RenderIntegratedSight;
         RestoreIntegratedAimPose();
         if (UsesIntegratedVisual) { integratedAimHeld = false; integratedAimFullOffset = Vector3.zero; integratedAimVelocity = 0; aimingBlend = 0; }
@@ -1520,8 +1522,23 @@ public partial class Weapon : MonoBehaviour
         FireOneRound();
     }
 
+    public bool FiresMultiplePellets => firesMultiplePellets;
+
+    public static bool IsPlayerOnlyBulletBarrier(Collider collider)
+    {
+        // Keep the Parkour layer so movement/window detection is unchanged.
+        // Only explicitly named, invisible player blockers are transparent to shots.
+        if (collider == null || collider.gameObject.layer != LayerMask.NameToLayer("Parkour")) return false;
+        string name = collider.gameObject.name;
+        if (!name.StartsWith("Invisible_Wall", System.StringComparison.Ordinal) && name != "BoxCollider") return false;
+        foreach (var renderer in collider.GetComponentsInChildren<Renderer>(true))
+            if (renderer.enabled) return false;
+        return true;
+    }
+
     private bool CanStartShot()
     {
+        if (!isActiveAndEnabled) return false;
         if (Time.time < sprintFireReadyAt)
             return false;
         if (PlayerInputGate.ActionsBlocked)
@@ -1613,7 +1630,7 @@ public partial class Weapon : MonoBehaviour
                 weaponRecoil.Fire(recoilPreset, false, recoilIntensityMultiplier * AttachmentRecoilMultiplier, UseAuthoredRecoil, AttachmentRecoilAxes);
         }
 
-        PlaySound(PresentationShotSound);
+        shotVoices.Play(audioSource, PresentationShotSound);
 
         if (weaponAnimator != null)
         {
@@ -1676,6 +1693,7 @@ public partial class Weapon : MonoBehaviour
 
     private void OnReload(InputAction.CallbackContext context)
     {
+        if (!isActiveAndEnabled) return;
         if (PlayerInputGate.ActionsBlocked)
             return;
 
@@ -1822,7 +1840,7 @@ public partial class Weapon : MonoBehaviour
         RaycastHit[] hits = Physics.RaycastAll(
             ray,
             EffectiveRange,
-            ~0,
+            Physics.DefaultRaycastLayers,
             QueryTriggerInteraction.Collide
         );
 
@@ -1836,6 +1854,7 @@ public partial class Weapon : MonoBehaviour
 
         foreach (RaycastHit hit in hits)
         {
+            if (IsPlayerOnlyBulletBarrier(hit.collider)) continue;
             // Al forzar QueryTriggerInteraction.Collide podemos detectar los hitboxes
             // auxiliares de cabeza/brazos. El resto de triggers del mapa se ignora.
             if (hit.collider.isTrigger)
@@ -2044,6 +2063,7 @@ if (zombieHealth != null)
 
     private (Component Target, bool Ignore) ClassifyClassicPenetrationHit(RaycastHit hit)
     {
+        if (IsPlayerOnlyBulletBarrier(hit.collider)) return (null, true);
         var collider = hit.collider;
         if (collider.transform.root == transform.root ||
             (bulletIgnoredLayers.value & (1 << collider.gameObject.layer)) != 0 ||
@@ -2086,7 +2106,7 @@ if (zombieHealth != null)
         System.Collections.Generic.List<(RaycastHit Hit, Component Target)> Targets)
         TracePenetratingShot(Ray ray, float shotRange, System.Func<RaycastHit, (Component Target, bool Ignore)> classify)
     {
-        var hits = Physics.RaycastAll(ray, shotRange, ~0, QueryTriggerInteraction.Collide);
+        var hits = Physics.RaycastAll(ray, shotRange, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide);
         System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
         var targets = new System.Collections.Generic.List<(RaycastHit Hit, Component Target)>(PenetrationTargets);
         var seen = new System.Collections.Generic.HashSet<Component>();
@@ -2187,5 +2207,15 @@ if (zombieHealth != null)
         Quaternion aim = Quaternion.LookRotation(baseDirection);
 
         return aim * Quaternion.Euler(offsetY, offsetX, 0f) * Vector3.forward;
+    }
+    private void OnDestroy()
+    {
+
+        if (controls != null)
+        {
+            controls.Disable();
+            controls.Dispose();
+            controls = null;
+        }
     }
 }

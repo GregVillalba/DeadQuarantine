@@ -75,8 +75,9 @@ public class WeaponMotionApplier : MonoBehaviour
 
         if (jumpMotion != null)
         {
-            positionOffset += jumpMotion.TickPosition();
-            rotationOffset += jumpMotion.TickRotation();
+            float jumpScale = sway != null ? sway.AimingJumpScale : 1f;
+            positionOffset += jumpMotion.TickPosition() * jumpScale;
+            rotationOffset += jumpMotion.TickRotation() * jumpScale;
         }
 
         if (convertFromOriginalAxes)

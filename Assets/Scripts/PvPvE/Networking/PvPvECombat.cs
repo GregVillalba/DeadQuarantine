@@ -191,7 +191,7 @@ namespace DeadQuarantine.PvPvE.Networking {
   void ApplyZombieShot(PlayerHealth shooter,RaycastHit impact,Vector3 origin,Vector3 direction,PvPvELoadoutCatalog.Gun spec,float multiplier,float rangeMultiplier){
    var zombie=impact.collider.GetComponentInParent<ZombieHealth>();if(!zombie||!zombies.Owns(zombie))return;
    bool head=false;int variant=-1;float closest=float.PositiveInfinity;
-   foreach(var hit in Physics.RaycastAll(origin,direction,spec.range,~0,QueryTriggerInteraction.Collide)){
+   foreach(var hit in Physics.RaycastAll(origin,direction,spec.range,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Collide)){
     var headbox=hit.collider.GetComponent<ZombieHeadHitbox>();if(headbox&&headbox.Owner==zombie)head=true;
     var limb=hit.collider.GetComponent<ZombieLimbHitbox>();if(limb&&limb.Owner==zombie&&hit.distance<=impact.distance+.45f&&hit.distance<closest){closest=hit.distance;variant=limb.HitVariant;}
    }
@@ -217,7 +217,7 @@ namespace DeadQuarantine.PvPvE.Networking {
   static bool Finite(Vector3 value)=>float.IsFinite(value.x)&&float.IsFinite(value.y)&&float.IsFinite(value.z);
   bool Trace(PlayerHealth shooter,Vector3 origin,Vector3 direction,float range,out RaycastHit impact,out PlayerHealth target){
    impact=default;target=null;
-   foreach(var hit in Physics.RaycastAll(origin,direction,range,~0,QueryTriggerInteraction.Collide).OrderBy(h=>h.distance)){
+   foreach(var hit in Physics.RaycastAll(origin,direction,range,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Collide).OrderBy(h=>h.distance)){
     var (entity, ignore) = ClassifyShotHit(shooter, hit);
     if (ignore) continue;
     impact = hit;
@@ -228,6 +228,7 @@ namespace DeadQuarantine.PvPvE.Networking {
   }
   (Component Target, bool Ignore) ClassifyShotHit(PlayerHealth shooter, RaycastHit hit)
   {
+   if (Weapon.IsPlayerOnlyBulletBarrier(hit.collider)) return (null, true);
    var player = hit.collider.GetComponentInParent<PlayerHealth>();
    if (player)
    {

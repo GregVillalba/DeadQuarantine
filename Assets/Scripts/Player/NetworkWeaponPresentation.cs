@@ -39,6 +39,7 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
     Muzzle flash;
     Animator parts;
     AudioSource audioOutput;
+    readonly GameAudio.ShotVoices shotVoices = new();
     int shown=-2;
     State sent;
     byte appliedFlags;
@@ -329,7 +330,7 @@ public sealed class NetworkWeaponPresentation : NetworkBehaviour
         if(!held || !muzzle)return;
         RemoteShotCount++;
         var source=Weapons[index].Source;
-        if(source.PresentationShotSound){audioOutput.PlayOneShot(source.PresentationShotSound);RemoteSoundEvents++;}
+        if(source.PresentationShotSound){shotVoices.Play(audioOutput, source.PresentationShotSound);RemoteSoundEvents++;}
         if(!source.ShotIsSuppressed && flash && flash.HasParticleEffect){flash.PlayEffect();RemoteFlashEvents++;}PlayParts("Fire");
         foreach(var target in targets)if(source.PresentationTrail) {
             var go=Instantiate(source.PresentationTrail,muzzle.position,Quaternion.identity);

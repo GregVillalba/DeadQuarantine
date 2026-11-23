@@ -128,4 +128,14 @@ public class WeaponWallBuyUI : MonoBehaviour
         if (interactPrompt != null)
             interactPrompt.SetActive(false);
     }
+    private void OnDestroy()
+    {
+
+        if (controls != null)
+        {
+            controls.Disable();
+            controls.Dispose();
+            controls = null;
+        }
+    }
 }

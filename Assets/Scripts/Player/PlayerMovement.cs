@@ -2282,4 +2282,15 @@ public partial class PlayerMovement : NetworkBehaviour
                 standingCameraRotation;
         }
     }
+    public override void OnDestroy()
+    {
+        base.OnDestroy();
+
+        if (controls != null)
+        {
+            controls.Disable();
+            controls.Dispose();
+            controls = null;
+        }
+    }
 }

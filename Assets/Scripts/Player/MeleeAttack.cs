@@ -178,4 +178,14 @@ public class MeleeAttack : MonoBehaviour
             }
         }
     }
+    private void OnDestroy()
+    {
+
+        if (controls != null)
+        {
+            controls.Disable();
+            controls.Dispose();
+            controls = null;
+        }
+    }
 }

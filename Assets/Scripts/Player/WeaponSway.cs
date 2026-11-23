@@ -53,6 +53,7 @@ public class WeaponSway : MonoBehaviour
 
     /// <summary>Lo lee WeaponMotionApplier para escalar la pose de salto.</summary>
     public bool IsAiming => weapon != null && weapon.IsAiming;
+    public float AimingJumpScale => IsAiming && weapon.FiresMultiplePellets ? 0.15f : 1f;
     public bool IsSprinting => playerMovement != null && playerMovement.IsSprinting;
 
     private void ComputeTargetsIfNeeded()

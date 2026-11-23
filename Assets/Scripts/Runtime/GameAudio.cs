@@ -87,4 +87,26 @@ public static class GameAudio
         source.volume = volume; Route(source); source.Play();
         UnityEngine.Object.Destroy(owner, clip.length + .25f);
     }
+    public sealed class ShotVoices
+    {
+        private readonly AudioSource[] voices = new AudioSource[4];
+        private int next;
+        public void Play(AudioSource template, AudioClip clip)
+        {
+            if (!template || !clip) return;
+            var source = voices[next];
+            if (!source) { source = template.gameObject.AddComponent<AudioSource>(); voices[next] = source; }
+            next = (next + 1) % voices.Length;
+            source.Stop(); source.playOnAwake = source.loop = false;
+            source.outputAudioMixerGroup = template.outputAudioMixerGroup;
+            if (!source.outputAudioMixerGroup) Route(source);
+            source.spatialBlend = template.spatialBlend; source.rolloffMode = template.rolloffMode;
+            source.minDistance = template.minDistance; source.maxDistance = template.maxDistance;
+            source.volume = template.volume; source.pitch = template.pitch;
+            source.priority = template.spatialBlend > .5f ? 60 : 20;
+            source.dopplerLevel = template.dopplerLevel; source.clip = clip; source.Play();
+        }
+        public void Stop() { foreach (var source in voices) if (source) source.Stop(); }
+    }
+
 }

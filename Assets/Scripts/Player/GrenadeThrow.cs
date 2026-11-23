@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 
@@ -239,5 +239,15 @@ public class GrenadeThrow : MonoBehaviour
 
         if (currentWeapon != null)
             currentWeapon.InputLocked = false;
+    }
+    private void OnDestroy()
+    {
+
+        if (controls != null)
+        {
+            controls.Disable();
+            controls.Dispose();
+            controls = null;
+        }
     }
 }

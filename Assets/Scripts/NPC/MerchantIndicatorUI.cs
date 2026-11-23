@@ -74,6 +74,7 @@ public class MerchantIndicatorUI : MonoBehaviour
 
         if (controls != null)
         {
+            controls.Disable();
             controls.Dispose();
             controls = null;
         }

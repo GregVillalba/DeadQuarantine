@@ -34,7 +34,7 @@ public sealed class InterfaceAudio : MonoBehaviour
         // La música se corta explícitamente al cargar, sin depender de esa pausa.
         music.ignoreListenerPause = true;
         effects.ignoreListenerPause = true;
-        music.volume = .38f;
+        music.volume = .48f;
         GameAudio.Route(music, GameAudioChannel.Music);
         GameAudio.Route(effects, GameAudioChannel.UI);
     }

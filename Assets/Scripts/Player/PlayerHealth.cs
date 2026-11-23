@@ -636,6 +636,8 @@ public partial class PlayerHealth : NetworkBehaviour
             Debug.Log("[PlayerHealth] " + gameObject.name + " → SPECTATING");
         }
 
+        GestorHistoriaPartida.Instance?.NotificarJugadorEliminado(OwnerClientId);
+
         DeadQuarantine.PvPvE.Networking.PvPvECombat.Active?.RecordDeathServer(this);
 
         PlayerRecursos playerRecursos = transform.root.GetComponentInChildren<PlayerRecursos>();
@@ -719,6 +721,17 @@ public partial class PlayerHealth : NetworkBehaviour
     private void StateChanged(PlayerState previousState, PlayerState newState)
     {
         if (IsServer && newState != PlayerState.Alive) { BossStunUntil.Value = 0; ClearStalkerAcid(); }
+        if (IsServer && (newState == PlayerState.Dead || newState == PlayerState.Spectating) &&
+            !DeadQuarantine.PvPvE.Networking.PvPvEMatchmaking.Owns(NetworkManager))
+        {
+            InicializarInventarioServidor();
+            GetComponent<NetworkWeaponAttachments>()?.ClearRoundAttachmentsServer();
+            VestShield.Value = 0;
+            VestShieldMax.Value = 0;
+            HelmetShield.Value = 0;
+            HelmetShieldMax.Value = 0;
+            Armor.Value = 0;
+        }
         OnStateChanged?.Invoke(previousState, newState);
     }
 }

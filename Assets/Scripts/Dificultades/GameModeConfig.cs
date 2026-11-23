@@ -64,6 +64,8 @@ public class GameModeConfig : ScriptableObject
     [Min(0)] public int maxZombiesPerRound = 80;
     [Tooltip("Maximo de zombies vivos al mismo tiempo. 0 = sin limite.")]
     [Min(0)] public int maxAliveAtOnce = 24;
+    [Tooltip("Segundos que puede vivir un enemigo común en Supervivencia antes de ser reemplazado sin recompensas.")]
+    [Min(30)] public float survivalZombieLifetime = 90f;
 
     [Header("Infinito: intervalo de spawn")]
     [Tooltip("En esta ronda el intervalo llega al minimo (los valores 'finalRound...' de arriba) y despues se mantiene.")]

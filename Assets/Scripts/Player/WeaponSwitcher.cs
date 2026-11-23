@@ -103,6 +103,7 @@ public partial class WeaponSwitcher : MonoBehaviour
     public event System.Action InventoryChanged;
     public event System.Action BindingsChanged;
 
+    private bool resetAfterElimination;
     private PlayerControls controls;
 
     private InputAction selectPrimaryAction;
@@ -184,7 +185,13 @@ public partial class WeaponSwitcher : MonoBehaviour
         if (saludJugador != null)
             saludJugador.OnStateChanged -= OnEstadoJugadorCambio;
 
-        controls?.Dispose();
+
+        if (controls != null)
+        {
+            controls.Disable();
+            controls.Dispose();
+            controls = null;
+        }
     }
 
     private InputAction FindAction(string actionName)
@@ -565,6 +572,14 @@ public partial class WeaponSwitcher : MonoBehaviour
         if (saludJugador == null || !saludJugador.IsOwner)
             return;
 
+        if (nuevo == PlayerHealth.PlayerState.Dead || nuevo == PlayerHealth.PlayerState.Spectating)
+        {
+            if (!DeadQuarantine.PvPvE.Networking.PvPvEMatchmaking.Owns(Unity.Netcode.NetworkManager.Singleton))
+                resetAfterElimination = true;
+            abatido = false;
+            armaAntesDeAbatido = -1;
+            return;
+        }
         if (nuevo == PlayerHealth.PlayerState.Downed)
             EntrarEnAbatido();
         else if (abatido)
@@ -1032,12 +1047,21 @@ public partial class WeaponSwitcher : MonoBehaviour
         return slots[currentIndex].weaponId;
     }
 
+    private void LateUpdate()
+    {
+        // The FP hierarchy can be inactive during death. Wait until the owner is alive
+        // and its weapon hierarchy is active, rather than relying on one scene name.
+        if (resetAfterElimination && IsInitialized && saludJugador != null && saludJugador.IsOwner && saludJugador.IsAlive)
+            ResetRoundLoadout();
+    }
+
     internal void ResetRoundLoadout()
     {
         const string starterId = "Handgun";
         int starterIndex = FindSlotIndex(starterId);
         if (!IsInitialized || starterIndex < 0 || !slots[starterIndex].weaponComponent) return;
 
+        resetAfterElimination = false;
         StopAllCoroutines();
         rutinaAbatido = null;
         isSwitching = false;

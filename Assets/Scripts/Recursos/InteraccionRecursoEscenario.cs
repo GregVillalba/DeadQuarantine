@@ -48,7 +48,12 @@ public class InteraccionRecursoEscenario : MonoBehaviour
 
     private void OnDestroy()
     {
-        controls?.Dispose();
+        if (controls != null)
+        {
+            controls.Disable();
+            controls.Dispose();
+            controls = null;
+        }
     }
 
     private void Update()

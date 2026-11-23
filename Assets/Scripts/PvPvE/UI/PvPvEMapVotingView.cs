@@ -28,7 +28,7 @@ namespace DeadQuarantine.PvPvE.UI
             PvPvEUIFactory.Place(readyLabel.rectTransform,Vector2.zero,Vector2.one);
             readyLabel.alignment=TextAlignmentOptions.Center;
             readyButton.onClick.AddListener(ToggleReady);
-            for(int i=0;i<cards.Length;i++){var photograph=cards[i].GetComponentInChildren<RawImage>(true);if(photograph)photograph.texture=matchmaking.Settings.Maps[i].Preview;PvPvEUIFactory.Place((RectTransform)cards[i].transform,new(.035f+i*.21f,.025f),new(.235f+i*.21f,.245f));var title=cards[i].transform.Find("Name")?.GetComponent<TMP_Text>();if(title){title.fontSize=18;title.fontSizeMax=18;title.color=Color.white;}}
+            for(int i=0;i<cards.Length;i++){var photograph=cards[i].GetComponentInChildren<RawImage>(true);if(photograph){photograph.texture=matchmaking.Settings.Maps[i].Preview;photograph.color=Color.white;}PvPvEUIFactory.Place((RectTransform)cards[i].transform,new(.035f+i*.21f,.025f),new(.235f+i*.21f,.245f));var title=cards[i].transform.Find("Name")?.GetComponent<TMP_Text>();if(title){title.fontSize=18;title.fontSizeMax=18;title.color=Color.white;}}
         }
         void OnEnable(){matchmaking.Changed+=Bind;Bind();}
         void OnDisable(){matchmaking.Changed-=Bind;if(voting)voting.Changed-=Refresh;voting=null;}

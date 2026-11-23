@@ -69,6 +69,14 @@ public class DetectorAlturaRadioHistoria : MonoBehaviour
             senalEncontrada)
             return;
 
+        var gestor = GestorHistoriaPartida.Instance;
+        if (gestor && gestor.IsSpawned && jugadorNetworkObject &&
+            gestor.ClienteConRadioNetwork.Value != jugadorNetworkObject.OwnerClientId)
+        {
+            tiempoEnAlturaActual = 0f;
+            return;
+        }
+
         if (!CalcularAltura(out float altura))
         {
             AlturaActual = 0f;

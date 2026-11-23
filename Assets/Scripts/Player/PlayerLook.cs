@@ -47,6 +47,13 @@ public class PlayerLook : MonoBehaviour
     private void OnDestroy()
     {
         ConfiguracionesJuego.CambiosAplicados -= ActualizarSensibilidad;
+        if (controls != null)
+        {
+            controls.Disable();
+            controls.Dispose();
+            controls = null;
+        }
+
     }
 
     private void ActualizarSensibilidad()

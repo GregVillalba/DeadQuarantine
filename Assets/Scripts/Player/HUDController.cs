@@ -787,6 +787,7 @@ public partial class HUDController : MonoBehaviour
         CleanupPerksHud();
         if (controlesCuchillo != null)
         {
+            controlesCuchillo.Disable();
             controlesCuchillo.Dispose();
             controlesCuchillo = null;
         }

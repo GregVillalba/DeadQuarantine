@@ -188,6 +188,42 @@ public class ZombieAI : NetworkBehaviour
 
     private bool isAttacking;
 
+    private AnimatorCullingMode initialPoseCulling;
+    private Renderer[] initialPoseRenderers;
+    private bool[] initialPoseRenderingOff;
+
+    private void HideUnevaluatedSpawnPose()
+    {
+        if (initialPoseRenderers != null || animationDriver != null || !emergeFromGround || animator == null) return;
+        initialPoseCulling = animator.cullingMode;
+        animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+        initialPoseRenderers = GetComponentsInChildren<Renderer>(true);
+        initialPoseRenderingOff = new bool[initialPoseRenderers.Length];
+        for (int i = 0; i < initialPoseRenderers.Length; i++)
+        {
+            initialPoseRenderingOff[i] = initialPoseRenderers[i].forceRenderingOff;
+            initialPoseRenderers[i].forceRenderingOff = true;
+        }
+    }
+
+    private void RestoreEvaluatedSpawnPose()
+    {
+        if (initialPoseRenderers == null) return;
+        for (int i = 0; i < initialPoseRenderers.Length; i++)
+            if (initialPoseRenderers[i]) initialPoseRenderers[i].forceRenderingOff = initialPoseRenderingOff[i];
+        if (animator != null) animator.cullingMode = initialPoseCulling;
+        initialPoseRenderers = null;
+        initialPoseRenderingOff = null;
+    }
+
+    private void LateUpdate()
+    {
+        // Rendering can start before the deferred NetworkAnimator Spawn trigger. Keep
+        // the bind pose hidden until the Animator has evaluated a real animation.
+        if (initialPoseRenderers != null && animator != null && animator.GetCurrentAnimatorClipInfoCount(0) > 0)
+            RestoreEvaluatedSpawnPose();
+    }
+
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -211,10 +247,12 @@ public class ZombieAI : NetworkBehaviour
         zombieAudio = GetComponent<ZombieAudio>();
         bossCombat = GetComponent<ZombieBossCombat>();
         stalker = GetComponent<ZombieStalker>();
+        HideUnevaluatedSpawnPose();
     }
 
     public override void OnNetworkSpawn()
     {
+        HideUnevaluatedSpawnPose();
         pvpveKind.OnValueChanged+=ApplyPvPvEKind;
         if(DeadQuarantine.PvPvE.PvPvEZombieDirector.Active){ApplyPvPvEKind(0,pvpveKind.Value);if(!IsServer&&agent)agent.enabled=false;}
         aturdidoNetwork.OnValueChanged += OnAturdidoChanged;
@@ -254,6 +292,7 @@ public class ZombieAI : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        RestoreEvaluatedSpawnPose();
         pvpveKind.OnValueChanged-=ApplyPvPvEKind;
         aturdidoNetwork.OnValueChanged -= OnAturdidoChanged;
         spawningNetwork.OnValueChanged -= OnSpawningChanged;
@@ -1407,6 +1446,7 @@ public class ZombieAI : NetworkBehaviour
         if (!IsServer || spawnRoutine != null)
             return;
 
+        HideUnevaluatedSpawnPose();
         spawnGameplayLock = true;
         PrepararRootMotionSpawn();
 

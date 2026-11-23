@@ -1085,6 +1085,17 @@ private void TakeDamageServerRpc(
     // =========================================================
     // MUERTE
     // =========================================================
+public bool RetirarSinRecompensa()
+    {
+        if (!IsServer || IsDead || IsPvPvEZombie || GetComponent<ZombieBossCombat>()) return false;
+        IsDead = true;
+        currentHealthNetwork.Value = 0;
+        ApagarQuemadura();
+        PlayDeathEffectsClientRpc();
+        Invoke(nameof(DespawnZombie), destroyDelay);
+        return true;
+    }
+
 private void Die(ulong shooterClientId)
 {
     if (!IsServer)
@@ -1163,6 +1174,8 @@ private void Die(ulong shooterClientId)
         // También se marca en clientes para que ZombieAudio y otros componentes
         // locales sepan inmediatamente que el enemigo ya murió.
         IsDead = true;
+        if (healthBarCanvas) healthBarCanvas.SetActive(false);
+        else if (healthSlider) healthSlider.gameObject.SetActive(false);
 
         // Si muere aturdido, el Animator tiene que volver a moverse para la animación de muerte.
         if (zombieAI != null)

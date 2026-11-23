@@ -94,7 +94,7 @@ private Material timerOverlayMaterial, timerOriginalMaterial, iconOverlayMateria
         healthValue.rectTransform.anchoredPosition = new Vector2(126, -17);
         if (font) healthValue.font = font;
         healthValue.alignment = TextAlignmentOptions.MidlineRight; healthValue.isOverlay = true;
-        if (downedGroup && downedGroup.transform is RectTransform downedRect) downedRect.anchoredPosition = new Vector2(0, -64);
+        // Preserve the downed indicator layout authored in Player.prefab.
         UpdatePortrait();
     }
 

@@ -301,6 +301,7 @@ public void MostrarAvisoContinuarAMansion()
             popupContinuarSafeZone.SetActive(false);
 
         historiaActiva = true;
+        transform.root.GetComponentInChildren<PauseController>(true)?.PrepararIntroduccionHistoria();
         if (IsSpawned)
             introduccionInicialConfirmada.Value = false;
         if (hud != null)
@@ -357,6 +358,7 @@ public void MostrarAvisoContinuarAMansion()
         }
 
         historiaActiva = true;
+        transform.root.GetComponentInChildren<PauseController>(true)?.PrepararIntroduccionHistoria();
 
         if (hud != null)
             hud.SetActive(false);
@@ -497,6 +499,7 @@ private void ReanudarTiempoSiSinglePlayer()
     private void MostrarHistoriaInicial()
     {
         historiaActiva = true;
+        transform.root.GetComponentInChildren<PauseController>(true)?.PrepararIntroduccionHistoria();
 
         if (hud != null)
             hud.SetActive(false);
@@ -682,6 +685,14 @@ private void ReanudarTiempoSiSinglePlayer()
         Debug.Log("[StoryIntro] ContinuarHistoria() FIN.");
     }
 
+    public void RestaurarControlHistoria()
+    {
+        if (!IsOwner || !historiaActiva) return;
+        BloquearJugador();
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+    }
+
     private void BloquearJugador()
     {
         if (weaponSwitcher == null)
@@ -757,6 +768,7 @@ private void IniciarTransicionACabana()
     }
 
     historiaActiva = true;
+        transform.root.GetComponentInChildren<PauseController>(true)?.PrepararIntroduccionHistoria();
 
     if (hud != null)
         hud.SetActive(false);

@@ -147,7 +147,7 @@ public class PlayerSpectator : NetworkBehaviour
 
         if (pauseController == null)
             pauseController =
-                GetComponentInParent<PauseController>();
+                transform.root.GetComponentInChildren<PauseController>(true);
 
         if (spectatorCamera == null)
         {
@@ -294,6 +294,9 @@ public class PlayerSpectator : NetworkBehaviour
         PlayerHealth.PlayerState newState
     )
     {
+        if (newState == PlayerHealth.PlayerState.Dead || newState == PlayerHealth.PlayerState.Spectating)
+            pauseController?.CerrarPausaPorFinDePartida();
+
         if (
             newState == PlayerHealth.PlayerState.Spectating ||
             (newState == PlayerHealth.PlayerState.Dead &&
@@ -342,6 +345,8 @@ public class PlayerSpectator : NetworkBehaviour
 
         restoringFromSpectator = false;
         isSpectating = true;
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
 
         targetPlayer = null;
 
@@ -625,6 +630,7 @@ public class PlayerSpectator : NetworkBehaviour
         // No descubrir la cámara hasta que vuelva al personaje y sus controles estén activos.
         yield return null;
         HideRespawnCurtain();
+        transform.root.GetComponentInChildren<StoryIntroController>(true)?.RestaurarControlHistoria();
 
         restoreCoroutine = null;
 

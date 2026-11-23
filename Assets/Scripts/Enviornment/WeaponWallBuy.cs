@@ -189,4 +189,13 @@ public class WeaponWallBuy : MonoBehaviour
         if (audioSource != null && clip != null)
             audioSource.PlayOneShot(clip);
     }
+    private void OnDestroy()
+    {
+        if (controls != null)
+        {
+            controls.Disable();
+            controls.Dispose();
+            controls = null;
+        }
+    }
 }

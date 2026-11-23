@@ -388,7 +388,7 @@ public sealed class ZombieBossCombat : NetworkBehaviour
                 float lead = Mathf.Clamp(Vector3.Distance(throwingHand.position, focus.position + Vector3.up) / rockSpeed * .55f, .12f, .6f);
                 aim = focus.position + Vector3.up + Vector3.ProjectOnPlane(velocity, Vector3.up) * lead;
             }
-            if ((move == Move.Acid && phase < AcidStart) || (move == Move.Leap && phase < LeapTakeoff))
+            if ((move == Move.Acid && phase <= AcidEnd) || (move == Move.Leap && phase < LeapTakeoff))
             {
                 Vector3 facing = Vector3.ProjectOnPlane(focus.position - transform.position, Vector3.up);
                 if (facing.sqrMagnitude > .01f)

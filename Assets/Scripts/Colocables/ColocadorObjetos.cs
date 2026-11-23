@@ -823,4 +823,14 @@ public class ColocadorObjetos : NetworkBehaviour
         if (audioSource != null && clip != null)
             audioSource.PlayOneShot(clip);
     }
+    public override void OnDestroy()
+    {
+        base.OnDestroy();
+        if (controls != null)
+        {
+            controls.Disable();
+            controls.Dispose();
+            controls = null;
+        }
+    }
 }

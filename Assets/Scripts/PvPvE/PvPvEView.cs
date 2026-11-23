@@ -204,6 +204,6 @@ namespace DeadQuarantine.PvPvE {
    if (localResultHud) localResultHud.OcultarHudPorDerrotaPvPvE(false);
    localResultHud = null;
   }
-  void OnDestroy(){scoreboardAction?.Disable();if(ownsAction)scoreboardAction?.Dispose();controls?.Dispose();if(canvas)Destroy(canvas.gameObject);if(Active==this)Active=null;}
+  void OnDestroy(){scoreboardAction?.Disable();if(ownsAction)scoreboardAction?.Dispose();controls?.Disable();controls?.Dispose();controls=null;if(canvas)Destroy(canvas.gameObject);if(Active==this)Active=null;}
  }
 }

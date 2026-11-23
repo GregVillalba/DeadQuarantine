@@ -310,6 +310,49 @@ private bool iniciarRondaDesdeGuardado;
 
     private int zombiesSpawnedThisRound;
     private int zombiesKilledThisRound;
+    private sealed class SurvivalEnemyLifetime
+    {
+        public ZombieHealth zombie; public GameObject prefab; public int health;
+        public bool running, replacementPending; public float speed, expires; public Vector3 lastPosition;
+    }
+    private readonly List<SurvivalEnemyLifetime> survivalEnemyLifetimes = new();
+    private float nextLifetimeCheck;
+
+    private void Update()
+    {
+        if (!IsServer) return;
+        if (!infiniteMode || !roundInProgress || GameLostNetwork.Value)
+        { survivalEnemyLifetimes.Clear(); return; }
+        if (Time.time < nextLifetimeCheck) return;
+        nextLifetimeCheck = Time.time + 1f;
+        for (int i = survivalEnemyLifetimes.Count - 1; i >= 0; i--)
+        {
+            var entry = survivalEnemyLifetimes[i];
+            if ((!entry.zombie && !entry.replacementPending) || entry.zombie && (entry.zombie.IsDead || !entry.zombie.IsSpawned))
+            { survivalEnemyLifetimes.RemoveAt(i); continue; }
+            if (Time.time < entry.expires) continue;
+            Vector3 oldPosition = entry.zombie ? entry.zombie.transform.position : entry.lastPosition;
+            var candidates = new List<Transform>();
+            if (spawnPoints != null) foreach (var point in spawnPoints)
+            {
+                if (!point || !point.gameObject.activeInHierarchy || Vector3.Distance(point.position, oldPosition) < 10f) continue;
+                bool nearPlayer = false;
+                foreach (var client in NetworkManager.ConnectedClientsList)
+                    if (client.PlayerObject && client.PlayerObject.TryGetComponent<PlayerHealth>(out var player) && player.IsAlive &&
+                        Vector3.Distance(point.position, player.transform.position) < 10f) { nearPlayer = true; break; }
+                if (!nearPlayer) candidates.Add(point);
+            }
+            if (candidates.Count == 0) continue;
+            if (entry.zombie && !entry.zombie.RetirarSinRecompensa())
+            { survivalEnemyLifetimes.RemoveAt(i); continue; }
+            survivalEnemyLifetimes.RemoveAt(i);
+            var pointChosen = candidates[Random.Range(0, candidates.Count)];
+            // Reemplazo del mismo enemigo pendiente: no modifica bajas, puntos ni contadores de ronda.
+            if (!SpawnZombie(entry.prefab, pointChosen, entry.health, entry.running, entry.speed))
+            { entry.zombie = null; entry.replacementPending = true; entry.lastPosition = oldPosition; survivalEnemyLifetimes.Add(entry); }
+        }
+    }
+
 
     private GameModeConfig RulesMode =>
         activeMode != null
@@ -1075,6 +1118,9 @@ public void StartRound(int round)
         {
             for (int b = 0; b < bossCount; b++)
             {
+                while (infiniteMode && activeMode.maxAliveAtOnce > 0 && roundInProgress && !GameLostNetwork.Value &&
+                    zombiesSpawnedThisRound - zombiesKilledThisRound >= activeMode.maxAliveAtOnce) yield return null;
+                if (!roundInProgress || GameLostNetwork.Value) yield break;
                 GameObject bossPrefab = GetRandomBossPrefab();
 
                 if (bossPrefab == null)
@@ -1584,6 +1630,7 @@ private bool SpawnZombieAtPosition(
     bool patrullaHistoria = false
 )
 {
+    int requestedHealth = health;
     if (prefab.TryGetComponent<ZombieStalker>(out _) &&
         (esBossHistoria || DeadQuarantine.PvPvE.PvPvEZombieDirector.Active ||
         !EsModoHistoria && !ZombieStalker.AllowsSurvival(RulesMode, CurrentRoundNetwork.Value))) return false;
@@ -1648,6 +1695,13 @@ private bool SpawnZombieAtPosition(
         zombieAIComponent.ConfigurarPatrullaHistoria(position);
 
     netObj.Spawn();
+    if (infiniteMode && !esBossHistoria && zombieHealthComponent && !zombieInstance.GetComponent<ZombieBossCombat>())
+        survivalEnemyLifetimes.Add(new SurvivalEnemyLifetime {
+            zombie = zombieHealthComponent, prefab = prefab, health = requestedHealth, running = willRun,
+            speed = speedMultiplier, expires = Time.time + Mathf.Max(30, activeMode.survivalZombieLifetime),
+            lastPosition = position
+        });
+
 
     if (zombieAIComponent != null)
     {
@@ -2476,40 +2530,12 @@ private IEnumerator EndRoundDelay()
             if (!playerHealth.IsSpectating)
                 continue;
 
-            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "MainSceneMultiPlayer" &&
-                !DeadQuarantine.PvPvE.Networking.PvPvEMatchmaking.Owns(NetworkManager))
-            {
-                client.PlayerObject.GetComponent<NetworkWeaponAttachments>()?.ClearRoundAttachmentsServer();
-                ResetRoundLoadoutClientRpc(new ClientRpcParams
-                {
-                    Send = new ClientRpcSendParams { TargetClientIds = new[] { client.ClientId } }
-                });
-            }
-
             // Primero se recupera una vida si estaba en 0.
             playerHealth.RecoverLifeAtNewRound();
 
             // Después se pasa a Alive.
             playerHealth.Respawn();
         }
-    }
-
-    [ClientRpc]
-    private void ResetRoundLoadoutClientRpc(ClientRpcParams recipients = default)
-    {
-        var player = NetworkManager.LocalClient?.PlayerObject;
-        if (player && player.TryGetComponent(out PlayerHealth health))
-            StartCoroutine(ResetRoundLoadoutAfterRespawn(health));
-    }
-
-    private IEnumerator ResetRoundLoadoutAfterRespawn(PlayerHealth health)
-    {
-        var switcher = health.GetComponentInChildren<WeaponSwitcher>(true);
-        if (!switcher) yield break;
-        while (health && health.IsSpawned && (!health.IsAlive || !switcher.IsInitialized))
-            yield return null;
-        if (health && health.IsSpawned && health.IsAlive)
-            switcher.ResetRoundLoadout();
     }
 
      [ClientRpc]

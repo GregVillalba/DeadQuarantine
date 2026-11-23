@@ -128,7 +128,7 @@ public class PauseController : NetworkBehaviour
         if (weaponSwitcher == null) weaponSwitcher = GetComponentInChildren<WeaponSwitcher>(true);
         if (shopUI == null) shopUI = GetComponentInChildren<NPCShopUI>(true);
         if (shopUI == null) shopUI = transform.root.GetComponentInChildren<NPCShopUI>(true);
-        if (storyIntro == null) storyIntro = GetComponent<StoryIntroController>();
+        if (storyIntro == null) storyIntro = transform.root.GetComponentInChildren<StoryIntroController>(true);
 
         foreach (var p in new[] { victoriaSingle, victoriaMulti, derrotaSingle, derrotaMulti })
         {
@@ -270,6 +270,11 @@ public class PauseController : NetworkBehaviour
         if (hud != null)
             hud.SetActive(true);
 
+        if (storyIntro && storyIntro.HistoriaActiva)
+        {
+            storyIntro.RestaurarControlHistoria();
+            return;
+        }
         RestaurarEstadoJugador();
         HabilitarJugador();
 
@@ -354,6 +359,19 @@ public class PauseController : NetworkBehaviour
     // PAUSA GENERAL
     // =========================================================
 
+    public void PrepararIntroduccionHistoria()
+    {
+        if (!IsOwner) return;
+        estaPausado = LocalPlayerPaused = false;
+        if (opcionesControles) opcionesControles.Cerrar();
+        if (configuraciones) configuraciones.CerrarTodo();
+        if (menuConfiguracion) menuConfiguracion.SetActive(false);
+        if (popupMenuHome) popupMenuHome.SetActive(false);
+        if (EsSinglePlayer()) { Time.timeScale = 1; AudioListener.pause = false; }
+        if (UnityEngine.EventSystems.EventSystem.current)
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+    }
+
     public void PausarJuego()
     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -361,7 +379,7 @@ public class PauseController : NetworkBehaviour
 #endif
         bool historiaActiva = storyIntro != null && storyIntro.HistoriaActiva;
        // if (!IsOwner || estaPausado || historiaActiva) return;
-       if (!IsOwner || estaPausado || historiaActiva || finDeRondaActivo) return;
+       if (!IsOwner || estaPausado || historiaActiva || finDeRondaActivo || PlayerSpectator.LocalRespawnPending) return;
 
         estaPausado = true;
         LocalPlayerPaused = true;
@@ -415,6 +433,11 @@ public class PauseController : NetworkBehaviour
 
         ConfiguracionesJuego.AplicarCambios();
 
+        if (storyIntro && storyIntro.HistoriaActiva)
+        {
+            storyIntro.RestaurarControlHistoria();
+            return;
+        }
         RestaurarEstadoJugador();
         HabilitarJugador();
 
@@ -428,7 +451,7 @@ public class PauseController : NetworkBehaviour
         Cursor.lockState = CursorLockMode.Locked;
     }
 
-    private void CerrarPausaPorFinDePartida()
+    public void CerrarPausaPorFinDePartida()
     {
         if (!estaPausado) return;
 
@@ -634,7 +657,7 @@ public class PauseController : NetworkBehaviour
     {
         if (!IsOwner) return;
 
-        if (estaPausado || finDeRondaActivo || DeadQuarantine.PvPvE.UI.PvPvEInitialClassView.BlocksLocalGameplay)
+        if (estaPausado || finDeRondaActivo || (storyIntro && storyIntro.HistoriaActiva) || DeadQuarantine.PvPvE.UI.PvPvEInitialClassView.BlocksLocalGameplay)
         {
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;

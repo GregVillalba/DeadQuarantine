@@ -310,4 +310,15 @@ public override void OnNetworkDespawn()
     {
         AchievementsManager.Instance?.Desbloquear(AchievementId.NadieSeQuedaAtras);
     }
+    public override void OnDestroy()
+    {
+        base.OnDestroy();
+
+        if (controls != null)
+        {
+            controls.Disable();
+            controls.Dispose();
+            controls = null;
+        }
+    }
 }
