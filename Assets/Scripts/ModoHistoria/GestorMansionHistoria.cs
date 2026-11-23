@@ -305,7 +305,7 @@ else
 
     if (animatorHelicoptero != null)
     {
-        animatorHelicoptero.SetTrigger(triggerDescenso);
+        IniciarDescensoHelicoptero();
     }
     else
     {
@@ -517,6 +517,12 @@ public void CompletarMision()
             GestorHistoriaPartida.Instance.PublicarEstadoMansion((int)estadoActual, segundos);
     }
 
+    private void IniciarDescensoHelicoptero()
+    {
+        animatorHelicoptero.gameObject.SetActive(true);
+        animatorHelicoptero.SetTrigger(triggerDescenso);
+    }
+
     public void AplicarEstadoMisionSincronizado(int etapa, int segundos)
     {
         if (EsServidor || etapa < (int)EstadoMision.Inactiva || etapa > (int)EstadoMision.Completada)
@@ -550,10 +556,12 @@ public void CompletarMision()
                     if (puertaTrasera != null)
                         puertaTrasera.AbrirPuerta();
                     if (animatorHelicoptero != null)
-                        animatorHelicoptero.SetTrigger(triggerDescenso);
+                        IniciarDescensoHelicoptero();
                 }
                 break;
             case EstadoMision.Completada:
+                if (animatorHelicoptero != null && !animatorHelicoptero.gameObject.activeSelf)
+                    IniciarDescensoHelicoptero();
                 MostrarTemporizador(false);
                 ActualizarObjetivo("MISIÓN COMPLETADA");
                 ActualizarDescripcion("Lograste escapar de la mansión.");
