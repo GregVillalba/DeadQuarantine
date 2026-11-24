@@ -681,6 +681,8 @@ private IEnumerator EsperarFinIntroLocal()
 
     public override void OnNetworkDespawn()
     {
+        StopAllCoroutines();
+
         CurrentRoundNetwork.OnValueChanged -=
             OnRoundChanged;
 

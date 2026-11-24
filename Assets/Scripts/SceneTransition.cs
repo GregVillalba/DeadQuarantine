@@ -14,6 +14,7 @@ public sealed class SceneTransition : MonoBehaviour
     private Action onExit;
 
     public static bool IsLoading => current != null;
+    internal static bool IsReturningToMenu => current != null && current.returnToMenu;
 
     public static bool TryLoad(string sceneName, bool showMap = false, Action onFailure = null, Action onExit = null)
     {
@@ -80,6 +81,7 @@ public sealed class SceneTransition : MonoBehaviour
             {
                 // La carga de Unity sigue hasta terminar. Mantener la pantalla encima
                 // del juego mientras se abre el menú.
+                Application.backgroundLoadingPriority = previousPriority;
                 AsyncOperation menu = StartLoad(MenuScene);
                 if (menu == null)
                     yield break;
@@ -88,6 +90,13 @@ public sealed class SceneTransition : MonoBehaviour
                     LoadingIndicator.MaintainInput(transform);
                     yield return null;
                 }
+
+                // Dejar que termine la destrucción del host local antes de habilitar el menú.
+                yield return null;
+                Time.timeScale = 1f;
+                AudioListener.pause = false;
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
             }
 
             loaded = true;

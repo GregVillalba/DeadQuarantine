@@ -58,6 +58,87 @@ public class PvPvEModeMenuTests
         Assert.That(GameObject.Find("salaEsperaSinglePlayerPanel"), Is.Null);
     }
 
+    [UnityTest]
+    [Timeout(720000)]
+    public IEnumerator CancellingSoloLoadAfterHostStartsAllowsASecondMatch()
+    {
+        const string soloScene = "MainSceneSinglePlayer";
+        var config = ConfiguracionPartidaSeleccionada.Instancia;
+        var previousMode = config.modoSeleccionado;
+        var previousMap = config.escenarioSeleccionado;
+        var previousDifficulty = config.dificultadSeleccionada;
+        NetworkManager cancelledHost = null;
+        bool clickedExit = false;
+
+        void CancelFromLoadingScreen()
+        {
+            var transition = Object.FindAnyObjectByType<SceneTransition>();
+            var exit = transition.GetComponentsInChildren<Button>().Single(b => b.name == "Salir de la partida");
+            exit.onClick.Invoke();
+            clickedExit = true;
+        }
+
+        void SubscribeToHostStart(Scene scene, LoadSceneMode mode)
+        {
+            if (scene.name != soloScene)
+                return;
+
+            cancelledHost = NetworkManager.Singleton;
+            cancelledHost.OnServerStarted += CancelFromLoadingScreen;
+        }
+
+        SceneManager.sceneLoaded += SubscribeToHostStart;
+        try
+        {
+            config.modoSeleccionado = ConfiguracionPartidaSeleccionada.ModoJuego.Ronda5;
+            config.escenarioSeleccionado = ConfiguracionPartidaSeleccionada.Escenario.Laboratorio;
+            config.dificultadSeleccionada = ConfiguracionPartidaSeleccionada.Dificultad.Normal;
+
+            StartSoloMatch();
+            yield return WaitForSceneTransition();
+
+            Assert.That(clickedExit, Is.True);
+            Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("PantallasUI"));
+            Assert.That(cancelledHost == null, Is.True, "El host de la partida cancelada debe destruirse.");
+            Assert.That(NetworkManager.Singleton == null, Is.True);
+            Assert.That(Cursor.lockState, Is.EqualTo(CursorLockMode.None));
+            Assert.That(Cursor.visible, Is.True);
+            SceneManager.sceneLoaded -= SubscribeToHostStart;
+
+            StartSoloMatch();
+            yield return WaitForSceneTransition();
+
+            Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo(soloScene));
+            Assert.That(NetworkManager.Singleton.IsHost, Is.True);
+            Assert.That(NetworkManager.Singleton.LocalClient.PlayerObject.IsSpawned, Is.True);
+        }
+        finally
+        {
+            SceneManager.sceneLoaded -= SubscribeToHostStart;
+            if (cancelledHost != null)
+                cancelledHost.OnServerStarted -= CancelFromLoadingScreen;
+            config.modoSeleccionado = previousMode;
+            config.escenarioSeleccionado = previousMap;
+            config.dificultadSeleccionada = previousDifficulty;
+        }
+
+        void StartSoloMatch()
+        {
+            SceneComponents<SingleplayerMenuManager>().Single().MostrarConfiguracionSingleplayer();
+            SceneComponents<SinglePlayerLobbyController>().Single().OnClick_Comenzar();
+            Assert.That(SceneTransition.IsLoading, Is.True);
+        }
+
+        IEnumerator WaitForSceneTransition()
+        {
+            float deadline = Time.realtimeSinceStartup + 300f;
+            while (SceneTransition.IsLoading && Time.realtimeSinceStartup < deadline)
+                yield return null;
+
+            Assert.That(SceneTransition.IsLoading, Is.False, "La transición de singleplayer debe terminar.");
+        }
+    }
+
 
     [UnityTest]
     public IEnumerator LobbyTransitionKeepsTheMenuAliveUntilTheAsyncLoad()
