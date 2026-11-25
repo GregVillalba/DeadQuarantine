@@ -10,6 +10,33 @@ public class BrilloRecursoTests
     private const string PrefabDrop = "Assets/Prefabs/RecursoDrop.prefab";
 
     [Test]
+    public void CantimploraYBidon_CompartenMaterialOpacoConEmision()
+    {
+        var material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Art/Materials/Effects/M_RecursoMilitar.mat");
+        Assert.IsNotNull(material);
+        Assert.AreEqual("Opaque", material.GetTag("RenderType", false));
+        Assert.AreEqual(0f, material.GetFloat("_Surface"));
+        Assert.AreEqual(0f, material.GetFloat("_AlphaClip"));
+        Assert.AreEqual(1f, material.GetFloat("_ZWrite"));
+        Assert.IsTrue(material.IsKeywordEnabled("_EMISSION"));
+        Assert.Greater(material.GetColor("_EmissionColor").maxColorComponent, 0f);
+        Assert.That(material.globalIlluminationFlags & MaterialGlobalIlluminationFlags.AnyEmissive,
+            Is.Not.EqualTo(MaterialGlobalIlluminationFlags.None));
+
+        foreach (string ruta in new[] { PrefabEscenario, PrefabDrop })
+        {
+            var visual = Brillo(ruta).transform.Find("Visual");
+            foreach (string modelo in new[] { "Modelo_Cantimplora", "Modelo_Bidon" })
+            {
+                var renderers = visual.Find(modelo).GetComponentsInChildren<Renderer>(true);
+                Assert.IsNotEmpty(renderers, $"{ruta}: {modelo}");
+                foreach (var renderer in renderers)
+                    Assert.AreSame(material, renderer.sharedMaterial, $"{ruta}: {renderer.name}");
+            }
+        }
+    }
+
+    [Test]
     public void IntensidadEn_SiempreQuedaEntreMinimoYMaximo()
     {
         for (float t = 0f; t < 5f; t += 0.05f)

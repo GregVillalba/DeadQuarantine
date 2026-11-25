@@ -169,7 +169,8 @@ namespace DeadQuarantine.PvPvE.UI
    viewport.GetComponent<ScrollRect>().verticalNormalizedPosition=1;
   }
   void Option(string id,string name,Sprite icon,Action action,PvPvEClassDefinition candidate=null){
-   var card=Card("Choose_"+id,options,Vector2.zero,Vector2.one,"",name,icon);card.onClick.AddListener(()=>{action();if(candidate!=null&&pickerEquipment){picker.SetActive(true);pickerPreview.gameObject.SetActive(true);ShowCandidate(Current,id);card.Select();}});
+   var card=Card("Choose_"+id,options,Vector2.zero,Vector2.one,"",name,icon);
+   card.onClick.AddListener(()=>action());
    if(candidate!=null){card.interactable=CanChoose(candidate);card.transform.Find("Category").GetComponent<TMP_Text>().text=catalog.Find(id)?.Category??$"EQUIPAMIENTO  {catalog.Pick10Cost(candidate)}/10";
     if(!card.interactable)card.transform.Find("Name").GetComponent<TMP_Text>().alpha=.45f;
    }

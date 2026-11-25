@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Linq;
+using DeadQuarantine.PvPvE;
 using DeadQuarantine.PvPvE.UI;
 using NUnit.Framework;
 using Unity.Netcode;
@@ -213,6 +214,87 @@ public class PvPvEModeMenuTests
         Assert.That(room.transform.Find("CodigoSala").gameObject.activeSelf, Is.False);
         Assert.That(room.transform.Find("Btn_ConfigurarPartida").gameObject.activeSelf, Is.False);
         Assert.That(room.transform.Find("PLAY_MULTIPLAYER").GetComponent<Button>().interactable, Is.False);
+    }
+
+    [UnityTest]
+    public IEnumerator ClickingAnItemAssignsItAndClosesTheClassPicker()
+    {
+        const string classKey = "DQ.PvPvE.Classes.v1.local";
+        string saved = PlayerPrefs.HasKey(classKey) ? PlayerPrefs.GetString(classKey) : null;
+        string backup = PlayerPrefs.HasKey(classKey + ".backup") ? PlayerPrefs.GetString(classKey + ".backup") : null;
+
+        menu.OpenModes();
+        menu.OpenPvPvE();
+        yield return null;
+        var editor = menu.GetComponent<PvPvEClassEditor>();
+        try
+        {
+            editor.Store.Reset(0);
+            editor.Open();
+            var root = editor.Panel.transform;
+            var picker = root.Find("ItemPicker");
+            var cards = picker.Find("Viewport/Cards");
+
+            void Click(Transform target) => target.GetComponent<Button>().OnPointerClick(
+                new PointerEventData(EventSystem.current) { button = PointerEventData.InputButton.Left });
+
+            Transform Option(string id) => cards.Cast<Transform>().SingleOrDefault(
+                card => card.gameObject.activeSelf && card.name == "Choose_" + id);
+
+            void Choose(string slot, string id)
+            {
+                Click(root.Find(slot));
+                Assert.IsTrue(picker.gameObject.activeInHierarchy, slot);
+                var option = Option(id);
+                Assert.IsNotNull(option, id);
+                Assert.IsTrue(option.GetComponent<Button>().IsInteractable(), id);
+                Click(option);
+                Assert.IsFalse(picker.gameObject.activeSelf, slot);
+                Assert.IsTrue(editor.IsOpen);
+            }
+
+            Choose("Primary", "Escopeta");
+            Assert.AreEqual("Escopeta", editor.Current.primary);
+            Choose("Secondary", "AutoPistol");
+            Assert.AreEqual("AutoPistol", editor.Current.secondary);
+            Choose("Attachment_0_0", "Scope_01");
+            Assert.AreEqual("Scope_01", editor.Current.primaryAttachments.scope);
+            Choose("Grenade", "utility_none");
+            Assert.IsEmpty(editor.Current.grenade);
+            Choose("Healing", editor.catalog.healings[1].id);
+            Assert.AreEqual(editor.catalog.healings[1].id, editor.Current.healing);
+            Choose("Perk_0", "perk.boots");
+            Assert.AreEqual("perk.boots", editor.Current.perk1);
+            Choose("Wildcard_0", "wildcard.greed");
+            Assert.AreEqual("wildcard.greed", editor.Current.wildcard1);
+
+            Click(root.Find("Wildcard_1"));
+            var duplicate = Option("wildcard.greed");
+            Assert.IsNotNull(duplicate);
+            Assert.IsFalse(duplicate.GetComponent<Button>().IsInteractable());
+            Click(duplicate);
+            Assert.IsTrue(picker.gameObject.activeSelf);
+            Assert.IsTrue(string.IsNullOrEmpty(editor.Current.wildcard2));
+
+            var reloaded = new PvPvEClassStore(editor.catalog);
+            Assert.AreEqual(JsonUtility.ToJson(editor.Current), JsonUtility.ToJson(reloaded.Get(0)));
+        }
+        finally
+        {
+            editor.Close();
+            menu.GetComponent<PvPvELobbyView>().Leave();
+            RestorePreference(classKey, saved);
+            RestorePreference(classKey + ".backup", backup);
+            PlayerPrefs.Save();
+        }
+
+        void RestorePreference(string key, string value)
+        {
+            if (value == null)
+                PlayerPrefs.DeleteKey(key);
+            else
+                PlayerPrefs.SetString(key, value);
+        }
     }
 
     [UnityTest] public IEnumerator UtilityPickersDoNotShowWeaponModelOrStats()
