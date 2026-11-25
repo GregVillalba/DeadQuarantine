@@ -1,10 +1,10 @@
 using System;
 using System.Collections;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Networking;
 using TMPro;
+using System.Globalization;
 
 public class GuardarScoreCartelUI : MonoBehaviour
 {
@@ -20,20 +20,13 @@ public class GuardarScoreCartelUI : MonoBehaviour
     [SerializeField] private string apiUrl = "https://dead-quarentine-web.wasmer.app/api/ranking";
 
     [Header("Mensajes y Tiempos")]
-    [SerializeField] private string mensajeExito = "Se subió correctamente";
+    [SerializeField] private string mensajeExito = "Se subiÃ³ correctamente";
     [SerializeField] private string mensajeCancelado = "Acceso denegado";
-    [SerializeField] private string mensajeError = "No se pudo subir. Reintentá o cancelá.";
+    [SerializeField] private string mensajeError = "No se pudo subir. ReintentÃ¡ o cancelÃ¡.";
     [SerializeField] private float segundosAntesDeCerrar = 1.5f;
 
     [Header("Reglas de Guardado")]
     [SerializeField] private int puntajeMinimoParaGuardar = 50;
-
-    [Serializable]
-    private class RankingEntry
-    {
-        public string username;
-        public int puntos;
-    }
 
     [Serializable]
     private class GeoDataResponse
@@ -71,6 +64,9 @@ public class GuardarScoreCartelUI : MonoBehaviour
     private string modoJugador;
     private Action onFinalizadoCallback;
     private Color colorOriginalBtnOk = Color.white;
+    private RectTransform vistaRanking;
+    private RectTransform cortinaRanking;
+    private Coroutine consultaPuesto;
 
     [Serializable]
     private class PuestoResponse
@@ -78,35 +74,84 @@ public class GuardarScoreCartelUI : MonoBehaviour
         public int puesto;
     }
 
-    private IEnumerator CalcularPuesto()
+    private IEnumerator ConsultarPuestoProyectado()
     {
-        string url = $"{apiUrl}?score={scoreJugador}";
+        char separador = apiUrl.Contains("?") ? '&' : '?';
+        string url = $"{apiUrl}{separador}score={scoreJugador.ToString(CultureInfo.InvariantCulture)}" +
+            $"&mode={UnityWebRequest.EscapeURL(modoJugador)}" +
+            $"&dificultad={UnityWebRequest.EscapeURL(dificultadJugador.ToLowerInvariant())}";
         using (UnityWebRequest req = UnityWebRequest.Get(url))
         {
             req.timeout = 10;
             yield return req.SendWebRequest();
 
-            if (req.result != UnityWebRequest.Result.Success)
+            PuestoResponse resultado = null;
+            if (req.result == UnityWebRequest.Result.Success)
             {
-                Debug.LogWarning($"[GuardarScoreCartelUI] Error al calcular puesto: {req.error}\n{req.downloadHandler?.text}");
-                if (txtResult != null) txtResult.text = "Puesto: no disponible (sin conexión)";
-                yield break;
+                try { resultado = JsonUtility.FromJson<PuestoResponse>(req.downloadHandler.text); }
+                catch (ArgumentException) { }
             }
-
-            PuestoResponse resp = null;
-            try { resp = JsonUtility.FromJson<PuestoResponse>(req.downloadHandler.text); }
-            catch (Exception e) { Debug.LogWarning("Error parseando puesto: " + e.Message); }
-
-            if (resp == null || resp.puesto <= 0 || txtResult == null)
-            {
-                if (txtResult != null) txtResult.text = "Puesto: no disponible";
-                yield break;
-            }
-
-            txtResult.text = resp.puesto <= 5
-                ? $"Tu score entra en el puesto #{resp.puesto} del Top 5"
-                : $"Tu puesto estimado: #{resp.puesto}";
+            txtResult.text = resultado is { puesto: > 0 } ? $"{resultado.puesto}.Âº" : "NO DISPONIBLE";
         }
+        consultaPuesto = null;
+    }
+
+    private void DetenerConsultaPuesto()
+    {
+        if (consultaPuesto == null)
+            return;
+        StopCoroutine(consultaPuesto);
+        consultaPuesto = null;
+    }
+
+    private void AjustarCortina()
+    {
+        var canvas = GetComponentInParent<Canvas>()?.rootCanvas;
+        if (canvas == null || cortinaRanking == null)
+            return;
+        Canvas.ForceUpdateCanvases();
+        var raiz = (RectTransform)canvas.transform;
+        Vector3 inferior = transform.InverseTransformPoint(raiz.TransformPoint(raiz.rect.min));
+        Vector3 superior = transform.InverseTransformPoint(raiz.TransformPoint(raiz.rect.max));
+        cortinaRanking.sizeDelta = new Vector2(Mathf.Abs(superior.x - inferior.x), Mathf.Abs(superior.y - inferior.y));
+        Vector3 centro = (inferior + superior) * .5f;
+        cortinaRanking.localPosition = new Vector3(centro.x, centro.y, 0f);
+    }
+
+    private void ConstruirVista()
+    {
+        if (vistaRanking != null)
+            return;
+        foreach (Transform child in transform)
+            child.gameObject.SetActive(false);
+        if (TryGetComponent<Image>(out var fondo))
+            fondo.color = Color.clear;
+
+        cortinaRanking = PartidaMenuVisual.Caja(transform, "FondoRanking", 0, 0, 0, 0, new Color32(7, 11, 16, 184));
+        cortinaRanking.anchorMin = cortinaRanking.anchorMax = cortinaRanking.pivot = new Vector2(.5f, .5f);
+        cortinaRanking.GetComponent<Image>().raycastTarget = true;
+
+        vistaRanking = PartidaMenuVisual.Panel(transform, "GuardarRankingActualizado", 670, 1300);
+        vistaRanking.localScale = new Vector3(1.35f, 1.35f, 1f);
+        var textoClaro = new Color32(226, 235, 240, 255);
+        PartidaMenuVisual.Texto(vistaRanking, "Modo", "SUPERVIVENCIA Â· DERROTA", 64, 52, 1172, 38, 28, true).color = textoClaro;
+        PartidaMenuVisual.Texto(vistaRanking, "Titulo", "GUARDAR EN EL RANKING", 64, 93, 1172, 105, 90, true);
+        PartidaMenuVisual.Linea(vistaRanking, 64, 226, 1172);
+        txtTitulo = PartidaMenuVisual.Texto(vistaRanking, "Puntos", "", 64, 240, 350, 123, 105, true);
+        PartidaMenuVisual.Texto(vistaRanking, "Unidad", "PTS", 425, 306, 80, 44, 29, true).color = textoClaro;
+        var etiquetaPuesto = PartidaMenuVisual.Texto(vistaRanking, "EtiquetaPuesto", "PUESTO", 956, 254, 280, 39, 29, true);
+        etiquetaPuesto.alignment = TextAlignmentOptions.MidlineRight;
+        etiquetaPuesto.color = PartidaMenuVisual.Verde;
+        txtResult = PartidaMenuVisual.Texto(vistaRanking, "Puesto", "â€”", 936, 293, 300, 61, 48, true);
+        txtResult.alignment = TextAlignmentOptions.MidlineRight;
+        txtResult.color = PartidaMenuVisual.Verde;
+        PartidaMenuVisual.Linea(vistaRanking, 64, 374, 1172);
+        PartidaMenuVisual.Texto(vistaRanking, "Pregunta", "Â¿QuerÃ©s guardar tu puntuaciÃ³n en el ranking de Supervivencia?", 64, 403, 1172, 54, 37, true).color = textoClaro;
+        txtEstado = PartidaMenuVisual.Texto(vistaRanking, "Estado", "", 64, 466, 1172, 43, 28, true);
+        btnCancel = PartidaMenuVisual.Boton(vistaRanking, "Cancelar", "CANCELAR", 570, 533);
+        btnOk = PartidaMenuVisual.Boton(vistaRanking, "Guardar", "GUARDAR PUNTUACIÃ“N", 910, 533, true);
+        txtBtnOk = btnOk.GetComponentInChildren<TMP_Text>();
+        colorOriginalBtnOk = btnOk.targetGraphic.color;
     }
 
     private void Awake()
@@ -137,7 +182,7 @@ public class GuardarScoreCartelUI : MonoBehaviour
     {
         if (puntos < puntajeMinimoParaGuardar)
         {
-            Debug.Log($"[GuardarScoreCartelUI] Score {puntos} menor al mínimo ({puntajeMinimoParaGuardar}). No se guarda.");
+            Debug.Log($"[GuardarScoreCartelUI] Score {puntos} menor al mÃ­nimo ({puntajeMinimoParaGuardar}). No se guarda.");
             onFinalizado?.Invoke();
             return;
         }
@@ -161,22 +206,21 @@ public class GuardarScoreCartelUI : MonoBehaviour
         transform.localScale = Vector3.one;
         transform.SetAsLastSibling();
 
-        for (int i = 0; i < transform.childCount; i++)
-        {
-            transform.GetChild(i).gameObject.SetActive(true);
-        }
+        ConstruirVista();
+        AjustarCortina();
+        DetenerConsultaPuesto();
 
         if (txtTitulo != null)
-            txtTitulo.text = $"¿Deseas guardar tu score de {puntos:N0} pts en el ranking?";
+            txtTitulo.text = puntos.ToString("N0", CultureInfo.GetCultureInfo("es-AR"));
 
         if (txtEstado != null)
         {
             txtEstado.text = "";
-            txtEstado.color = Color.white;
+            txtEstado.color = new Color32(226, 235, 240, 255);
         }
 
         if (txtResult != null)
-            txtResult.text = "Calculando puesto...";
+            txtResult.text = "CONSULTANDOâ€¦";
 
         RestaurarBotonOk();
 
@@ -194,20 +238,13 @@ public class GuardarScoreCartelUI : MonoBehaviour
             btnCancel.interactable = true;
         }
 
-        MonoBehaviour coroutineHost = (runner != null && runner.gameObject.activeInHierarchy) ? runner : this;
+        consultaPuesto = StartCoroutine(ConsultarPuestoProyectado());
 
-        if (coroutineHost.gameObject.activeInHierarchy)
-        {
-            coroutineHost.StartCoroutine(CalcularPuesto());
-        }
-        else
-        {
-            Debug.LogError("[GuardarScoreCartelUI] Host inactivo para corrutina.");
-        }
     }
 
     private void CerrarYAvisar()
     {
+        DetenerConsultaPuesto();
         gameObject.SetActive(false);
         onFinalizadoCallback?.Invoke();
     }
@@ -215,7 +252,6 @@ public class GuardarScoreCartelUI : MonoBehaviour
     private void OnOkClicked()
     {
         Debug.Log("<color=green>[GuardarScoreCartelUI] Clic en OK...</color>");
-        PintarBotonNaranjaOscuro(btnOk);
         StartCoroutine(ObtenerDatosRedYSubirScore());
     }
 
@@ -226,7 +262,7 @@ public class GuardarScoreCartelUI : MonoBehaviour
         if (txtEstado != null)
         {
             txtEstado.color = Color.white;
-            txtEstado.text = "Detectando ubicación...";
+            txtEstado.text = "Detectando ubicaciÃ³n...";
         }
 
         string ipDetectada = "127.0.0.1";
@@ -307,7 +343,7 @@ public class GuardarScoreCartelUI : MonoBehaviour
 
             if (req.result == UnityWebRequest.Result.Success && (httpCode >= 200 && httpCode < 300))
             {
-                Debug.Log($"<color=green>[GuardarScoreCartelUI] Score subido con éxito para {currentUsername} (ID: {currentId}). HTTP {httpCode}</color>");
+                Debug.Log($"<color=green>[GuardarScoreCartelUI] Score subido con Ã©xito para {currentUsername} (ID: {currentId}). HTTP {httpCode}</color>");
 
                 if (txtEstado != null)
                 {
@@ -315,7 +351,6 @@ public class GuardarScoreCartelUI : MonoBehaviour
                     txtEstado.text = mensajeExito;
                 }
 
-                yield return new WaitForSecondsRealtime(segundosAntesDeCerrar);
                 CerrarYAvisar();
             }
             else
@@ -341,7 +376,6 @@ public class GuardarScoreCartelUI : MonoBehaviour
 
     private void OnCancelClicked()
     {
-        PintarBotonNaranjaOscuro(btnCancel);
         StartCoroutine(CancelarCoroutine());
     }
 
@@ -361,7 +395,7 @@ public class GuardarScoreCartelUI : MonoBehaviour
 
     private void RestaurarBotonOk()
     {
-        ActualizarTextoBotonOk("OK");
+        ActualizarTextoBotonOk("GUARDAR PUNTUACIÃ“N");
         RestaurarColorBotonOk();
     }
 
@@ -381,16 +415,6 @@ public class GuardarScoreCartelUI : MonoBehaviour
             var img = btnOk.GetComponent<Image>();
             if (img != null)
                 img.color = colorOriginalBtnOk;
-        }
-    }
-
-    private void PintarBotonNaranjaOscuro(Button btn)
-    {
-        if (btn != null)
-        {
-            var img = btn.GetComponent<Image>();
-            if (img != null)
-                img.color = new Color(0.8f, 0.35f, 0.0f, 1f);
         }
     }
 

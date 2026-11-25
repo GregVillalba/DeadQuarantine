@@ -38,7 +38,7 @@ public class CheckpointManager : MonoBehaviour
     private static bool EsMultiplayerActivo()
     {
         return NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening &&
-               SceneManager.GetActiveScene().name != "MainSceneSinglePlayer";
+               SceneManager.GetActiveScene().name != SinglePlayerNetworkStarter.SceneName;
     }
 
     private void Awake()
@@ -68,7 +68,7 @@ public class CheckpointManager : MonoBehaviour
 
     public void RegistrarZonaSegura(EscenarioCheckpoint escenario)
     {
-        if (EsMultiplayerActivo())
+        if (!SinglePlayerNetworkStarter.EsPartidaLocalActiva)
             return;
 
         Debug.Log(
@@ -84,17 +84,7 @@ public class CheckpointManager : MonoBehaviour
             return;
         }
 
-        if (NetworkManager.Singleton != null &&
-            NetworkManager.Singleton.IsListening &&
-            !NetworkManager.Singleton.IsServer)
-        {
-            Debug.LogWarning(
-                "[CheckpointManager] No se guardó: este cliente no es el servidor."
-            );
-            return;
-        }
-
-        if (escenario == EscenarioCheckpoint.Ninguno)
+        if (escenario != EscenarioCheckpoint.SafeZone1 && escenario != EscenarioCheckpoint.SafeZone2)
         {
             Debug.LogWarning(
                 "[CheckpointManager] No se guardó: checkpoint inválido."
@@ -126,7 +116,7 @@ public class CheckpointManager : MonoBehaviour
 
     public void GuardarCheckpoint()
     {
-        if (EsMultiplayerActivo() || !EsModoHistoria())
+        if (!SinglePlayerNetworkStarter.EsPartidaLocalActiva || !EsModoHistoria() || CargaPendiente)
             return;
 
         if (escenarioActual == EscenarioCheckpoint.Ninguno)
@@ -134,13 +124,6 @@ public class CheckpointManager : MonoBehaviour
             Debug.LogWarning(
                 "[CheckpointManager] No se puede guardar: todavía no se alcanzó una zona segura."
             );
-            return;
-        }
-
-        if (NetworkManager.Singleton != null &&
-            NetworkManager.Singleton.IsListening &&
-            !NetworkManager.Singleton.IsServer)
-        {
             return;
         }
 
@@ -237,7 +220,11 @@ public class CheckpointManager : MonoBehaviour
                 (int)ConfiguracionPartidaSeleccionada.Instancia.dificultadSeleccionada;
         }
 
-        if (SaveSystem.GuardarHistoria(datosHistoria))
+        var indicador = LoadingIndicator.ShowAutosave();
+        bool guardado = SaveSystem.GuardarHistoria(datosHistoria);
+        indicador.FinishAutosave(guardado);
+
+        if (guardado)
         {
             Debug.Log(
                 "[CheckpointManager] Checkpoint guardado correctamente: " +

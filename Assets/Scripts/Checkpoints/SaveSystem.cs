@@ -8,7 +8,14 @@ public static class SaveSystem
     private const string NombreArchivo = "SaveData.json";
     private const int VersionActual = 2;
 
+#if UNITY_EDITOR
+    private static string rutaDePrueba = null;
+#endif
+
     private static string RutaArchivo =>
+#if UNITY_EDITOR
+        rutaDePrueba ??
+#endif
         Path.Combine(
             Application.persistentDataPath,
             NombreArchivo
@@ -183,6 +190,12 @@ public static class SaveSystem
                 return null;
             }
 
+            // JsonUtility puede convertir un modo nulo en un objeto con valores predeterminados.
+            if (datos.historia is { checkpoint: 0 })
+                datos.historia = null;
+            if (datos.supervivencia is { rondaActual: 0 })
+                datos.supervivencia = null;
+
             return datos;
         }
         catch (Exception excepcion)
@@ -216,6 +229,8 @@ public static class SaveSystem
 
     private static bool EscribirArchivo(SaveData datos)
     {
+        string ruta = RutaArchivo;
+        string temporal = ruta + ".tmp";
         try
         {
             datos.version = VersionActual;
@@ -223,11 +238,15 @@ public static class SaveSystem
             string json =
                 JsonUtility.ToJson(datos, true);
 
-            File.WriteAllText(RutaArchivo, json);
+            File.WriteAllText(temporal, json);
+            if (File.Exists(ruta))
+                File.Replace(temporal, ruta, null);
+            else
+                File.Move(temporal, ruta);
 
             Debug.Log(
                 "[SaveSystem] Guardado actualizado correctamente. " +
-                "Ruta: " + RutaArchivo
+                "Ruta: " + ruta
             );
 
             return true;
@@ -238,6 +257,10 @@ public static class SaveSystem
                 "[SaveSystem] Error al escribir el archivo: " +
                 excepcion.Message
             );
+
+            try { File.Delete(temporal); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
 
             return false;
         }

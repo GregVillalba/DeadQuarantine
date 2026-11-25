@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine.InputSystem;
+using DeadQuarantine.PvPvE;
 
 public class NPCShopUI : MonoBehaviour
 {
@@ -118,6 +119,8 @@ public class NPCShopUI : MonoBehaviour
     [SerializeField] private string textoReparar = "REPARAR";
     [SerializeField] private Image progresoCompraFill;
     [SerializeField] private float tiempoMantenerParaComprar = 2f;
+    private Button comprarButton;
+    private int ultimoFrameCompra = -1;
     [Tooltip("Al comprar una torreta o un barril, cuánto gira el jugador antes de colocarlo (180 = de espaldas al mercader).")]
     [SerializeField] private float gradosGiroAlColocar = 180f;
 
@@ -227,6 +230,8 @@ public class NPCShopUI : MonoBehaviour
         if (shopPanel != null)
             shopPanel.SetActive(false);
 
+        AplicarEstiloTienda();
+
         if (closeButton != null)
             closeButton.onClick.AddListener(CerrarTienda);
 
@@ -262,6 +267,102 @@ public class NPCShopUI : MonoBehaviour
         CachearReferenciasJugador();
 
         OcultarPrompt();
+    }
+
+    private void AplicarEstiloTienda()
+    {
+        var verde = new Color32(64, 216, 126, 255);
+        colorSeccionNormal = new Color32(16, 28, 36, 225);
+        colorSeccionSeleccionada = new Color32(23, 56, 36, 230);
+        colorMarcoNormal = new Color32(65, 80, 88, 255);
+        colorMarcoSeleccionado = verde;
+        colorFilaSeleccionada = new Color(.18f, .68f, .39f, colorFilaSeleccionada.a);
+
+        if (shopPanel != null)
+        {
+            AplicarFuenteTienda(shopPanel);
+            foreach (var texto in shopPanel.GetComponentsInChildren<TMP_Text>(true))
+                if (texto != textoCompra && texto.text.IndexOf("ESPACIO", StringComparison.OrdinalIgnoreCase) >= 0)
+                    texto.text = "Clic para comprar o mantené ESPACIO";
+        }
+
+        EstilizarBoton(closeButton);
+        EstilizarBoton(listoButton, true);
+        if (listoButton != null && listoButton.targetGraphic != null)
+            listoButton.targetGraphic.color = colorSeccionSeleccionada;
+
+        foreach (var seccion in secciones)
+            if (seccion != null)
+                EstilizarBoton(seccion.boton, true);
+
+        var scroll = rowsContainer != null ? rowsContainer.GetComponentInParent<ScrollRect>(true) : null;
+        if (scroll != null && scroll.verticalScrollbar != null && scroll.verticalScrollbar.targetGraphic != null)
+            scroll.verticalScrollbar.targetGraphic.color = verde;
+
+        if (panelDetalle != null)
+            foreach (var imagen in panelDetalle.GetComponentsInChildren<Image>(true))
+            {
+                if (imagen.name is "Encabezado" or "EncabezadoEstadisticas")
+                    imagen.color = new Color(.13f, .28f, .21f, imagen.color.a);
+                else if (imagen.name == "Marco")
+                    imagen.color = new Color(.23f, .64f, .4f, imagen.color.a);
+            }
+
+        foreach (var estadistica in new[] { filaDano, filaCadencia, filaAlcance, filaCargador, filaCuracion, filaArmadura })
+        {
+            if (estadistica?.fila != null)
+                foreach (var texto in estadistica.fila.GetComponentsInChildren<TMP_Text>(true))
+                    AgrandarTextoDetalle(texto, 1.3f);
+            if (estadistica?.barra != null)
+                estadistica.barra.color = new Color(.28f, .92f, .48f, estadistica.barra.color.a);
+        }
+        AgrandarTextoDetalle(nombreDetalleText, 1.12f);
+        AgrandarTextoDetalle(descripcionDetalleText, 1.2f);
+        AgrandarTextoDetalle(statsDetalleText, 1.25f);
+
+        if (panelCompra == null)
+            return;
+
+        comprarButton = panelCompra.GetComponent<Button>() ?? panelCompra.AddComponent<Button>();
+        comprarButton.targetGraphic = panelCompra.GetComponent<Image>() ?? panelCompra.AddComponent<Image>();
+        float opacidadCompra = comprarButton.targetGraphic.color.a;
+        comprarButton.targetGraphic.raycastTarget = true;
+        EstilizarBoton(comprarButton);
+        comprarButton.targetGraphic.color = new Color(.063f, .11f, .14f, opacidadCompra);
+        var marcoCompra = panelCompra.transform.Find("Marco");
+        if (marcoCompra != null && marcoCompra.TryGetComponent<Image>(out var marco))
+            marco.color = verde;
+        if (progresoCompraFill != null)
+            progresoCompraFill.color = new Color(.18f, .73f, .41f, progresoCompraFill.color.a);
+        comprarButton.onClick.AddListener(ComprarSeleccion);
+
+    }
+
+    private static void AgrandarTextoDetalle(TMP_Text texto, float factor)
+    {
+        if (texto == null)
+            return;
+        float original = texto.fontSize;
+        texto.fontSize = original * factor;
+        texto.enableAutoSizing = true;
+        texto.fontSizeMin = original;
+        texto.fontSizeMax = original * factor;
+    }
+
+    private static void AplicarFuenteTienda(GameObject root)
+    {
+        if (!PvPvEUIFactory.HeadingFont)
+            return;
+        foreach (var texto in root.GetComponentsInChildren<TMP_Text>(true))
+            texto.font = PvPvEUIFactory.HeadingFont;
+    }
+
+    private static void EstilizarBoton(Button boton, bool conAcento = false)
+    {
+        if (boton == null)
+            return;
+        PvPvEUIFactory.StyleMenuButton(boton, conAcento);
+        boton.navigation = new Navigation { mode = Navigation.Mode.None };
     }
 
     private void OnEnable()
@@ -303,6 +404,20 @@ public class NPCShopUI : MonoBehaviour
             if (!TiendaHabilitada(currentVendor))
             {
                 CerrarTienda();
+                return;
+            }
+
+            var teclado = Keyboard.current;
+            if (teclado != null && teclado.escapeKey.wasPressedThisFrame)
+            {
+                CerrarTienda();
+                return;
+            }
+
+            if (teclado != null && (teclado.enterKey.wasPressedThisFrame || teclado.numpadEnterKey.wasPressedThisFrame)
+                && listoButton != null && listoButton.IsActive() && listoButton.IsInteractable())
+            {
+                MarcarListo();
                 return;
             }
 
@@ -565,9 +680,12 @@ public class NPCShopUI : MonoBehaviour
 
             if (boton != null)
             {
+                boton.navigation = new Navigation { mode = Navigation.Mode.None };
                 WeaponOffer captura = oferta;
                 boton.onClick.AddListener(() => SeleccionarOferta(captura));
             }
+
+            AplicarFuenteTienda(fila);
 
             filas.Add(new OfertaFila
             {
@@ -664,6 +782,9 @@ public class NPCShopUI : MonoBehaviour
 
             if (seccion.marco != null)
                 seccion.marco.color = seleccionada ? colorMarcoSeleccionado : colorMarcoNormal;
+            var acento = seccion.boton != null ? seccion.boton.transform.Find("Accent") : null;
+            if (acento != null)
+                acento.gameObject.SetActive(seleccionada);
         }
 
         if (avisoSeccionVacia != null)
@@ -735,7 +856,8 @@ public class NPCShopUI : MonoBehaviour
                 realWeaponStatistics.font=filaDano.valor ? filaDano.valor.font : TMP_Settings.defaultFontAsset;
             }
             if(realWeaponStatistics)
-                WeaponStatisticsView.Draw(realWeaponStatistics,definition.Source.BaseStatistics,null,false,"");
+                WeaponStatisticsView.Draw(realWeaponStatistics, definition.Source.BaseStatistics, null, false, "",
+                    legibleEnTienda: true);
             return;
         }
         bool conStats = oferta != null && TieneStatsDeArma(oferta);
@@ -854,9 +976,8 @@ public class NPCShopUI : MonoBehaviour
         return string.Join("\n", lineas);
     }
 
-    private void ActualizarCompraMantenida()
-    {
-        bool puedeComprar =
+    private bool PuedeComprarSeleccion() =>
+            estaAbierta && currentVendor != null && !currentVendor.CompraPendiente &&
             ofertaSeleccionada != null &&
             ofertaSeleccionada.disponible &&
             (!ofertaSeleccionada.esLinterna||(playerHealth&&playerHealth.GetComponent<Flashlight>()&&playerHealth.GetComponent<Flashlight>().CompatibleWithEquippedWeapon)) &&
@@ -868,6 +989,23 @@ public class NPCShopUI : MonoBehaviour
             !InventarioLlenoPara(ofertaSeleccionada) &&
             !MunicionLlenaPara(ofertaSeleccionada) &&
             Alcanza(PrecioActual(ofertaSeleccionada));
+
+    private void ComprarSeleccion()
+    {
+        if (ultimoFrameCompra == Time.frameCount || !PuedeComprarSeleccion() || !TiendaHabilitada(currentVendor))
+            return;
+        ultimoFrameCompra = Time.frameCount;
+        tiempoMantenido = 0f;
+        if (progresoCompraFill != null)
+            progresoCompraFill.fillAmount = 0f;
+        ComprarOferta(ofertaSeleccionada);
+    }
+
+    private void ActualizarCompraMantenida()
+    {
+        bool puedeComprar = PuedeComprarSeleccion();
+        if (comprarButton != null)
+            comprarButton.interactable = puedeComprar;
 
         bool teclaPresionada = Keyboard.current != null && Keyboard.current.spaceKey.isPressed;
 
@@ -887,14 +1025,7 @@ public class NPCShopUI : MonoBehaviour
             progresoCompraFill.fillAmount = Mathf.Clamp01(tiempoMantenido / tiempoMantenerParaComprar);
 
         if (tiempoMantenido >= tiempoMantenerParaComprar)
-        {
-            tiempoMantenido = 0f;
-
-            if (progresoCompraFill != null)
-                progresoCompraFill.fillAmount = 0f;
-
-            ComprarOferta(ofertaSeleccionada);
-        }
+            ComprarSeleccion();
     }
 
     private void OnCompraTerminada(string weaponId, bool exito)

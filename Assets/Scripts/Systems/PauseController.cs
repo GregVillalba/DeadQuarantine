@@ -318,7 +318,7 @@ public class PauseController : NetworkBehaviour
 
         if (DeadQuarantine.PvPvE.UI.PvPvEClassEditor.BlocksPauseInput || SurvivalUpgradeUI.BlocksPauseInput) return;
         bool historiaActiva = storyIntro != null && storyIntro.HistoriaActiva;
-        bool tiendaActiva = shopUI != null && shopUI.EstaAbierta;
+        bool tiendaActiva = NPCShopUI.MouseInputBlocked;
 
         if (historiaActiva || finDeRondaActivo || tiendaActiva || minijuegoActivo)
         {

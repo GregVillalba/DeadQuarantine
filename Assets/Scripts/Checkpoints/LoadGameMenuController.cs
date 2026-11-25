@@ -12,7 +12,7 @@ public class LoadGameMenuController : MonoBehaviour
 
     [Header("Escena de juego")]
     [SerializeField] private string escenaJuego =
-        "MainSceneSinglePlayer";
+        SinglePlayerNetworkStarter.SceneName;
 
     [Header("Botones")]
     [SerializeField] private Button botonHistoria;
@@ -33,6 +33,8 @@ public class LoadGameMenuController : MonoBehaviour
     private bool historiaSeleccionada;
     private bool supervivenciaSeleccionada;
     private bool eventosConectados;
+    private GameObject fichaGuardado;
+    private TMP_Text tituloGuardado, etiquetaUbicacion, ubicacionGuardada, dificultadGuardada;
 
     // =====================================================
     // INICIALIZACIÓN
@@ -40,10 +42,60 @@ public class LoadGameMenuController : MonoBehaviour
 
     private void Awake()
     {
+        if (panelCarga != null)
+            ConstruirVista();
         ConectarEventos();
 
         if (panelCarga != null)
             panelCarga.SetActive(false);
+    }
+
+    private void ConstruirVista()
+    {
+        foreach (Transform child in panelCarga.transform)
+            child.gameObject.SetActive(false);
+        if (panelCarga.TryGetComponent<Image>(out var fondo))
+            fondo.color = new Color(.025f, .045f, .065f, .74f);
+
+        var panel = PartidaMenuVisual.Panel(panelCarga.transform, "CargarPartidaActualizado", 746);
+        PartidaMenuVisual.Texto(panel, "Modo", "PARTIDA EN SOLITARIO", 48, 40, 664, 28, 17);
+        PartidaMenuVisual.Texto(panel, "Titulo", "CARGAR PARTIDA", 48, 72, 664, 90, 80, true);
+        subtitulo = PartidaMenuVisual.Texto(panel, "Subtitulo", "Seleccioná el modo que querés continuar.", 48, 170, 664, 35, 20);
+        botonHistoria = PartidaMenuVisual.Boton(panel, "BotonHistoria", "HISTORIA", 48, 238);
+        botonSupervivencia = PartidaMenuVisual.Boton(panel, "BotonSupervivencia", "SUPERVIVENCIA", 386, 238);
+
+        var ficha = PartidaMenuVisual.Caja(panel, "Ficha", 48, 336, 664, 250, new Color32(13, 23, 29, 255));
+        PartidaMenuVisual.Borde(ficha, new Color32(41, 57, 66, 255));
+        informacion = PartidaMenuVisual.Texto(ficha, "InformacionCheckpoint", "", 26, 24, 612, 200, 20);
+        var datos = PartidaMenuVisual.Caja(ficha, "DatosGuardados", 0, 0, 664, 250, Color.clear);
+        fichaGuardado = datos.gameObject;
+        PartidaMenuVisual.Texto(datos, "Estado", "PARTIDA GUARDADA", 26, 22, 612, 28, 16).color = PartidaMenuVisual.Verde;
+        tituloGuardado = PartidaMenuVisual.Texto(datos, "Checkpoint", "", 26, 53, 612, 63, 48, true);
+        PartidaMenuVisual.Linea(datos, 26, 128, 612);
+        etiquetaUbicacion = PartidaMenuVisual.Texto(datos, "EtiquetaUbicacion", "Escenario", 26, 139, 195, 40, 19);
+        ubicacionGuardada = PartidaMenuVisual.Texto(datos, "Ubicacion", "", 226, 139, 412, 40, 19);
+        PartidaMenuVisual.Linea(datos, 26, 184, 612);
+        PartidaMenuVisual.Texto(datos, "EtiquetaDificultad", "Dificultad", 26, 193, 195, 40, 19);
+        dificultadGuardada = PartidaMenuVisual.Texto(datos, "Dificultad", "", 226, 193, 412, 40, 19);
+        foreach (var valor in new[] { ubicacionGuardada, dificultadGuardada })
+        {
+            valor.alignment = TextAlignmentOptions.MidlineRight;
+            valor.color = Color.white;
+        }
+
+        botonVolver = PartidaMenuVisual.Boton(panel, "BotonVolver", "VOLVER", 48, 620);
+        botonCargar = PartidaMenuVisual.Boton(panel, "BotonCargar", "CARGAR PARTIDA", 386, 620, true);
+        MostrarFicha(false);
+    }
+
+    private void MostrarFicha(bool visible)
+    {
+        if (fichaGuardado == null)
+            return;
+        fichaGuardado.SetActive(visible);
+        informacion.gameObject.SetActive(!visible);
+        PartidaMenuVisual.Marcar(botonHistoria, historiaSeleccionada);
+        PartidaMenuVisual.Marcar(botonSupervivencia, supervivenciaSeleccionada);
     }
 
     private void Start()
@@ -97,6 +149,7 @@ public class LoadGameMenuController : MonoBehaviour
 
         historiaSeleccionada = false;
         supervivenciaSeleccionada = false;
+        MostrarFicha(false);
 
         ComprobarPartidaGuardada();
 
@@ -104,7 +157,7 @@ public class LoadGameMenuController : MonoBehaviour
             botonCargar.interactable = false;
 
         if (subtitulo != null)
-            subtitulo.text = "Seleccioná el modo de juego";
+            subtitulo.text = "Seleccioná el modo que querés continuar.";
 
         if (informacion != null)
         {
@@ -152,15 +205,12 @@ private void ComprobarPartidaGuardada()
             datosCheckpoint.checkpoint ==
                 (int)CheckpointManager.EscenarioCheckpoint.SafeZone2;
 
-        if (!valido)
+        if (!valido || datosCheckpoint.jugador == null)
             datosCheckpoint = null;
     }
 
     // Supervivencia
     datosSupervivencia = null;
-
-    if (!SaveSystem.ExisteGuardadoSupervivencia())
-        return;
 
     SupervivenciaSaveData datos =
         SaveSystem.CargarSupervivencia();
@@ -169,9 +219,7 @@ private void ComprobarPartidaGuardada()
         return;
 
     // Validar que realmente exista un checkpoint válido.
-    bool rondaValida =
-        datos.rondaActual >= 5 &&
-        datos.rondaActual % 5 == 0;
+    bool rondaValida = SurvivalSaveManager.EsRondaGuardable(datos.rondaActual);
 
     bool escenarioValido =
         datos.escenario !=
@@ -205,6 +253,7 @@ private void ComprobarPartidaGuardada()
 
         if (datosCheckpoint == null)
         {
+            MostrarFicha(false);
             if (informacion != null)
             {
                 informacion.text =
@@ -221,18 +270,14 @@ private void ComprobarPartidaGuardada()
             return;
         }
 
-        if (informacion != null)
-        {
-            informacion.text =
-                "PARTIDA ENCONTRADA\n\n" +
-                "Checkpoint: " +
-                ObtenerNombreCheckpoint(datosCheckpoint.checkpoint) +
-                "\nDificultad: " +
-                ObtenerNombreDificultad(datosCheckpoint.dificultad);
-        }
+        MostrarFicha(true);
+        tituloGuardado.text = $"Zona segura {datosCheckpoint.checkpoint}";
+        etiquetaUbicacion.text = "Checkpoint";
+        ubicacionGuardada.text = ObtenerNombreCheckpoint(datosCheckpoint.checkpoint);
+        dificultadGuardada.text = ObtenerNombreDificultad(datosCheckpoint.dificultad);
 
         if (subtitulo != null)
-            subtitulo.text = "Continuar modo Historia";
+            subtitulo.text = "Seleccioná el modo que querés continuar.";
 
         if (botonCargar != null)
             botonCargar.interactable = true;
@@ -251,6 +296,7 @@ private void ComprobarPartidaGuardada()
 
         if (datosSupervivencia == null)
         {
+            MostrarFicha(false);
             if (informacion != null)
             {
                 informacion.text =
@@ -267,20 +313,14 @@ private void ComprobarPartidaGuardada()
             return;
         }
 
-        if (informacion != null)
-        {
-            informacion.text =
-                "PARTIDA ENCONTRADA\n\n" +
-                "Escenario: " +
-                ObtenerNombreEscenario(datosSupervivencia.escenario) +
-                "\nDificultad: " +
-                ObtenerNombreDificultad(datosSupervivencia.dificultad) +
-                "\nÚltima ronda guardada: " +
-                datosSupervivencia.rondaActual;
-        }
+        MostrarFicha(true);
+        tituloGuardado.text = $"Ronda {datosSupervivencia.rondaActual}";
+        etiquetaUbicacion.text = "Escenario";
+        ubicacionGuardada.text = ObtenerNombreEscenario(datosSupervivencia.escenario);
+        dificultadGuardada.text = ObtenerNombreDificultad(datosSupervivencia.dificultad);
 
         if (subtitulo != null)
-            subtitulo.text = "Continuar modo Supervivencia";
+            subtitulo.text = "Seleccioná el modo que querés continuar.";
 
         if (botonCargar != null)
             botonCargar.interactable = true;
@@ -410,15 +450,6 @@ private void ComprobarPartidaGuardada()
             return;
         }
 
-        if (datosSupervivencia.rondaActual < 5 ||
-            datosSupervivencia.rondaActual % 5 != 0)
-        {
-            Debug.LogError(
-                "[LoadGameMenuController] La ronda guardada de Supervivencia es inválida."
-            );
-            return;
-        }
-
         ConfiguracionPartidaSeleccionada configuracion =
             ConfiguracionPartidaSeleccionada.Instancia;
 
@@ -489,6 +520,7 @@ private void ComprobarPartidaGuardada()
 
     private void BloquearBotonesDuranteCarga()
     {
+        MostrarFicha(false);
         if (botonHistoria != null)
             botonHistoria.interactable = false;
 

@@ -440,7 +440,7 @@ private bool iniciarRondaDesdeGuardado;
 
         ApplyModeAndDifficulty();
 
-   if (SceneManager.GetActiveScene().name == "MainSceneSinglePlayer" &&
+   if (SceneManager.GetActiveScene().name == SinglePlayerNetworkStarter.SceneName &&
        LoadGameMenuController.CargandoPartidaDesdeMenu)
 {
     if (LoadGameMenuController.CargandoSupervivenciaDesdeMenu)
@@ -474,9 +474,9 @@ private bool iniciarRondaDesdeGuardado;
 
 if (EsModoHistoria)
 {
-    if (nombreEscena == "MainSceneSinglePlayer")
+    if (nombreEscena == SinglePlayerNetworkStarter.SceneName)
     {
-        //IniciarHistoria();
+        CheckpointManager.Instance?.PrepararNuevaPartida();
         StartCoroutine(IniciarHistoriaTrasIntro());
     }
     else
@@ -742,7 +742,9 @@ private IEnumerator EsperarFinIntroLocal()
     // =========================================================
     // INICIAR RONDA
     // =========================================================
-public void StartRound(int round)
+public void StartRound(int round) => IniciarRonda(round, jugadoresPreparados: false);
+
+private void IniciarRonda(int round, bool jugadoresPreparados)
 {
     if (IsServer) SurvivalUpgradeWindow.Value = false;
     if (!IsServer)
@@ -777,12 +779,7 @@ public void StartRound(int round)
 
     bool esCargaDesdeCheckpoint = iniciarRondaDesdeGuardado;
 
-    if (!esCargaDesdeCheckpoint)
-    {
-        RespawnSpectatingPlayers();
-        RecoverPlayerLivesForNewRound();
-    }
-    else
+    if (esCargaDesdeCheckpoint)
     {
         // Los datos de vida y estado del jugador ya fueron restaurados.
         iniciarRondaDesdeGuardado = false;
@@ -791,28 +788,11 @@ public void StartRound(int round)
             "[RoundManager] Se conserva el estado de vida restaurado."
         );
     }
-
-    // =====================================================
-    // GUARDADO AUTOMÁTICO DE SUPERVIVENCIA
-    // =====================================================
-
-    if (!esCargaDesdeCheckpoint &&
-        ModoNetwork.Value ==
-        (int)ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia)
+    else if (!jugadoresPreparados)
     {
-        if (round >= 5 && round % 5 == 0)
-        {
-            if (SurvivalSaveManager.Instance != null)
-            {
-                SurvivalSaveManager.Instance.GuardarPartida(round);
-            }
-            else
-            {
-                Debug.LogError(
-                    "[RoundManager] No se encontró SurvivalSaveManager."
-                );
-            }
-        }
+        PrepararJugadoresParaRonda();
+        if (EsGuardadoDeSupervivencia(round))
+            GuardarRondaDeSupervivencia(round);
     }
 
     // =====================================================
@@ -2486,6 +2466,14 @@ private IEnumerator EndRoundDelay()
 
         CountdownNetwork.Value = 5;
 
+        bool jugadoresPreparados = EsGuardadoDeSupervivencia(nextRound);
+        if (jugadoresPreparados)
+        {
+            // El checkpoint debe incluir las vidas con las que empieza la ronda.
+            PrepararJugadoresParaRonda();
+            GuardarRondaDeSupervivencia(nextRound);
+        }
+
         yield return new WaitForSeconds(1f);
 
         CountdownNetwork.Value = 4;
@@ -2510,7 +2498,26 @@ private IEnumerator EndRoundDelay()
 
         countdownInProgress = false;
 
-        StartRound(nextRound);
+        IniciarRonda(nextRound, jugadoresPreparados);
+    }
+
+    private bool EsGuardadoDeSupervivencia(int ronda) =>
+        SinglePlayerNetworkStarter.EsPartidaLocalActiva &&
+        ModoNetwork.Value == (int)ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia &&
+        SurvivalSaveManager.EsRondaGuardable(ronda);
+
+    private void GuardarRondaDeSupervivencia(int ronda)
+    {
+        if (SurvivalSaveManager.Instance != null)
+            SurvivalSaveManager.Instance.GuardarPartida(ronda);
+        else
+            Debug.LogError("[RoundManager] No se encontró SurvivalSaveManager.");
+    }
+
+    private void PrepararJugadoresParaRonda()
+    {
+        RespawnSpectatingPlayers();
+        RecoverPlayerLivesForNewRound();
     }
 
     private void RespawnSpectatingPlayers()

@@ -185,8 +185,19 @@ public class AchievementsManager : MonoBehaviour
     // AWAKE
     // ============================================================
 
+#if UNITY_EDITOR
+    private static bool omitirInicializacionEnPruebas = false;
+#endif
+
     private void Awake()
     {
+#if UNITY_EDITOR
+        if (omitirInicializacionEnPruebas)
+        {
+            enabled = false;
+            return;
+        }
+#endif
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);

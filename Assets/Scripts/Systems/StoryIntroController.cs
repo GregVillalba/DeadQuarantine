@@ -81,6 +81,9 @@ private void Update()
     if (Keyboard.current == null)
         return;
 
+    if (NPCShopUI.MouseInputBlocked)
+        return;
+
     if (!Keyboard.current.enterKey.wasPressedThisFrame &&
         !Keyboard.current.numpadEnterKey.wasPressedThisFrame)
         return;

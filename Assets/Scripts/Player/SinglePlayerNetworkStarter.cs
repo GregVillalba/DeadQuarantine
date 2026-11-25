@@ -1,8 +1,16 @@
 using UnityEngine;
 using Unity.Netcode;
+using UnityEngine.SceneManagement;
 
 public class SinglePlayerNetworkStarter : MonoBehaviour
 {
+    internal const string SceneName = "MainSceneSinglePlayer";
+
+    internal static bool EsPartidaLocalActiva =>
+        SceneManager.GetActiveScene().name == SceneName &&
+        NetworkManager.Singleton is { IsHost: true } network &&
+        network.ConnectedClientsIds.Count == 1;
+
     [SerializeField] private NetworkManager sceneNetwork;
 
     private void Start()

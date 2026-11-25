@@ -27,6 +27,7 @@ public class NPCWeaponVendor : MonoBehaviour
     private Weapon pendingWeapon;
     private PlayerRecursos pendingRecursos;
     private string pendingWeaponId;
+    internal bool CompraPendiente => pendingWeaponId != null;
 
     public event Action<string, bool> OnPurchaseResult;
 

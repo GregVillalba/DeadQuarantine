@@ -1,8 +1,6 @@
 
-using System;
 using System.Collections;
 using UnityEngine;
-using Unity.Netcode;
 
 /// <summary>
 /// Administra el guardado y la restauración del modo Supervivencia.
@@ -12,9 +10,7 @@ public class SurvivalSaveManager : MonoBehaviour
 {
     public static SurvivalSaveManager Instance { get; private set; }
 
-    private bool restaurandoPartida;
     private bool restauracionEnCurso;
-    private int ultimaRondaGuardada = -1;
 
     // =====================================================
     // INICIALIZACIÓN
@@ -52,74 +48,40 @@ public class SurvivalSaveManager : MonoBehaviour
                ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia;
     }
 
-    private bool EsSingleplayer()
-    {
-        NetworkManager networkManager = NetworkManager.Singleton;
-
-        if (networkManager == null || !networkManager.IsListening)
-            return true;
-
-        return networkManager.IsServer &&
-               networkManager.ConnectedClientsIds.Count <= 1;
-    }
+    internal static bool EsRondaGuardable(int ronda) => ronda >= 5 && ronda % 5 == 0;
 
     // =====================================================
     // GUARDAR PARTIDA
     // =====================================================
 
-public void GuardarPartida(int rondaActual)
-{
-    if (!EsModoSupervivencia())
-        return;
-
-    if (!EsSingleplayer())
-        return;
-
-    if (rondaActual < 5 || rondaActual % 5 != 0)
-        return;
-
-    if (ultimaRondaGuardada == rondaActual)
-        return;
-
-    DatosJugadorSaveData jugador = ObtenerDatosJugador();
-
-    if (jugador == null)
+    public void GuardarPartida(int rondaActual)
     {
-        Debug.LogError(
-            "[SurvivalSaveManager] No se pudieron obtener los datos del jugador."
-        );
-        return;
+        if (!SinglePlayerNetworkStarter.EsPartidaLocalActiva ||
+            !EsModoSupervivencia() || !EsRondaGuardable(rondaActual))
+            return;
+
+        DatosJugadorSaveData jugador = ObtenerDatosJugador();
+        if (jugador == null)
+            return;
+
+        var configuracion = ConfiguracionPartidaSeleccionada.Instancia;
+        var datos = new SupervivenciaSaveData
+        {
+            escenario = (int)configuracion.escenarioSeleccionado,
+            dificultad = (int)configuracion.dificultadSeleccionada,
+            rondaActual = rondaActual,
+            empezoSinDesbloqueos = DesbloqueoDificultades.EmpezoSinDesbloqueos(
+                ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia) ? 1 : 2,
+            jugador = jugador
+        };
+
+        var indicador = LoadingIndicator.ShowAutosave();
+        bool guardado = SaveSystem.GuardarSupervivencia(datos);
+        indicador.FinishAutosave(guardado);
+
+        if (guardado)
+            Debug.Log($"[SurvivalSaveManager] Partida guardada correctamente. Ronda: {rondaActual}");
     }
-
-    SupervivenciaSaveData datos =
-        SaveSystem.CargarSupervivencia();
-
-    if (datos == null)
-        datos = new SupervivenciaSaveData();
-
-    datos.escenario =
-        (int)ConfiguracionPartidaSeleccionada.Instancia.escenarioSeleccionado;
-
-    datos.dificultad =
-        (int)ConfiguracionPartidaSeleccionada.Instancia.dificultadSeleccionada;
-
-    datos.rondaActual = rondaActual;
-    datos.partidaPerdida = false;
-    datos.empezoSinDesbloqueos =
-        DesbloqueoDificultades.EmpezoSinDesbloqueos(
-            ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia) ? 1 : 2;
-    datos.jugador = jugador;
-    datos.fechaGuardado = System.DateTime.Now.ToString("o");
-
-    SaveSystem.GuardarSupervivencia(datos);
-
-    ultimaRondaGuardada = rondaActual;
-
-    Debug.Log(
-        "[SurvivalSaveManager] Partida guardada correctamente. Ronda: "
-        + rondaActual
-    );
-}
     // =====================================================
     // CAPTURAR DATOS DEL JUGADOR
     // =====================================================
@@ -261,9 +223,6 @@ private IEnumerator RestaurarDatosCuandoJugadorEsteListo(
             ConfiguracionPartidaSeleccionada.ModoJuego.Supervivencia,
             datos.empezoSinDesbloqueos == 1);
     }
-
-    // Evita volver a guardar la misma ronda al cargarla.
-    ultimaRondaGuardada = datos.rondaActual;
 
     Debug.Log(
         "[SurvivalSaveManager] Datos restaurados. Ronda: "

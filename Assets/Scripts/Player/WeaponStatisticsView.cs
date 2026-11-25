@@ -15,16 +15,17 @@ public sealed class WeaponStatisticsView : MonoBehaviour
     Button toggle;
     bool showingDetails;
 
-    public static void Draw(TMP_Text target, WeaponStatistics stats, WeaponStatistics? baseline, bool compact, string name)
+    public static void Draw(TMP_Text target, WeaponStatistics stats, WeaponStatistics? baseline, bool compact, string name,
+        bool legibleEnTienda = false)
     {
         target.enabled = false;
         var view = target.GetComponent<WeaponStatisticsView>();
         if (!view) view = target.gameObject.AddComponent<WeaponStatisticsView>();
-        view.Ensure(target.font, compact);
+        view.Ensure(target.font, compact, legibleEnTienda);
         view.UpdateValues(stats, baseline, compact, name);
     }
 
-    void Ensure(TMP_FontAsset font, bool compact)
+    void Ensure(TMP_FontAsset font, bool compact, bool legibleEnTienda)
     {
         if (bars) return;
         bars = Rect("WeaponStatBars", transform, Vector2.zero, new Vector2(1, compact ? 1 : .88f));
@@ -34,7 +35,7 @@ public sealed class WeaponStatisticsView : MonoBehaviour
         background.color = new(.07f, .14f, .12f, .98f);
         toggle = buttonRoot.gameObject.AddComponent<Button>();
         toggle.targetGraphic = background;
-        toggleLabel = Text("Label", buttonRoot, font, Vector2.zero, Vector2.one, 12);
+        toggleLabel = Text("Label", buttonRoot, font, Vector2.zero, Vector2.one, legibleEnTienda ? 20 : 12);
         toggleLabel.alignment = TextAlignmentOptions.Center;
         toggle.onClick.AddListener(() => {
             showingDetails = !showingDetails;
@@ -42,8 +43,8 @@ public sealed class WeaponStatisticsView : MonoBehaviour
         });
         details = Text("WeaponStatDetails", transform, font, Vector2.zero, new(1, .86f), 15);
         details.enableAutoSizing = true;
-        details.fontSizeMin = 10;
-        details.fontSizeMax = 15;
+        details.fontSizeMin = legibleEnTienda ? 15 : 10;
+        details.fontSizeMax = legibleEnTienda ? 23 : 15;
         details.richText = true;
         for (int i = 0; i < 6; i++)
         {
@@ -51,10 +52,16 @@ public sealed class WeaponStatisticsView : MonoBehaviour
             float top = 1 - (compact ? (i / 2) / 3f : i / 6f);
             var row = Rect("Stat" + i, bars, new(x, top - (compact ? .32f : .16f)),
                 new(x + (compact ? .48f : 1), top));
-            labels[i] = Text("Label", row, font, new(0, .29f), Vector2.one, compact ? 11 : 14);
+            int maxLabelSize = legibleEnTienda ? 23 : compact ? 11 : 14;
+            labels[i] = Text("Label", row, font, new(0, legibleEnTienda ? .24f : .29f), Vector2.one, maxLabelSize);
             labels[i].enableAutoSizing = true;
-            labels[i].fontSizeMin = compact ? 8 : 11;
-            labels[i].fontSizeMax = compact ? 11 : 14;
+            labels[i].fontSizeMin = legibleEnTienda ? 16 : compact ? 8 : 11;
+            labels[i].fontSizeMax = maxLabelSize;
+            if (legibleEnTienda)
+            {
+                labels[i].alignment = TextAlignmentOptions.MidlineLeft;
+                labels[i].textWrappingMode = TextWrappingModes.NoWrap;
+            }
             var track = Rect("Track", row, new(0, .08f), new(1, .2f));
             track.gameObject.AddComponent<Image>().color = new(.16f, .21f, .19f);
             track.GetComponent<Image>().raycastTarget = false;
